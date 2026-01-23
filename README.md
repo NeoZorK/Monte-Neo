@@ -16,13 +16,21 @@ A professional Python framework for generating robust and profitable trading ind
 ## Quick Start
 
 ```bash
-# Install
-pip install -e .
+# 1. Install & Setup Environment
+uv sync --all-extras
 
-# Run CLI
-python -m monte_neo
+# 2. Run CLI
+uv run monte-neo
 
-# Or with Docker
+# 3. Run Tests
+uv run pytest
+
+# Alternatively, run full verification suite
+./scripts/run_full_test_suite.sh
+```
+
+## Running with Docker
+```bash
 docker-compose up
 ```
 

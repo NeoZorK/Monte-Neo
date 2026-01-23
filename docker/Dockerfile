@@ -1,4 +1,7 @@
-FROM python:3.11-slim as base
+FROM python:3.11-slim
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
 
@@ -7,16 +10,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for caching
+# Copy configuration files
 COPY pyproject.toml .
 COPY README.md .
+COPY uv.lock .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -e .
+# Install dependencies
+RUN uv sync --frozen --no-dev --no-install-project
 
 # Copy source code
 COPY src/ src/
 COPY scripts/ scripts/
+
+# Install the project
+RUN uv sync --frozen --no-dev
 
 # Create data directories
 RUN mkdir -p data/raw data/processed data/results
@@ -24,10 +31,11 @@ RUN mkdir -p data/raw data/processed data/results
 # Set environment
 ENV PYTHONUNBUFFERED=1
 ENV MONTE_NEO_DATA_DIR=/app/data
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Headless mode by default
 ENV TERM=xterm-256color
 
 # Entry point
-ENTRYPOINT ["python", "-m", "monte_neo"]
+ENTRYPOINT ["uv", "run", "monte-neo"]
 CMD ["--help"]
