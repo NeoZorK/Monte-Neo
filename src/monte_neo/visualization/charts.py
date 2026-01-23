@@ -119,12 +119,12 @@ class ChartGenerator:
             exit_idx = exits[exits].index.tolist()
             
             # Mark entries and exits
-            for idx in entry_idx:
-                if idx < len(close):
-                    plt.scatter([idx], [close[idx]], marker="▲", color="green")
+            for i, (idx, is_entry) in enumerate(entries.items()):
+                if is_entry:
+                    plt.scatter([i], [close[i]], marker="▲", color="green")
             
-            for idx in exit_idx:
-                if idx < len(close):
-                    plt.scatter([idx], [close[idx]], marker="▼", color="red")
+            for i, (idx, is_exit) in enumerate(exits.items()):
+                if is_exit:
+                    plt.scatter([i], [close[i]], marker="▼", color="red")
         
         plt.show()
