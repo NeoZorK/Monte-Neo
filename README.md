@@ -17,13 +17,13 @@ A professional Python framework for generating robust and profitable trading ind
 
 ```bash
 # 1. Install & Setup Environment
-uv sync --all-extras
+uv sync
 
 # 2. Run CLI
 uv run monte-neo
 
 # 3. Run Tests
-uv run pytest tests -n auto
+uv run pytest tests -n auto -W ignore
 
 # Alternatively, run full verification suite
 ./scripts/run_full_test_suite.sh
