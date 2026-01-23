@@ -75,3 +75,18 @@ close > (rolling_mean(close, 20) + 2 * rolling_std(close, 20))
 The system uses `exec()` or `eval()` to run these generated strings. To mitigate security risks:
 - The scope passed to `eval()` is strictly limited to allowed data and safe functions.
 - No access to `os`, `sys`, or other system modules is provided.
+
+## Evolutionary Optimization
+
+To find the best strategies, the system uses **Genetic Programming**:
+
+1.  **Selection**: Indicators with the highest "Survival Score" (based on Profit, Drawdown, and Monte Carlo robustness) are chosen as parents.
+2.  **Mutation**: Random parts of the formula are changed.
+    *   *Example*: `mean(close, 20)` -> `mean(close, 50)`
+    *   *Example*: `close - open` -> `close * open`
+3.  **Crossover**: Parts of two logical parents are swapped to create a child.
+    *   *Parent A*: `RSI(14)`
+    *   *Parent B*: `SMA(50)`
+    *   *Child*: `RSI(14) > SMA(50)`
+
+This process runs for multiple generations, constantly refining the population towards robust profitability.
