@@ -6,6 +6,7 @@ services:
     image: monte-neo
     volumes:
       - ./data:/app/data
+      - ./tests:/app/tests
     environment:
       - MONTE_NEO_DATA_DIR=/app/data
       - TERM=xterm-256color
