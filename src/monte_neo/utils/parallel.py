@@ -86,7 +86,7 @@ class ParallelExecutor:
         Returns:
             List of results.
         """
-        def wrapper(args):
+        def wrapper(args: Any) -> Any:
             return func(*args)
 
         return self.map(wrapper, args_list)

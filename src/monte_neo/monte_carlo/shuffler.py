@@ -144,7 +144,7 @@ class DataShuffler:
             for _, session_data in sessions:
                 # Shuffle within session
                 shuffled = session_data.sample(
-                    frac=1, random_state=int(self.rng.integers(1e9))
+                    frac=1, random_state=int(self.rng.integers(1_000_000_000))
                 )
                 shuffled_parts.append(shuffled)
 
