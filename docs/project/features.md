@@ -3,6 +3,9 @@
 ## Core Features
 
 - **Indicator Generation**: Automatic search for profitable trading indicators.
+- **Dynamic Indicator Generation**:
+  - Generates novel indicators using genetic programming concepts.
+  - Creates random valid Python formulas from market data.
 - **Monte Carlo Robustness**:
   - **Return Shuffling**: Tests if profit is dependent on sequence.
   - **Noise Injection**: Simulates market volatility and slippage.

@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 
 from monte_neo.indicators.base import BaseIndicator
+from monte_neo.indicators.dynamic import DynamicIndicator
 from monte_neo.indicators.technical import MACDIndicator, RSIIndicator, SMAIndicator
 from monte_neo.metrics.calculator import MetricsCalculator
 from monte_neo.monte_carlo.engine import MCConfig, MonteCarloEngine
@@ -31,7 +32,7 @@ class GeneratorConfig:
 
     max_iterations: int = 100000
     target_metrics: dict[str, float] = field(default_factory=dict)
-    indicator_types: list[str] = field(default_factory=lambda: ["sma", "rsi", "macd"])
+    indicator_types: list[str] = field(default_factory=lambda: ["sma", "rsi", "macd", "dynamic"])
     mc_iterations: int = 1000
     use_mc_shuffling: bool = True
     use_mc_noise: bool = True
@@ -74,6 +75,7 @@ class IndicatorGenerator:
             "slow": (20, 40),
             "signal": (5, 15),
         },
+        "dynamic": {},
     }
 
     def __init__(self, config: GeneratorConfig | None = None) -> None:
@@ -198,6 +200,11 @@ class IndicatorGenerator:
             indicator = RSIIndicator()
         elif ind_type == "macd":
             indicator = MACDIndicator()
+        elif ind_type == "dynamic":
+            indicator = DynamicIndicator()
+            code = self._generate_dynamic_code()
+            indicator.set_parameter("source_code", code)
+            return indicator
         else:
             indicator = SMAIndicator()
 
@@ -208,6 +215,57 @@ class IndicatorGenerator:
             indicator.set_parameter(param_name, value)
 
         return indicator
+
+    def _generate_dynamic_code(self, depth: int = 0) -> str:
+        """Generate a random valid Python expression for an indicator."""
+        # Operands
+        operands = ["data['close']", "data['open']", "data['high']", "data['low']", "data['volume']"]
+        
+        # Terminal condition (max depth or random stop)
+        if depth >= 3 or (depth > 0 and self.rng.random() < 0.3):
+            return self.rng.choice(operands)
+        
+        # Operators / Functions
+        # 0: Binary Op, 1: Unary/Func
+        op_type = self.rng.integers(0, 2)
+        
+        if op_type == 0:
+            # Binary
+            ops = ["+", "-", "*", "/", ">", "<"] # Include logical for signals? 
+            # Note: logical operators return bool, usually used at top level or handled by DynamicIndicator
+            # Let's keep it numeric mostly, maybe top level can be logical.
+            # For simplicity, let's stick to arithmetic and let DynamicIndicator handle >0 logic 
+            # UNLESS we explicitly want boolean signals.
+            # The current DynamicIndicator maps >0 to 1, <0 to -1.
+            # So (Close - MA) is good. 
+            
+            op = self.rng.choice(["+", "-", "*", "/"])
+            left = self._generate_dynamic_code(depth + 1)
+            right = self._generate_dynamic_code(depth + 1)
+            return f"({left} {op} {right})"
+            
+        else:
+            # Functions
+            # rolling_mean, diff, shift
+            
+            func_type = self.rng.choice(["mean", "max", "min", "std", "diff", "shift"])
+            period = self.rng.integers(3, 50)
+            inner = self._generate_dynamic_code(depth + 1)
+            
+            if func_type == "mean":
+                return f"{inner}.rolling({period}).mean()"
+            elif func_type == "max":
+                return f"{inner}.rolling({period}).max()"
+            elif func_type == "min":
+                return f"{inner}.rolling({period}).min()"
+            elif func_type == "std":
+                return f"{inner}.rolling({period}).std()"
+            elif func_type == "diff":
+                return f"{inner}.diff()" # Default diff 1
+            elif func_type == "shift":
+                return f"{inner}.shift({period})"
+                
+        return "data['close']" # Fallback
 
     def _meets_basic_targets(self, metrics: dict) -> bool:
         """Check if metrics meet basic targets."""
