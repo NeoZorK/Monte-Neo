@@ -23,7 +23,7 @@ uv sync --all-extras
 uv run monte-neo
 
 # 3. Run Tests
-uv run pytest
+uv run pytest tests -n auto
 
 # Alternatively, run full verification suite
 ./scripts/run_full_test_suite.sh
