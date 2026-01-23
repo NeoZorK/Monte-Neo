@@ -26,13 +26,28 @@ def setup_logging(
     )
 
     # Console handler
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(formatter)
+    try:
+        from rich.logging import RichHandler
+        console_handler = RichHandler(
+            rich_tracebacks=True,
+            show_time=True,
+            show_path=False,
+            # Use current level
+        )
+    except ImportError:
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setFormatter(formatter)
+    
     console_handler.setLevel(log_level)
 
     # Root logger
     root_logger = logging.getLogger("monte_neo")
     root_logger.setLevel(log_level)
+    
+    # Remove existing handlers to avoid duplicates
+    for h in root_logger.handlers[:]:
+        root_logger.removeHandler(h)
+        
     root_logger.addHandler(console_handler)
 
     # File handler if specified
