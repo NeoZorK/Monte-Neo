@@ -978,7 +978,7 @@ dependencies = [
     { name = "ta" },
 ]
 
-[package.optional-dependencies]
+[package.dev-dependencies]
 dev = [
     { name = "black" },
     { name = "mypy" },
@@ -992,28 +992,31 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=23.0" },
     { name = "mplfinance" },
-    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.5" },
     { name = "numba", specifier = ">=0.58" },
     { name = "numpy", specifier = ">=1.24" },
     { name = "pandas", specifier = ">=2.0" },
     { name = "plotext", specifier = ">=5.2" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.4" },
     { name = "pyarrow", specifier = ">=14.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.21" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.1" },
-    { name = "pytest-xdist", marker = "extra == 'dev'", specifier = ">=3.3" },
     { name = "python-binance", specifier = ">=1.0.17" },
     { name = "python-dotenv", specifier = ">=1.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "questionary", specifier = ">=2.0" },
     { name = "rich", specifier = ">=13.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1" },
     { name = "ta", specifier = ">=0.10" },
 ]
-provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "black", specifier = ">=23.0" },
+    { name = "mypy", specifier = ">=1.5" },
+    { name = "pre-commit", specifier = ">=3.4" },
+    { name = "pytest", specifier = ">=7.4" },
+    { name = "pytest-asyncio", specifier = ">=0.21" },
+    { name = "pytest-cov", specifier = ">=4.1" },
+    { name = "pytest-xdist", specifier = ">=3.3" },
+    { name = "ruff", specifier = ">=0.1" },
+]
 
 [[package]]
 name = "mplfinance"
