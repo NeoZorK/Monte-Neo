@@ -6,6 +6,7 @@
 - **Dynamic Indicator Generation**:
   - Generates novel indicators using genetic programming concepts.
   - Creates random valid Python formulas from market data.
+  - **Evolutionary Optimization**: Cross-breeds and mutates the best candidates to evolve superior strategies.
 - **Monte Carlo Robustness**:
   - **Return Shuffling**: Tests if profit is dependent on sequence.
   - **Noise Injection**: Simulates market volatility and slippage.

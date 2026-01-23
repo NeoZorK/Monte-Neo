@@ -80,13 +80,11 @@ The system uses `exec()` or `eval()` to run these generated strings. To mitigate
 
 To find the best strategies, the system uses **Genetic Programming**:
 
-1.  **Selection**: Indicators with the highest "Survival Score" (based on Profit, Drawdown, and Monte Carlo robustness) are chosen as parents.
-2.  **Mutation**: Random parts of the formula are changed.
-    *   *Example*: `mean(close, 20)` -> `mean(close, 50)`
-    *   *Example*: `close - open` -> `close * open`
-3.  **Crossover**: Parts of two logical parents are swapped to create a child.
-    *   *Parent A*: `RSI(14)`
-    *   *Parent B*: `SMA(50)`
-    *   *Child*: `RSI(14) > SMA(50)`
+1.  **Generation**: The system collects promising candidates from initial random search.
+2.  **Evolution**: If enough candidates are found, it starts an evolutionary loop:
+    - **Selection**: Indicators with the highest "Survival Score" (based on Profit, Drawdown, and Monte Carlo robustness) are chosen as parents.
+    - **Mutation**: Random parts of the formula are changed or wrapped in new operations.
+    - **Crossover**: Future feature to swap logical parts between parents.
+3.  **Final Validation**: The best evolved individual undergoes a final strict Monte Carlo validation before being presented as the winner.
 
 This process runs for multiple generations, constantly refining the population towards robust profitability.
