@@ -11,25 +11,29 @@ A simplified guide to the Monte-Neo file structure.
 - .gitignore - Git exclusion rules
 - .env.example - Environment variables template
 
-### Documentation (docs/)
-- docs/INDEX.md - This file index
-- docs/api-documentation.md - Guide to API and code documentation
-- docs/auth.md - Authentication and Binance API key setup
-- docs/CLAUDE.md - AI assistant guide and coding conventions
-- docs/development-setup.md - Guide for setting up the dev environment
-- docs/external-libs.md - List and purpose of external dependencies
-- docs/features.md - Detailed overview of framework features
-- docs/installation.md - Installation instructions for users and developers
-- docs/performance.md - Performance notes and benchmarks
-- docs/project-idea.md - The philosophy and vision behind Monte-Neo
-- docs/project-structure.md - Deep dive into physical directory layout
-- docs/quick-start.md - 3-step guide to get started
-- docs/ROADMAP.md - Development roadmap and milestones
-- docs/rules.md - Project-specific rules and conventions
-- docs/tech-stack.md - Technology stack and performance targets
-- docs/testing.md - Testing strategy and execution guide
-- docs/user-settings.md - Configuration and environment variable guide
+### Project Information (docs/project/)
+- docs/project/project-idea.md - The philosophy and vision behind Monte-Neo
+- docs/project/project-structure.md - Deep dive into physical directory layout
+- docs/project/features.md - Detailed overview of framework features
+- docs/project/ROADMAP.md - Development roadmap and milestones
+- docs/project/tech-stack.md - Technology stack and performance targets
 
+### Setup & Configuration (docs/setup/)
+- docs/setup/installation.md - Installation instructions for users and developers
+- docs/setup/development-setup.md - Guide for setting up the dev environment
+- docs/setup/auth.md - Authentication and Binance API key setup
+- docs/setup/user-settings.md - Configuration and environment variable guide
+
+### Development (docs/development/)
+- docs/development/rules.md - Project-specific rules and conventions
+- docs/development/testing.md - Testing strategy and execution guide
+- docs/development/performance.md - Performance notes and benchmarks
+- docs/development/external-libs.md - List and purpose of external dependencies
+- docs/development/api-documentation.md - Guide to API and code documentation
+- docs/development/CLAUDE.md - AI assistant guide and coding conventions
+
+### Guides (docs/guides/)
+- docs/guides/quick-start.md - 3-step guide to get started
 
 ### Docker (docker/)
 - docker/Dockerfile - Multi-stage Docker build
