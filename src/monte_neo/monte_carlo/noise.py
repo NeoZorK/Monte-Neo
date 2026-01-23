@@ -44,11 +44,11 @@ class NoiseInjector:
 
         for _ in range(n_samples):
             sample = data.copy()
-            
+
             for col in ["open", "high", "low", "close"]:
                 noise = self.rng.normal(0, noise_level, len(data))
                 sample[col] = sample[col] * (1 + noise)
-            
+
             # Ensure OHLC consistency
             sample = self._fix_ohlc(sample)
             samples.append(sample)
@@ -77,14 +77,14 @@ class NoiseInjector:
 
         for _ in range(n_samples):
             sample = data.copy()
-            
+
             # Random slippage direction and magnitude
             slippage = self.rng.uniform(-slippage_pct, slippage_pct, len(data))
-            
+
             # Apply to all prices
             for col in ["open", "high", "low", "close"]:
                 sample[col] = sample[col] * (1 + slippage)
-            
+
             sample = self._fix_ohlc(sample)
             samples.append(sample)
 
@@ -119,15 +119,15 @@ class NoiseInjector:
 
         for _ in range(n_samples):
             sample = data.copy()
-            
+
             # Variable spread based on volatility
             spread = base_spread * (1 + (normalized_vol - 1) * volatility_multiplier)
             spread = spread.clip(base_spread, base_spread * 10)  # Cap at 10x
-            
+
             # Apply to open/close (entry/exit simulation)
             direction = self.rng.choice([-1, 1], len(data))
             sample["close"] = sample["close"] * (1 + spread.values * direction * 0.5)
-            
+
             sample = self._fix_ohlc(sample)
             samples.append(sample)
 
@@ -156,18 +156,18 @@ class NoiseInjector:
 
         for _ in range(n_samples):
             sample = data.copy()
-            
+
             # Generate random gaps
             has_gap = self.rng.random(len(data)) < gap_probability
             gap_size = self.rng.uniform(-max_gap_pct, max_gap_pct, len(data))
             gap_size = gap_size * has_gap
-            
+
             # Apply cumulative gaps
             gap_factor = np.cumprod(1 + gap_size)
-            
+
             for col in ["open", "high", "low", "close"]:
                 sample[col] = sample[col] * gap_factor
-            
+
             sample = self._fix_ohlc(sample)
             samples.append(sample)
 
@@ -194,11 +194,11 @@ class NoiseInjector:
 
         for _ in range(n_samples):
             sample = data.copy()
-            
+
             noise = self.rng.lognormal(0, noise_level, len(data))
             sample["volume"] = sample["volume"] * noise
             sample["volume"] = sample["volume"].clip(lower=0)
-            
+
             samples.append(sample)
 
         logger.debug(f"Generated {n_samples} volume noise samples")
@@ -214,11 +214,11 @@ class NoiseInjector:
             Fixed DataFrame.
         """
         data = data.copy()
-        
+
         # High must be >= max(open, close)
         data["high"] = data[["open", "high", "close"]].max(axis=1)
-        
+
         # Low must be <= min(open, close)
         data["low"] = data[["open", "low", "close"]].min(axis=1)
-        
+
         return data

@@ -15,7 +15,7 @@ from binance.client import Client
 from monte_neo.utils.logger import get_logger
 
 if TYPE_CHECKING:
-    from pathlib import Path
+    pass
 
 logger = get_logger(__name__)
 
@@ -72,7 +72,9 @@ class BinanceDownloader:
             List of symbol strings (e.g., ['BTCUSDT', 'ETHUSDT']).
         """
         info = self.client.get_exchange_info()
-        return sorted([s["symbol"] for s in info["symbols"] if s["status"] == "TRADING"])
+        return sorted(
+            [s["symbol"] for s in info["symbols"] if s["status"] == "TRADING"]
+        )
 
     def download(
         self,
@@ -114,7 +116,7 @@ class BinanceDownloader:
 
         df = pd.DataFrame(klines, columns=self.COLUMNS)
         df = self._process_dataframe(df)
-        
+
         logger.info(f"Downloaded {len(df)} candles")
         return df
 

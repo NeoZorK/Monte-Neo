@@ -5,7 +5,6 @@ Common technical indicators for trading.
 
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 
 from monte_neo.indicators.base import BaseIndicator, IndicatorConfig
@@ -34,7 +33,7 @@ class TechnicalIndicators:
         delta = data.diff()
         gain = (delta.where(delta > 0, 0)).rolling(period).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(period).mean()
-        
+
         rs = gain / loss
         return 100 - (100 / (1 + rs))
 
@@ -73,11 +72,11 @@ class TechnicalIndicators:
         high = data["high"]
         low = data["low"]
         close = data["close"]
-        
+
         tr1 = high - low
         tr2 = abs(high - close.shift())
         tr3 = abs(low - close.shift())
-        
+
         tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
         return tr.rolling(period).mean()
 
@@ -91,7 +90,7 @@ class TechnicalIndicators:
         k_period, d_period = int(k_period), int(d_period)
         low_min = data["low"].rolling(k_period).min()
         high_max = data["high"].rolling(k_period).max()
-        
+
         k = 100 * ((data["close"] - low_min) / (high_max - low_min))
         d = k.rolling(d_period).mean()
         return k, d
@@ -117,19 +116,19 @@ class SMAIndicator(BaseIndicator):
 
     def generate_signals(self, data: pd.DataFrame) -> pd.DataFrame:
         calc = self.calculate(data)
-        
+
         signals = pd.DataFrame(index=data.index)
         signals["signal"] = 0
-        
+
         # Crossover signals
         signals.loc[calc["sma_fast"] > calc["sma_slow"], "signal"] = 1
         signals.loc[calc["sma_fast"] < calc["sma_slow"], "signal"] = -1
-        
+
         # Only signal on crossover
         signals["signal"] = signals["signal"].diff().fillna(0)
         signals.loc[signals["signal"] > 0, "signal"] = 1
         signals.loc[signals["signal"] < 0, "signal"] = -1
-        
+
         return signals
 
     def get_min_periods(self) -> int:
@@ -147,19 +146,21 @@ class RSIIndicator(BaseIndicator):
 
     def calculate(self, data: pd.DataFrame) -> pd.DataFrame:
         result = data.copy()
-        result["rsi"] = TechnicalIndicators.rsi(data["close"], self._parameters["period"])
+        result["rsi"] = TechnicalIndicators.rsi(
+            data["close"], self._parameters["period"]
+        )
         return result
 
     def generate_signals(self, data: pd.DataFrame) -> pd.DataFrame:
         calc = self.calculate(data)
-        
+
         signals = pd.DataFrame(index=data.index)
         signals["signal"] = 0
-        
+
         # Oversold = buy signal, overbought = sell signal
         signals.loc[calc["rsi"] < self._parameters["oversold"], "signal"] = 1
         signals.loc[calc["rsi"] > self._parameters["overbought"], "signal"] = -1
-        
+
         return signals
 
     def get_min_periods(self) -> int:
@@ -190,19 +191,19 @@ class MACDIndicator(BaseIndicator):
 
     def generate_signals(self, data: pd.DataFrame) -> pd.DataFrame:
         calc = self.calculate(data)
-        
+
         signals = pd.DataFrame(index=data.index)
         signals["signal"] = 0
-        
+
         # Histogram crossover
         signals.loc[calc["macd_histogram"] > 0, "signal"] = 1
         signals.loc[calc["macd_histogram"] < 0, "signal"] = -1
-        
+
         # Only signal on crossover
         signals["signal"] = signals["signal"].diff().fillna(0)
         signals.loc[signals["signal"] > 0, "signal"] = 1
         signals.loc[signals["signal"] < 0, "signal"] = -1
-        
+
         return signals
 
     def get_min_periods(self) -> int:

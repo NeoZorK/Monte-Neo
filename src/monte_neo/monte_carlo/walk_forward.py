@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 @dataclass
 class WalkForwardWindow:
     """Single walk-forward window result."""
-    
+
     window_idx: int
     train_start: int
     train_end: int
@@ -37,7 +37,7 @@ class WalkForwardWindow:
 @dataclass
 class WalkForwardResult:
     """Complete walk-forward analysis result."""
-    
+
     windows: list[WalkForwardWindow] = field(default_factory=list)
     overall_passed: bool = False
     pass_rate: float = 0.0
@@ -118,7 +118,9 @@ class WalkForwardAnalyzer:
             efficiency_ratio=efficiency,
         )
 
-        logger.info(f"Walk-forward: {pass_rate:.1%} pass rate, efficiency={efficiency:.2f}")
+        logger.info(
+            f"Walk-forward: {pass_rate:.1%} pass rate, efficiency={efficiency:.2f}"
+        )
         return result
 
     def _generate_windows(self, n_samples: int) -> list[WalkForwardWindow]:
@@ -178,9 +180,9 @@ class WalkForwardAnalyzer:
         for metric_name, target_value in targets.items():
             if metric_name not in metrics:
                 continue
-            
+
             actual = metrics[metric_name]
-            
+
             # Handle metrics that should be less than target
             if metric_name in ["max_drawdown", "consecutive_losses"]:
                 if actual > target_value:
@@ -188,7 +190,7 @@ class WalkForwardAnalyzer:
             else:
                 if actual < target_value:
                     return False
-        
+
         return True
 
     def _aggregate_metrics(self, metrics_list: list[dict]) -> dict:

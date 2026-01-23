@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 @dataclass
 class IndicatorConfig:
     """Indicator configuration."""
-    
+
     name: str
     parameters: dict[str, Any] = field(default_factory=dict)
     entry_conditions: list[str] = field(default_factory=list)
@@ -104,16 +104,16 @@ class BaseIndicator(ABC):
             True if data is valid.
         """
         required_cols = ["open", "high", "low", "close", "volume"]
-        
+
         for col in required_cols:
             if col not in data.columns:
                 logger.warning(f"Missing column: {col}")
                 return False
-        
+
         if len(data) < 10:
             logger.warning("Insufficient data points")
             return False
-        
+
         return True
 
     def get_min_periods(self) -> int:

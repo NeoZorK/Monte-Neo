@@ -5,7 +5,6 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
 import yaml
 from dotenv import load_dotenv
@@ -14,24 +13,24 @@ from dotenv import load_dotenv
 @dataclass
 class Config:
     """Application configuration."""
-    
+
     # Data settings
     data_dir: Path = field(default_factory=lambda: Path("./data"))
     binance_api_key: str = ""
     binance_api_secret: str = ""
-    
+
     # Generation settings
     default_symbol: str = "BTCUSDT"
     default_timeframe: str = "1h"
     max_iterations: int = 100000
     mc_iterations: int = 1000
-    
+
     # Default target metrics
     target_profit_factor: float = 2.0
     target_sharpe_ratio: float = 1.0
     target_max_drawdown: float = 0.20
     target_winrate: float = 0.45
-    
+
     # Performance settings
     n_workers: int | None = None
     log_level: str = "INFO"
@@ -56,7 +55,7 @@ def load_config(config_path: str | Path | None = None) -> Config:
     config.binance_api_key = os.getenv("BINANCE_API_KEY", "")
     config.binance_api_secret = os.getenv("BINANCE_API_SECRET", "")
     config.log_level = os.getenv("MONTE_NEO_LOG_LEVEL", "INFO")
-    
+
     workers = os.getenv("MONTE_NEO_WORKERS", "auto")
     config.n_workers = None if workers == "auto" else int(workers)
 

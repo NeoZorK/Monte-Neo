@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 @dataclass
 class ValidationResult:
     """Validation result."""
-    
+
     passed: bool
     overall_score: float
     in_sample_metrics: dict = field(default_factory=dict)
@@ -71,7 +71,7 @@ class OverfitValidator:
             ValidationResult with all checks.
         """
         warnings = []
-        
+
         # In-sample / Out-of-sample split
         split_idx = int(len(data) * 0.7)
         in_sample = data.iloc[:split_idx]
@@ -87,7 +87,10 @@ class OverfitValidator:
 
         # Check minimum trades
         if is_metrics.get("trade_count", 0) < self.min_trades:
-            warnings.append(f"In-sample trades ({is_metrics.get('trade_count', 0)}) < {self.min_trades}")
+            warnings.append(
+                f"In-sample trades "
+                f"({is_metrics.get('trade_count', 0)}) < {self.min_trades}"
+            )
 
         if oos_metrics.get("trade_count", 0) < self.min_trades // 3:
             warnings.append("Insufficient out-of-sample trades")
@@ -131,13 +134,13 @@ class OverfitValidator:
     ) -> float:
         """Calculate out-of-sample to in-sample ratio."""
         key_metric = "sharpe_ratio"
-        
+
         is_val = is_metrics.get(key_metric, 0)
         oos_val = oos_metrics.get(key_metric, 0)
-        
+
         if is_val <= 0:
             return 0.0
-        
+
         return oos_val / is_val
 
     def _cross_validate(
@@ -155,7 +158,7 @@ class OverfitValidator:
             test_start = i * fold_size
             test_end = (i + 1) * fold_size
 
-            train = pd.concat([data.iloc[:test_start], data.iloc[test_end:]])
+            pd.concat([data.iloc[:test_start], data.iloc[test_end:]])
             test = data.iloc[test_start:test_end]
 
             if len(test) < 10:
@@ -177,16 +180,16 @@ class OverfitValidator:
         for name, target in targets.items():
             if name not in metrics:
                 continue
-            
+
             actual = metrics[name]
-            
+
             if name in ["max_drawdown", "consecutive_losses"]:
                 if actual > target:
                     return False
             else:
                 if actual < target:
                     return False
-        
+
         return True
 
     def _calculate_overall_score(
@@ -198,17 +201,17 @@ class OverfitValidator:
     ) -> float:
         """Calculate overall validation score."""
         score = 0.0
-        
+
         # OOS ratio contribution (0-0.4)
         score += min(0.4, oos_ratio * 0.4)
-        
+
         # CV mean contribution (0-0.3)
         score += min(0.3, cv_mean * 0.1)
-        
+
         # CV stability contribution (0-0.2)
         stability = max(0, 1 - cv_std)
         score += stability * 0.2
-        
+
         # Meets targets contribution (0.1)
         if meets_targets:
             score += 0.1

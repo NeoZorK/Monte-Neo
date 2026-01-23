@@ -1,6 +1,7 @@
 """Unit tests for Generator."""
 
-from monte_neo.core.generator import IndicatorGenerator, GeneratorConfig
+from monte_neo.core.generator import GeneratorConfig, IndicatorGenerator
+
 
 def test_generator_config():
     config = GeneratorConfig(max_iterations=500)

@@ -19,7 +19,7 @@ class ProfitFactorMetric:
         """Calculate profit factor.
 
         Profit Factor = Gross Profit / Gross Loss
-        
+
         Values > 1 indicate profitability.
         Values > 2 are considered excellent.
 
@@ -33,7 +33,7 @@ class ProfitFactorMetric:
             return 0.0
 
         pnls = np.array(pnls)
-        
+
         gross_profit = np.sum(pnls[pnls > 0])
         gross_loss = abs(np.sum(pnls[pnls < 0]))
 

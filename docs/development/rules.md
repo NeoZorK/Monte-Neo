@@ -9,7 +9,7 @@
 
 ## Documentation
 
-- Always update `docs/INDEX.md` when adding new files.
+- Always update `docs/INDEX.md` when adding, moving, or removing files. **This is mandatory.**
 - Keep `ROADMAP.md` up to date with completed tasks.
 - Document complex mathematical logic in the code and `docs/api-documentation.md`.
 
@@ -27,4 +27,4 @@
 ## Versioning
 
 - Centralized in `src/monte_neo/_version.py`.
-- Pattern: `v0.0.1` -> `v0.1.0` -> `v1.0.0` (following Semantic Versioning).
+- Pattern: `v0.0.1` -> `v0.0.2` -> `v0.0.3` (Patch increments during initial development).

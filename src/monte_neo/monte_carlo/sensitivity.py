@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 @dataclass
 class SensitivityResult:
     """Sensitivity analysis result."""
-    
+
     parameter_name: str
     base_value: float
     variations: list[float] = field(default_factory=list)
@@ -76,7 +76,7 @@ class SensitivityAnalyzer:
         for value in variations:
             # Update indicator parameter
             indicator.set_parameter(param_name, value)
-            
+
             # Generate signals and calculate metrics
             signals = indicator.generate_signals(data)
             metrics = metrics_calc.calculate_all(data, signals)
@@ -118,7 +118,7 @@ class SensitivityAnalyzer:
             List of SensitivityResults.
         """
         results = []
-        
+
         for param_name, param_value in indicator.get_parameters().items():
             if isinstance(param_value, (int, float)):
                 result = self.analyze_parameter(
@@ -170,12 +170,12 @@ class SensitivityAnalyzer:
             List of variation values.
         """
         variations = [base_value]  # Include base
-        
+
         for i in range(1, self.n_steps + 1):
             factor = i * self.variation_range / self.n_steps
             variations.append(base_value * (1 - factor))  # Lower
             variations.append(base_value * (1 + factor))  # Higher
-        
+
         return sorted(set(variations))
 
     def _calculate_stability(
@@ -195,15 +195,15 @@ class SensitivityAnalyzer:
 
         # Key metrics for stability assessment
         key_metrics = ["profit_factor", "sharpe_ratio", "max_drawdown"]
-        
+
         stability_scores = []
-        
+
         for metric in key_metrics:
             values = []
             for variation_metrics in metrics_by_variation.values():
                 if metric in variation_metrics:
                     values.append(variation_metrics[metric])
-            
+
             if len(values) >= 2:
                 # Coefficient of variation (lower = more stable)
                 mean_val = np.mean(values)

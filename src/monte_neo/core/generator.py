@@ -6,16 +6,17 @@ Core engine for generating robust trading indicators.
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 
 from monte_neo.indicators.base import BaseIndicator
-from monte_neo.indicators.technical import SMAIndicator, RSIIndicator, MACDIndicator
-from monte_neo.monte_carlo.engine import MonteCarloEngine, MCConfig
+from monte_neo.indicators.technical import MACDIndicator, RSIIndicator, SMAIndicator
 from monte_neo.metrics.calculator import MetricsCalculator
+from monte_neo.monte_carlo.engine import MCConfig, MonteCarloEngine
 from monte_neo.utils.logger import get_logger
 
 if TYPE_CHECKING:
@@ -27,7 +28,7 @@ logger = get_logger(__name__)
 @dataclass
 class GeneratorConfig:
     """Generator configuration."""
-    
+
     max_iterations: int = 100000
     target_metrics: dict[str, float] = field(default_factory=dict)
     indicator_types: list[str] = field(default_factory=lambda: ["sma", "rsi", "macd"])
@@ -43,7 +44,7 @@ class GeneratorConfig:
 @dataclass
 class GeneratorResult:
     """Generator result."""
-    
+
     success: bool
     indicator: BaseIndicator | None
     parameters: dict
@@ -84,7 +85,7 @@ class IndicatorGenerator:
         self.config = config or GeneratorConfig()
         self.rng = np.random.default_rng()
         self.metrics_calc = MetricsCalculator()
-        
+
         self._progress_callback: Callable[[int, int, str], None] | None = None
         self._candidates: list[tuple[BaseIndicator, float]] = []
 
@@ -113,33 +114,36 @@ class IndicatorGenerator:
         best_mc_rate = 0.0
         iterations_tried = 0
 
-        logger.info(f"Starting indicator generation (max {self.config.max_iterations} iterations)")
+        logger.info(
+            f"Starting indicator generation "
+            f"(max {self.config.max_iterations} iterations)"
+        )
 
         for i in range(self.config.max_iterations):
             iterations_tried = i + 1
-            
+
             # Generate random indicator
             indicator = self._generate_random_indicator()
-            
+
             # Quick pre-check
             signals = indicator.generate_signals(data)
             basic_metrics = self.metrics_calc.calculate_all(data, signals)
-            
+
             # Skip if too few trades
             if basic_metrics.get("trade_count", 0) < self.config.min_trades:
                 continue
-            
+
             # Skip if basic metrics don't meet targets
             if not self._meets_basic_targets(basic_metrics):
                 continue
 
             # Run Monte Carlo validation
             mc_rate = self._run_mc_validation(data, indicator)
-            
+
             # Track candidates
             if mc_rate > 0.5:
                 self._candidates.append((indicator, mc_rate))
-            
+
             # Update best
             if mc_rate > best_mc_rate:
                 best_mc_rate = mc_rate
@@ -157,7 +161,7 @@ class IndicatorGenerator:
                 break
 
         elapsed = time.time() - start_time
-        
+
         # Get final metrics for best indicator
         final_metrics = {}
         if best_indicator:
@@ -178,7 +182,7 @@ class IndicatorGenerator:
     def _generate_random_indicator(self) -> BaseIndicator:
         """Generate a random indicator with random parameters."""
         ind_type = self.rng.choice(self.config.indicator_types)
-        
+
         if ind_type == "sma":
             indicator = SMAIndicator()
         elif ind_type == "rsi":
@@ -201,16 +205,16 @@ class IndicatorGenerator:
         for name, target in self.config.target_metrics.items():
             if name not in metrics:
                 continue
-            
+
             actual = metrics[name]
-            
+
             if name in ["max_drawdown", "consecutive_losses"]:
                 if actual > target:
                     return False
             else:
                 if actual < target:
                     return False
-        
+
         return True
 
     def _run_mc_validation(
@@ -226,12 +230,12 @@ class IndicatorGenerator:
             use_sensitivity=self.config.use_mc_sensitivity,
             use_walk_forward=self.config.use_mc_walk_forward,
         )
-        
+
         mc_engine = MonteCarloEngine(mc_config)
         result = mc_engine.run(
             data, indicator, self.metrics_calc, self.config.target_metrics
         )
-        
+
         return result.pass_rate
 
     def estimate_time(self, data: pd.DataFrame) -> float:
@@ -246,20 +250,20 @@ class IndicatorGenerator:
         # Run small sample
         sample_iterations = 10
         start = time.time()
-        
+
         for _ in range(sample_iterations):
             indicator = self._generate_random_indicator()
             signals = indicator.generate_signals(data)
             _ = self.metrics_calc.calculate_all(data, signals)
-        
+
         elapsed = time.time() - start
         time_per_iter = elapsed / sample_iterations
-        
+
         # Account for MC validation (~10x slower)
         mc_factor = 10 if any([
             self.config.use_mc_shuffling,
             self.config.use_mc_noise,
         ]) else 2
-        
+
         total_seconds = time_per_iter * self.config.max_iterations * mc_factor
         return total_seconds / 60

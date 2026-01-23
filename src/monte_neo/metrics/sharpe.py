@@ -33,7 +33,7 @@ class SharpeRatioMetric:
         """Calculate Sharpe ratio.
 
         Sharpe = (Mean Return - Risk Free) / Std(Returns) * sqrt(periods)
-        
+
         Values > 1 are good, > 2 are excellent.
 
         Args:
@@ -46,20 +46,20 @@ class SharpeRatioMetric:
             return 0.0
 
         returns = np.array(returns)
-        
+
         if len(returns) < 2 or np.std(returns) == 0:
             return 0.0
 
         # Convert annual risk-free to period risk-free
         period_rf = (1 + self.risk_free_rate) ** (1 / self.periods_per_year) - 1
-        
+
         excess_returns = returns - period_rf
         mean_excess = np.mean(excess_returns)
         std_returns = np.std(returns, ddof=1)
 
         # Annualize
         sharpe = (mean_excess / std_returns) * np.sqrt(self.periods_per_year)
-        
+
         return float(sharpe)
 
     def calculate_rolling(
@@ -110,7 +110,7 @@ class SortinoRatioMetric:
         """Calculate Sortino ratio.
 
         Sortino = (Mean Return - Risk Free) / Downside Deviation * sqrt(periods)
-        
+
         Uses only negative returns for volatility calculation.
 
         Args:
@@ -123,27 +123,27 @@ class SortinoRatioMetric:
             return 0.0
 
         returns = np.array(returns)
-        
+
         # Convert annual risk-free to period risk-free
         period_rf = (1 + self.risk_free_rate) ** (1 / self.periods_per_year) - 1
-        
+
         excess_returns = returns - period_rf
         mean_excess = np.mean(excess_returns)
-        
+
         # Downside deviation (only negative returns)
         downside_returns = returns[returns < 0]
-        
+
         if len(downside_returns) < 2:
             return float("inf") if mean_excess > 0 else 0.0
-        
+
         downside_std = np.std(downside_returns, ddof=1)
-        
+
         if downside_std == 0:
             return float("inf") if mean_excess > 0 else 0.0
 
         # Annualize
         sortino = (mean_excess / downside_std) * np.sqrt(self.periods_per_year)
-        
+
         return float(sortino)
 
     def calculate_downside_deviation(
@@ -162,8 +162,8 @@ class SortinoRatioMetric:
         """
         returns = np.array(returns)
         below_target = returns[returns < target]
-        
+
         if len(below_target) < 2:
             return 0.0
-        
+
         return float(np.std(below_target, ddof=1))

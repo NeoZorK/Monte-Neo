@@ -30,15 +30,25 @@ CUSTOM_STYLE = Style([
 def print_banner() -> None:
     """Print the application banner."""
     banner = Text()
-    banner.append("╔══════════════════════════════════════════════════════════╗\n", style="cyan")
+    banner.append(
+        "╔══════════════════════════════════════════════════════════╗\n", style="cyan"
+    )  # noqa: E501
     banner.append("║", style="cyan")
-    banner.append("            🎲 Monte-Neo v0.0.1                            ", style="bold white")
+    banner.append(
+        "            🎲 Monte-Neo v0.0.1                            ",
+        style="bold white",
+    )  # noqa: E501
     banner.append("║\n", style="cyan")
     banner.append("║", style="cyan")
-    banner.append("      Monte Carlo Indicator Generator Framework            ", style="dim white")
+    banner.append(
+        "      Monte Carlo Indicator Generator Framework            ",
+        style="dim white",
+    )  # noqa: E501
     banner.append("║\n", style="cyan")
-    banner.append("╚══════════════════════════════════════════════════════════╝", style="cyan")
-    
+    banner.append(
+        "╚══════════════════════════════════════════════════════════╝", style="cyan"
+    )  # noqa: E501
+
     console.print(banner)
     console.print()
 
@@ -76,7 +86,7 @@ def print_metrics_panel(metrics: dict) -> None:
             lines.append(f"[cyan]{key}:[/] [green]{value:.4f}[/]")
         else:
             lines.append(f"[cyan]{key}:[/] [green]{value}[/]")
-    
+
     panel = Panel(
         "\n".join(lines),
         title="[bold]Metrics[/]",

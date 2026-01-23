@@ -14,7 +14,7 @@ from rich.console import Console
 from monte_neo.cli.menu import InteractiveMenu
 from monte_neo.cli.styles import print_banner, print_error
 from monte_neo.utils.config import load_config
-from monte_neo.utils.logger import setup_logging, get_logger
+from monte_neo.utils.logger import get_logger, setup_logging
 
 if TYPE_CHECKING:
     pass
@@ -41,7 +41,7 @@ class MonteNeoCLI:
             Exit code.
         """
         print_banner()
-        
+
         if interactive:
             return self.menu.run()
         else:
@@ -70,26 +70,26 @@ def parse_args() -> argparse.Namespace:
         prog="monte-neo",
         description="Monte Carlo Indicator Generator Framework",
     )
-    
+
     parser.add_argument(
         "--interactive", "-i",
         action="store_true",
         default=True,
         help="Run in interactive mode (default)",
     )
-    
+
     parser.add_argument(
         "--config", "-c",
         type=str,
         help="Path to YAML config file (for headless mode)",
     )
-    
+
     parser.add_argument(
         "--headless",
         action="store_true",
         help="Run in headless mode with config file",
     )
-    
+
     parser.add_argument(
         "--log-level",
         type=str,
@@ -97,35 +97,35 @@ def parse_args() -> argparse.Namespace:
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         help="Log level",
     )
-    
+
     parser.add_argument(
         "--version", "-v",
         action="version",
         version="monte-neo 0.0.1",
     )
-    
+
     return parser.parse_args()
 
 
 def main() -> int:
     """Main entry point."""
     args = parse_args()
-    
+
     # Setup logging
     setup_logging(args.log_level)
-    
+
     try:
         app = MonteNeoCLI()
-        
+
         if args.headless and args.config:
             return app.run_headless(args.config)
         else:
             return app.run(interactive=args.interactive)
-    
+
     except KeyboardInterrupt:
         console.print("\n[yellow]Interrupted by user[/]")
         return 130
-    
+
     except Exception as e:
         print_error(f"Error: {e}")
         logger.exception("Unhandled exception")

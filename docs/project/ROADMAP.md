@@ -8,7 +8,7 @@
 - [x] Basic Metrics (Profit Factor, Winrate)
 - [x] Interactive CLI Menu
 
-## Version 0.1.0 - Robustness Core
+## Version 0.0.2 - Robustness Core
 
 - [x] Sensitivity analysis (Parameter ±10%)
 - [x] Walk-forward analysis
@@ -16,14 +16,14 @@
 - [x] Unit and integration test suite (uv + pytest)
 - [x] Dockerization and docker-compose
 
-## Version 0.2.0 - Visualization & UX
+## Version 0.0.3 - Visualization & UX
 
 - [x] Interactive terminal candlestick charts
 - [x] Trade list visualization (Rich tables)
 - [ ] Multi-thread optimization for UI
 - [ ] User-defined custom indicator templates
 
-## Version 0.5.0 - Advanced Analytics
+## Version 0.0.4 - Advanced Analytics
 
 - [ ] Correlation analysis between indicators
 - [ ] Regime detection (Trend vs Range)
@@ -42,6 +42,7 @@
 | Version | Target | Status |
 |---------|--------|--------|
 | v0.0.1 | Initial Alpha Setup | ✅ |
-| v0.1.0 | Robustness Core & Tests | ✅ |
-| v0.2.0 | Visualization & UX | 🔄 |
+| v0.0.2 | Robustness Core & Tests | ✅ |
+| v0.0.3 | Visualization & UX | 🔄 |
+| v0.0.4 | Advanced Analytics | 📅 |
 | v1.0.0 | Full Release | 📅 |

@@ -5,9 +5,9 @@ Optimizes indicator parameters using various strategies.
 
 from __future__ import annotations
 
-import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -15,6 +15,7 @@ from monte_neo.utils.logger import get_logger
 
 if TYPE_CHECKING:
     import pandas as pd
+
     from monte_neo.indicators.base import BaseIndicator
     from monte_neo.metrics.calculator import MetricsCalculator
 
@@ -24,7 +25,7 @@ logger = get_logger(__name__)
 @dataclass
 class OptimizationResult:
     """Optimization result."""
-    
+
     best_params: dict
     best_score: float
     iterations: int
@@ -137,7 +138,7 @@ class ParameterOptimizer:
     ) -> OptimizationResult:
         """Grid search optimization."""
         from itertools import product
-        
+
         # Create grid
         grid_points = {}
         for name, (min_val, max_val) in param_ranges.items():
@@ -152,7 +153,7 @@ class ParameterOptimizer:
 
         for values in product(*grid_points.values()):
             params = dict(zip(grid_points.keys(), values))
-            
+
             score = self._evaluate(
                 indicator, params, data, metrics_calc, objective, objective_func
             )
@@ -187,7 +188,7 @@ class ParameterOptimizer:
         population_size = 50
         mutation_rate = 0.1
         elite_ratio = 0.2
-        
+
         # Initialize population
         population = []
         for _ in range(population_size):
@@ -212,7 +213,7 @@ class ParameterOptimizer:
 
             # Sort by fitness
             fitness.sort(key=lambda x: x[1], reverse=True)
-            
+
             # Update best
             if fitness[0][1] > best_score:
                 best_score = fitness[0][1]
@@ -228,7 +229,7 @@ class ParameterOptimizer:
                 # Tournament selection
                 parent1 = self._tournament_select(fitness)
                 parent2 = self._tournament_select(fitness)
-                
+
                 # Crossover and mutation
                 child = self._crossover(parent1, parent2, param_ranges)
                 child = self._mutate(child, param_ranges, mutation_rate)
@@ -259,12 +260,14 @@ class ParameterOptimizer:
 
         if objective_func:
             return objective_func(metrics)
-        
+
         return metrics.get(objective, 0)
 
     def _tournament_select(self, fitness: list, k: int = 3) -> dict:
         """Tournament selection."""
-        selected = self.rng.choice(len(fitness), size=min(k, len(fitness)), replace=False)
+        selected = self.rng.choice(
+            len(fitness), size=min(k, len(fitness)), replace=False
+        )
         best = max(selected, key=lambda i: fitness[i][1])
         return fitness[best][0]
 

@@ -16,7 +16,7 @@ import pyarrow.parquet as pq
 from monte_neo.utils.logger import get_logger
 
 if TYPE_CHECKING:
-    from datetime import datetime
+    pass
 
 logger = get_logger(__name__)
 
@@ -80,10 +80,10 @@ class ParquetStorage:
             Path to saved file.
         """
         path = self._get_path(symbol, timeframe, category)
-        
+
         # Convert to PyArrow table for better control
         table = pa.Table.from_pandas(df)
-        
+
         pq.write_table(
             table,
             path,
@@ -91,7 +91,7 @@ class ParquetStorage:
             use_dictionary=True,
             write_statistics=True,
         )
-        
+
         logger.info(f"Saved {len(df)} rows to {path}")
         return path
 
@@ -114,7 +114,7 @@ class ParquetStorage:
             Loaded DataFrame.
         """
         path = self._get_path(symbol, timeframe, category)
-        
+
         if not path.exists():
             raise FileNotFoundError(f"Data file not found: {path}")
 
@@ -151,7 +151,7 @@ class ParquetStorage:
         """
         category_dir = self.base_dir / category
         files = []
-        
+
         for path in category_dir.glob("*.parquet"):
             parts = path.stem.split("_")
             if len(parts) >= 2:
@@ -161,7 +161,7 @@ class ParquetStorage:
                     "path": path,
                     "size_mb": path.stat().st_size / (1024 * 1024),
                 })
-        
+
         return sorted(files, key=lambda x: x["symbol"])
 
     def delete(
@@ -204,7 +204,7 @@ class ParquetStorage:
             Dictionary with file metadata or None.
         """
         path = self._get_path(symbol, timeframe, category)
-        
+
         if not path.exists():
             return None
 

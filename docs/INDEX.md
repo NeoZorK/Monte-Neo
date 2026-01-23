@@ -7,12 +7,14 @@ A simplified guide to the Monte-Neo file structure.
 ### Root Configuration
 - README.md - Main project documentation
 - pyproject.toml - Python package configuration and dependencies
+- uv.lock - Lockfile for consistent environment management
 - LICENSE - MIT License
 - .gitignore - Git exclusion rules
 - .env.example - Environment variables template
 
 ### Project Information (docs/project/)
 - docs/project/project-idea.md - The philosophy and vision behind Monte-Neo
+- docs/project/vision.md - Original design goals and core principles
 - docs/project/project-structure.md - Deep dive into physical directory layout
 - docs/project/features.md - Detailed overview of framework features
 - docs/project/ROADMAP.md - Development roadmap and milestones
@@ -32,11 +34,13 @@ A simplified guide to the Monte-Neo file structure.
 - docs/development/api-documentation.md - Guide to API and code documentation
 - docs/development/CLAUDE.md - AI assistant guide and coding conventions
 
-### Guides (docs/guides/)
+### Guides & Examples (docs/guides/, docs/examples/)
 - docs/guides/quick-start.md - 3-step guide to get started
+- docs/examples/README.md - Standalone script examples (Placeholder)
+- docs/api/README.md - API reference (Placeholder)
 
 ### Docker (docker/)
-- docker/Dockerfile - Multi-stage Docker build
+- docker/Dockerfile - Multi-stage Docker build using uv
 - docker/docker-compose.yml - Docker Compose service definitions
 
 ### Source Code (src/monte_neo/)
@@ -100,8 +104,7 @@ A simplified guide to the Monte-Neo file structure.
 - tests/conftest.py - Shared pytest fixtures
 - tests/unit/ - Targeted unit tests for all modules
 - tests/integration/ - End-to-end workflow tests
+- tests/stress/ - Memory and CPU performance stress tests
 
 ### Utility Scripts (scripts/)
-- scripts/download_data.py - Data fetching utility
-- scripts/benchmark.py - Performance measurements
-- scripts/setup_env.sh - Environment initialization
+- scripts/run_full_test_suite.sh - Master verification script (uv + docker)

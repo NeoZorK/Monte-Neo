@@ -55,7 +55,7 @@ class ChartGenerator:
     ) -> None:
         """Plot with mplfinance."""
         import mplfinance as mpf
-        
+
         # Prepare data
         df = data.copy()
         if not isinstance(df.index, pd.DatetimeIndex):
@@ -82,7 +82,7 @@ class ChartGenerator:
     ) -> None:
         """Plot in terminal with plotext."""
         import plotext as plt
-        
+
         plt.clear_figure()
         plt.title(title)
         plt.plot(data["close"].values, label="Close")
@@ -102,29 +102,29 @@ class ChartGenerator:
             title: Chart title.
         """
         import plotext as plt
-        
+
         plt.clear_figure()
         plt.title(title)
-        
+
         # Price
         close = data["close"].values
         plt.plot(close, label="Price")
-        
+
         # Entry signals
         if "signal" in signals.columns:
             entries = signals["signal"] == 1
             exits = signals["signal"] == -1
-            
-            entry_idx = entries[entries].index.tolist()
-            exit_idx = exits[exits].index.tolist()
-            
+
+            entries[entries].index.tolist()
+            exits[exits].index.tolist()
+
             # Mark entries and exits
             for i, (idx, is_entry) in enumerate(entries.items()):
                 if is_entry:
                     plt.scatter([i], [close[i]], marker="▲", color="green")
-            
+
             for i, (idx, is_exit) in enumerate(exits.items()):
                 if is_exit:
                     plt.scatter([i], [close[i]], marker="▼", color="red")
-        
+
         plt.show()
