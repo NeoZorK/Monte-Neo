@@ -134,9 +134,6 @@ class InteractiveMenu:
         self._selected_symbol = symbol
         self._selected_timeframe = timeframe
 
-        # Download with progress
-        console.print(f"\n[yellow]Downloading {symbol} {timeframe}...[/]")
-
         try:
             from datetime import datetime, timedelta
 
@@ -144,7 +141,11 @@ class InteractiveMenu:
             end_date = datetime.now()
             start_date = end_date - timedelta(days=days)
 
-            data = downloader.download(symbol, timeframe, start_date, end_date)
+            self.progress.start(100, f"Downloading {symbol}...")
+            data = downloader.download(
+                symbol, timeframe, start_date, end_date, self.progress.update
+            )
+            self.progress.stop()
             self.storage.save(data, symbol, timeframe)
 
             console.print(f"[green]✓ Downloaded {len(data)} candles[/]")

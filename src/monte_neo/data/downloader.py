@@ -6,6 +6,7 @@ Downloads OHLCV data from Binance API and saves in Parquet format.
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
@@ -82,6 +83,7 @@ class BinanceDownloader:
         timeframe: str,
         start_date: datetime | str,
         end_date: datetime | str | None = None,
+        progress_callback: Callable[[int, int, str], None] | None = None,
     ) -> pd.DataFrame:
         """Download OHLCV data from Binance.
 
@@ -105,16 +107,34 @@ class BinanceDownloader:
         if interval is None:
             raise ValueError(f"Invalid timeframe: {timeframe}")
 
-        logger.info(f"Downloading {symbol} {timeframe} from {start_date} to {end_date}")
+        if progress_callback:
+            progress_callback(0, 100, "Initializing...")
 
-        klines = self.client.get_historical_klines(
-            symbol=symbol,
-            interval=interval,
-            start_str=start_date.strftime("%d %b %Y"),
-            end_str=end_date.strftime("%d %b %Y"),
-        )
+        # Split into 30-day chunks for progress tracking
+        chunks = []
+        current_start = start_date
+        total_days = (end_date - start_date).days or 1
 
-        df = pd.DataFrame(klines, columns=self.COLUMNS)
+        while current_start < end_date:
+            current_end = min(current_start + timedelta(days=30), end_date)
+
+            logger.debug(f"Fetching chunk: {current_start} to {current_end}")
+            if progress_callback:
+                pct = int(((current_start - start_date).days / total_days) * 100)
+                progress_callback(
+                    pct, 100, f"Fetching {current_start.strftime('%Y-%m')}"
+                )
+
+            klines = self.client.get_historical_klines(
+                symbol=symbol,
+                interval=interval,
+                start_str=current_start.strftime("%d %b %Y %H:%M:%S"),
+                end_str=current_end.strftime("%d %b %Y %H:%M:%S"),
+            )
+            chunks.extend(klines)
+            current_start = current_end + timedelta(milliseconds=1)  # Avoid overlap
+
+        df = pd.DataFrame(chunks, columns=self.COLUMNS)
         df = self._process_dataframe(df)
 
         logger.info(f"Downloaded {len(df)} candles")

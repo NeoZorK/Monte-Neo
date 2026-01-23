@@ -151,7 +151,7 @@ class IndicatorGenerator:
                 logger.info(f"New best: {indicator.name} MC rate={mc_rate:.2%}")
 
             # Progress callback
-            if self._progress_callback and (i + 1) % 100 == 0:
+            if self._progress_callback:
                 status = f"Best MC rate: {best_mc_rate:.1%}"
                 self._progress_callback(i + 1, self.config.max_iterations, status)
 
