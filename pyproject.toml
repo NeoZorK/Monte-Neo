@@ -32,7 +32,7 @@ dependencies = [
     "rich>=13.0",
     "questionary>=2.0",
     "plotext>=5.2",
-    "mplfinance>=0.12",
+    "mplfinance",
     "pyyaml>=6.0",
     "python-dotenv>=1.0",
 ]

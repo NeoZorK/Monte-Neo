@@ -20,16 +20,17 @@ class TechnicalIndicators:
     @staticmethod
     def sma(data: pd.Series, period: int) -> pd.Series:
         """Simple Moving Average."""
-        return data.rolling(window=period).mean()
+        return data.rolling(window=int(period)).mean()
 
     @staticmethod
     def ema(data: pd.Series, period: int) -> pd.Series:
         """Exponential Moving Average."""
-        return data.ewm(span=period, adjust=False).mean()
+        return data.ewm(span=int(period), adjust=False).mean()
 
     @staticmethod
     def rsi(data: pd.Series, period: int = 14) -> pd.Series:
         """Relative Strength Index."""
+        period = int(period)
         delta = data.diff()
         gain = (delta.where(delta > 0, 0)).rolling(period).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(period).mean()
@@ -45,10 +46,10 @@ class TechnicalIndicators:
         signal: int = 9,
     ) -> tuple[pd.Series, pd.Series, pd.Series]:
         """MACD indicator."""
-        fast_ema = data.ewm(span=fast, adjust=False).mean()
-        slow_ema = data.ewm(span=slow, adjust=False).mean()
+        fast_ema = data.ewm(span=int(fast), adjust=False).mean()
+        slow_ema = data.ewm(span=int(slow), adjust=False).mean()
         macd_line = fast_ema - slow_ema
-        signal_line = macd_line.ewm(span=signal, adjust=False).mean()
+        signal_line = macd_line.ewm(span=int(signal), adjust=False).mean()
         histogram = macd_line - signal_line
         return macd_line, signal_line, histogram
 
@@ -68,6 +69,7 @@ class TechnicalIndicators:
     @staticmethod
     def atr(data: pd.DataFrame, period: int = 14) -> pd.Series:
         """Average True Range."""
+        period = int(period)
         high = data["high"]
         low = data["low"]
         close = data["close"]
@@ -86,6 +88,7 @@ class TechnicalIndicators:
         d_period: int = 3,
     ) -> tuple[pd.Series, pd.Series]:
         """Stochastic Oscillator."""
+        k_period, d_period = int(k_period), int(d_period)
         low_min = data["low"].rolling(k_period).min()
         high_max = data["high"].rolling(k_period).max()
         

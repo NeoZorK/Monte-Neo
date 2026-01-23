@@ -191,6 +191,34 @@ class DataSampler:
         logger.info(f"Generated {n_samples} stratified samples")
         return samples
 
+    def inject_noise(
+        self,
+        data: pd.DataFrame,
+        noise_scale: float = 0.001,
+    ) -> pd.DataFrame:
+        """Inject random noise into price data.
+
+        Args:
+            data: Source DataFrame.
+            noise_scale: Scale of random noise (percentage).
+
+        Returns:
+            DataFrame with noisy prices.
+        """
+        noisy = data.copy()
+        
+        # Apply noise to close price
+        noise = self.rng.normal(0, noise_scale, len(data))
+        noisy["close"] = noisy["close"] * (1 + noise)
+        
+        # Adjust other prices to be consistent
+        noisy["open"] = noisy["open"] * (1 + self.rng.normal(0, noise_scale, len(data)))
+        noisy["high"] = noisy[["open", "close", "high"]].max(axis=1)
+        noisy["low"] = noisy[["open", "close", "low"]].min(axis=1)
+        
+        logger.debug(f"Injected noise with scale {noise_scale}")
+        return noisy
+
     def synthetic_data(
         self,
         data: pd.DataFrame,
