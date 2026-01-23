@@ -81,6 +81,7 @@ A simplified guide to the Monte-Neo file structure.
 - src/monte_neo/indicators/base.py - Abstract base indicator class
 - src/monte_neo/indicators/technical.py - Portfolio of technical indicators
 - src/monte_neo/indicators/custom.py - Build-your-own indicator builder
+- src/monte_neo/indicators/dynamic.py - Dynamic indicator with evolutionary generation
 
 #### Interface (cli/)
 - src/monte_neo/cli/__init__.py - CLI module exports
@@ -104,6 +105,7 @@ A simplified guide to the Monte-Neo file structure.
 ### Tests (tests/)
 - tests/conftest.py - Shared pytest fixtures
 - tests/unit/ - Targeted unit tests for all modules
+  - tests/unit/test_dynamic_indicator.py - Tests for dynamic code generation and evolution
 - tests/integration/ - End-to-end workflow tests
 - tests/stress/ - Memory and CPU performance stress tests
 
