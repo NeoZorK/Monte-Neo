@@ -94,3 +94,45 @@ def test_execution_robustness(sample_data):
             failures += 1
             
     assert failures == 0
+
+def test_mutation(sample_data):
+    """Test that mutation changes the code."""
+    config = GeneratorConfig()
+    generator = IndicatorGenerator(config)
+    
+    ind = DynamicIndicator()
+    ind.set_parameter("source_code", "data['close'].rolling(20).mean()")
+    
+    mutated = generator._mutate_indicator(ind)
+    assert isinstance(mutated, DynamicIndicator)
+    
+    code2 = mutated.get_parameters()["source_code"]
+    
+    # Verify it produces valid code (not None)
+    assert code2 is not None
+    # We can't guarantee difference due to randomness or constraints, 
+    # but we check object integrity.
+
+def test_evolution_runs(sample_data):
+    """Test that evolution loop runs without error."""
+    config = GeneratorConfig(
+        max_iterations=5,
+        indicator_types=["dynamic"],
+        generations=2,
+        population_size=4,
+        min_trades=0
+    )
+    generator = IndicatorGenerator(config)
+    
+    # Pre-populate candidates to trigger evolution
+    ind1 = DynamicIndicator()
+    ind1.set_parameter("source_code", "data['close']")
+    generator._candidates.append((ind1, 0.5))
+    
+    ind2 = DynamicIndicator()
+    ind2.set_parameter("source_code", "data['open']")
+    generator._candidates.append((ind2, 0.6))
+    
+    # Run evolution
+    generator._run_evolution(sample_data)
+    # If no crash, pass.

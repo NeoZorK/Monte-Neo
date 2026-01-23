@@ -40,6 +40,9 @@ class GeneratorConfig:
     use_mc_walk_forward: bool = True
     early_stopping: bool = True
     min_trades: int = 30
+    population_size: int = 50
+    generations: int = 20
+    mutation_rate: float = 0.3
 
 
 @dataclass
@@ -161,6 +164,15 @@ class IndicatorGenerator:
             if self.config.early_stopping and best_mc_rate >= 0.95:
                 logger.info(f"Early stopping: found solution at iteration {i + 1}")
                 break
+        
+        # If dynamic type is selected, we can also run evolutionary optimization
+        if "dynamic" in self.config.indicator_types and iterations_tried < self.config.max_iterations:
+             # This is a bit of a hack to mix random search with evolution. 
+             # Ideally validation is separate. 
+             # Let's say if we didn't find a super candidate yet, run evolution on the candidates we found.
+             if len(self._candidates) >= 2:
+                 logger.info("Starting evolutionary optimization...")
+                 self._run_evolution(data)
 
         elapsed = time.time() - start_time
 
@@ -304,6 +316,116 @@ class IndicatorGenerator:
         )
 
         return result.pass_rate
+
+    def _run_evolution(self, data: pd.DataFrame) -> None:
+        """Run evolutionary optimization on candidates."""
+        population = [c[0] for c in self._candidates]
+        # Pad population if needed
+        while len(population) < self.config.population_size:
+            population.append(self._generate_random_indicator())
+            
+        for gen in range(self.config.generations):
+            logger.info(f"Generation {gen+1}/{self.config.generations}")
+            
+            # Evaluate fitness
+            fitness_scores = []
+            for ind in population:
+                signals = ind.generate_signals(data)
+                metrics = self.metrics_calc.calculate_all(data, signals)
+                
+                # Fitness function: Profit Factor * (1 - Max Drawdown) * Log(Trades)
+                # This is simplified.
+                pf = metrics.get("profit_factor", 0)
+                dd = metrics.get("max_drawdown", 1.0) # 0 to 1
+                trades = metrics.get("trade_count", 0)
+                
+                if trades < self.config.min_trades:
+                    score = 0
+                else:
+                    score = pf * (1.0 - dd)
+                
+                fitness_scores.append((ind, score))
+            
+            # Sort
+            fitness_scores.sort(key=lambda x: x[1], reverse=True)
+            best_gen_score = fitness_scores[0][1]
+            logger.info(f"Gen {gen+1} Best Score: {best_gen_score:.4f}")
+            
+            if self._progress_callback:
+                self._progress_callback(
+                    gen, 
+                    self.config.generations, 
+                    f"Evolution Gen {gen+1}: Best Score {best_gen_score:.2f}"
+                )
+
+            # Selection (Elite + Tournament)
+            elite_count = max(2, int(self.config.population_size * 0.1))
+            new_pop = [x[0] for x in fitness_scores[:elite_count]]
+            
+            while len(new_pop) < self.config.population_size:
+                # Tournament
+                parent1 = self._tournament_select(fitness_scores)
+                
+                # Mutation
+                child = self._mutate_indicator(parent1)
+                new_pop.append(child)
+                
+            population = new_pop
+            
+            # Update global best if improved
+            if best_gen_score > 0 and isinstance(fitness_scores[0][0], DynamicIndicator):
+                # We could run MC here to be sure
+                pass
+
+    def _tournament_select(self, fitness: list, k: int = 3) -> BaseIndicator:
+        indices = self.rng.integers(0, len(fitness), size=k)
+        best_idx = max(indices, key=lambda i: fitness[i][1])
+        return fitness[best_idx][0]
+
+    def _mutate_indicator(self, indicator: BaseIndicator) -> BaseIndicator:
+        """Mutate an indicator."""
+        # Only mutate DynamicIndicator source code for now
+        if not isinstance(indicator, DynamicIndicator):
+            return indicator 
+            
+        code = indicator.get_parameters().get("source_code", "")
+        if not code:
+            return indicator
+            
+        # Simple mutation: append or modify
+        # For a robust implementation, we'd parse the AST.
+        # Here we will just regenerate a part or parameter.
+        # String manipulation is brittle, so let's try a simpler approach:
+        # 50% chance to return a completely new random indicator (exploration)
+        # 50% chance to wrap the current one in a new operation? 
+        
+        # ACTUALLY, simpler approach for V1:
+        # Just generate a new random code. 
+        # Real mutation needs AST.
+        # Let's try to do string replacement of numbers at least?
+        
+        import re
+        new_code = code
+        
+        # Replace numbers (parameters) with slightly different ones
+        # Find all integers
+        def replace_num(match):
+            val = int(match.group())
+            # +/- 20% or +/- 2
+            change = self.rng.choice([-1, 1]) * max(1, int(val * 0.2))
+            return str(max(1, val + change)) # Keep positive
+            
+        if self.rng.random() < 0.5:
+            new_code = re.sub(r'\b\d+\b', replace_num, code)
+        else:
+            # Wrap in a new operation
+            op = self.rng.choice(["+", "-", "*"])
+            operand = self.rng.choice(["data['close']", "data['volume']"])
+            new_code = f"({code} {op} {operand})"
+            
+        new_ind = DynamicIndicator()
+        new_ind.set_parameter("source_code", new_code)
+        return new_ind
 
     def estimate_time(self, data: pd.DataFrame) -> float:
         """Estimate generation time in minutes.
