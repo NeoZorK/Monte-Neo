@@ -1,29 +1,16 @@
-version: '3.8'
-
 services:
   monte-neo:
-    build: .
-    container_name: monte-neo
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: monte-neo
     volumes:
-      - ./data:/app/data
-      - ./config.yaml:/app/config.yaml:ro
+      - ../data:/app/data
+      - ../tests:/app/tests
     environment:
-      - BINANCE_API_KEY=${BINANCE_API_KEY:-}
-      - BINANCE_API_SECRET=${BINANCE_API_SECRET:-}
-      - MONTE_NEO_LOG_LEVEL=INFO
-      - MONTE_NEO_WORKERS=auto
+      - MONTE_NEO_DATA_DIR=/app/data
+      - TERM=xterm-256color
     stdin_open: true
     tty: true
-
-  # Interactive mode
-  monte-neo-interactive:
-    build: .
-    container_name: monte-neo-interactive
-    volumes:
-      - ./data:/app/data
-    environment:
-      - BINANCE_API_KEY=${BINANCE_API_KEY:-}
-      - BINANCE_API_SECRET=${BINANCE_API_SECRET:-}
-    stdin_open: true
-    tty: true
-    command: [ "--interactive" ]
+    entrypoint: /bin/bash
+    command: -c "sleep infinity"
