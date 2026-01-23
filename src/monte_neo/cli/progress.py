@@ -12,6 +12,7 @@ from rich.progress import (
     BarColumn,
     Progress,
     SpinnerColumn,
+    TaskID,
     TextColumn,
     TimeElapsedColumn,
     TimeRemainingColumn,
@@ -26,7 +27,7 @@ class ProgressTracker:
     def __init__(self) -> None:
         """Initialize tracker."""
         self._progress: Progress | None = None
-        self._task_id = None
+        self._task_id: TaskID | None = None
         self._start_time: float = 0
         self._total: int = 0
 

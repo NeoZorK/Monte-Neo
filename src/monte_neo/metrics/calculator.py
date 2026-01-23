@@ -127,7 +127,7 @@ class MetricsCalculator:
         Returns:
             List of TradeResult objects.
         """
-        trades = []
+        trades: list[TradeResult] = []
 
         if "signal" not in signals.columns:
             return trades

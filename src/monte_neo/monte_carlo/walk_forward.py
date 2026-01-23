@@ -206,7 +206,7 @@ class WalkForwardAnalyzer:
             return {}
 
         aggregated = {}
-        all_keys = set()
+        all_keys: set[str] = set()
         for m in metrics_list:
             all_keys.update(m.keys())
 

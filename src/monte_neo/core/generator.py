@@ -183,6 +183,7 @@ class IndicatorGenerator:
         """Generate a random indicator with random parameters."""
         ind_type = self.rng.choice(self.config.indicator_types)
 
+        indicator: BaseIndicator
         if ind_type == "sma":
             indicator = SMAIndicator()
         elif ind_type == "rsi":
