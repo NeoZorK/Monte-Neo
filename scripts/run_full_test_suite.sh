@@ -21,7 +21,7 @@ mkdir -p coverage_html
 
 # 2. Run Unit Tests with Coverage
 echo -e "\n${BLUE}[2/5] Running Unit Tests & Coverage...${NC}"
-PYTHONPATH=src pytest tests/unit/ --cov=src/monte_neo --cov-report=html:coverage_html --cov-report=term
+uv run pytest tests/unit/ --cov=src/monte_neo --cov-report=html:coverage_html --cov-report=term
 UNIT_STATUS=$?
 
 if [ $UNIT_STATUS -eq 0 ]; then
@@ -33,7 +33,7 @@ fi
 
 # 3. Run Integration Tests
 echo -e "\n${BLUE}[3/5] Running Integration Tests...${NC}"
-PYTHONPATH=src pytest tests/integration/
+uv run pytest tests/integration/
 INTEG_STATUS=$?
 
 if [ $INTEG_STATUS -eq 0 ]; then
@@ -45,7 +45,7 @@ fi
 
 # 4. Run Stress Tests
 echo -e "\n${BLUE}[4/5] Running Stress & Performance Tests...${NC}"
-PYTHONPATH=src pytest tests/stress/
+uv run pytest tests/stress/
 STRESS_STATUS=$?
 
 if [ $STRESS_STATUS -eq 0 ]; then
