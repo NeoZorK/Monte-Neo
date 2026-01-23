@@ -16,14 +16,15 @@ COPY README.md .
 COPY uv.lock .
 
 # Install dependencies
-RUN uv sync --frozen --no-dev --no-install-project
+RUN uv sync --frozen --no-install-project
 
-# Copy source code
+# Copy source code and tests
 COPY src/ src/
 COPY scripts/ scripts/
+COPY tests/ tests/
 
 # Install the project
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen
 
 # Create data directories
 RUN mkdir -p data/raw data/processed data/results
