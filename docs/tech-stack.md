@@ -1,0 +1,123 @@
+# tech-stack.md - Technology Stack
+
+## Core Language
+
+### Python 3.11+
+Primary language for all modules.
+
+**Why Python:**
+- Rich data science ecosystem (pandas, numpy)
+- Excellent for prototyping and iteration
+- Strong typing support (mypy)
+- Cross-platform
+
+### C++ (Optional Extensions)
+For performance-critical paths.
+
+**Planned C++ Modules:**
+- Hot loop metrics calculation
+- Monte Carlo simulation core
+- Using `pybind11` for Python bindings
+
+---
+
+## Dependencies
+
+### Data & Computation
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `numpy` | >=1.24 | Numerical computing |
+| `pandas` | >=2.0 | Data manipulation |
+| `pyarrow` | >=14.0 | Parquet I/O |
+| `numba` | >=0.58 | JIT compilation |
+
+### Trading & Finance
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `python-binance` | >=1.0.17 | Binance API |
+| `ta` | >=0.10 | Technical indicators |
+
+### CLI & Visualization
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `rich` | >=13.0 | Terminal formatting |
+| `questionary` | >=2.0 | Interactive prompts |
+| `plotext` | >=5.2 | Terminal charts |
+| `mplfinance` | >=0.12 | Candlestick charts |
+
+### Development
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `pytest` | >=7.4 | Testing |
+| `pytest-cov` | >=4.1 | Coverage |
+| `mypy` | >=1.5 | Type checking |
+| `ruff` | >=0.1 | Linting |
+| `black` | >=23.0 | Formatting |
+
+---
+
+## Platform Support
+
+### Primary
+- **macOS** (Apple Silicon & Intel)
+- **Linux** (Ubuntu 22.04+, Debian 12+)
+- **Windows** (10/11 with WSL2 or native)
+
+### Docker
+- **Base Image**: `python:3.11-slim`
+- **Headless Mode**: Full CLI without display
+- **Volume Mounts**: Data persistence
+
+---
+
+## Performance Targets
+
+| Operation | Target |
+|-----------|--------|
+| Data download (1 year) | < 30s |
+| Sample generation | < 5s |
+| 10,000 MC iterations | < 60s |
+| 100,000 MC iterations | < 10min |
+| Metrics calculation | < 100ms |
+
+---
+
+## Configuration
+
+### Environment Variables
+
+```bash
+# .env
+BINANCE_API_KEY=optional_for_public_data
+BINANCE_API_SECRET=optional_for_public_data
+MONTE_NEO_DATA_DIR=/path/to/data
+MONTE_NEO_LOG_LEVEL=INFO
+MONTE_NEO_WORKERS=auto  # or number
+```
+
+### Config File (YAML)
+
+```yaml
+# config.yaml
+data:
+  symbol: BTCUSDT
+  timeframe: 1h
+  source: binance
+
+metrics:
+  profit_factor: 2.0
+  max_drawdown: 0.20
+  sharpe_ratio: 1.0
+
+monte_carlo:
+  iterations: 100000
+  methods:
+    - shuffling
+    - noise
+    - sensitivity
+    - walk_forward
+```

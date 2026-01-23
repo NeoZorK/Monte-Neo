@@ -1,0 +1,72 @@
+# Monte-Neo
+
+🎲 **Monte Carlo Indicator Generator Framework**
+
+A professional Python framework for generating robust and profitable trading indicators using Monte Carlo simulation methods.
+
+## Features
+
+- 🎯 **Target-Based Generation**: Define metrics (Profit Factor, Sharpe, Max DD) and generate matching indicators
+- 🔀 **Monte Carlo Methods**: Shuffling, noise injection, sensitivity analysis (±10%), walk-forward
+- 📊 **Binance Integration**: Download OHLCV data in fast Parquet format
+- 🖥️ **Interactive CLI**: Arrow-key navigation, progress bars, color output
+- 🐳 **Docker Support**: Headless mode for server deployment
+- ⚡ **High Performance**: Parallel processing, optimized data handling
+
+## Quick Start
+
+```bash
+# Install
+pip install -e .
+
+# Run CLI
+python -m monte_neo
+
+# Or with Docker
+docker-compose up
+```
+
+## Workflow
+
+1. **Download Data** → Select symbol, timeframe, date range from Binance
+2. **Set Metrics** → Define target (e.g., Profit Factor > 2, Max DD < 20%)
+3. **Configure MC** → Select methods: shuffling, noise, sensitivity, walk-forward
+4. **Generate** → Run 100,000+ iterations to find robust indicator
+5. **Visualize** → View chart with entries, exits, and all metrics
+
+## Available Metrics
+
+| Metric | Target | Description |
+|--------|--------|-------------|
+| Winrate | 40-60% | Win percentage |
+| Profit Factor | > 2.0 | Gross profit / loss |
+| Sharpe Ratio | > 1.0 | Risk-adjusted return |
+| Sortino Ratio | > 1.5 | Downside-adjusted |
+| Max Drawdown | < 20% | Max capital decline |
+| Recovery Factor | > 2.0 | Profit / Max DD |
+| Calmar Ratio | > 0.5 | Annual / Max DD |
+
+## Project Structure
+
+```
+Monte-Neo/
+├── src/monte_neo/     # Main package
+│   ├── core/          # Generator engine
+│   ├── data/          # Binance downloader
+│   ├── monte_carlo/   # MC methods
+│   ├── metrics/       # Trading metrics
+│   ├── cli/           # Interactive CLI
+│   └── visualization/ # Charts
+├── tests/             # Unit & integration tests
+├── docs/              # Documentation
+└── scripts/           # Utility scripts
+```
+
+## Requirements
+
+- Python 3.11+
+- See `pyproject.toml` for dependencies
+
+## License
+
+MIT License - See [LICENSE](LICENSE)

@@ -1,0 +1,94 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "monte-neo"
+dynamic = ["version"]
+description = "Monte Carlo Indicator Generator Framework"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [
+    { name = "Monte-Neo Team" }
+]
+keywords = ["trading", "monte-carlo", "indicators", "backtesting"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+
+dependencies = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "pyarrow>=14.0",
+    "numba>=0.58",
+    "python-binance>=1.0.17",
+    "ta>=0.10",
+    "rich>=13.0",
+    "questionary>=2.0",
+    "plotext>=5.2",
+    "mplfinance>=0.12",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "pytest-asyncio>=0.21",
+    "mypy>=1.5",
+    "ruff>=0.1",
+    "black>=23.0",
+    "pre-commit>=3.4",
+]
+
+[project.scripts]
+monte-neo = "monte_neo.cli.app:main"
+
+[project.urls]
+Homepage = "https://github.com/neozork/Monte-Neo"
+Repository = "https://github.com/neozork/Monte-Neo"
+Documentation = "https://github.com/neozork/Monte-Neo/docs"
+
+[tool.hatch.version]
+path = "src/monte_neo/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/monte_neo"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-v --tb=short"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.black]
+target-version = ["py311"]
+line-length = 88
+
+[tool.coverage.run]
+source = ["src/monte_neo"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]
