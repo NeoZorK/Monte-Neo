@@ -28,11 +28,12 @@ def setup_logging(
     # Console handler
     try:
         from rich.logging import RichHandler
+        from monte_neo.utils.console import console as shared_console
         console_handler = RichHandler(
+            console=shared_console,
             rich_tracebacks=True,
             show_time=True,
             show_path=False,
-            # Use current level
         )
     except ImportError:
         console_handler = logging.StreamHandler(sys.stdout)

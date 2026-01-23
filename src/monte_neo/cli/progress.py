@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import time
 
-from rich.console import Console
 from rich.progress import (
     BarColumn,
     Progress,
@@ -18,7 +17,7 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 
-console = Console()
+from monte_neo.utils.console import console
 
 
 class ProgressTracker:
