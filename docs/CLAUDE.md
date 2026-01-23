@@ -37,7 +37,16 @@ docker-compose run monte-neo generate --config config.yaml
 3. **Docstrings** - Google style for all public APIs
 4. **Tests first** - Write tests before implementation
 
-## Coding Conventions
+## Versioning Strategy
+
+The project uses semantic versioning with a `v` prefix. Version increments follow a patch-level pattern for initial development: `v0.0.1` → `v0.0.2` → `v0.0.3`, etc.
+
+- **Primary version source**: `src/monte_neo/_version.py`
+- **How to increment**:
+  1. Update `__version__` string in `src/monte_neo/_version.py`.
+  2. The version will automatically propagate to `pyproject.toml`, CLI banner, and CLI `--version` output.
+  3. Tag the commit with the new version: `git tag v0.0.2`.
+
 
 ```python
 # Imports order

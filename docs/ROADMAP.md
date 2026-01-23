@@ -7,45 +7,45 @@
 - [x] Documentation (README, CLAUDE, INDEX)
 - [x] Python package setup
 
-### Phase 2: Data Layer 🔄
-- [ ] Binance API integration
-- [ ] Parquet storage
-- [ ] Sample generation (bootstrap, block)
+### Phase 2: Data Layer ✅
+- [x] Binance API integration
+- [x] Parquet storage
+- [x] Sample generation (bootstrap, block)
 
-### Phase 3: Monte Carlo Engine
-- [ ] Core simulation engine
-- [ ] Shuffling methods
-- [ ] Noise injection
-- [ ] Sensitivity analysis (±10%)
-- [ ] Walk-forward analysis
+### Phase 3: Monte Carlo Engine ✅
+- [x] Core simulation engine
+- [x] Shuffling methods
+- [x] Noise injection
+- [x] Sensitivity analysis (±10%)
+- [x] Walk-forward analysis
 
-### Phase 4: Metrics Engine
-- [ ] Base calculator
-- [ ] Profit Factor, Sharpe, Sortino
-- [ ] Drawdown metrics
-- [ ] Winrate & expectancy
+### Phase 4: Metrics Engine ✅
+- [x] Base calculator
+- [x] Profit Factor, Sharpe, Sortino
+- [x] Drawdown metrics
+- [x] Winrate & expectancy
 
-### Phase 5: Indicator Generator
-- [ ] Base indicator class
-- [ ] Technical indicators library
-- [ ] Parameter optimizer
-- [ ] Overfitting validator
+### Phase 5: Indicator Generator ✅
+- [x] Base indicator class
+- [x] Technical indicators library
+- [x] Parameter optimizer
+- [x] Overfitting validator
 
-### Phase 6: CLI Interface
-- [ ] Interactive menu (arrow keys)
-- [ ] Progress bar with ETA
-- [ ] Color output (rich)
+### Phase 6: CLI Interface ✅
+- [x] Interactive menu (arrow keys)
+- [x] Progress bar with ETA
+- [x] Color output (rich)
 
-### Phase 7: Visualization
-- [ ] Price charts
-- [ ] Entry/exit markers
-- [ ] Metrics dashboard
+### Phase 7: Visualization ✅
+- [x] Price charts
+- [x] Entry/exit markers
+- [x] Metrics dashboard
 
-### Phase 8: Docker & Deployment
-- [ ] Dockerfile
-- [ ] docker-compose
-- [ ] Headless mode
-- [ ] GitHub push
+### Phase 8: Docker & Deployment ✅
+- [x] Dockerfile
+- [x] docker-compose
+- [x] Headless mode
+- [x] GitHub push
 
 ---
 
@@ -77,6 +77,6 @@
 | Version | Target | Status |
 |---------|--------|--------|
 | 0.1.0 | Project setup | ✅ |
-| 0.5.0 | Core MC engine | 🔄 |
-| 0.8.0 | CLI complete | ⏳ |
-| 1.0.0 | Full release | ⏳ |
+| 0.5.0 | Core MC engine | ✅ |
+| 0.8.0 | CLI complete | ✅ |
+| 1.0.0 | Full release | ✅ |
