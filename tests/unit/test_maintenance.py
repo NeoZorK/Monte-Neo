@@ -39,7 +39,7 @@ def test_version_consistency():
     with open(version_file, encoding="utf-8") as f:
         content = f.read()
 
-    version_match = re.search(r'__version__ = "v(\d+\.\d+\.\d+)"', content)
+    version_match = re.search(r'__version__\s*=\s*["\']v(\d+\.\d+\.\d+)["\']', content)
     assert version_match, (
-        "Version must follow vX.X.X pattern in src/monte_neo/_version.py"
+        "Version must follow vX.X.X pattern (e.g., \"v0.0.1\") in src/monte_neo/_version.py"
     )

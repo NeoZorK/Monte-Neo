@@ -18,10 +18,11 @@ COPY uv.lock .
 # Install dependencies (including dev groups for testing)
 RUN uv sync --frozen --no-install-project --all-groups
 
-# Copy source code and tests
+# Copy source code, docs and tests
 COPY src/ src/
 COPY scripts/ scripts/
 COPY tests/ tests/
+COPY docs/ docs/
 
 # Install the project
 RUN uv sync --frozen --all-groups
