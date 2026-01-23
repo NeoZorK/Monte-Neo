@@ -162,11 +162,19 @@ class IndicatorGenerator:
 
         elapsed = time.time() - start_time
 
+        if self._progress_callback:
+            status = f"Best MC rate: {best_mc_rate:.1%} [Finishing...]"
+            self._progress_callback(self.config.max_iterations, self.config.max_iterations, status)
+
         # Get final metrics for best indicator
         final_metrics = {}
         if best_indicator:
             signals = best_indicator.generate_signals(data)
             final_metrics = self.metrics_calc.calculate_all(data, signals)
+
+        if self._progress_callback:
+            status = f"Best MC rate: {best_mc_rate:.1%} [Done]"
+            self._progress_callback(self.config.max_iterations, self.config.max_iterations, status)
 
         return GeneratorResult(
             success=best_mc_rate >= 0.80,

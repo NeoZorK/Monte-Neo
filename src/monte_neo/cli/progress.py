@@ -70,11 +70,14 @@ class ProgressTracker:
             status: Status message.
         """
         if self._progress and self._task_id is not None:
+            # Ensure we don't exceed 100% in display
+            val = min(current, total)
             self._progress.update(
                 self._task_id,
-                completed=current,
+                completed=val,
                 total=total,
                 status=status,
+                refresh=True if val >= total else False,
             )
 
     def stop(self) -> None:

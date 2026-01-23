@@ -134,8 +134,14 @@ class BinanceDownloader:
             chunks.extend(klines)
             current_start = current_end + timedelta(milliseconds=1)  # Avoid overlap
 
+        if progress_callback:
+            progress_callback(100, 100, "Processing...")
+
         df = pd.DataFrame(chunks, columns=self.COLUMNS)
         df = self._process_dataframe(df)
+
+        if progress_callback:
+            progress_callback(100, 100, "Done")
 
         logger.info(f"Downloaded {len(df)} candles")
         return df
