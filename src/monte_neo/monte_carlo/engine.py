@@ -109,7 +109,7 @@ class MonteCarloEngine:
         scenarios = self._generate_scenarios(data)
         total = len(scenarios)
 
-        logger.info(f"Running {total} Monte Carlo scenarios")
+        logger.debug(f"Running {total} Monte Carlo scenarios")
 
         for i, scenario_data in enumerate(scenarios):
             # Generate signals
@@ -137,7 +137,7 @@ class MonteCarloEngine:
         elapsed = time.time() - start_time
         pass_rate = passed_count / total if total > 0 else 0
 
-        logger.info(f"MC complete: {passed_count}/{total} passed ({pass_rate:.1%})")
+        logger.debug(f"MC complete: {passed_count}/{total} passed ({pass_rate:.1%})")
 
         return MCResult(
             passed=pass_rate >= 0.95,  # 95% pass rate required
