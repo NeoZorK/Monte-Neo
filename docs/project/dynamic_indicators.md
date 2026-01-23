@@ -7,9 +7,35 @@ Monte-Neo supports dynamic generation of trading indicators. Instead of relying 
 The core idea is to treat an indicator as a formula or a "gene" that transforms input data (OHLCV) into a signal.
 We use a genetic programming approach where:
 1.  **Genes** are random valid Python expressions.
-2.  **Fitness** is determined by the indicator's performance metrics (Profit Factor, Sharpe, etc.) and robustness (Monte Carlo validation).
-
-## Structure of a Dynamic Indicator
+10: 2.  **Fitness** is determined by the indicator's performance metrics (Profit Factor, Sharpe, etc.) and robustness (Monte Carlo validation).
+11: 
+12: ## How it Works
+13: 
+14: The dynamic generation process follows three main steps:
+15: 
+16: ### 1. Code Generation ("Genetics")
+17: The system randomly constructs a Python code string, similar to building with LEGO blocks. The components include:
+18: *   **Data**: `close`, `open`, `volume`, etc.
+19: *   **Math**: arithmetic operators (`+`, `-`, `*`, `/`).
+20: *   **Functions**: `rolling_mean`, `shift`, `diff`, etc.
+21: 
+22: *Example generated code:*
+23: ```python
+24: (data['close'] - data['close'].rolling(20).mean()) / data['volume']
+25: ```
+26: 
+27: ### 2. Safe Compilation
+28: The `DynamicIndicator` class takes this valid Python string and compiles it within a restricted environment. For security, it only has access to specific data arrays and mathematical functions, ensuring it cannot impact the host system.
+29: 
+30: ### 3. Evaluation & Optimization
+31: Once compiled, the indicator is treated like any standard indicator:
+32: *   **Signal Generation**: It produces buy/sell signals.
+33: *   **Backtesting**: Performance metrics are calculated.
+34: *   **Monte Carlo**: Robustness is verified against noise and shuffling.
+35: 
+36: If the generated indicator passes all tests, it is saved as a viable strategy candidate.
+37: 
+38: ## Structure of a Dynamic Indicator
 
 A dynamic indicator is defined by a **Source Code String**. This string is a valid Python expression that can be evaluated using `pandas` and `numpy`.
 

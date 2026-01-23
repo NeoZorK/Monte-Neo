@@ -17,6 +17,7 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/vision.md - Original design goals and core principles
 - docs/project/project-structure.md - Deep dive into physical directory layout
 - docs/project/features.md - Detailed overview of framework features
+- docs/project/dynamic_indicators.md - Explanation of dynamic indicator generation
 - docs/project/ROADMAP.md - Development roadmap and milestones
 - docs/project/tech-stack.md - Technology stack and performance targets
 
