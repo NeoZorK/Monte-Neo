@@ -46,11 +46,11 @@ class DataShuffler:
         for _ in range(n_samples):
             # Shuffle returns
             shuffled_returns = self.rng.permutation(returns)
-            
+
             # Reconstruct prices
             initial_price = data["close"].iloc[0]
             new_prices = initial_price * np.cumprod(1 + shuffled_returns)
-            
+
             # Create shuffled OHLCV
             sample = self._reconstruct_ohlcv(data, new_prices)
             samples.append(sample)
@@ -87,19 +87,19 @@ class DataShuffler:
             # Create block indices
             block_indices = list(range(n_blocks))
             self.rng.shuffle(block_indices)
-            
+
             # Collect shuffled blocks
             parts = []
             for block_idx in block_indices:
                 start = block_idx * block_size
                 end = start + block_size
                 parts.append(data.iloc[start:end])
-            
+
             # Handle remainder
             remainder_start = n_blocks * block_size
             if remainder_start < n:
                 parts.append(data.iloc[remainder_start:])
-            
+
             sample = pd.concat(parts, ignore_index=True)
             samples.append(sample)
 
@@ -125,7 +125,7 @@ class DataShuffler:
             List of shuffled DataFrames.
         """
         samples = []
-        
+
         # Group by session
         if hasattr(data.index, 'date'):
             data = data.copy()
@@ -140,12 +140,14 @@ class DataShuffler:
 
         for _ in range(n_samples):
             shuffled_parts = []
-            
+
             for _, session_data in sessions:
                 # Shuffle within session
-                shuffled = session_data.sample(frac=1, random_state=int(self.rng.integers(1e9)))
+                shuffled = session_data.sample(
+                    frac=1, random_state=int(self.rng.integers(1e9))
+                )
                 shuffled_parts.append(shuffled)
-            
+
             sample = pd.concat(shuffled_parts)
             sample = sample.drop(columns=["session"])
             samples.append(sample)
@@ -178,11 +180,11 @@ class DataShuffler:
 
         for _ in range(n_samples):
             sample = data.copy()
-            
+
             for col in columns:
                 if col in sample.columns:
                     sample[col] = self.rng.permutation(sample[col].values)
-            
+
             samples.append(sample)
 
         logger.debug(f"Generated {n_samples} column-shuffled samples")

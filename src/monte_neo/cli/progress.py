@@ -6,16 +6,15 @@ Progress bars and ETA estimation.
 from __future__ import annotations
 
 import time
-from typing import Callable
 
 from rich.console import Console
 from rich.progress import (
-    Progress,
     BarColumn,
+    Progress,
+    SpinnerColumn,
     TextColumn,
     TimeElapsedColumn,
     TimeRemainingColumn,
-    SpinnerColumn,
 )
 
 console = Console()
@@ -40,7 +39,7 @@ class ProgressTracker:
         """
         self._total = total
         self._start_time = time.time()
-        
+
         self._progress = Progress(
             SpinnerColumn(),
             TextColumn("[bold blue]{task.description}"),
@@ -53,7 +52,7 @@ class ProgressTracker:
             TextColumn("[dim]{task.fields[status]}"),
             console=console,
         )
-        
+
         self._progress.start()
         self._task_id = self._progress.add_task(
             description,
@@ -95,14 +94,14 @@ class ProgressTracker:
         """
         if current == 0:
             return 0
-        
+
         elapsed = time.time() - self._start_time
         rate = current / elapsed
         remaining = self._total - current
-        
+
         if rate > 0:
             return (remaining / rate) / 60
-        
+
         return 0
 
 
@@ -125,9 +124,9 @@ def estimate_generation_time(
     base_time = 0.001  # seconds per iteration
     mc_factor = 1 + (mc_methods * 0.5)
     data_factor = data_size / 1000
-    
+
     total_seconds = base_time * iterations * mc_factor * data_factor
-    
+
     if total_seconds < 60:
         return f"~{int(total_seconds)} seconds"
     elif total_seconds < 3600:

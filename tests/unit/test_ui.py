@@ -1,25 +1,26 @@
 """Unit tests for UI components (CLI and Visualization)."""
 
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
+
 import pandas as pd
-import numpy as np
+
+from monte_neo.cli.progress import ProgressTracker
 from monte_neo.visualization.charts import ChartGenerator
 from monte_neo.visualization.metrics import MetricsDisplay
 from monte_neo.visualization.trades import TradeVisualizer
-from monte_neo.cli.progress import ProgressTracker
+
 
 def test_price_chart(sample_ohlcv):
     # Mock plotext and mplfinance
     with patch("plotext.show") as mock_show_terminal, \
          patch("plotext.candlestick") as mock_candle, \
          patch("mplfinance.plot") as mock_show_mpl:
-        
+
         chart = ChartGenerator()
         # Test drawing without signals
         chart.plot_candlestick(sample_ohlcv)
         assert mock_candle.called or mock_show_mpl.called
-        
+
         # Test with signals
         signals = pd.DataFrame({"signal": [0]*100}, index=sample_ohlcv.index)
         signals.iloc[5] = 1
@@ -47,15 +48,15 @@ def test_trade_visualizer(sample_ohlcv):
         signals = pd.DataFrame({"signal": [0]*100}, index=sample_ohlcv.index)
         signals.iloc[5, 0] = 1
         signals.iloc[10, 0] = -1
-        
+
         # Use protected method for testing
         trades = calc._extract_trades(sample_ohlcv, signals)
-        
+
         viz.show_trades_table(trades)
         assert mock_add_row.called
 
 def test_progress_tracker():
-    with patch("rich.progress.Progress.update") as mock_update:
+    with patch("rich.progress.Progress.update"):
         mgr = ProgressTracker()
         mgr.start(100)
         # Assumingmgr uses rich progress internally or similar

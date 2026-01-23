@@ -5,10 +5,10 @@ Build custom indicators from combinations of technical indicators.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, Callable
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
 
-import numpy as np
 import pandas as pd
 
 from monte_neo.indicators.base import BaseIndicator, IndicatorConfig
@@ -21,16 +21,16 @@ logger = get_logger(__name__)
 @dataclass
 class ConditionRule:
     """Single condition rule."""
-    
+
     indicator1: str
     operator: str  # >, <, ==, crosses_above, crosses_below
     indicator2: str | float
-    
+
     def evaluate(self, data: pd.DataFrame) -> pd.Series:
         """Evaluate the condition."""
         val1 = self._get_value(data, self.indicator1)
         val2 = self._get_value(data, self.indicator2)
-        
+
         if self.operator == ">":
             return val1 > val2
         elif self.operator == "<":
@@ -47,7 +47,7 @@ class ConditionRule:
             return (val1 < val2) & (val1.shift(1) >= val2.shift(1))
         else:
             raise ValueError(f"Unknown operator: {self.operator}")
-    
+
     def _get_value(self, data: pd.DataFrame, indicator: str | float) -> pd.Series:
         if isinstance(indicator, (int, float)):
             return pd.Series(indicator, index=data.index)
@@ -122,38 +122,42 @@ class CustomIndicator(BaseIndicator):
 
     def calculate(self, data: pd.DataFrame) -> pd.DataFrame:
         result = data.copy()
-        
+
         for name, func, params in self._components:
             # Update params from current parameters
             updated_params = {}
             for key, default in params.items():
                 param_key = f"{name}_{key}"
                 updated_params[key] = self._parameters.get(param_key, default)
-            
-            if func in (TechnicalIndicators.sma, TechnicalIndicators.ema, TechnicalIndicators.rsi):
+
+            if func in (
+                TechnicalIndicators.sma,
+                TechnicalIndicators.ema,
+                TechnicalIndicators.rsi,
+            ):
                 result[name] = func(result["close"], **updated_params)
-        
+
         return result
 
     def generate_signals(self, data: pd.DataFrame) -> pd.DataFrame:
         calc = self.calculate(data)
         signals = pd.DataFrame(index=data.index)
         signals["signal"] = 0
-        
+
         # Evaluate entry rules (all must be true)
         if self._entry_rules:
             entry_mask = pd.Series(True, index=data.index)
             for rule in self._entry_rules:
                 entry_mask &= rule.evaluate(calc)
             signals.loc[entry_mask, "signal"] = 1
-        
+
         # Evaluate exit rules
         if self._exit_rules:
             exit_mask = pd.Series(True, index=data.index)
             for rule in self._exit_rules:
                 exit_mask &= rule.evaluate(calc)
             signals.loc[exit_mask, "signal"] = -1
-        
+
         return signals
 
     def get_min_periods(self) -> int:

@@ -89,16 +89,18 @@ class DataSampler:
                 size=n_blocks,
                 replace=True,
             )
-            
+
             # Collect blocks
             blocks = []
             for start in block_starts:
                 blocks.append(data.iloc[start : start + block_size])
-            
+
             sample = pd.concat(blocks, ignore_index=True)
             samples.append(sample)
 
-        logger.info(f"Generated {n_samples} block bootstrap samples (block_size={block_size})")
+        logger.info(
+            f"Generated {n_samples} block bootstrap samples (block_size={block_size})"
+        )
         return samples
 
     def circular_block_bootstrap(
@@ -131,11 +133,11 @@ class DataSampler:
 
         for _ in range(n_samples):
             block_starts = self.rng.choice(n, size=n_blocks, replace=True)
-            
+
             blocks = []
             for start in block_starts:
                 blocks.append(circular_data.iloc[start : start + block_size])
-            
+
             sample = pd.concat(blocks, ignore_index=True)
             samples.append(sample)
 
@@ -183,7 +185,7 @@ class DataSampler:
                 n_from_strata = max(1, len(group) // n_strata)
                 sampled = group.sample(n=min(n_from_strata, len(group)), replace=True)
                 sampled_parts.append(sampled)
-            
+
             sample = pd.concat(sampled_parts, ignore_index=True).sort_index()
             sample = sample.drop(columns=["strata"])
             samples.append(sample)
@@ -206,16 +208,16 @@ class DataSampler:
             DataFrame with noisy prices.
         """
         noisy = data.copy()
-        
+
         # Apply noise to close price
         noise = self.rng.normal(0, noise_scale, len(data))
         noisy["close"] = noisy["close"] * (1 + noise)
-        
+
         # Adjust other prices to be consistent
         noisy["open"] = noisy["open"] * (1 + self.rng.normal(0, noise_scale, len(data)))
         noisy["high"] = noisy[["open", "close", "high"]].max(axis=1)
         noisy["low"] = noisy[["open", "close", "low"]].min(axis=1)
-        
+
         logger.debug(f"Injected noise with scale {noise_scale}")
         return noisy
 
@@ -237,21 +239,22 @@ class DataSampler:
         """
         samples = []
         returns = data["close"].pct_change().dropna()
-        
+
         mean_return = returns.mean()
         std_return = returns.std()
 
         for _ in range(n_samples):
             # Generate synthetic returns
             synthetic_returns = self.rng.normal(mean_return, std_return, len(data))
-            
+
             # Convert to prices
             initial_price = data["close"].iloc[0]
             synthetic_prices = initial_price * np.cumprod(1 + synthetic_returns)
-            
+
             # Create synthetic OHLCV
             sample = pd.DataFrame({
-                "open": synthetic_prices * (1 + self.rng.uniform(-0.002, 0.002, len(data))),
+                "open": synthetic_prices
+                * (1 + self.rng.uniform(-0.002, 0.002, len(data))),
                 "high": synthetic_prices * (1 + self.rng.uniform(0, 0.01, len(data))),
                 "low": synthetic_prices * (1 - self.rng.uniform(0, 0.01, len(data))),
                 "close": synthetic_prices,

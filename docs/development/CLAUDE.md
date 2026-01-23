@@ -35,10 +35,11 @@ docker-compose -f docker/docker-compose.yml exec monte-neo bash
 3. **Docstrings**: Google Style required.
 4. **UV-First**: All commands and environment management must use `uv`.
 5. **No Placeholders**: All implementation details must be functional.
+6. **Maintain Index**: Always update `docs/INDEX.md` when files change.
 
 ## Versioning Strategy
 Primary version source: `src/monte_neo/_version.py`.
-Pattern: `v0.0.1` -> `v0.0.2` -> `v0.1.0`.
+Pattern: `v0.0.1` -> `v0.0.2` -> `v0.0.3`.
 
 ## Coding Style
 - Imports: standard, third-party, local. `from __future__ import annotations` required.

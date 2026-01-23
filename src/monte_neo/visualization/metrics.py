@@ -100,12 +100,22 @@ class MetricsDisplay:
             before_val = before.get(key)
             after_val = after.get(key)
 
-            before_str = f"{before_val:.4f}" if isinstance(before_val, float) else str(before_val or "-")
-            after_str = f"{after_val:.4f}" if isinstance(after_val, float) else str(after_val or "-")
+            before_str = (
+                f"{before_val:.4f}"
+                if isinstance(before_val, float)
+                else str(before_val or "-")
+            )
+            after_str = (
+                f"{after_val:.4f}"
+                if isinstance(after_val, float)
+                else str(after_val or "-")
+            )
 
             # Calculate change
             change = ""
-            if isinstance(before_val, (int, float)) and isinstance(after_val, (int, float)):
+            if isinstance(before_val, (int, float)) and isinstance(
+                after_val, (int, float)
+            ):
                 diff = after_val - before_val
                 if diff > 0:
                     change = f"[green]+{diff:.4f}[/]"

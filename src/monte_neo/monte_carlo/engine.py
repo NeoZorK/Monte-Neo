@@ -6,16 +6,16 @@ Main engine for running Monte Carlo simulations with various methods.
 from __future__ import annotations
 
 import time
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 
-from monte_neo.monte_carlo.shuffler import DataShuffler
 from monte_neo.monte_carlo.noise import NoiseInjector
 from monte_neo.monte_carlo.sensitivity import SensitivityAnalyzer
+from monte_neo.monte_carlo.shuffler import DataShuffler
 from monte_neo.monte_carlo.walk_forward import WalkForwardAnalyzer
 from monte_neo.utils.logger import get_logger
 
@@ -29,7 +29,7 @@ logger = get_logger(__name__)
 @dataclass
 class MCConfig:
     """Monte Carlo configuration."""
-    
+
     iterations: int = 10000
     use_shuffling: bool = True
     use_noise: bool = True
@@ -44,7 +44,7 @@ class MCConfig:
 @dataclass
 class MCResult:
     """Monte Carlo simulation result."""
-    
+
     passed: bool
     pass_rate: float
     iterations_run: int
@@ -64,13 +64,13 @@ class MonteCarloEngine:
         """
         self.config = config or MCConfig()
         self.rng = np.random.default_rng(self.config.random_seed)
-        
+
         # Initialize sub-modules
         self.shuffler = DataShuffler(self.config.random_seed)
         self.noise_injector = NoiseInjector(self.config.random_seed)
         self.sensitivity = SensitivityAnalyzer()
         self.walk_forward = WalkForwardAnalyzer()
-        
+
         self._progress_callback: Callable[[int, int], None] | None = None
 
     def set_progress_callback(
@@ -114,16 +114,16 @@ class MonteCarloEngine:
         for i, scenario_data in enumerate(scenarios):
             # Generate signals
             signals = indicator.generate_signals(scenario_data)
-            
+
             # Calculate metrics
             metrics = metrics_calc.calculate_all(scenario_data, signals)
-            
+
             # Check if meets targets
             meets_targets = self._check_targets(metrics, target_metrics)
-            
+
             if meets_targets:
                 passed_count += 1
-            
+
             all_results.append({
                 "scenario_idx": i,
                 "passed": meets_targets,
@@ -161,12 +161,18 @@ class MonteCarloEngine:
 
         # Shuffled data
         if self.config.use_shuffling:
-            scenarios.extend(self.shuffler.shuffle_returns(data, self.config.iterations // 4))
-            scenarios.extend(self.shuffler.shuffle_blocks(data, self.config.iterations // 4))
+            scenarios.extend(
+                self.shuffler.shuffle_returns(data, self.config.iterations // 4)
+            )
+            scenarios.extend(
+                self.shuffler.shuffle_blocks(data, self.config.iterations // 4)
+            )
 
         # Noisy data
         if self.config.use_noise:
-            scenarios.extend(self.noise_injector.add_noise(data, self.config.iterations // 4))
+            scenarios.extend(
+                self.noise_injector.add_noise(data, self.config.iterations // 4)
+            )
 
         # Limit total scenarios
         if len(scenarios) > self.config.iterations:
@@ -191,9 +197,9 @@ class MonteCarloEngine:
         for metric_name, target_value in targets.items():
             if metric_name not in metrics:
                 continue
-            
+
             actual = metrics[metric_name]
-            
+
             # Handle metrics that should be less than target
             if metric_name in ["max_drawdown", "consecutive_losses"]:
                 if actual > target_value:
@@ -201,7 +207,7 @@ class MonteCarloEngine:
             else:
                 if actual < target_value:
                     return False
-        
+
         return True
 
     def _summarize_metrics(self, results: list[dict]) -> dict:
@@ -253,9 +259,9 @@ class MonteCarloEngine:
         # Run small sample
         sample_size = min(100, iterations)
         start = time.time()
-        
+
         for _ in range(sample_size):
             _ = data.copy()  # Simulate minimal work
-        
+
         elapsed = time.time() - start
         return (elapsed / sample_size) * iterations * 10  # 10x safety factor

@@ -31,14 +31,14 @@ class WinrateMetric:
 
         pnls = np.array(pnls)
         winners = np.sum(pnls > 0)
-        
+
         return float(winners / len(pnls))
 
     def expectancy(self, pnls: list[float] | np.ndarray) -> float:
         """Calculate expectancy (expected value per trade).
 
         Expectancy = (Winrate × Avg Win) - ((1 - Winrate) × Avg Loss)
-        
+
         Positive expectancy indicates profitable system.
 
         Args:
@@ -51,13 +51,13 @@ class WinrateMetric:
             return 0.0
 
         pnls = np.array(pnls)
-        
+
         winrate = self.calculate(pnls)
         avg_win = self.avg_win(pnls)
         avg_loss = self.avg_loss(pnls)
-        
+
         expectancy = (winrate * avg_win) - ((1 - winrate) * avg_loss)
-        
+
         return float(expectancy)
 
     def avg_win(self, pnls: list[float] | np.ndarray) -> float:
@@ -74,10 +74,10 @@ class WinrateMetric:
 
         pnls = np.array(pnls)
         winners = pnls[pnls > 0]
-        
+
         if len(winners) == 0:
             return 0.0
-        
+
         return float(np.mean(winners))
 
     def avg_loss(self, pnls: list[float] | np.ndarray) -> float:
@@ -94,10 +94,10 @@ class WinrateMetric:
 
         pnls = np.array(pnls)
         losers = pnls[pnls < 0]
-        
+
         if len(losers) == 0:
             return 0.0
-        
+
         return float(abs(np.mean(losers)))
 
     def win_loss_ratio(self, pnls: list[float] | np.ndarray) -> float:
@@ -113,10 +113,10 @@ class WinrateMetric:
         """
         avg_win = self.avg_win(pnls)
         avg_loss = self.avg_loss(pnls)
-        
+
         if avg_loss == 0:
             return float("inf") if avg_win > 0 else 0.0
-        
+
         return float(avg_win / avg_loss)
 
     def required_winrate(self, reward_risk_ratio: float) -> float:
@@ -130,7 +130,7 @@ class WinrateMetric:
         """
         if reward_risk_ratio <= 0:
             return 1.0
-        
+
         return 1 / (1 + reward_risk_ratio)
 
     def edge_ratio(self, pnls: list[float] | np.ndarray) -> float:
@@ -147,7 +147,7 @@ class WinrateMetric:
         winrate = self.calculate(pnls)
         rr_ratio = self.win_loss_ratio(pnls)
         required = self.required_winrate(rr_ratio)
-        
+
         return float(winrate - required)
 
     def get_trade_distribution(
@@ -171,7 +171,7 @@ class WinrateMetric:
             }
 
         pnls = np.array(pnls)
-        
+
         return {
             "count": len(pnls),
             "winners": int(np.sum(pnls > 0)),
@@ -195,11 +195,11 @@ class WinrateMetric:
         """
         if len(data) < 3:
             return 0.0
-        
+
         mean = np.mean(data)
         std = np.std(data)
-        
+
         if std == 0:
             return 0.0
-        
+
         return float(np.mean(((data - mean) / std) ** 3))

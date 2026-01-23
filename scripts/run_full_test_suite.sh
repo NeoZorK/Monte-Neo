@@ -1,6 +1,6 @@
 #!/bin/bash
 # Comprehensive Test Suite Runner for Monte-Neo
-# Version: 0.0.1
+# Version: v0.0.1
 
 set -e
 
@@ -15,13 +15,31 @@ echo -e "${BLUE}   Monte-Neo Full Test & Verification Suite    ${NC}"
 echo -e "${BLUE}===============================================${NC}"
 
 # 1. Clean previous artifacts
-echo -e "\n${BLUE}[1/5] Cleaning environment...${NC}"
-rm -rf .pytest_cache coverage_html .coverage
+echo -e "\n${BLUE}[1/7] Cleaning environment...${NC}"
+rm -rf .pytest_cache coverage_html .coverage .mypy_cache .ruff_cache
 mkdir -p coverage_html
 
-# 2. Run Unit Tests with Coverage
-echo -e "\n${BLUE}[2/5] Running Unit Tests & Coverage...${NC}"
-uv run pytest tests/unit/ --cov=src/monte_neo --cov-report=html:coverage_html --cov-report=term
+# 2. Linting (Ruff)
+echo -e "\n${BLUE}[2/7] Running Linter (Ruff)...${NC}"
+if uv run ruff check .; then
+    echo -e "${GREEN}✓ Linting Passed${NC}"
+else
+    echo -e "${RED}✗ Linting Failed${NC}"
+    exit 1
+fi
+
+# 3. Type Checking (Mypy)
+echo -e "\n${BLUE}[3/7] Running Type Checker (Mypy)...${NC}"
+if uv run mypy src/monte_neo; then
+    echo -e "${GREEN}✓ Type Checking Passed${NC}"
+else
+    echo -e "${RED}✗ Type Checking Failed${NC}"
+    exit 1
+fi
+
+# 4. Unit Tests with Coverage
+echo -e "\n${BLUE}[4/7] Running Unit Tests & Coverage...${NC}"
+uv run pytest tests/unit/ -n auto -W ignore --cov=src/monte_neo --cov-report=html:coverage_html --cov-report=term
 UNIT_STATUS=$?
 
 if [ $UNIT_STATUS -eq 0 ]; then
@@ -31,9 +49,9 @@ else
     exit 1
 fi
 
-# 3. Run Integration Tests
-echo -e "\n${BLUE}[3/5] Running Integration Tests...${NC}"
-uv run pytest tests/integration/
+# 5. Integration Tests
+echo -e "\n${BLUE}[5/7] Running Integration Tests...${NC}"
+uv run pytest tests/integration/ -W ignore
 INTEG_STATUS=$?
 
 if [ $INTEG_STATUS -eq 0 ]; then
@@ -43,9 +61,9 @@ else
     exit 1
 fi
 
-# 4. Run Stress Tests
-echo -e "\n${BLUE}[4/5] Running Stress & Performance Tests...${NC}"
-uv run pytest tests/stress/
+# 6. Stress Tests
+echo -e "\n${BLUE}[6/7] Running Stress & Performance Tests...${NC}"
+uv run pytest tests/stress/ -W ignore
 STRESS_STATUS=$?
 
 if [ $STRESS_STATUS -eq 0 ]; then
@@ -55,13 +73,13 @@ else
     exit 1
 fi
 
-# 5. Docker Build Verification (if Docker is available)
+# 7. Docker Build Verification (if Docker is available)
 if command -v docker &> /dev/null; then
-    echo -e "\n${BLUE}[5/5] Verifying Docker Build...${NC}"
+    echo -e "\n${BLUE}[7/7] Verifying Docker Build...${NC}"
     docker build -t monte-neo-test -f docker/Dockerfile .
     echo -e "${GREEN}✓ Docker Build Successfully${NC}"
 else
-    echo -e "\n${RED}[5/5] Docker not found, skipping build verification.${NC}"
+    echo -e "\n${RED}[7/7] Docker not found, skipping build verification.${NC}"
 fi
 
 echo -e "\n${BLUE}===============================================${NC}"

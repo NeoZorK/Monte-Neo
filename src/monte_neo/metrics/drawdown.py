@@ -19,7 +19,7 @@ class DrawdownMetric:
         """Calculate maximum drawdown.
 
         Max Drawdown = (Peak - Trough) / Peak
-        
+
         Args:
             equity: Equity curve values.
 
@@ -30,13 +30,13 @@ class DrawdownMetric:
             return 0.0
 
         equity = np.array(equity)
-        
+
         # Running maximum
         running_max = np.maximum.accumulate(equity)
-        
+
         # Drawdown at each point
         drawdowns = (running_max - equity) / running_max
-        
+
         return float(np.max(drawdowns))
 
     def calculate_avg(self, equity: list[float] | np.ndarray) -> float:
@@ -54,13 +54,13 @@ class DrawdownMetric:
         equity = np.array(equity)
         running_max = np.maximum.accumulate(equity)
         drawdowns = (running_max - equity) / running_max
-        
+
         # Only count non-zero drawdowns
         dd_values = drawdowns[drawdowns > 0]
-        
+
         if len(dd_values) == 0:
             return 0.0
-        
+
         return float(np.mean(dd_values))
 
     def calculate_duration(self, equity: list[float] | np.ndarray) -> int:
@@ -77,21 +77,21 @@ class DrawdownMetric:
 
         equity = np.array(equity)
         running_max = np.maximum.accumulate(equity)
-        
+
         # Find where we're in drawdown
         in_drawdown = equity < running_max
-        
+
         # Count consecutive drawdown periods
         max_duration = 0
         current_duration = 0
-        
+
         for is_dd in in_drawdown:
             if is_dd:
                 current_duration += 1
                 max_duration = max(max_duration, current_duration)
             else:
                 current_duration = 0
-        
+
         return max_duration
 
     def get_drawdown_curve(
@@ -112,7 +112,7 @@ class DrawdownMetric:
         equity = np.array(equity)
         running_max = np.maximum.accumulate(equity)
         drawdowns = (running_max - equity) / running_max
-        
+
         return drawdowns
 
     def get_underwater_curve(
@@ -149,13 +149,13 @@ class DrawdownMetric:
         equity = np.array(equity)
         running_max = np.maximum.accumulate(equity)
         drawdowns = (running_max - equity) / running_max
-        
+
         # Find drawdown periods
         periods = []
         in_dd = False
         start_idx = 0
         peak_val = 0
-        
+
         for i, (dd, eq, peak) in enumerate(zip(drawdowns, equity, running_max)):
             if dd > 0 and not in_dd:
                 # Start of drawdown
@@ -173,7 +173,7 @@ class DrawdownMetric:
                     "peak_value": float(peak_val),
                     "trough_value": float(np.min(equity[start_idx:i])),
                 })
-        
+
         # Handle ongoing drawdown
         if in_dd:
             periods.append({
@@ -184,7 +184,7 @@ class DrawdownMetric:
                 "peak_value": float(peak_val),
                 "trough_value": float(np.min(equity[start_idx:])),
             })
-        
+
         # Sort by max_drawdown and return worst N
         periods.sort(key=lambda x: x["max_drawdown"], reverse=True)
         return periods[:n_worst]

@@ -1,7 +1,0 @@
-1)       -  expereinced senior developer, architect, vibecoding specialist,      ,   )  INDEX.md (      ), CLAUDE.md, README.md,       , ROADMAP.md,    b)      src/, docs/, tests/, scripts/,      )      300       (   300 ,   ) 2) tech-stack.md :  python (       c++),  ( docker headless -    ) 3)  -  :       ,      . ..   ,   ,     ,   100 %   . 4)     -     ( , , (Sensitivity analysis:    ±10%   .),    ),   ,     5)      ,   6) workflows :   (    )  binance       samples (    ) ,    parquet  (  csv),     (   profit factor > 2     ,        ) ->    (      100000,         (,  , 10 %    ),  ) ->  ,       ,           -     ,            ,  .         .    ()   -          ? ( ) ,    (   )        ,   ,   ,  (sl,tp)  ,                .      -   ,     ,    . 7)  -     "cline cli, antropic claude code cli" -             enter (    ). 8)          "overfitting"  ,   rolling walk forward. 9)    ,       cli menu,      ( ) : "1. Winrate:  — 40-60%,    risk-reward ratio (RR). (:  RR = 1:2 ( 1%,  2%), winrate > 33%  .)  expectancy: (Winrate × Avg Win) - ((1 - Winrate) × Avg Loss) > 0.
-2. Profit Factor:  /  > 1.5 ( > 2).
-3. Sharpe Ratio: ( -  ) /  > 1 ( > 2).
-4. Sortino Ratio:  Sharpe,    downside volatility > 1.5.
-5. Max Drawdown: < 20-30%  .
-6. Recovery Factor:  / Max Drawdown > 2.
-7. Calmar Ratio:   / Max Drawdown > 0.5." 10)      ,  core -         . 11)    . brainstorm 12)    private git  push   github.com/neozork/Monte-Neo  13)  git ,   v0.0.1,     subcatalog (  docker)  .md       docs/ ,         .    -   (v0.0.1)      .        INDEX.md

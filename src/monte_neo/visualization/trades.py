@@ -4,12 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pandas as pd
 from rich.console import Console
 from rich.table import Table
 
 if TYPE_CHECKING:
-    from monte_neo.metrics.calculator import TradeResult
+    pass
 
 console = Console()
 
@@ -28,8 +27,10 @@ class TradeVisualizer:
             trades: List of TradeResult objects.
             limit: Maximum trades to show.
         """
-        table = Table(title=f"Trades (showing {min(limit, len(trades))} of {len(trades)})")
-        
+        table = Table(
+            title=f"Trades (showing {min(limit, len(trades))} of {len(trades)})"
+        )
+
         table.add_column("#", style="dim")
         table.add_column("Entry", style="cyan")
         table.add_column("Exit", style="cyan")
@@ -37,11 +38,11 @@ class TradeVisualizer:
         table.add_column("Entry Price", style="white")
         table.add_column("Exit Price", style="white")
         table.add_column("P&L %", style="green")
-        
+
         for i, trade in enumerate(trades[:limit]):
             pnl_style = "green" if trade.pnl_pct > 0 else "red"
             direction = "LONG" if trade.direction == 1 else "SHORT"
-            
+
             table.add_row(
                 str(i + 1),
                 str(trade.entry_idx),
@@ -51,7 +52,7 @@ class TradeVisualizer:
                 f"{trade.exit_price:.2f}",
                 f"[{pnl_style}]{trade.pnl_pct * 100:.2f}%[/]",
             )
-        
+
         console.print(table)
 
     def show_trade_summary(self, trades: list) -> None:
@@ -79,7 +80,7 @@ class TradeVisualizer:
         if winners:
             avg_win = sum(t.pnl_pct for t in winners) / len(winners)
             table.add_row("Avg Win", f"{avg_win * 100:.2f}%")
-        
+
         if losers:
             avg_loss = sum(t.pnl_pct for t in losers) / len(losers)
             table.add_row("Avg Loss", f"{avg_loss * 100:.2f}%")

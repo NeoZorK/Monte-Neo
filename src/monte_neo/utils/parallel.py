@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Callable, Iterable
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
-from typing import Any, Callable, Iterable
+from typing import Any
 
 from monte_neo.utils.logger import get_logger
 
@@ -45,19 +46,19 @@ class ParallelExecutor:
             List of results.
         """
         items = list(items)
-        
+
         if len(items) == 0:
             return []
 
         if len(items) == 1 or self.n_workers == 1:
             return [func(item) for item in items]
 
-        Executor = ProcessPoolExecutor if self.use_processes else ThreadPoolExecutor
+        executor_cls = ProcessPoolExecutor if self.use_processes else ThreadPoolExecutor
         results = []
 
-        with Executor(max_workers=self.n_workers) as executor:
+        with executor_cls(max_workers=self.n_workers) as executor:
             futures = {executor.submit(func, item): i for i, item in enumerate(items)}
-            
+
             for future in as_completed(futures):
                 idx = futures[future]
                 try:
@@ -87,7 +88,7 @@ class ParallelExecutor:
         """
         def wrapper(args):
             return func(*args)
-        
+
         return self.map(wrapper, args_list)
 
     def map_reduce(
@@ -109,7 +110,7 @@ class ParallelExecutor:
             Reduced result.
         """
         mapped = self.map(map_func, items)
-        
+
         result = initial
         for item in mapped:
             if item is not None:
@@ -117,5 +118,5 @@ class ParallelExecutor:
                     result = item
                 else:
                     result = reduce_func(result, item)
-        
+
         return result

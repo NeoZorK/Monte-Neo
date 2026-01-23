@@ -11,9 +11,9 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 
+from monte_neo.metrics.drawdown import DrawdownMetric
 from monte_neo.metrics.profit_factor import ProfitFactorMetric
 from monte_neo.metrics.sharpe import SharpeRatioMetric, SortinoRatioMetric
-from monte_neo.metrics.drawdown import DrawdownMetric
 from monte_neo.metrics.winrate import WinrateMetric
 from monte_neo.utils.logger import get_logger
 
@@ -26,7 +26,7 @@ logger = get_logger(__name__)
 @dataclass
 class TradeResult:
     """Single trade result."""
-    
+
     entry_idx: int
     exit_idx: int
     entry_price: float
@@ -46,7 +46,7 @@ class MetricsCalculator:
             risk_free_rate: Annual risk-free rate for Sharpe calculation.
         """
         self.risk_free_rate = risk_free_rate
-        
+
         # Initialize individual metric calculators
         self.profit_factor = ProfitFactorMetric()
         self.sharpe = SharpeRatioMetric(risk_free_rate)
@@ -70,7 +70,7 @@ class MetricsCalculator:
         """
         # Extract trades from signals
         trades = self._extract_trades(data, signals)
-        
+
         if not trades:
             return self._empty_metrics()
 
@@ -87,24 +87,24 @@ class MetricsCalculator:
             "profit_factor": self.profit_factor.calculate(pnls),
             "total_return": float(np.sum(pnl_pcts)),
             "avg_return": float(np.mean(pnl_pcts)) if pnl_pcts else 0,
-            
+
             # Risk-adjusted metrics
             "sharpe_ratio": self.sharpe.calculate(returns),
             "sortino_ratio": self.sortino.calculate(returns),
-            
+
             # Drawdown metrics
             "max_drawdown": self.drawdown.calculate_max(equity),
             "avg_drawdown": self.drawdown.calculate_avg(equity),
             "recovery_factor": self._recovery_factor(pnl_pcts, equity),
             "calmar_ratio": self._calmar_ratio(pnl_pcts, equity),
-            
+
             # Win/loss metrics
             "winrate": self.winrate.calculate(pnls),
             "expectancy": self.winrate.expectancy(pnls),
             "avg_win": self.winrate.avg_win(pnls),
             "avg_loss": self.winrate.avg_loss(pnls),
             "win_loss_ratio": self.winrate.win_loss_ratio(pnls),
-            
+
             # Trade statistics
             "trade_count": len(trades),
             "consecutive_wins": self._max_consecutive(pnls, True),
@@ -128,7 +128,7 @@ class MetricsCalculator:
             List of TradeResult objects.
         """
         trades = []
-        
+
         if "signal" not in signals.columns:
             return trades
 
@@ -203,10 +203,10 @@ class MetricsCalculator:
         """
         total_return = np.sum(pnl_pcts)
         max_dd = self.drawdown.calculate_max(equity)
-        
+
         if max_dd == 0:
             return 0.0
-        
+
         return float(total_return / max_dd)
 
     def _calmar_ratio(
@@ -226,14 +226,14 @@ class MetricsCalculator:
             Calmar ratio (annual_return / max_drawdown).
         """
         max_dd = self.drawdown.calculate_max(equity)
-        
+
         if max_dd == 0 or not pnl_pcts:
             return 0.0
 
         # Annualize returns (simplified)
         avg_return = np.mean(pnl_pcts)
         annual_return = avg_return * periods_per_year
-        
+
         return float(annual_return / max_dd)
 
     def _max_consecutive(self, pnls: list[float], wins: bool) -> int:

@@ -2,6 +2,7 @@
 
 from monte_neo.metrics.calculator import MetricsCalculator
 
+
 def test_metrics_calculator_init():
     calc = MetricsCalculator(risk_free_rate=0.02)
     assert calc.risk_free_rate == 0.02
@@ -9,7 +10,7 @@ def test_metrics_calculator_init():
 def test_calculate_all(sample_ohlcv, sample_signals):
     calc = MetricsCalculator()
     metrics = calc.calculate_all(sample_ohlcv, sample_signals)
-    
+
     assert "profit_factor" in metrics
     assert "sharpe_ratio" in metrics
     assert "max_drawdown" in metrics
