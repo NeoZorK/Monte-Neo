@@ -1,8 +1,10 @@
 # API Documentation
 
-## Source Code Documentation
+## Why is this document minimal?
 
-Monte-Neo uses Python docstrings (Google Style) for all public APIs. You can explore the core modules to understand the implementation.
+Currently, this document serves as a high-level guide to the core API components. The absolute source of truth is the **source code itself**, which is fully documented using Google Style docstrings.
+
+As the project matures into a stable v1.0, this document will be expanded with detailed tutorials and signature explanations.
 
 ### Key Classes
 
@@ -13,12 +15,14 @@ Monte-Neo uses Python docstrings (Google Style) for all public APIs. You can exp
 
 ### Generating Documentation
 
-To generate HTML documentation using Sphinx or pdoc, run:
+To generate comprehensive HTML documentation from the source code, we recommend using `pdoc3`:
 
 ```bash
-# Using pdoc
-pip install pdoc
-pdoc monte_neo -o docs/api/
+# Install tool
+uv add pdoc3 --dev
+
+# Generate docs
+uv run pdoc src/monte_neo -o docs/api/
 ```
 
 Documentation will be available in the `docs/api/` directory.

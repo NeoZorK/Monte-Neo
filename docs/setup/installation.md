@@ -2,12 +2,15 @@
 
 ## Standard Installation
 
-The recommended way to install Monte-Neo is from source:
+The recommended way to install Monte-Neo is using `uv`:
 
 ```bash
+# Clone the repository
 git clone https://github.com/NeoZorK/Monte-Neo.git
 cd Monte-Neo
-pip install -e .
+
+# Install dependencies and create environment
+uv sync
 ```
 
 ## Docker Installation
@@ -15,11 +18,11 @@ pip install -e .
 For an isolated environment, use Docker:
 
 ```bash
-# Build the image
-docker compose -f docker/docker-compose.yml build
+# Build and start the container
+docker-compose -f docker/docker-compose.yml up -d
 
 # Run interactive CLI
-docker compose -f docker/docker-compose.yml run monte-neo-interactive
+docker-compose -f docker/docker-compose.yml exec monte-neo monte-neo
 ```
 
 ## Requirements

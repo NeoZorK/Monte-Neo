@@ -1,74 +1,39 @@
 # ROADMAP.md - Development Roadmap
 
-## Version 1.0.0 - Core Framework (Current)
+## Version 0.0.1 - Initial Alpha (Current)
 
-### Phase 1: Foundation ✅
-- [x] Project structure
-- [x] Documentation (README, CLAUDE, INDEX)
-- [x] Python package setup
+- [x] Project architecture and folder structure
+- [x] Basic OHLCV downloader for Binance
+- [x] Initial Monte Carlo Engine (Shuffling, Noise)
+- [x] Basic Metrics (Profit Factor, Winrate)
+- [x] Interactive CLI Menu
 
-### Phase 2: Data Layer ✅
-- [x] Binance API integration
-- [x] Parquet storage
-- [x] Sample generation (bootstrap, block)
+## Version 0.1.0 - Robustness Core
 
-### Phase 3: Monte Carlo Engine ✅
-- [x] Core simulation engine
-- [x] Shuffling methods
-- [x] Noise injection
-- [x] Sensitivity analysis (±10%)
+- [x] Sensitivity analysis (Parameter ±10%)
 - [x] Walk-forward analysis
+- [x] Numba-accelerated metrics
+- [x] Unit and integration test suite (uv + pytest)
+- [x] Dockerization and docker-compose
 
-### Phase 4: Metrics Engine ✅
-- [x] Base calculator
-- [x] Profit Factor, Sharpe, Sortino
-- [x] Drawdown metrics
-- [x] Winrate & expectancy
+## Version 0.2.0 - Visualization & UX
 
-### Phase 5: Indicator Generator ✅
-- [x] Base indicator class
-- [x] Technical indicators library
-- [x] Parameter optimizer
-- [x] Overfitting validator
+- [x] Interactive terminal candlestick charts
+- [x] Trade list visualization (Rich tables)
+- [ ] Multi-thread optimization for UI
+- [ ] User-defined custom indicator templates
 
-### Phase 6: CLI Interface ✅
-- [x] Interactive menu (arrow keys)
-- [x] Progress bar with ETA
-- [x] Color output (rich)
+## Version 0.5.0 - Advanced Analytics
 
-### Phase 7: Visualization ✅
-- [x] Price charts
-- [x] Entry/exit markers
-- [x] Metrics dashboard
+- [ ] Correlation analysis between indicators
+- [ ] Regime detection (Trend vs Range)
+- [ ] Machine learning integration for candidate selection
 
-### Phase 8: Docker & Deployment ✅
-- [x] Dockerfile
-- [x] docker-compose
-- [x] Headless mode
-- [x] GitHub push
+## Version 1.0.0 - Full Release
 
----
-
-## Version 1.1.0 - Enhanced Analysis
-
-- [ ] Multi-asset portfolio testing
-- [ ] Correlation analysis
-- [ ] Regime detection
-- [ ] Machine learning integration
-
-## Version 1.2.0 - Advanced Features
-
-- [ ] C++ accelerated core
-- [ ] Real-time data streaming
-- [ ] Alert system
-- [ ] Web dashboard (optional)
-
-## Version 2.0.0 - Enterprise
-
-- [ ] Multi-exchange support
-- [ ] Cloud deployment (AWS/GCP)
-- [ ] API server mode
-- [ ] Advanced reporting
+- [ ] C++ accelerated core for 1M+ iterations
+- [ ] Real-time data streaming (WebSockets)
+- [ ] Cloud deployment templates (AWS/GCP)
 
 ---
 
@@ -76,7 +41,7 @@
 
 | Version | Target | Status |
 |---------|--------|--------|
-| 0.1.0 | Project setup | ✅ |
-| 0.5.0 | Core MC engine | ✅ |
-| 0.8.0 | CLI complete | ✅ |
-| 1.0.0 | Full release | ✅ |
+| v0.0.1 | Initial Alpha Setup | ✅ |
+| v0.1.0 | Robustness Core & Tests | ✅ |
+| v0.2.0 | Visualization & UX | 🔄 |
+| v1.0.0 | Full Release | 📅 |
