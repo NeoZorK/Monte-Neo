@@ -15,8 +15,8 @@ COPY pyproject.toml .
 COPY README.md .
 COPY uv.lock .
 
-# Install dependencies
-RUN uv sync --frozen --no-install-project
+# Install dependencies (including dev groups for testing)
+RUN uv sync --frozen --no-install-project --all-groups
 
 # Copy source code and tests
 COPY src/ src/
@@ -24,7 +24,7 @@ COPY scripts/ scripts/
 COPY tests/ tests/
 
 # Install the project
-RUN uv sync --frozen
+RUN uv sync --frozen --all-groups
 
 # Create data directories
 RUN mkdir -p data/raw data/processed data/results
