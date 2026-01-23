@@ -36,14 +36,14 @@ The framework is fully dockerized and supports both interactive and headless mod
 ### 1. Start Persistent Container
 This starts the container in the background and keeps it alive:
 ```bash
-docker-compose up -d
+docker-compose -f docker/docker-compose.yml up -d
 ```
 
 ### 2. Enter Container & Run CLI
 To interact with the generator inside Docker:
 ```bash
 # Enter the shell
-docker-compose exec monte-neo bash
+docker-compose -f docker/docker-compose.yml exec monte-neo bash
 
 # Run the interactive CLI from inside
 monte-neo --interactive
@@ -58,7 +58,7 @@ These directories are mapped to your local machine via volumes.
 ### 4. Cleanup
 To stop and remove the container:
 ```bash
-docker-compose down
+docker-compose -f docker/docker-compose.yml down
 ```
 
 ## Workflow
