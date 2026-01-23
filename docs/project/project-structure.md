@@ -22,4 +22,4 @@ Monte-Neo/
 └── scripts/           # Standalone utility scripts
 ```
 
-See [docs/INDEX.md](INDEX.md) for a detailed file-by-file description.
+See [docs/INDEX.md](../INDEX.md) for a detailed file-by-file description.
