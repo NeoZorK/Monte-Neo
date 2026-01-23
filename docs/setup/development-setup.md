@@ -3,8 +3,9 @@
 ## Prerequisites
 
 - Python 3.11 or higher
+- [uv](https://github.com/astral-sh/uv) (highly recommended)
 - Git
-- Docker (optional, for containerized development)
+- Docker (optional)
 
 ## Initial Setup
 
@@ -14,21 +15,17 @@
    cd Monte-Neo
    ```
 
-2. **Create a virtual environment**:
+2. **Sync the environment**:
+   Using `uv` is the fastest and most reliable way to set up the project:
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   uv sync
    ```
-
-3. **Install in editable mode**:
-   ```bash
-   pip install -e "."
-   pip install -e ".[dev]"
-   ```
+   *This command creates a virtual environment in `.venv` and installs all dependencies including development tools.*
 
 ## Development Workflow
 
-- **Branching**: Use `vX.Y.Z` branches for development.
-- **Linting**: Use `ruff` and `black` for code formatting.
-- **Testing**: Run `pytest` before submitting changes.
-- **Versioning**: Update `src/monte_neo/_version.py` for new releases.
+- **Testing**: Run tests frequently using `uv run pytest`.
+- **Parallel Testing**: Use `uv run pytest -n auto` for fast execution.
+- **Linting & Formatting**: `uv run ruff check` and `uv run black .`.
+- **Pre-commit**: It is recommended to install pre-commit hooks: `uv run pre-commit install`.
+

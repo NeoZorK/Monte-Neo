@@ -14,10 +14,12 @@ Primary language for all modules.
 ### C++ (Optional Extensions)
 For performance-critical paths.
 
-**Planned C++ Modules:**
-- Hot loop metrics calculation
-- Monte Carlo simulation core
-- Using `pybind11` for Python bindings
+---
+
+## Package Management
+
+### [uv](https://github.com/astral-sh/uv)
+Extremeley fast Python package manager and project manager. Replaces `pip`, `pip-tools`, and `venv`.
 
 ---
 
@@ -53,6 +55,7 @@ For performance-critical paths.
 | Package | Version | Purpose |
 |---------|---------|---------|
 | `pytest` | >=7.4 | Testing |
+| `pytest-xdist`| >=3.3 | Parallel testing (-n) |
 | `pytest-cov` | >=4.1 | Coverage |
 | `mypy` | >=1.5 | Type checking |
 | `ruff` | >=0.1 | Linting |

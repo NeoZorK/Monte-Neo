@@ -1,136 +1,51 @@
-# CLAUDE.md - AI Assistant Guide
+# CLAUDE.md - assistant guide
 
 ## Project Overview
-
-Monte-Neo is a Monte Carlo indicator generator framework for creating robust trading indicators. The core goal is to generate indicators that pass rigorous statistical tests for profitability and robustness.
+Monte-Neo is a Monte Carlo indicator generator framework.
 
 ## Key Commands
-
 ```bash
-# Run the CLI
-python -m monte_neo
+# Env setup
+uv sync
 
-# Run tests
-pytest tests/ -v --cov=src/monte_neo
+# Run CLI
+uv run monte-neo
 
-# Run specific module
-python -m monte_neo.data.downloader --symbol BTCUSDT --timeframe 1h
+# Run Full Test Suite (Recommended)
+./scripts/run_full_test_suite.sh
 
-# Docker headless
-docker-compose run monte-neo generate --config config.yaml
+# Run Tests manually
+uv run pytest tests -n auto -W ignore --cov=src/monte_neo
+
+# Docker
+docker-compose -f docker/docker-compose.yml up -d
+docker-compose -f docker/docker-compose.yml exec monte-neo bash
 ```
 
 ## Architecture
+- `src/monte_neo/core/`: Generator & optimizer
+- `src/monte_neo/data/`: Downloader & storage
+- `src/monte_neo/monte_carlo/`: Shuffling, noise, sensitivity, walk-forward
+- `src/monte_neo/metrics/`: Performance calculation modules
+- `src/monte_neo/cli/`: Interactive interface
 
-### Core Modules
-
-- **`src/monte_neo/core/`** - Indicator generator and optimizer
-- **`src/monte_neo/data/`** - Binance downloader, Parquet storage
-- **`src/monte_neo/monte_carlo/`** - MC engine, shuffling, noise, sensitivity
-- **`src/monte_neo/metrics/`** - Trading metrics calculator
-- **`src/monte_neo/cli/`** - Interactive terminal interface
-
-### Design Principles
-
-1. **Files < 300 lines** - Split larger modules
-2. **Type hints everywhere** - Full typing support
-3. **Docstrings** - Google style for all public APIs
-4. **Tests first** - Write tests before implementation
+## Design Principles
+1. **Files < 300 lines**: Split larger modules.
+2. **Type Hints**: Mandatory for all signatures.
+3. **Docstrings**: Google Style required.
+4. **UV-First**: All commands and environment management must use `uv`.
+5. **No Placeholders**: All implementation details must be functional.
 
 ## Versioning Strategy
+Primary version source: `src/monte_neo/_version.py`.
+Pattern: `v0.0.1` -> `v0.0.2` -> `v0.1.0`.
 
-The project uses semantic versioning with a `v` prefix. Version increments follow a patch-level pattern for initial development: `v0.0.1` → `v0.0.2` → `v0.0.3`, etc.
-
-- **Primary version source**: `src/monte_neo/_version.py`
-- **How to increment**:
-  1. Update `__version__` string in `src/monte_neo/_version.py`.
-  2. The version will automatically propagate to `pyproject.toml`, CLI banner, and CLI `--version` output.
-  3. Tag the commit with the new version: `git tag v0.0.2`.
-
-
-```python
-# Imports order
-from __future__ import annotations
-
-import stdlib
-from typing import TYPE_CHECKING
-
-import third_party
-import numpy as np
-import pandas as pd
-
-from monte_neo.module import local
-
-if TYPE_CHECKING:
-    from monte_neo.types import IndicatorConfig
-```
-
-### Naming
-
-- Classes: `PascalCase`
-- Functions/methods: `snake_case`
-- Constants: `UPPER_SNAKE_CASE`
-- Private: `_leading_underscore`
-
-### Error Handling
-
-```python
-from monte_neo.exceptions import (
-    DataDownloadError,
-    InsufficientDataError,
-    MetricNotMetError,
-)
-
-# Always specific exceptions, never bare except
-try:
-    data = download_data(symbol)
-except DataDownloadError as e:
-    logger.error(f"Failed to download: {e}")
-    raise
-```
-
-## Key Files to Know
-
-| File | Purpose |
-|------|---------|
-| `core/generator.py` | Main indicator generation logic |
-| `monte_carlo/engine.py` | Monte Carlo simulation runner |
-| `metrics/calculator.py` | All trading metrics |
-| `cli/app.py` | CLI entry point |
-| `cli/menu.py` | Interactive menu system |
+## Coding Style
+- Imports: standard, third-party, local. `from __future__ import annotations` required.
+- Naming: `PascalCase` for classes, `snake_case` for functions/variables.
+- Error Handling: Specific exceptions only.
 
 ## Testing
-
-```bash
-# Unit tests only
-pytest tests/unit/ -v
-
-# With coverage
-pytest --cov=src/monte_neo --cov-report=html
-
-# Specific test
-pytest tests/unit/test_metrics.py -v -k "test_profit_factor"
-```
-
-## Common Tasks
-
-### Adding a New Metric
-
-1. Create in `src/monte_neo/metrics/`
-2. Add to `MetricsCalculator` in `calculator.py`
-3. Add CLI option in `cli/menu.py`
-4. Write tests in `tests/unit/test_metrics.py`
-
-### Adding a Monte Carlo Method
-
-1. Create in `src/monte_neo/monte_carlo/`
-2. Register in `engine.py`
-3. Add checkbox in CLI menu
-4. Write tests
-
-## Performance Notes
-
-- Use `numba` JIT for hot paths in metrics
-- Parquet format for data storage (3-5x faster than CSV)
-- `multiprocessing` for MC iterations
-- Avoid pandas in tight loops
+- **Unit**: `tests/unit/`
+- **Integration**: `tests/integration/`
+- **Stress**: `tests/stress/` (Memory/CPU performance)

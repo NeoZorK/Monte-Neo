@@ -5,7 +5,7 @@ Get up and running with Monte-Neo in 3 steps.
 ## 1. Launch the CLI
 
 ```bash
-python -m monte_neo
+uv run monte-neo
 ```
 
 ## 2. Download Data

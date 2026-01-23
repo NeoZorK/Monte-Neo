@@ -14,7 +14,15 @@
 - **Interactive CLI**:
   - Arrow-key navigation for all configurations.
   - Real-time progress bars with ETA.
+  - Interactive candlestick charts directly in the terminal.
+- **Automated Verification**:
+  - Full test suite for algorithms and UI.
+  - Memory and CPU stress testing.
+- **Deployment**:
+  - Dockerized environment for reproducible results.
+  - Headless mode for server-side generation.
 - **Professional Metrics**:
   - Sharpe, Sortino, Calmar ratios.
   - Max Drawdown with duration analysis.
   - Expectancy and Recovery factor.
+  - Parallelized calculation for high efficiency.
