@@ -333,6 +333,8 @@ class InteractiveMenu:
         generator.set_progress_callback(self.progress.update)
 
         result = generator.generate(data)
+        import time
+        time.sleep(0.1) # Let the 100% state render
         self.progress.stop()
 
         # Show results
