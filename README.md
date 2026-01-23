@@ -46,7 +46,7 @@ To interact with the generator inside Docker:
 docker-compose -f docker/docker-compose.yml exec monte-neo bash
 
 # Run the interactive CLI from inside
-monte-neo --interactive
+uv run monte-neo
 ```
 
 ### 3. Persistent Data
