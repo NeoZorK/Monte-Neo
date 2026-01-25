@@ -165,7 +165,7 @@ class MonteCarloEngine:
         # Try GPU acceleration if many scenarios
         if len(scenarios) > 10 and self.config.use_noise:  # Good candidate for GPU
             try:
-                logger.info(f"Offloading {total} scenarios to GPU (MLX)...")
+                logger.debug(f"Offloading {total} scenarios to GPU (MLX)...")
                 gpu_results = self.gpu_engine.backtest_scenarios(indicator, scenarios)
 
                 for i, res in enumerate(gpu_results):

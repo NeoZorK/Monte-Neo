@@ -164,7 +164,7 @@ class IndicatorGenerator:
         batch_size = max(10, self.config.population_size)
         total_iterations = self.config.max_iterations
 
-        logger.info(f"Starting search with batch size {batch_size} (GPU-accelerated)")
+        logger.debug(f"Starting search with batch size {batch_size} (GPU-accelerated)")
         
         # Pre-generate MC scenarios for Common Random Numbers (fair comparison + speed)
         # We'll use a temporary engine to generate them once
@@ -178,15 +178,27 @@ class IndicatorGenerator:
                 use_walk_forward=self.config.use_mc_walk_forward,
                 use_block_bootstrap=self.config.use_mc_block_bootstrap,
             )
-            logger.info("Generating shared Monte Carlo scenarios...")
+            
+            # Update progress bar status
+            if self._progress_callback:
+                self._progress_callback(
+                    0, 
+                    total_iterations, 
+                    "Generating shared MC scenarios..."
+                )
+            
+            logger.debug("Generating shared Monte Carlo scenarios...")
             # We need to access the internal generation method
             temp_engine = MonteCarloEngine(temp_mc_config)
             mc_scenarios = temp_engine._generate_scenarios(data)
-            logger.info(f"Generated {len(mc_scenarios)} shared scenarios for this run")
+            logger.debug(f"Generated {len(mc_scenarios)} shared scenarios for this run")
         except Exception as e:
             logger.warning(f"Failed to pre-generate scenarios: {e}. Will generate per candidate.")
 
         try:
+            if self._progress_callback:
+                self._progress_callback(0, total_iterations, "Starting search...")
+
             for batch_start in range(0, total_iterations, batch_size):
                 actual_batch_size = min(batch_size, total_iterations - batch_start)
 
@@ -254,7 +266,7 @@ class IndicatorGenerator:
                         f"{ops_sec * 60:.0f} op/m | "
                         f"{ops_sec * 3600:.0f} op/h"
                     )
-                    status = f"Best MC rate: {best_mc_rate:.1%} | Scanning...\n{speed_str}"
+                    status = f"Best MC rate: {best_mc_rate:.1%} | {speed_str}"
                     self._progress_callback(
                         current_iter,
                         total_iterations,
