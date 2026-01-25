@@ -122,8 +122,22 @@ class MLXBacktestEngine:
             rets = (df["close"].values[1:] / df["close"].values[:-1]) - 1
             returns_list.append(rets.astype(np.float32))
 
+        # Handle variable lengths by padding with 0
+        if not returns_list:
+            return []
+            
+        max_len = max(len(r) for r in returns_list)
+        padded_returns = []
+        
+        for r in returns_list:
+            pad_width = max_len - len(r)
+            if pad_width > 0:
+                padded_returns.append(np.pad(r, (0, pad_width), "constant", constant_values=0))
+            else:
+                padded_returns.append(r)
+
         # Matrix: (S, T-1)
-        returns_matrix = mx.array(np.stack(returns_list))
+        returns_matrix = mx.array(np.stack(padded_returns))
 
         # 2. Get Signals (CPU for now, as indicators vary)
         # Note: If indicator is static, signals are same for many scenarios
@@ -132,7 +146,15 @@ class MLXBacktestEngine:
         signal_list = []
         for df in scenarios:
             sigs = indicator.generate_signals(df)
-            signal_list.append(sigs["signal"].to_numpy()[:-1].astype(np.float32))
+            # Signal length must match returns length (T-1)
+            sig_vals = sigs["signal"].to_numpy()[:-1].astype(np.float32)
+            
+            # Pad signals if needed
+            pad_width = max_len - len(sig_vals)
+            if pad_width > 0:
+                signal_list.append(np.pad(sig_vals, (0, pad_width), "constant", constant_values=0))
+            else:
+                signal_list.append(sig_vals)
 
         # Matrix: (S, T-1)
         signal_matrix = mx.array(np.stack(signal_list))
