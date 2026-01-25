@@ -107,29 +107,38 @@ class DynamicIndicator(BaseIndicator):
 
         For dynamic indicators, the 'source_code' might calculate a boolean signal directly,
         or a continuous value.
-
-        If the value is boolean:
-            True -> 1 (Buy)
-            False -> -1 (Sell) (or 0?)
-
-        If numerical, we might need a threshold. For now, let's assume the
-        generator produces a signal-like value or we use a wrapper.
-
-        Strategy:
-        If the result is boolean: True=Buy(1), False=Hold(0).
-        (This is simplistic, usually we want Buy/Sell/Hold).
-
-        Let's assume the generated code RETURNS a signal directly (-1, 0, 1) usually.
-        Or, we can have a conventions.
-
-        For this implementation, let's assume the source_code *returns a Series of signals*
-        OR a Series of values that are interpreted as >0 buy, <0 sell.
         """
-        calc = self.calculate(data)
+        self._compile_if_needed()
+        assert self._compiled_code is not None
+
+        try:
+            # Execute the compiled function
+            # Optimization: Call directly to avoid data.copy() in calculate()
+            indicator_values = self._compiled_code(data, np, pd)
+
+            # If it's a callable (like a method accidentally returned without parentheses)
+            if callable(indicator_values) and not isinstance(
+                indicator_values, (pd.Series, pd.DataFrame)
+            ):
+                try:
+                    indicator_values = indicator_values()
+                except Exception:
+                    indicator_values = np.nan
+
+            vals = indicator_values
+
+            # Ensure it returns a Series or DataFrame
+            if isinstance(vals, pd.DataFrame):
+                vals = vals.iloc[:, 0] if not vals.empty else 0
+            
+        except Exception as e:
+            # During genetic evolution, many invalid formulas are generated.
+            # We log these as DEBUG to avoid cluttering the output.
+            logger.warning(f"Runtime error in dynamic indicator: {e}")
+            vals = np.nan
+
         signals = pd.DataFrame(index=data.index)
         signals["signal"] = 0
-
-        vals = calc["dynamic"]
 
         # Ensure numeric
         vals = pd.to_numeric(vals, errors='coerce').fillna(0)
@@ -141,8 +150,17 @@ class DynamicIndicator(BaseIndicator):
             # Maybe not ideal.
         else:
             # If numeric, >0 is Buy, <0 is Sell
-            signals.loc[vals > 0, "signal"] = 1
-            signals.loc[vals < 0, "signal"] = -1
+            # Use numpy values for speed if available
+            if isinstance(vals, pd.Series):
+                v = vals.values
+                signals.loc[v > 0, "signal"] = 1
+                signals.loc[v < 0, "signal"] = -1
+            elif isinstance(vals, np.ndarray):
+                signals.loc[vals > 0, "signal"] = 1
+                signals.loc[vals < 0, "signal"] = -1
+            else:
+                signals.loc[vals > 0, "signal"] = 1
+                signals.loc[vals < 0, "signal"] = -1
 
         return signals
 

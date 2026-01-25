@@ -13,18 +13,15 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 
-from monte_neo.core.gpu_engine import MLXBacktestEngine
-from monte_neo.monte_carlo.noise import NoiseInjector
-from monte_neo.monte_carlo.sensitivity import SensitivityAnalyzer
-from monte_neo.monte_carlo.shuffler import DataShuffler
-from monte_neo.monte_carlo.walk_forward import WalkForwardAnalyzer
-from monte_neo.data.sampler import DataSampler
+from monte_neo.monte_carlo.workers import run_scenario_batch, run_single_scenario, init_worker_data
+from monte_neo.monte_carlo.scenarios import ScenarioBuilder
 from monte_neo.utils.logger import get_logger
 from monte_neo.utils.parallel import ParallelExecutor
 
 if TYPE_CHECKING:
     from monte_neo.indicators.base import BaseIndicator
     from monte_neo.metrics.calculator import MetricsCalculator
+    from monte_neo.core.gpu_engine import MLXBacktestEngine
 
 logger = get_logger(__name__)
 
@@ -43,79 +40,6 @@ class MCConfig:
     walk_forward_splits: int = 5
     n_workers: int | None = None
     random_seed: int | None = None
-
-
-def _run_scenario_batch(
-    scenarios: list[pd.DataFrame],
-    indicator: BaseIndicator,
-    metrics_calc: MetricsCalculator,
-    target_metrics: dict[str, float],
-) -> list[tuple[bool, dict[str, float]]]:
-    """Run a batch of scenarios in a single worker task.
-    
-    This reduces IPC overhead and allows reusing compiled indicator code.
-    """
-    results = []
-    required_metrics = list(target_metrics.keys())
-    
-    # Compile once per batch if needed
-    if hasattr(indicator, "_compile_if_needed"):
-        try:
-            indicator._compile_if_needed()
-        except Exception:
-            pass
-
-    for data in scenarios:
-        try:
-            signals = indicator.generate_signals(data)
-            metrics = metrics_calc.calculate_all(data, signals, required_metrics=required_metrics)
-
-            # Inline check
-            passed = True
-            for metric_name, target_value in target_metrics.items():
-                if metric_name not in metrics:
-                    continue
-                actual = metrics[metric_name]
-                if metric_name in ["max_drawdown", "consecutive_losses"]:
-                    if actual > target_value:
-                        passed = False
-                        break
-                else:
-                    if actual < target_value:
-                        passed = False
-                        break
-            results.append((passed, metrics))
-        except Exception:
-            results.append((False, {}))
-            
-    return results
-
-
-def _run_single_scenario(
-    scenario_data: pd.DataFrame,
-    indicator: BaseIndicator,
-    metrics_calc: MetricsCalculator,
-    target_metrics: dict[str, float],
-) -> tuple[bool, dict[str, float]]:
-    """Helper for parallel execution (legacy/single mode)."""
-    signals = indicator.generate_signals(scenario_data)
-    metrics = metrics_calc.calculate_all(scenario_data, signals, required_metrics=list(target_metrics.keys()))
-
-    # Inline check_targets to avoid dependency on self
-    passed = True
-    for metric_name, target_value in target_metrics.items():
-        if metric_name not in metrics:
-            continue
-        actual = metrics[metric_name]
-        if metric_name in ["max_drawdown", "consecutive_losses"]:
-            if actual > target_value:
-                passed = False
-                break
-        else:
-            if actual < target_value:
-                passed = False
-                break
-    return passed, metrics
 
 
 @dataclass
@@ -149,11 +73,9 @@ class MonteCarloEngine:
         self.rng = np.random.default_rng(self.config.random_seed)
 
         # Initialize sub-modules
-        self.shuffler = DataShuffler(self.config.random_seed)
-        self.noise_injector = NoiseInjector(self.config.random_seed)
-        self.sensitivity = SensitivityAnalyzer()
-        self.walk_forward = WalkForwardAnalyzer()
-        self.sampler = DataSampler(self.config.random_seed)
+        self.scenario_builder = ScenarioBuilder(self.config)
+        
+        from monte_neo.core.gpu_engine import MLXBacktestEngine
         self.gpu_engine = MLXBacktestEngine()
 
         self._progress_callback: Callable[[int, int], None] | None = None
@@ -191,7 +113,56 @@ class MonteCarloEngine:
         all_results = []
 
         # Generate test scenarios
-        scenarios = existing_scenarios if existing_scenarios is not None else self._generate_scenarios(data)
+        if self.config.use_block_bootstrap and existing_scenarios is None:
+            # Lazy generation for Block Bootstrap to avoid memory overhead
+            logger.debug(f"Running lazy Block Bootstrap with {self.config.iterations} iterations")
+            
+            # Ensure we have an executor with initialized data
+            executor = self.executor
+            should_shutdown = False
+            
+            if executor is None:
+                # Create a local executor with data initialization
+                executor = ParallelExecutor(
+                    n_workers=self.config.n_workers,
+                    initializer=init_worker_data,
+                    initargs=(data,)
+                )
+                should_shutdown = True
+                executor.__enter__()
+            
+            try:
+                # Use GPU engine's lazy method
+                results = self.gpu_engine.backtest_lazy_scenarios(
+                    indicator,
+                    self.config.iterations,
+                    executor=executor,
+                    block_size=None, # Auto-calculated
+                    base_seed=self.config.random_seed or 42
+                )
+                
+                # Transform results
+                passed_count = sum(1 for r in results if r.get("passed", False))
+                total = len(results)
+                
+                all_results = []
+                for i, res in enumerate(results):
+                    all_results.append({
+                        "scenario_idx": i,
+                        "passed": res.get("passed", False),
+                        "metrics": res.get("metrics", {})
+                    })
+                
+                if self._progress_callback:
+                    self._progress_callback(total, total)
+                    
+                return self._finalize_results(passed_count, total, all_results, start_time)
+                
+            finally:
+                if should_shutdown and executor:
+                    executor.__exit__(None, None, None)
+
+        scenarios = existing_scenarios if existing_scenarios is not None else self.scenario_builder.generate(data)
         total = len(scenarios)
 
         logger.debug(f"Running {total} Monte Carlo scenarios in parallel")
@@ -249,7 +220,7 @@ class MonteCarloEngine:
         # If scenarios are few or workers=1, run sequentially without batching overhead
         if total < 50 or n_workers == 1:
             worker_func = partial(
-                _run_single_scenario,
+                run_single_scenario,
                 indicator=indicator,
                 metrics_calc=metrics_calc,
                 target_metrics=target_metrics,
@@ -277,7 +248,7 @@ class MonteCarloEngine:
             ]
             
             batch_worker = partial(
-                _run_scenario_batch,
+                run_scenario_batch,
                 indicator=indicator,
                 metrics_calc=metrics_calc,
                 target_metrics=target_metrics,
@@ -323,105 +294,6 @@ class MonteCarloEngine:
             detailed_results=all_results,
         )
 
-    def _generate_scenarios(self, data: pd.DataFrame) -> list[pd.DataFrame]:
-        """Generate all test scenarios.
-
-        Args:
-            data: Base OHLCV data.
-
-        Returns:
-            List of scenario DataFrames.
-        """
-        scenarios = [data]  # Original data
-
-        # Shuffled data
-        if self.config.use_shuffling:
-            scenarios.extend(
-                self.shuffler.shuffle_returns(data, self.config.iterations // 4)
-            )
-            scenarios.extend(
-                self.shuffler.shuffle_blocks(data, self.config.iterations // 4)
-            )
-
-        # Noisy data
-        if self.config.use_noise:
-            scenarios.extend(
-                self.noise_injector.add_noise(data, self.config.iterations // 4)
-            )
-
-        # Walk-forward scenarios
-        if self.config.use_walk_forward:
-            wf_scenarios = self.walk_forward.generate_scenarios(
-                data,
-                n_splits=self.config.walk_forward_splits,
-            )
-            scenarios.extend(wf_scenarios)
-            
-        # Block Bootstrap scenarios
-        if self.config.use_block_bootstrap:
-            # Distribute iterations among enabled methods
-            n_methods = sum([
-                self.config.use_shuffling, 
-                self.config.use_noise, 
-                self.config.use_sensitivity,
-                self.config.use_block_bootstrap
-            ])
-            n_per_method = self.config.iterations // max(1, n_methods)
-            
-            bb_samples = self.sampler.block_bootstrap(data, n_samples=n_per_method)
-            # block_bootstrap returns list of DataFrames
-            # We need to wrap them as (data, indicator_copy)
-            # Actually _run_single_scenario expects just data? No, scenarios list.
-            # _generate_scenarios returns list of tuples/objects that _run_single_scenario accepts?
-            # Let's check _run_single_scenario signature.
-            # It takes (scenario_data, indicator, ...) usually.
-            # But wait, map(worker_func, scenarios).
-            # So 'scenarios' is a list of dataframes or arguments.
-            # Let's see what other methods return.
-            
-            # self.shuffler.shuffle_returns returns list[pd.DataFrame]
-            # self.noise_injector.inject_noise returns list[pd.DataFrame]
-            # self.walk_forward.generate_scenarios returns list[pd.DataFrame] (slices)
-            
-            # So scenarios is just list[pd.DataFrame]
-            scenarios.extend(bb_samples)
-
-        # Limit total scenarios
-        if len(scenarios) > self.config.iterations:
-            scenarios = scenarios[: self.config.iterations]
-
-        return scenarios
-
-    def _check_targets(
-        self,
-        metrics: dict[str, float],
-        targets: dict[str, float],
-    ) -> bool:
-        """Check if metrics meet targets.
-
-        Args:
-            metrics: Calculated metrics.
-            targets: Target values.
-
-        Returns:
-            True if all targets are met.
-        """
-        for metric_name, target_value in targets.items():
-            if metric_name not in metrics:
-                continue
-
-            actual = metrics[metric_name]
-
-            # Handle metrics that should be less than target
-            if metric_name in ["max_drawdown", "consecutive_losses"]:
-                if actual > target_value:
-                    return False
-            else:
-                if actual < target_value:
-                    return False
-
-        return True
-
     def _summarize_metrics(self, results: list[dict]) -> dict:
         """Summarize metrics across all scenarios.
 
@@ -457,23 +329,3 @@ class MonteCarloEngine:
             }
 
         return summary
-
-    def estimate_time(self, data: pd.DataFrame, iterations: int) -> float:
-        """Estimate time for simulation.
-
-        Args:
-            data: Sample data.
-            iterations: Number of iterations.
-
-        Returns:
-            Estimated time in seconds.
-        """
-        # Run small sample
-        sample_size = min(100, iterations)
-        start = time.time()
-
-        for _ in range(sample_size):
-            _ = data.copy()  # Simulate minimal work
-
-        elapsed = time.time() - start
-        return (elapsed / sample_size) * iterations * 10  # 10x safety factor

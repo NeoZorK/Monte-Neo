@@ -19,15 +19,21 @@ class ParallelExecutor:
         self,
         n_workers: int | None = None,
         use_processes: bool = True,
+        initializer: Callable | None = None,
+        initargs: tuple = (),
     ) -> None:
         """Initialize executor.
 
         Args:
             n_workers: Number of workers (None = CPU count).
             use_processes: Use processes (True) or threads (False).
+            initializer: Function to initialize each worker.
+            initargs: Arguments for initializer.
         """
         self.n_workers = n_workers or os.cpu_count() or 4
         self.use_processes = use_processes
+        self.initializer = initializer
+        self.initargs = initargs
         self._pool: ProcessPoolExecutor | ThreadPoolExecutor | None = None
 
     def __enter__(self) -> ParallelExecutor:
@@ -36,7 +42,12 @@ class ParallelExecutor:
             executor_cls = (
                 ProcessPoolExecutor if self.use_processes else ThreadPoolExecutor
             )
-            self._pool = executor_cls(max_workers=self.n_workers)
+            kwargs = {"max_workers": self.n_workers}
+            if self.initializer:
+                kwargs["initializer"] = self.initializer
+                kwargs["initargs"] = self.initargs
+            
+            self._pool = executor_cls(**kwargs)
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
