@@ -359,6 +359,7 @@ class InteractiveMenu:
 
         # Load data and run
         data = self.storage.load(symbol, timeframe)
+        self._last_data = data  # Store for plotting later
 
         config = GeneratorConfig(
             max_iterations=iterations,
@@ -429,13 +430,81 @@ class InteractiveMenu:
 
         # Ask to visualize
         if questionary.confirm("Show chart?", style=CUSTOM_STYLE).ask():
-            console.print("[yellow]Chart visualization coming soon...[/]")
+            from monte_neo.visualization.charts import ChartGenerator
+
+            # Generate signals for the best indicator
+            if result.best_indicator and hasattr(self, "_last_data"):
+                signals = result.best_indicator.generate_signals(self._last_data)
+                
+                chart_gen = ChartGenerator()
+                chart_gen.plot_with_signals(
+                    self._last_data, 
+                    signals, 
+                    title=f"Best Indicator: {result.best_indicator.name}"
+                )
+            else:
+                console.print("[red]⚠ No data or indicator available for plotting[/]")
 
         console.print()
 
     def _view_results(self) -> None:
         """View saved results."""
-        console.print("\n[yellow]Results viewer coming soon...[/]\n")
+        import os
+        import json
+        
+        results_dir = self.config.data_dir / "results"
+        if not results_dir.exists():
+            console.print("[yellow]⚠ No results directory found.[/]\n")
+            return
+            
+        files = list(results_dir.glob("*.json"))
+        if not files:
+            console.print("[yellow]⚠ No saved results found.[/]\n")
+            return
+            
+        # Sort by modification time (newest first)
+        files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+        
+        choices = [f.stem for f in files] + ["🔙 Back"]
+        
+        selected = questionary.select(
+            "Select result to view:",
+            choices=choices,
+            style=CUSTOM_STYLE,
+        ).ask()
+        
+        if not selected or selected == "🔙 Back":
+            return
+            
+        # Load and display result
+        file_path = results_dir / f"{selected}.json"
+        try:
+            with open(file_path, "r") as f:
+                data = json.load(f)
+                
+            console.print(f"\n[bold cyan]📄 Results for {selected}[/]")
+            
+            # Metrics table
+            if "metrics" in data:
+                table = Table(title="Metrics")
+                table.add_column("Metric", style="cyan")
+                table.add_column("Value", style="green")
+                
+                for k, v in data["metrics"].items():
+                    val = f"{v:.4f}" if isinstance(v, float) else str(v)
+                    table.add_row(k, val)
+                console.print(table)
+                
+            # Config info
+            if "config" in data:
+                console.print("\n[bold]Configuration:[/]")
+                console.print(f"Type: {data.get('type', 'Unknown')}")
+                console.print(f"Source Code: {data['config'].get('source_code', 'N/A')}")
+                
+        except Exception as e:
+            console.print(f"[red]Error loading result: {e}[/]")
+        
+        console.print()
 
     def _settings(self) -> None:
         """Settings menu for evolutionary parameters."""
