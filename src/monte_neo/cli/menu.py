@@ -433,14 +433,16 @@ class InteractiveMenu:
             from monte_neo.visualization.charts import ChartGenerator
 
             # Generate signals for the best indicator
-            if result.best_indicator and hasattr(self, "_last_data"):
-                signals = result.best_indicator.generate_signals(self._last_data)
+            best_ind = result.indicator if result.indicator else None
+            
+            if best_ind and hasattr(self, "_last_data"):
+                signals = best_ind.generate_signals(self._last_data)
                 
                 chart_gen = ChartGenerator()
                 chart_gen.plot_with_signals(
                     self._last_data, 
                     signals, 
-                    title=f"Best Indicator: {result.best_indicator.name}"
+                    title=f"Best Indicator: {best_ind.name}"
                 )
             else:
                 console.print("[red]⚠ No data or indicator available for plotting[/]")
