@@ -183,10 +183,19 @@ class IndicatorGenerator:
 
             # Progress callback
             if self._progress_callback:
+                current_iter = min(batch_start + batch_size, total_iterations)
+                elapsed = time.time() - start_time
+                ops_sec = current_iter / elapsed if elapsed > 0 else 0.0
+
                 # Simplified status update to avoid string processing overhead
-                status = f"Best MC rate: {best_mc_rate:.1%} | Scanning..."
+                speed_str = (
+                    f"Speed: {ops_sec:.1f} op/s | "
+                    f"{ops_sec * 60:.0f} op/m | "
+                    f"{ops_sec * 3600:.0f} op/h"
+                )
+                status = f"Best MC rate: {best_mc_rate:.1%} | Scanning...\n{speed_str}"
                 self._progress_callback(
-                    min(batch_start + batch_size, total_iterations),
+                    current_iter,
                     total_iterations,
                     status,
                 )
