@@ -197,6 +197,15 @@ class IndicatorGenerator:
                 )
                 break
 
+        # Ensure main progress is done
+        if self._progress_callback:
+            status = f"Best MC rate: {best_mc_rate:.1%} [Search Complete]"
+            self._progress_callback(
+                total_iterations,
+                total_iterations,
+                status,
+            )
+
         # If dynamic type is selected, we run evolutionary optimization at the end
         if "dynamic" in self.config.indicator_types and len(self._candidates) >= 2:
             logger.info("Starting evolutionary optimization on best candidates...")
@@ -375,8 +384,6 @@ class IndicatorGenerator:
             population.append(self._generate_random_indicator())
 
         for gen in range(self.config.generations):
-            logger.info(f"Generation {gen + 1}/{self.config.generations}")
-
             # Evaluate fitness
             fitness_scores = []
             for ind in population:
@@ -399,11 +406,10 @@ class IndicatorGenerator:
             # Sort
             fitness_scores.sort(key=lambda x: x[1], reverse=True)
             best_gen_score = fitness_scores[0][1]
-            logger.info(f"Gen {gen + 1} Best Score: {best_gen_score:.4f}")
 
             if self._progress_callback:
                 self._progress_callback(
-                    gen,
+                    gen + 1,
                     self.config.generations,
                     f"Evolution Gen {gen + 1}: Best Score {best_gen_score:.2f}",
                 )
