@@ -408,6 +408,7 @@ class InteractiveMenu:
             use_mc_noise="noise" in self._mc_methods,
             use_mc_sensitivity="sensitivity" in self._mc_methods,
             use_mc_walk_forward="walk_forward" in self._mc_methods,
+            use_mc_block_bootstrap="block_bootstrap" in self._mc_methods,
         )
 
         generator = IndicatorGenerator(config)

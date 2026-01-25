@@ -18,6 +18,7 @@ from monte_neo.monte_carlo.noise import NoiseInjector
 from monte_neo.monte_carlo.sensitivity import SensitivityAnalyzer
 from monte_neo.monte_carlo.shuffler import DataShuffler
 from monte_neo.monte_carlo.walk_forward import WalkForwardAnalyzer
+from monte_neo.data.sampler import DataSampler
 from monte_neo.utils.logger import get_logger
 from monte_neo.utils.parallel import ParallelExecutor
 
@@ -37,6 +38,7 @@ class MCConfig:
     use_noise: bool = True
     use_sensitivity: bool = True
     use_walk_forward: bool = True
+    use_block_bootstrap: bool = False
     sensitivity_range: float = 0.10  # ±10%
     walk_forward_splits: int = 5
     n_workers: int | None = None
@@ -99,6 +101,7 @@ class MonteCarloEngine:
         self.noise_injector = NoiseInjector(self.config.random_seed)
         self.sensitivity = SensitivityAnalyzer()
         self.walk_forward = WalkForwardAnalyzer()
+        self.sampler = DataSampler(self.config.random_seed)
         self.gpu_engine = MLXBacktestEngine()
 
         self._progress_callback: Callable[[int, int], None] | None = None
@@ -264,6 +267,43 @@ class MonteCarloEngine:
             scenarios.extend(
                 self.noise_injector.add_noise(data, self.config.iterations // 4)
             )
+
+        # Walk-forward scenarios
+        if self.config.use_walk_forward:
+            wf_scenarios = self.walk_forward.generate_scenarios(
+                data,
+                n_splits=self.config.walk_forward_splits,
+            )
+            scenarios.extend(wf_scenarios)
+            
+        # Block Bootstrap scenarios
+        if self.config.use_block_bootstrap:
+            # Distribute iterations among enabled methods
+            n_methods = sum([
+                self.config.use_shuffling, 
+                self.config.use_noise, 
+                self.config.use_sensitivity,
+                self.config.use_block_bootstrap
+            ])
+            n_per_method = self.config.iterations // max(1, n_methods)
+            
+            bb_samples = self.sampler.block_bootstrap(data, n_samples=n_per_method)
+            # block_bootstrap returns list of DataFrames
+            # We need to wrap them as (data, indicator_copy)
+            # Actually _run_single_scenario expects just data? No, scenarios list.
+            # _generate_scenarios returns list of tuples/objects that _run_single_scenario accepts?
+            # Let's check _run_single_scenario signature.
+            # It takes (scenario_data, indicator, ...) usually.
+            # But wait, map(worker_func, scenarios).
+            # So 'scenarios' is a list of dataframes or arguments.
+            # Let's see what other methods return.
+            
+            # self.shuffler.shuffle_returns returns list[pd.DataFrame]
+            # self.noise_injector.inject_noise returns list[pd.DataFrame]
+            # self.walk_forward.generate_scenarios returns list[pd.DataFrame] (slices)
+            
+            # So scenarios is just list[pd.DataFrame]
+            scenarios.extend(bb_samples)
 
         # Limit total scenarios
         if len(scenarios) > self.config.iterations:
