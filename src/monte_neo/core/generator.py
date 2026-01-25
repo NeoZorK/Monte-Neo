@@ -17,6 +17,7 @@ from monte_neo.indicators.base import BaseIndicator
 from monte_neo.indicators.dynamic import DynamicIndicator
 from monte_neo.indicators.technical import MACDIndicator, RSIIndicator, SMAIndicator
 from monte_neo.metrics.calculator import MetricsCalculator
+from monte_neo.core.gpu_engine import MLXBacktestEngine
 from monte_neo.monte_carlo.engine import MCConfig, MonteCarloEngine
 from monte_neo.utils.ast_utils import crossover_trees
 from monte_neo.utils.logger import get_logger
@@ -95,6 +96,10 @@ class IndicatorGenerator:
         self.config = config or GeneratorConfig()
         self.rng = np.random.default_rng()
         self.metrics_calc = MetricsCalculator()
+        self.gpu_engine = MLXBacktestEngine()
+
+        # State
+        self.population: list[BaseIndicator] = []
 
         self._progress_callback: Callable[[int, int, str], None] | None = None
         self._candidates: list[tuple[BaseIndicator, float]] = []
@@ -109,6 +114,22 @@ class IndicatorGenerator:
             callback: Function(current, total, status).
         """
         self._progress_callback = callback
+
+    def _run_mc_validation(self, data: pd.DataFrame, indicator: BaseIndicator) -> float:
+        """Run Monte Carlo validation for a single indicator."""
+        mc_config = MCConfig(
+            iterations=self.config.mc_iterations,
+            use_shuffling=self.config.use_mc_shuffling,
+            use_noise=self.config.use_mc_noise,
+            use_sensitivity=self.config.use_mc_sensitivity,
+            use_walk_forward=self.config.use_mc_walk_forward,
+        )
+        mc_engine = MonteCarloEngine(mc_config)
+        # Use existing progress callback if needed, but maybe not for inner MC
+        # to avoid spamming the main progress bar.
+        
+        result = mc_engine.run(data, indicator, self.metrics_calc, self.config.target_metrics)
+        return result.pass_rate
 
     def generate(self, data: pd.DataFrame) -> GeneratorResult:
         """Generate a robust indicator.
@@ -132,54 +153,62 @@ class IndicatorGenerator:
         batch_size = max(10, self.config.population_size)
         total_iterations = self.config.max_iterations
 
-        logger.info(f"Starting parallel search with batch size {batch_size}")
-
-        executor = ParallelExecutor()
+        logger.info(f"Starting search with batch size {batch_size} (GPU-accelerated)")
 
         for batch_start in range(0, total_iterations, batch_size):
             actual_batch_size = min(batch_size, total_iterations - batch_start)
 
-            # Run batch in parallel
-            # We pass necessary state to worker
-            worker_args = []
-            for _ in range(actual_batch_size):
-                worker_args.append(
-                    (
-                        self._generate_random_indicator(),
-                        data,
-                        self.metrics_calc,
-                        self.config.target_metrics,
-                        self.config.mc_iterations,
-                        self.config.use_mc_shuffling,
-                        self.config.use_mc_noise,
-                        self.config.use_mc_sensitivity,
-                        self.config.use_mc_walk_forward,
-                        self.config.min_trades,
-                    )
-                )
+            # Generate candidates batch
+            batch_indicators = [
+                self._generate_random_indicator() for _ in range(actual_batch_size)
+            ]
 
-            batch_results = executor.map(_search_worker, worker_args)
+            # GPU Backtest (Pre-filter)
+            try:
+                gpu_results = self.gpu_engine.backtest_batch(data, batch_indicators)
+            except Exception as e:
+                logger.warning(f"GPU Backtest failed: {e}. Skipping batch.")
+                gpu_results = []
 
             # Process results
-            for result in batch_results:
-                if result is None:
-                    continue
-
-                indicator, mc_rate = result
+            for i, result in enumerate(gpu_results):
                 iterations_tried += 1
+                indicator = batch_indicators[i]
+                metrics = result["metrics"]
 
-                if indicator is None:
+                # 1. GPU Pre-filter
+                if not self._meets_basic_targets(metrics):
                     continue
 
-                # Track candidates
-                if mc_rate > 0.0:  # Any passed MC is a candidate, even if weak
-                    self._candidates.append((indicator, mc_rate))
+                # 2. CPU Verification (Full Metrics)
+                try:
+                    signals = indicator.generate_signals(data)
+                    full_metrics = self.metrics_calc.calculate_all(data, signals)
 
-                # Update best
-                if mc_rate > best_mc_rate:
-                    best_mc_rate = mc_rate
-                    best_indicator = indicator
-                    logger.info(f"New best: {indicator.name} MC rate={mc_rate:.2%}")
+                    if not self._meets_basic_targets(full_metrics):
+                        continue
+
+                    if full_metrics.get("trade_count", 0) < self.config.min_trades:
+                        continue
+
+                    # 3. MC Validation
+                    mc_pass_rate = self._run_mc_validation(data, indicator)
+
+                    # Track candidates
+                    if mc_pass_rate > 0.0:
+                        self._candidates.append((indicator, mc_pass_rate))
+
+                    # Update best
+                    if mc_pass_rate > best_mc_rate:
+                        best_mc_rate = mc_pass_rate
+                        best_indicator = indicator
+                        logger.info(
+                            f"New best: {indicator.name} MC rate={mc_pass_rate:.2%}"
+                        )
+
+                except Exception as e:
+                    logger.warning(f"Error validating indicator: {e}")
+                    continue
 
             # Progress callback
             if self._progress_callback:
