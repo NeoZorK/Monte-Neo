@@ -195,7 +195,10 @@ class MonteCarloEngine:
         results = executor.map(worker_func, scenarios)
 
         # Process CPU results
-        for i, (meets_targets, metrics) in enumerate(results):
+        for i, result in enumerate(results):
+            if result is None:
+                continue
+            meets_targets, metrics = result
             if meets_targets:
                 passed_count += 1
             
