@@ -5,6 +5,7 @@ Common technical indicators for trading.
 
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 
 from monte_neo.indicators.base import BaseIndicator, IndicatorConfig
@@ -115,21 +116,34 @@ class SMAIndicator(BaseIndicator):
         return result
 
     def generate_signals(self, data: pd.DataFrame) -> pd.DataFrame:
-        calc = self.calculate(data)
+        # Optimized: Use numpy for speed
+        fast = TechnicalIndicators.sma(data["close"], self._parameters["fast_period"]).to_numpy()
+        slow = TechnicalIndicators.sma(data["close"], self._parameters["slow_period"]).to_numpy()
 
-        signals = pd.DataFrame(index=data.index)
-        signals["signal"] = 0
-
+        sig_vals = np.zeros(len(data), dtype=np.float32)
+        
         # Crossover signals
-        signals.loc[calc["sma_fast"] > calc["sma_slow"], "signal"] = 1
-        signals.loc[calc["sma_fast"] < calc["sma_slow"], "signal"] = -1
-
-        # Only signal on crossover
-        signals["signal"] = signals["signal"].diff().fillna(0)
-        signals.loc[signals["signal"] > 0, "signal"] = 1
-        signals.loc[signals["signal"] < 0, "signal"] = -1
-
-        return signals
+        # 1 where fast > slow, -1 where fast < slow
+        condition_buy = fast > slow
+        condition_sell = fast < slow
+        
+        sig_vals[condition_buy] = 1.0
+        sig_vals[condition_sell] = -1.0
+        
+        # Only signal on crossover (change from previous)
+        # diff = current - previous
+        # We want to capture the transition.
+        # shift right
+        sig_prev = np.roll(sig_vals, 1)
+        sig_prev[0] = 0 # Handle first element
+        
+        diff = sig_vals - sig_prev
+        
+        final_signals = np.zeros_like(sig_vals)
+        final_signals[diff > 0] = 1.0
+        final_signals[diff < 0] = -1.0
+        
+        return pd.DataFrame({"signal": final_signals}, index=data.index)
 
     def get_min_periods(self) -> int:
         return self._parameters["slow_period"]
@@ -152,16 +166,20 @@ class RSIIndicator(BaseIndicator):
         return result
 
     def generate_signals(self, data: pd.DataFrame) -> pd.DataFrame:
-        calc = self.calculate(data)
-
-        signals = pd.DataFrame(index=data.index)
-        signals["signal"] = 0
-
-        # Oversold = buy signal, overbought = sell signal
-        signals.loc[calc["rsi"] < self._parameters["oversold"], "signal"] = 1
-        signals.loc[calc["rsi"] > self._parameters["overbought"], "signal"] = -1
-
-        return signals
+        # Optimized: Inline calculation, use numpy
+        period = self._parameters["period"]
+        oversold = self._parameters["oversold"]
+        overbought = self._parameters["overbought"]
+        
+        rsi_series = TechnicalIndicators.rsi(data["close"], period)
+        rsi_vals = rsi_series.to_numpy()
+        
+        sig_vals = np.zeros(len(data), dtype=np.float32)
+        
+        sig_vals[rsi_vals < oversold] = 1.0
+        sig_vals[rsi_vals > overbought] = -1.0
+        
+        return pd.DataFrame({"signal": sig_vals}, index=data.index)
 
     def get_min_periods(self) -> int:
         return self._parameters["period"] + 1
@@ -190,21 +208,32 @@ class MACDIndicator(BaseIndicator):
         return result
 
     def generate_signals(self, data: pd.DataFrame) -> pd.DataFrame:
-        calc = self.calculate(data)
+        # Optimized: Use numpy for speed
+        _, _, hist = TechnicalIndicators.macd(
+            data["close"],
+            self._parameters["fast"],
+            self._parameters["slow"],
+            self._parameters["signal"],
+        )
+        hist_vals = hist.to_numpy()
 
-        signals = pd.DataFrame(index=data.index)
-        signals["signal"] = 0
-
+        sig_vals = np.zeros(len(data), dtype=np.float32)
+        
         # Histogram crossover
-        signals.loc[calc["macd_histogram"] > 0, "signal"] = 1
-        signals.loc[calc["macd_histogram"] < 0, "signal"] = -1
-
+        sig_vals[hist_vals > 0] = 1.0
+        sig_vals[hist_vals < 0] = -1.0
+        
         # Only signal on crossover
-        signals["signal"] = signals["signal"].diff().fillna(0)
-        signals.loc[signals["signal"] > 0, "signal"] = 1
-        signals.loc[signals["signal"] < 0, "signal"] = -1
-
-        return signals
+        sig_prev = np.roll(sig_vals, 1)
+        sig_prev[0] = 0
+        
+        diff = sig_vals - sig_prev
+        
+        final_signals = np.zeros_like(sig_vals)
+        final_signals[diff > 0] = 1.0
+        final_signals[diff < 0] = -1.0
+        
+        return pd.DataFrame({"signal": final_signals}, index=data.index)
 
     def get_min_periods(self) -> int:
         return self._parameters["slow"] + self._parameters["signal"]

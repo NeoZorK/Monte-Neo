@@ -42,11 +42,11 @@ class ParallelExecutor:
             executor_cls = (
                 ProcessPoolExecutor if self.use_processes else ThreadPoolExecutor
             )
-            kwargs = {"max_workers": self.n_workers}
+            kwargs: dict[str, Any] = {"max_workers": self.n_workers}
             if self.initializer:
                 kwargs["initializer"] = self.initializer
                 kwargs["initargs"] = self.initargs
-            
+
             self._pool = executor_cls(**kwargs)
         return self
 

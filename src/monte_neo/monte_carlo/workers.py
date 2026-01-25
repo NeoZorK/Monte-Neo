@@ -5,9 +5,10 @@ Independent worker functions for parallel execution.
 
 from __future__ import annotations
 
-import pandas as pd
-import numpy as np
 from typing import TYPE_CHECKING, Any
+
+import numpy as np
+import pandas as pd
 
 if TYPE_CHECKING:
     from monte_neo.indicators.base import BaseIndicator
@@ -21,6 +22,15 @@ SHARED_DATA: pd.DataFrame | None = None
 def _generate_signals_wrapper(args):
     """Helper for parallel signal generation."""
     indicator, df = args
+    # Use shared data if available and df is None
+    if df is None:
+        if SHARED_DATA is None:
+            # Fallback or error? For safety, return zeros or raise
+            # But in parallel execution exceptions might be swallowed or messy.
+            # We assume SHARED_DATA is set if df is None.
+            return np.zeros(0, dtype=np.float32)
+        df = SHARED_DATA
+        
     sigs = indicator.generate_signals(df)
     # Return numpy array to reduce IPC
     if isinstance(sigs, pd.DataFrame):
@@ -28,6 +38,31 @@ def _generate_signals_wrapper(args):
     elif isinstance(sigs, pd.Series):
         return sigs.to_numpy(dtype=np.float32)
     return np.array(sigs, dtype=np.float32)
+
+
+def run_indicator_batch(args: tuple[list[BaseIndicator], pd.DataFrame | None]) -> list[np.ndarray]:
+    """Run a batch of indicators on shared data."""
+    indicators, df = args
+    if df is None:
+        if SHARED_DATA is None:
+            return []
+        df = SHARED_DATA
+
+    results = []
+    for ind in indicators:
+        try:
+            sigs = ind.generate_signals(df)
+            if isinstance(sigs, pd.DataFrame):
+                res = sigs["signal"].to_numpy(dtype=np.float32)
+            elif isinstance(sigs, pd.Series):
+                res = sigs.to_numpy(dtype=np.float32)
+            else:
+                res = np.array(sigs, dtype=np.float32)
+            results.append(res)
+        except Exception:
+            # Return zeros on failure to keep alignment
+            results.append(np.zeros(len(df), dtype=np.float32))
+    return results
 
 
 def _generate_lazy_scenario_wrapper(args):
@@ -61,7 +96,7 @@ def run_scenario_batch(
     """
     results = []
     required_metrics = list(target_metrics.keys())
-    
+
     # Determine data source
     batch_data: list[pd.DataFrame]
     if scenarios is not None:
@@ -101,7 +136,7 @@ def run_scenario_batch(
             results.append((passed, metrics))
         except Exception:
             results.append((False, {}))
-            
+
     return results
 
 
@@ -113,7 +148,9 @@ def run_single_scenario(
 ) -> tuple[bool, dict[str, float]]:
     """Helper for parallel execution (legacy/single mode)."""
     signals = indicator.generate_signals(scenario_data)
-    metrics = metrics_calc.calculate_all(scenario_data, signals, required_metrics=list(target_metrics.keys()))
+    metrics = metrics_calc.calculate_all(
+        scenario_data, signals, required_metrics=list(target_metrics.keys())
+    )
 
     # Inline check_targets to avoid dependency on self
     passed = True
@@ -140,29 +177,29 @@ def run_block_bootstrap_scenario(
     """Generate block bootstrap scenario on fly and run signal generation."""
     if SHARED_DATA is None:
         return None
-    
+
     # Replicate block bootstrap logic for SINGLE scenario
     rng = np.random.default_rng(seed)
     n = len(SHARED_DATA)
     if block_size is None:
         block_size = max(1, int(np.sqrt(n)))
-    
+
     n_blocks = n // block_size
     indices_range = np.arange(block_size)
-    
+
     block_starts = rng.choice(n - block_size + 1, size=n_blocks, replace=True)
     full_indices = (block_starts[:, None] + indices_range).ravel()
-    
+
     # Use iloc for speed (returns copy by default for fancy indexing)
     scenario_data = SHARED_DATA.iloc[full_indices]
-    
+
     # Run indicator
     try:
         if hasattr(indicator, "_compile_if_needed"):
             indicator._compile_if_needed()
-        
+
         signals = indicator.generate_signals(scenario_data)
-        
+
         # Extract signal array to reduce IPC
         if isinstance(signals, pd.DataFrame):
             signal_arr = signals["signal"].values.astype(np.float32)
@@ -170,11 +207,11 @@ def run_block_bootstrap_scenario(
             signal_arr = signals.values.astype(np.float32)
         else:
             signal_arr = np.array(signals, dtype=np.float32)
-        
+
         # Calculate returns for GPU engine
         close_prices = scenario_data["close"].values
         returns = (close_prices[1:] / close_prices[:-1]) - 1
-        
+
         return signal_arr, returns.astype(np.float32)
     except Exception:
         return None

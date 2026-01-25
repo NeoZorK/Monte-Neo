@@ -188,7 +188,8 @@ class IndicatorGenerator:
                     gpu_results = self.gpu_engine.backtest_batch(
                         data, 
                         batch_indicators,
-                        executor=self.executor
+                        executor=self.executor,
+                        use_shared_data=True
                     )
                 except Exception as e:
                     logger.warning(f"GPU Backtest failed: {e}. Skipping batch.")
@@ -350,6 +351,12 @@ class IndicatorGenerator:
             elapsed_time=elapsed,
             candidates_found=len(self._candidates),
         )
+
+    def _mutate_indicator(self, indicator: BaseIndicator) -> BaseIndicator:
+        """Mutate an indicator (wrapper for EvolutionEngine)."""
+        # Create a temporary engine for mutation
+        evo = EvolutionEngine(self.config)
+        return evo._mutate_indicator(indicator)
 
     def _generate_random_indicator(self) -> BaseIndicator:
         """Generate a random indicator with random parameters."""
