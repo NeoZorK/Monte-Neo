@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 
+from monte_neo.utils.ast_utils import crossover_trees
 from monte_neo.indicators.base import BaseIndicator
 from monte_neo.indicators.dynamic import DynamicIndicator
 from monte_neo.indicators.technical import MACDIndicator, RSIIndicator, SMAIndicator
@@ -43,6 +44,7 @@ class GeneratorConfig:
     population_size: int = 50
     generations: int = 20
     mutation_rate: float = 0.3
+    crossover_rate: float = 0.7
 
 
 @dataclass
@@ -371,11 +373,15 @@ class IndicatorGenerator:
             new_pop = [x[0] for x in fitness_scores[:elite_count]]
             
             while len(new_pop) < self.config.population_size:
-                # Tournament
+                # Tournament selection for parents
                 parent1 = self._tournament_select(fitness_scores)
                 
-                # Mutation
-                child = self._mutate_indicator(parent1)
+                if self.rng.random() < self.config.crossover_rate:
+                    parent2 = self._tournament_select(fitness_scores)
+                    child = self._crossover_indicators(parent1, parent2)
+                else:
+                    child = self._mutate_indicator(parent1)
+                
                 new_pop.append(child)
                 
             population = new_pop
@@ -397,6 +403,21 @@ class IndicatorGenerator:
             
         final_scores.sort(key=lambda x: x[1], reverse=True)
         return final_scores[0][0] if final_scores[0][1] > 0 else None
+
+    def _crossover_indicators(self, p1: BaseIndicator, p2: BaseIndicator) -> BaseIndicator:
+        """Perform crossover between two indicators."""
+        if not isinstance(p1, DynamicIndicator) or not isinstance(p2, DynamicIndicator):
+            # If not dynamic, just return a mutated version of p1
+            return self._mutate_indicator(p1)
+
+        code1 = p1.get_parameters().get("source_code", "data['close']")
+        code2 = p2.get_parameters().get("source_code", "data['close']")
+
+        new_code = crossover_trees(code1, code2)
+
+        new_ind = DynamicIndicator()
+        new_ind.set_parameter("source_code", new_code)
+        return new_ind
 
     def _tournament_select(self, fitness: list, k: int = 3) -> BaseIndicator:
         indices = self.rng.integers(0, len(fitness), size=k)
