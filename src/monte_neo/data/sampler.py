@@ -56,7 +56,7 @@ class DataSampler:
             sampled_idx.sort()  # Keep time order
             samples.append(data.iloc[sampled_idx].copy())
 
-        logger.info(f"Generated {n_samples} bootstrap samples")
+        logger.debug(f"Generated {n_samples} bootstrap samples")
         return samples
 
     def block_bootstrap(
@@ -98,7 +98,7 @@ class DataSampler:
             sample = pd.concat(blocks, ignore_index=True)
             samples.append(sample)
 
-        logger.info(
+        logger.debug(
             f"Generated {n_samples} block bootstrap samples (block_size={block_size})"
         )
         return samples
@@ -141,7 +141,7 @@ class DataSampler:
             sample = pd.concat(blocks, ignore_index=True)
             samples.append(sample)
 
-        logger.info(f"Generated {n_samples} circular block bootstrap samples")
+        logger.debug(f"Generated {n_samples} circular block bootstrap samples")
         return samples
 
     def stratified_sample(
@@ -190,7 +190,7 @@ class DataSampler:
             sample = sample.drop(columns=["strata"])
             samples.append(sample)
 
-        logger.info(f"Generated {n_samples} stratified samples")
+        logger.debug(f"Generated {n_samples} stratified samples")
         return samples
 
     def inject_noise(
@@ -267,5 +267,5 @@ class DataSampler:
             )
             samples.append(sample)
 
-        logger.info(f"Generated {n_samples} synthetic samples")
+        logger.debug(f"Generated {n_samples} synthetic samples")
         return samples
