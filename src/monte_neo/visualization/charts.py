@@ -86,10 +86,13 @@ class ChartGenerator:
 
         plt.clear_figure()
         plt.title(title)
-        
+
         # Use candlestick if OHLC data is available
         if all(col in data.columns for col in ["open", "high", "low", "close"]):
-            dates = data.index.astype(str).tolist() if hasattr(data.index, "astype") else list(range(len(data)))
+            if hasattr(data.index, "astype"):
+                dates = data.index.astype(str).tolist()
+            else:
+                dates = list(range(len(data)))
             # Plotext expects lists
             plt.candlestick(
                 dates,
@@ -102,7 +105,7 @@ class ChartGenerator:
             )
         else:
             plt.plot(data["close"].values, label="Close")
-            
+
         plt.show()
 
     def plot_with_signals(

@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING
 
 import questionary
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
+from rich.table import Table
 
 from monte_neo.cli.progress import ProgressTracker
 from monte_neo.cli.styles import CUSTOM_STYLE
@@ -458,7 +458,7 @@ class InteractiveMenu:
 
         # Display Formula/Configuration if available
         if result.indicator:
-            console.print(f"[bold cyan]Indicator Configuration[/]")
+            console.print("[bold cyan]Indicator Configuration[/]")
             params = result.parameters
             if "source_code" in params:
                 # Format source code nicely
@@ -468,7 +468,13 @@ class InteractiveMenu:
             else:
                 # Standard params
                 param_str = "\n".join([f"{k}: {v}" for k, v in params.items()])
-                console.print(Panel(param_str, title=f"{result.indicator.name} Parameters", border_style="blue"))
+                console.print(
+                    Panel(
+                        param_str,
+                        title=f"{result.indicator.name} Parameters",
+                        border_style="blue",
+                    )
+                )
             console.print()
 
         if result.candidates_found == 0:
@@ -500,14 +506,14 @@ class InteractiveMenu:
 
             # Generate signals for the best indicator
             best_ind = result.indicator
-            
+
             if best_ind and hasattr(self, "_last_data"):
                 signals = best_ind.generate_signals(self._last_data)
-                
+
                 chart_gen = ChartGenerator()
                 chart_gen.plot_with_signals(
-                    self._last_data, 
-                    signals, 
+                    self._last_data,
+                    signals,
                     title=f"Best Indicator: {best_ind.name}"
                 )
             else:
@@ -517,67 +523,72 @@ class InteractiveMenu:
 
     def _view_results(self) -> None:
         """View saved results."""
-        import os
         import json
-        
+
         results_dir = self.config.data_dir / "results"
         if not results_dir.exists():
             console.print("[yellow]⚠ No results directory found.[/]\n")
             return
-            
+
         files = list(results_dir.glob("*.json"))
         if not files:
             console.print("[yellow]⚠ No saved results found.[/]\n")
             return
-            
+
         # Sort by modification time (newest first)
         files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
-        
+
         choices = [f.stem for f in files] + ["🔙 Back"]
-        
+
         selected = questionary.select(
             "Select result to view:",
             choices=choices,
             style=CUSTOM_STYLE,
         ).ask()
-        
+
         if not selected or selected == "🔙 Back":
             return
-            
+
         # Load and display result
         file_path = results_dir / f"{selected}.json"
         try:
-            with open(file_path, "r") as f:
+            with open(file_path) as f:
                 data = json.load(f)
-                
+
             console.print(f"\n[bold cyan]📄 Results for {selected}[/]")
-            
+
             # Metrics table
             if "metrics" in data:
                 table = Table(title="Metrics")
                 table.add_column("Metric", style="cyan")
                 table.add_column("Value", style="green")
-                
+
                 for k, v in data["metrics"].items():
                     val = f"{v:.4f}" if isinstance(v, float) else str(v)
                     table.add_row(k, val)
                 console.print(table)
-                
+
             # Config info
             if "config" in data:
                 console.print("\n[bold]Configuration:[/]")
                 console.print(f"Type: {data.get('type', 'Unknown')}")
-                
+
                 config = data['config']
                 if "source_code" in config:
-                    console.print(Panel(config['source_code'], title="Formula", border_style="blue"))
+                    console.print(
+                        Panel(
+                            config["source_code"],
+                            title="Formula",
+                            border_style="blue",
+                        )
+                    )
                 else:
                     param_str = "\n".join([f"{k}: {v}" for k, v in config.items()])
                     console.print(Panel(param_str, title="Parameters", border_style="blue"))
-                
+
         except Exception as e:
             console.print(f"[red]Error loading result: {e}[/]")
-        
+
         console.print()
 
     def _settings(self) -> None:

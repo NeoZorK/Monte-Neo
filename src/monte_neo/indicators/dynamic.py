@@ -81,7 +81,7 @@ class DynamicIndicator(BaseIndicator):
                 try:
                     indicator_values = indicator_values()
                 except Exception:
-                    pass
+                    indicator_values = np.nan
 
             # Ensure it returns a Series or DataFrame
             if isinstance(indicator_values, (pd.Series, np.ndarray)):
@@ -130,6 +130,9 @@ class DynamicIndicator(BaseIndicator):
         signals["signal"] = 0
 
         vals = calc["dynamic"]
+
+        # Ensure numeric
+        vals = pd.to_numeric(vals, errors='coerce').fillna(0)
 
         # If boolean
         if vals.dtype == bool:
