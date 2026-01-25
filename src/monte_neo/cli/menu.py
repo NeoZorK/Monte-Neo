@@ -126,8 +126,34 @@ class InteractiveMenu:
         ).ask()
 
         # Check if exists
-        if self.storage.exists(symbol, timeframe):
-            console.print(f"[yellow]⚠ Data for {symbol} {timeframe} already exists.[/]")
+        info = self.storage.get_info(symbol, timeframe)
+        if info:
+            console.print(f"\n[yellow]⚠ Data for {symbol} {timeframe} already exists.[/]")
+            
+            # Format info
+            rows = info.get("rows", 0)
+            start = info.get("start_date")
+            end = info.get("end_date")
+            size = info.get("size_mb", 0)
+            
+            range_str = "Unknown"
+            if start and end:
+                # Ensure readable format
+                try:
+                    s_str = str(start).split(".")[0] # Remove microseconds if present
+                    e_str = str(end).split(".")[0]
+                    range_str = f"{s_str} ➜ {e_str}"
+                except Exception:
+                    range_str = f"{start} ➜ {end}"
+
+            console.print(Panel(
+                f"Rows:  {rows:,}\n"
+                f"Range: {range_str}\n"
+                f"Size:  {size:.2f} MB",
+                title="Existing Data",
+                border_style="yellow"
+            ))
+
             if not questionary.confirm(
                 "Overwrite existing data?", default=False, style=CUSTOM_STYLE
             ).ask():

@@ -214,10 +214,45 @@ class ParquetStorage:
         metadata = parquet_file.metadata
         schema = parquet_file.schema_arrow
 
+        # Try to get date range from statistics
+        start_date = None
+        end_date = None
+        
+        try:
+            # Assuming timestamp is the index or first column
+            # We check all row groups to find global min/max
+            # This handles unsorted data too, though time data is usually sorted
+            min_vals = []
+            max_vals = []
+            
+            # Find timestamp column index
+            ts_col_idx = -1
+            for i, name in enumerate(schema.names):
+                if name == "timestamp" or name == "__index_level_0__":
+                    ts_col_idx = i
+                    break
+            
+            if ts_col_idx >= 0:
+                for rg in range(metadata.num_row_groups):
+                    col_meta = metadata.row_group(rg).column(ts_col_idx)
+                    if col_meta.is_stats_set:
+                        stats = col_meta.statistics
+                        if stats.has_min_max:
+                            min_vals.append(stats.min)
+                            max_vals.append(stats.max)
+                
+                if min_vals and max_vals:
+                    start_date = min(min_vals)
+                    end_date = max(max_vals)
+        except Exception as e:
+            logger.debug(f"Could not extract date range from metadata: {e}")
+
         return {
             "path": path,
             "rows": metadata.num_rows,
             "columns": [field.name for field in schema],
             "size_mb": path.stat().st_size / (1024 * 1024),
             "compression": metadata.row_group(0).column(0).compression,
+            "start_date": start_date,
+            "end_date": end_date,
         }
