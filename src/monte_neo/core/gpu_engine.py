@@ -69,6 +69,13 @@ class MLXBacktestEngine:
         drawdowns = (running_max - equity_curves) / running_max
         max_drawdowns = mx.max(drawdowns, axis=1)
 
+        # Profit Factor
+        wins = mx.where(strat_returns > 0, strat_returns, 0)
+        losses = mx.where(strat_returns < 0, strat_returns, 0)
+        gross_profit = mx.sum(wins, axis=1)
+        gross_loss = mx.abs(mx.sum(losses, axis=1))
+        profit_factor = mx.where(gross_loss > 0, gross_profit / gross_loss, 100.0)
+
         # Sharp Ratio (simplified)
         mean_ret = mx.mean(strat_returns, axis=1)
         std_ret = mx.std(strat_returns, axis=1)
@@ -81,6 +88,7 @@ class MLXBacktestEngine:
         final_rets_np = np.array(final_returns)
         max_dds_np = np.array(max_drawdowns)
         sharpe_np = np.array(sharpe)
+        pf_np = np.array(profit_factor)
 
         for i in range(len(indicators)):
             results.append(
@@ -88,7 +96,14 @@ class MLXBacktestEngine:
                     "total_return": float(final_rets_np[i]) - 1.0,
                     "max_drawdown": float(max_dds_np[i]),
                     "sharpe_ratio": float(sharpe_np[i]),
+                    "profit_factor": float(pf_np[i]),
                     "success": bool(final_rets_np[i] > 1.0 and max_dds_np[i] < 0.2),
+                    "metrics": {
+                        "total_return": float(final_rets_np[i]) - 1.0,
+                        "max_drawdown": float(max_dds_np[i]),
+                        "sharpe_ratio": float(sharpe_np[i]),
+                        "profit_factor": float(pf_np[i]),
+                    },
                 }
             )
 
@@ -135,16 +150,25 @@ class MLXBacktestEngine:
         running_max = mx.cummax(equity_curves, axis=1)
         max_dds = np.array(mx.max((running_max - equity_curves) / running_max, axis=1))
 
+        # Profit Factor
+        wins = mx.where(strat_returns > 0, strat_returns, 0)
+        losses = mx.where(strat_returns < 0, strat_returns, 0)
+        gross_profit = mx.sum(wins, axis=1)
+        gross_loss = mx.abs(mx.sum(losses, axis=1))
+        profit_factor = np.array(mx.where(gross_loss > 0, gross_profit / gross_loss, 100.0))
+
         results = []
         for i in range(len(scenarios)):
             results.append(
                 {
                     "total_return": float(final_rets[i]) - 1.0,
                     "max_drawdown": float(max_dds[i]),
+                    "profit_factor": float(profit_factor[i]),
                     "passed": bool(final_rets[i] > 1.0 and max_dds[i] < 0.2),
                     "metrics": {
                         "total_return": float(final_rets[i]) - 1.0,
                         "max_drawdown": float(max_dds[i]),
+                        "profit_factor": float(profit_factor[i]),
                     },
                 }
             )

@@ -434,9 +434,13 @@ class InteractiveMenu:
 
         if result.success:
             console.print("[bold green]✓ Indicator generated successfully![/]\n")
-        else:
+        elif result.indicator:
             console.print(
                 "[bold yellow]⚠ Indicator found but with lower confidence[/]\n"
+            )
+        else:
+            console.print(
+                "[bold red]❌ No suitable indicator found matching criteria[/]\n"
             )
 
         # Stats table
@@ -452,19 +456,20 @@ class InteractiveMenu:
         console.print(table)
         console.print()
 
-        # Display Formula/Configuration
-        console.print(f"[bold cyan]Indicator Configuration[/]")
-        params = result.parameters
-        if "source_code" in params:
-            # Format source code nicely
-            code = params['source_code']
-            # Highlight key parts
-            console.print(Panel(code, title="Formula", border_style="blue"))
-        else:
-            # Standard params
-            param_str = "\n".join([f"{k}: {v}" for k, v in params.items()])
-            console.print(Panel(param_str, title=f"{result.indicator.name if result.indicator else 'Indicator'} Parameters", border_style="blue"))
-        console.print()
+        # Display Formula/Configuration if available
+        if result.indicator:
+            console.print(f"[bold cyan]Indicator Configuration[/]")
+            params = result.parameters
+            if "source_code" in params:
+                # Format source code nicely
+                code = params['source_code']
+                # Highlight key parts
+                console.print(Panel(code, title="Formula", border_style="blue"))
+            else:
+                # Standard params
+                param_str = "\n".join([f"{k}: {v}" for k, v in params.items()])
+                console.print(Panel(param_str, title=f"{result.indicator.name} Parameters", border_style="blue"))
+            console.print()
 
         if result.candidates_found == 0:
             console.print(
@@ -489,12 +494,12 @@ class InteractiveMenu:
 
             console.print(table)
 
-        # Ask to visualize
-        if questionary.confirm("Show chart?", style=CUSTOM_STYLE).ask():
+        # Ask to visualize if we have an indicator
+        if result.indicator and questionary.confirm("Show chart?", style=CUSTOM_STYLE).ask():
             from monte_neo.visualization.charts import ChartGenerator
 
             # Generate signals for the best indicator
-            best_ind = result.indicator if result.indicator else None
+            best_ind = result.indicator
             
             if best_ind and hasattr(self, "_last_data"):
                 signals = best_ind.generate_signals(self._last_data)
