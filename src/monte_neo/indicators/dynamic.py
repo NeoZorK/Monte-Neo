@@ -92,7 +92,9 @@ class DynamicIndicator(BaseIndicator):
                 result["dynamic"] = indicator_values
 
         except Exception as e:
-            logger.error(f"Runtime error in dynamic indicator: {e}")
+            # During genetic evolution, many invalid formulas are generated.
+            # We log these as DEBUG to avoid cluttering the output.
+            logger.debug(f"Runtime error in dynamic indicator: {e}")
             result["dynamic"] = np.nan
 
         return result
