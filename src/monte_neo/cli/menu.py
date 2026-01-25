@@ -58,13 +58,20 @@ class InteractiveMenu:
             Exit code.
         """
         while True:
-            choice = self._show_main_menu()
+            try:
+                choice = self._show_main_menu()
 
-            if choice == "exit":
-                console.print("[green]Goodbye![/]")
-                return 0
+                if choice == "exit":
+                    console.print("[green]Goodbye![/]")
+                    return 0
 
-            self._handle_choice(choice)
+                self._handle_choice(choice)
+
+            except KeyboardInterrupt:
+                console.print("\n[yellow]Operation cancelled by user. Returning to menu...[/]")
+            except Exception as e:
+                console.print(f"\n[red]An error occurred: {e}[/]")
+                logger.exception("Error in menu loop")
 
     def _show_main_menu(self) -> str:
         """Show main menu and get selection."""
