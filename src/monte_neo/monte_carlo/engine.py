@@ -149,21 +149,8 @@ class MonteCarloEngine:
         # but ProcessPoolExecutor usually handles methods if they are defined at module level.
         # Alternatively, we can use a standalone function.
 
-        from functools import partial
-
-        worker_func = partial(
-            _run_single_scenario,
-            indicator=indicator,
-            metrics_calc=metrics_calc,
-            target_metrics=target_metrics,
-        )
-
-        executor = ParallelExecutor(n_workers=self.config.n_workers)
-        results = executor.map(worker_func, scenarios)
-
-        # Process results
         # Try GPU acceleration if many scenarios
-        if len(scenarios) > 10 and self.config.use_noise:  # Good candidate for GPU
+        if len(scenarios) > 10:
             try:
                 logger.debug(f"Offloading {total} scenarios to GPU (MLX)...")
                 gpu_results = self.gpu_engine.backtest_scenarios(indicator, scenarios)
