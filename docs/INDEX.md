@@ -52,6 +52,8 @@ A simplified guide to the Monte-Neo file structure.
 #### Core Engine (core/)
 - src/monte_neo/core/__init__.py - Core exports
 - src/monte_neo/core/generator.py - Main indicator generation logic
+- src/monte_neo/core/gpu_engine.py - MLX GPU backtesting engine
+- src/monte_neo/core/gpu_lazy.py - Lazy GPU backtesting helpers
 - src/monte_neo/core/optimizer.py - Parameter optimization strategies
 - src/monte_neo/core/validator.py - Overfitting and robustness validation
 
