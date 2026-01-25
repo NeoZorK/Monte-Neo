@@ -13,7 +13,7 @@ from rich.table import Table
 
 from monte_neo.cli.progress import ProgressTracker
 from monte_neo.cli.styles import CUSTOM_STYLE
-from monte_neo.core.generator import GeneratorConfig, IndicatorGenerator
+from monte_neo.core.generator import GeneratorConfig, GeneratorResult, IndicatorGenerator
 from monte_neo.data.downloader import BinanceDownloader
 from monte_neo.data.storage import ParquetStorage
 from monte_neo.utils.logger import get_logger
@@ -389,6 +389,43 @@ class InteractiveMenu:
 
         # Show results
         self._show_generation_result(result)
+
+        # Save result
+        if result.indicator:
+            self._save_result(result)
+
+    def _save_result(self, result: GeneratorResult) -> None:
+        """Save generation result to file."""
+        import json
+        import time
+
+        results_dir = self.config.data_dir / "results"
+        results_dir.mkdir(parents=True, exist_ok=True)
+
+        # Create filename
+        timestamp = int(time.time())
+        name = result.indicator.name if result.indicator else "unknown"
+        filename = f"result_{timestamp}_{name}.json"
+        file_path = results_dir / filename
+
+        # Prepare data
+        data = {
+            "timestamp": timestamp,
+            "type": name,
+            "metrics": result.final_metrics,
+            "config": result.parameters,
+            "mc_pass_rate": result.mc_pass_rate,
+            "iterations_tried": result.iterations_tried,
+            "elapsed_time": result.elapsed_time,
+            "candidates_found": result.candidates_found,
+        }
+
+        try:
+            with open(file_path, "w") as f:
+                json.dump(data, f, indent=4)
+            console.print(f"[dim]Result saved to: results/{filename}[/]")
+        except Exception as e:
+            console.print(f"[red]Error saving result: {e}[/]")
 
     def _show_generation_result(self, result) -> None:
         """Display generation results."""
