@@ -31,6 +31,7 @@ A simplified guide to the Monte-Neo file structure.
 - docs/development/rules.md - Project-specific rules and conventions
 - docs/development/testing.md - Testing strategy and execution guide
 - docs/development/performance.md - Performance notes and benchmarks
+- docs/development/generation_mechanics.md - Deep dive into generator and dynamic indicator logic
 - docs/development/external-libs.md - List and purpose of external dependencies
 - docs/development/api-documentation.md - Guide to API and code documentation
 - docs/development/CLAUDE.md - AI assistant guide and coding conventions
