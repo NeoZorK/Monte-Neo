@@ -183,7 +183,26 @@ class IndicatorGenerator:
 
             # Progress callback
             if self._progress_callback:
-                status = f"Best MC rate: {best_mc_rate:.1%} [Batch {min(batch_start // batch_size + 1, total_iterations // batch_size)}]"
+                # Get a sample formula for visual effect
+                sample_ind = worker_args[0][0]
+                scan_info = sample_ind.name
+                
+                # Try to get specific formula info
+                params = sample_ind.get_parameters()
+                if "source_code" in params:
+                    code = params["source_code"]
+                    if code:
+                        # Clean up code for display (remove data['...'])
+                        display_code = code.replace("data['", "").replace("']", "")
+                        if len(display_code) > 40:
+                            display_code = display_code[:37] + "..."
+                        scan_info = f"Testing: {display_code}"
+                else:
+                    # For standard indicators, show params
+                    param_str = ", ".join([f"{k}={v}" for k, v in params.items()])
+                    scan_info = f"Testing: {sample_ind.name}({param_str})"
+
+                status = f"Best MC rate: {best_mc_rate:.1%} | {scan_info}"
                 self._progress_callback(
                     min(batch_start + batch_size, total_iterations),
                     total_iterations,

@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 import questionary
 from rich.console import Console
 from rich.table import Table
+from rich.panel import Panel
 
 from monte_neo.cli.progress import ProgressTracker
 from monte_neo.cli.styles import CUSTOM_STYLE
@@ -451,6 +452,20 @@ class InteractiveMenu:
         console.print(table)
         console.print()
 
+        # Display Formula/Configuration
+        console.print(f"[bold cyan]Indicator Configuration[/]")
+        params = result.parameters
+        if "source_code" in params:
+            # Format source code nicely
+            code = params['source_code']
+            # Highlight key parts
+            console.print(Panel(code, title="Formula", border_style="blue"))
+        else:
+            # Standard params
+            param_str = "\n".join([f"{k}: {v}" for k, v in params.items()])
+            console.print(Panel(param_str, title=f"{result.indicator.name if result.indicator else 'Indicator'} Parameters", border_style="blue"))
+        console.print()
+
         if result.candidates_found == 0:
             console.print(
                 "[yellow]💡 Tip: No indicators met your target metrics.[/]\n"
@@ -547,7 +562,13 @@ class InteractiveMenu:
             if "config" in data:
                 console.print("\n[bold]Configuration:[/]")
                 console.print(f"Type: {data.get('type', 'Unknown')}")
-                console.print(f"Source Code: {data['config'].get('source_code', 'N/A')}")
+                
+                config = data['config']
+                if "source_code" in config:
+                    console.print(Panel(config['source_code'], title="Formula", border_style="blue"))
+                else:
+                    param_str = "\n".join([f"{k}: {v}" for k, v in config.items()])
+                    console.print(Panel(param_str, title="Parameters", border_style="blue"))
                 
         except Exception as e:
             console.print(f"[red]Error loading result: {e}[/]")
