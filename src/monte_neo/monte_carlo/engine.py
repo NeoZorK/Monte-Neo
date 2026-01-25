@@ -45,15 +45,61 @@ class MCConfig:
     random_seed: int | None = None
 
 
+def _run_scenario_batch(
+    scenarios: list[pd.DataFrame],
+    indicator: BaseIndicator,
+    metrics_calc: MetricsCalculator,
+    target_metrics: dict[str, float],
+) -> list[tuple[bool, dict[str, float]]]:
+    """Run a batch of scenarios in a single worker task.
+    
+    This reduces IPC overhead and allows reusing compiled indicator code.
+    """
+    results = []
+    required_metrics = list(target_metrics.keys())
+    
+    # Compile once per batch if needed
+    if hasattr(indicator, "_compile_if_needed"):
+        try:
+            indicator._compile_if_needed()
+        except Exception:
+            pass
+
+    for data in scenarios:
+        try:
+            signals = indicator.generate_signals(data)
+            metrics = metrics_calc.calculate_all(data, signals, required_metrics=required_metrics)
+
+            # Inline check
+            passed = True
+            for metric_name, target_value in target_metrics.items():
+                if metric_name not in metrics:
+                    continue
+                actual = metrics[metric_name]
+                if metric_name in ["max_drawdown", "consecutive_losses"]:
+                    if actual > target_value:
+                        passed = False
+                        break
+                else:
+                    if actual < target_value:
+                        passed = False
+                        break
+            results.append((passed, metrics))
+        except Exception:
+            results.append((False, {}))
+            
+    return results
+
+
 def _run_single_scenario(
     scenario_data: pd.DataFrame,
     indicator: BaseIndicator,
     metrics_calc: MetricsCalculator,
     target_metrics: dict[str, float],
 ) -> tuple[bool, dict[str, float]]:
-    """Helper for parallel execution."""
+    """Helper for parallel execution (legacy/single mode)."""
     signals = indicator.generate_signals(scenario_data)
-    metrics = metrics_calc.calculate_all(scenario_data, signals)
+    metrics = metrics_calc.calculate_all(scenario_data, signals, required_metrics=list(target_metrics.keys()))
 
     # Inline check_targets to avoid dependency on self
     passed = True
@@ -87,13 +133,19 @@ class MCResult:
 class MonteCarloEngine:
     """Monte Carlo simulation engine."""
 
-    def __init__(self, config: MCConfig | None = None) -> None:
+    def __init__(
+        self, 
+        config: MCConfig | None = None,
+        executor: ParallelExecutor | None = None,
+    ) -> None:
         """Initialize Monte Carlo engine.
 
         Args:
             config: Monte Carlo configuration.
+            executor: Optional shared parallel executor.
         """
         self.config = config or MCConfig()
+        self.executor = executor
         self.rng = np.random.default_rng(self.config.random_seed)
 
         # Initialize sub-modules
@@ -153,7 +205,11 @@ class MonteCarloEngine:
         if len(scenarios) > 10:
             try:
                 logger.debug(f"Offloading {total} scenarios to GPU (MLX)...")
-                gpu_results = self.gpu_engine.backtest_scenarios(indicator, scenarios)
+                gpu_results = self.gpu_engine.backtest_scenarios(
+                    indicator, 
+                    scenarios,
+                    executor=self.executor
+                )
 
                 for i, res in enumerate(gpu_results):
                     # The GPU engine returns a dict with 'passed' and 'metrics'
@@ -182,31 +238,67 @@ class MonteCarloEngine:
         # Fallback to CPU parallel execution
         from functools import partial
 
-        worker_func = partial(
-            _run_single_scenario,
-            indicator=indicator,
-            metrics_calc=metrics_calc,
-            target_metrics=target_metrics,
-        )
-
-        executor = ParallelExecutor(n_workers=self.config.n_workers)
-        results = executor.map(worker_func, scenarios)
-
-        # Process CPU results
-        for i, result in enumerate(results):
-            if result is None:
-                continue
-            meets_targets, metrics = result
-            if meets_targets:
-                passed_count += 1
-
-            all_results.append(
-                {
+        # Use batching for better performance with multiprocessing
+        executor = self.executor
+        if executor is None:
+            n_workers = self.config.n_workers
+            executor = ParallelExecutor(n_workers=n_workers)
+        
+        n_workers = executor.n_workers
+        
+        # If scenarios are few or workers=1, run sequentially without batching overhead
+        if total < 50 or n_workers == 1:
+            worker_func = partial(
+                _run_single_scenario,
+                indicator=indicator,
+                metrics_calc=metrics_calc,
+                target_metrics=target_metrics,
+            )
+            results = executor.map(worker_func, scenarios)
+            
+            # Process results
+            for i, result in enumerate(results):
+                if result is None:
+                    continue
+                meets_targets, metrics = result
+                if meets_targets:
+                    passed_count += 1
+                all_results.append({
                     "scenario_idx": i,
                     "passed": meets_targets,
                     "metrics": metrics,
-                }
+                })
+        else:
+            # Batch processing
+            batch_size = max(10, total // (n_workers * 4))
+            scenario_batches = [
+                scenarios[i : i + batch_size] 
+                for i in range(0, total, batch_size)
+            ]
+            
+            batch_worker = partial(
+                _run_scenario_batch,
+                indicator=indicator,
+                metrics_calc=metrics_calc,
+                target_metrics=target_metrics,
             )
+            
+            batch_results_list = executor.map(batch_worker, scenario_batches)
+            
+            # Flatten results
+            current_idx = 0
+            for batch_res in batch_results_list:
+                if not batch_res:
+                    continue
+                for meets_targets, metrics in batch_res:
+                    if meets_targets:
+                        passed_count += 1
+                    all_results.append({
+                        "scenario_idx": current_idx,
+                        "passed": meets_targets,
+                        "metrics": metrics,
+                    })
+                    current_idx += 1
 
         if self._progress_callback:
             self._progress_callback(total, total)
