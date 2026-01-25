@@ -11,8 +11,11 @@ Primary language for all modules.
 - Strong typing support (mypy)
 - Cross-platform
 
-### C++ (Optional Extensions)
-For performance-critical paths.
+### C++ (pybind11)
+Native extensions for performance-critical trade extraction and metrics calculation.
+
+### MLX (Apple Silicon GPU)
+Leverages the M1/M2/M3 GPU and Unified Memory for massive parallel Monte Carlo simulations.
 
 ---
 
@@ -32,7 +35,9 @@ Extremeley fast Python package manager and project manager. Replaces `pip`, `pip
 | `numpy` | >=1.24 | Numerical computing |
 | `pandas` | >=2.0 | Data manipulation |
 | `pyarrow` | >=14.0 | Parquet I/O |
-| `numba` | >=0.58 | JIT compilation |
+| `numba` | >=0.58 | JIT compilation (Fallback) |
+| `mlx` | >=0.11 | GPU acceleration (Apple Silicon) |
+| `pybind11`| >=2.10 | C++ Python bindings |
 
 ### Trading & Finance
 
@@ -82,10 +87,10 @@ Extremeley fast Python package manager and project manager. Replaces `pip`, `pip
 | Operation | Target |
 |-----------|--------|
 | Data download (1 year) | < 30s |
-| Sample generation | < 5s |
-| 10,000 MC iterations | < 60s |
-| 100,000 MC iterations | < 10min |
-| Metrics calculation | < 100ms |
+| Sample generation | < 1s |
+| 10,000 MC iterations | < 5s (GPU) |
+| 100,000 MC iterations | < 60s (GPU) |
+| Metrics calculation | < 1ms (C++) |
 
 ---
 
