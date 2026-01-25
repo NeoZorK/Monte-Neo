@@ -98,6 +98,7 @@ class IndicatorGenerator:
         self.rng = np.random.default_rng()
         self.metrics_calc = MetricsCalculator()
         self.gpu_engine = MLXBacktestEngine()
+        self.executor: ParallelExecutor | None = None
 
         # State
         self.population: list[BaseIndicator] = []
@@ -131,7 +132,7 @@ class IndicatorGenerator:
             use_walk_forward=self.config.use_mc_walk_forward,
             use_block_bootstrap=self.config.use_mc_block_bootstrap,
         )
-        mc_engine = MonteCarloEngine(mc_config)
+        mc_engine = MonteCarloEngine(mc_config, executor=self.executor)
         
         result = mc_engine.run(
             data, 
@@ -155,6 +156,10 @@ class IndicatorGenerator:
         best_indicator = None
         best_mc_rate = 0.0
         iterations_tried = 0
+
+        # Initialize persistent executor
+        self.executor = ParallelExecutor()
+        self.executor.__enter__()
 
         logger.info(
             f"Starting indicator generation "
@@ -281,6 +286,11 @@ class IndicatorGenerator:
                     break
         
         except KeyboardInterrupt:
+            # Cleanup executor immediately
+            if self.executor:
+                self.executor.__exit__(None, None, None)
+                self.executor = None
+
             logger.info("Generation interrupted by user")
             from monte_neo.utils.console import console
             console.print("\n[yellow]Interrupted! Saving best result so far...[/]")
@@ -349,6 +359,11 @@ class IndicatorGenerator:
             self._progress_callback(
                 self.config.max_iterations, self.config.max_iterations, status
             )
+
+        # Cleanup executor
+        if self.executor:
+            self.executor.__exit__(None, None, None)
+            self.executor = None
 
         return GeneratorResult(
             success=best_mc_rate >= 0.80,

@@ -117,9 +117,18 @@ class MLXBacktestEngine:
         return results
 
     def backtest_scenarios(
-        self, indicator: BaseIndicator, scenarios: list[pd.DataFrame]
+        self, 
+        indicator: BaseIndicator, 
+        scenarios: list[pd.DataFrame],
+        executor: ParallelExecutor | None = None
     ) -> list[dict[str, Any]]:
-        """Run one indicator across many data scenarios on GPU."""
+        """Run one indicator across many data scenarios on GPU.
+        
+        Args:
+            indicator: Indicator to test.
+            scenarios: List of data scenarios.
+            executor: Optional shared parallel executor for signal generation.
+        """
         # 1. Prepare Returns Matrix (S_scenarios x T_bars)
         # Assuming OHLCV format, we pre-calculate returns for all scenarios
         returns_list = []
@@ -171,9 +180,13 @@ class MLXBacktestEngine:
                     signal_list.append(sig_vals)
         else:
             # Parallel execution
-            executor = ParallelExecutor()
-            # Map returns results in order
-            raw_signals = executor.map(_generate_signals_wrapper, tasks)
+            if executor is None:
+                local_executor = ParallelExecutor()
+                # Map returns results in order
+                raw_signals = local_executor.map(_generate_signals_wrapper, tasks)
+            else:
+                # Use shared executor
+                raw_signals = executor.map(_generate_signals_wrapper, tasks)
             
             for i, sigs in enumerate(raw_signals):
                 if sigs is None: # Error case
