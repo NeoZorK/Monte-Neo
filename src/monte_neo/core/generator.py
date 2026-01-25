@@ -459,40 +459,6 @@ class IndicatorGenerator:
 
         return True
 
-    def _run_mc_validation(
-        self,
-        data: pd.DataFrame,
-        indicator: BaseIndicator,
-    ) -> float:
-        """Run Monte Carlo validation."""
-        # Use existing methods plus Block Bootstrap if configured
-        # Since MCConfig handles specific flags, we need to ensure block_bootstrap 
-        # is passed if it was part of the original selection.
-        # However, GeneratorConfig currently maps "use_mc_..." flags individually.
-        # We need to add "use_mc_block_bootstrap" to GeneratorConfig or handle it generically.
-        # For now, let's assume if it's not in GeneratorConfig, we can't pass it easily
-        # unless we update GeneratorConfig.
-        
-        # But wait, the user's input suggests they selected "block_bootstrap".
-        # Let's check where that is stored.
-        # In menu.py: use_mc_block_bootstrap="block_bootstrap" in self._mc_methods
-        # Let's check GeneratorConfig definition.
-        
-        mc_config = MCConfig(
-            iterations=self.config.mc_iterations,
-            use_shuffling=self.config.use_mc_shuffling,
-            use_noise=self.config.use_mc_noise,
-            use_sensitivity=self.config.use_mc_sensitivity,
-            use_walk_forward=self.config.use_mc_walk_forward,
-            use_block_bootstrap=self.config.use_mc_block_bootstrap,
-        )
-
-        mc_engine = MonteCarloEngine(mc_config)
-        result = mc_engine.run(
-            data, indicator, self.metrics_calc, self.config.target_metrics
-        )
-
-        return result.pass_rate
 
     def _run_evolution(self, data: pd.DataFrame) -> BaseIndicator | None:
         """Run evolutionary optimization on candidates.
@@ -500,7 +466,7 @@ class IndicatorGenerator:
         Returns:
             Best indicator found during evolution or None.
         """
-        """Run evolutionary optimization on candidates."""
+
         population = [c[0] for c in self._candidates]
         # Pad population if needed
         while len(population) < self.config.population_size:
