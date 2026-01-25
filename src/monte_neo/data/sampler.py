@@ -252,14 +252,19 @@ class DataSampler:
             synthetic_prices = initial_price * np.cumprod(1 + synthetic_returns)
 
             # Create synthetic OHLCV
-            sample = pd.DataFrame({
-                "open": synthetic_prices
-                * (1 + self.rng.uniform(-0.002, 0.002, len(data))),
-                "high": synthetic_prices * (1 + self.rng.uniform(0, 0.01, len(data))),
-                "low": synthetic_prices * (1 - self.rng.uniform(0, 0.01, len(data))),
-                "close": synthetic_prices,
-                "volume": data["volume"].values * self.rng.uniform(0.5, 1.5, len(data)),
-            })
+            sample = pd.DataFrame(
+                {
+                    "open": synthetic_prices
+                    * (1 + self.rng.uniform(-0.002, 0.002, len(data))),
+                    "high": synthetic_prices
+                    * (1 + self.rng.uniform(0, 0.01, len(data))),
+                    "low": synthetic_prices
+                    * (1 - self.rng.uniform(0, 0.01, len(data))),
+                    "close": synthetic_prices,
+                    "volume": data["volume"].values
+                    * self.rng.uniform(0.5, 1.5, len(data)),
+                }
+            )
             samples.append(sample)
 
         logger.info(f"Generated {n_samples} synthetic samples")

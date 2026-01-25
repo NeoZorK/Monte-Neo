@@ -70,7 +70,9 @@ def crossover_trees(code1: str, code2: str) -> str:
         collector2.visit(tree2)
 
         if not collector1.nodes or not collector2.nodes:
-            logger.warning("Crossover failed: No valid nodes found in one or both trees.")
+            logger.warning(
+                "Crossover failed: No valid nodes found in one or both trees."
+            )
             return code1
 
         # Pick random crossover points

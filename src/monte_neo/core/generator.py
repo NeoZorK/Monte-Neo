@@ -13,14 +13,14 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 
-from monte_neo.utils.ast_utils import crossover_trees
-from monte_neo.utils.parallel import ParallelExecutor
 from monte_neo.indicators.base import BaseIndicator
 from monte_neo.indicators.dynamic import DynamicIndicator
 from monte_neo.indicators.technical import MACDIndicator, RSIIndicator, SMAIndicator
 from monte_neo.metrics.calculator import MetricsCalculator
 from monte_neo.monte_carlo.engine import MCConfig, MonteCarloEngine
+from monte_neo.utils.ast_utils import crossover_trees
 from monte_neo.utils.logger import get_logger
+from monte_neo.utils.parallel import ParallelExecutor
 
 if TYPE_CHECKING:
     pass
@@ -34,7 +34,9 @@ class GeneratorConfig:
 
     max_iterations: int = 100000
     target_metrics: dict[str, float] = field(default_factory=dict)
-    indicator_types: list[str] = field(default_factory=lambda: ["sma", "rsi", "macd", "dynamic"])
+    indicator_types: list[str] = field(
+        default_factory=lambda: ["sma", "rsi", "macd", "dynamic"]
+    )
     mc_iterations: int = 1000
     use_mc_shuffling: bool = True
     use_mc_noise: bool = True
@@ -129,33 +131,35 @@ class IndicatorGenerator:
 
         batch_size = max(10, self.config.population_size)
         total_iterations = self.config.max_iterations
-        
+
         logger.info(f"Starting parallel search with batch size {batch_size}")
-        
+
         executor = ParallelExecutor()
-        
+
         for batch_start in range(0, total_iterations, batch_size):
             actual_batch_size = min(batch_size, total_iterations - batch_start)
-            
+
             # Run batch in parallel
             # We pass necessary state to worker
             worker_args = []
             for _ in range(actual_batch_size):
-                worker_args.append((
-                    self._generate_random_indicator(),
-                    data,
-                    self.metrics_calc,
-                    self.config.target_metrics,
-                    self.config.mc_iterations,
-                    self.config.use_mc_shuffling,
-                    self.config.use_mc_noise,
-                    self.config.use_mc_sensitivity,
-                    self.config.use_mc_walk_forward,
-                    self.config.min_trades
-                ))
-            
+                worker_args.append(
+                    (
+                        self._generate_random_indicator(),
+                        data,
+                        self.metrics_calc,
+                        self.config.target_metrics,
+                        self.config.mc_iterations,
+                        self.config.use_mc_shuffling,
+                        self.config.use_mc_noise,
+                        self.config.use_mc_sensitivity,
+                        self.config.use_mc_walk_forward,
+                        self.config.min_trades,
+                    )
+                )
+
             batch_results = executor.map(_search_worker, worker_args)
-            
+
             # Process results
             for result in batch_results:
                 if result is None:
@@ -180,13 +184,19 @@ class IndicatorGenerator:
             # Progress callback
             if self._progress_callback:
                 status = f"Best MC rate: {best_mc_rate:.1%} [Batch {batch_start // batch_size + 1}]"
-                self._progress_callback(min(batch_start + batch_size, total_iterations), total_iterations, status)
+                self._progress_callback(
+                    min(batch_start + batch_size, total_iterations),
+                    total_iterations,
+                    status,
+                )
 
             # Early stopping if found good solution
             if self.config.early_stopping and best_mc_rate >= 0.95:
-                logger.info(f"Early stopping: found solution at iteration {batch_start + actual_batch_size}")
+                logger.info(
+                    f"Early stopping: found solution at iteration {batch_start + actual_batch_size}"
+                )
                 break
-        
+
         # If dynamic type is selected, we run evolutionary optimization at the end
         if "dynamic" in self.config.indicator_types and len(self._candidates) >= 2:
             logger.info("Starting evolutionary optimization on best candidates...")
@@ -197,13 +207,18 @@ class IndicatorGenerator:
                 if mc_rate > best_mc_rate:
                     best_mc_rate = mc_rate
                     best_indicator = evolved_best
-                    logger.info(f"Evolution found better indicator: {evolved_best.name} MC rate={mc_rate:.2%}")
+                    logger.info(
+                        f"Evolution found better indicator: {evolved_best.name} "
+                        f"MC rate={mc_rate:.2%}"
+                    )
 
         elapsed = time.time() - start_time
 
         if self._progress_callback:
             status = f"Best MC rate: {best_mc_rate:.1%} [Finishing...]"
-            self._progress_callback(self.config.max_iterations, self.config.max_iterations, status)
+            self._progress_callback(
+                self.config.max_iterations, self.config.max_iterations, status
+            )
 
         # Get final metrics for best indicator
         final_metrics = {}
@@ -213,7 +228,9 @@ class IndicatorGenerator:
 
         if self._progress_callback:
             status = f"Best MC rate: {best_mc_rate:.1%} [Done]"
-            self._progress_callback(self.config.max_iterations, self.config.max_iterations, status)
+            self._progress_callback(
+                self.config.max_iterations, self.config.max_iterations, status
+            )
 
         return GeneratorResult(
             success=best_mc_rate >= 0.80,
@@ -256,39 +273,42 @@ class IndicatorGenerator:
     def _generate_dynamic_code(self, depth: int = 0) -> str:
         """Generate a random valid Python expression for an indicator."""
         # Operands
-        operands = ["data['close']", "data['open']", "data['high']", "data['low']", "data['volume']"]
-        
+        operands = [
+            "data['close']",
+            "data['open']",
+            "data['high']",
+            "data['low']",
+            "data['volume']",
+        ]
+
         # Terminal condition (max depth or random stop)
         if depth >= 3 or (depth > 0 and self.rng.random() < 0.3):
             return self.rng.choice(operands)
-        
+
         # Operators / Functions
         # 0: Binary Op, 1: Unary/Func
         op_type = self.rng.integers(0, 2)
-        
+
         if op_type == 0:
             # Binary
-            ops = ["+", "-", "*", "/", ">", "<"] # Include logical for signals? 
-            # Note: logical operators return bool, usually used at top level or handled by DynamicIndicator
-            # Let's keep it numeric mostly, maybe top level can be logical.
-            # For simplicity, let's stick to arithmetic and let DynamicIndicator handle >0 logic 
+            # For simplicity, let's stick to arithmetic and let DynamicIndicator handle >0 logic
             # UNLESS we explicitly want boolean signals.
             # The current DynamicIndicator maps >0 to 1, <0 to -1.
-            # So (Close - MA) is good. 
-            
+            # So (Close - MA) is good.
+
             op = self.rng.choice(["+", "-", "*", "/"])
             left = self._generate_dynamic_code(depth + 1)
             right = self._generate_dynamic_code(depth + 1)
             return f"({left} {op} {right})"
-            
+
         else:
             # Functions
             # rolling_mean, diff, shift
-            
+
             func_type = self.rng.choice(["mean", "max", "min", "std", "diff", "shift"])
             period = self.rng.integers(3, 50)
             inner = self._generate_dynamic_code(depth + 1)
-            
+
             if func_type == "mean":
                 return f"{inner}.rolling({period}).mean()"
             elif func_type == "max":
@@ -298,11 +318,11 @@ class IndicatorGenerator:
             elif func_type == "std":
                 return f"{inner}.rolling({period}).std()"
             elif func_type == "diff":
-                return f"{inner}.diff()" # Default diff 1
+                return f"{inner}.diff()"  # Default diff 1
             elif func_type == "shift":
                 return f"{inner}.shift({period})"
-                
-        return "data['close']" # Fallback
+
+        return "data['close']"  # Fallback
 
     def _meets_basic_targets(self, metrics: dict) -> bool:
         """Check if metrics meet basic targets."""
@@ -353,63 +373,63 @@ class IndicatorGenerator:
         # Pad population if needed
         while len(population) < self.config.population_size:
             population.append(self._generate_random_indicator())
-            
+
         for gen in range(self.config.generations):
-            logger.info(f"Generation {gen+1}/{self.config.generations}")
-            
+            logger.info(f"Generation {gen + 1}/{self.config.generations}")
+
             # Evaluate fitness
             fitness_scores = []
             for ind in population:
                 signals = ind.generate_signals(data)
                 metrics = self.metrics_calc.calculate_all(data, signals)
-                
+
                 # Fitness function: Profit Factor * (1 - Max Drawdown) * Log(Trades)
                 # This is simplified.
                 pf = metrics.get("profit_factor", 0)
-                dd = metrics.get("max_drawdown", 1.0) # 0 to 1
+                dd = metrics.get("max_drawdown", 1.0)  # 0 to 1
                 trades = metrics.get("trade_count", 0)
-                
+
                 if trades < self.config.min_trades:
-                    score = 0
+                    score = 0.0
                 else:
                     score = pf * (1.0 - dd)
-                
+
                 fitness_scores.append((ind, score))
-            
+
             # Sort
             fitness_scores.sort(key=lambda x: x[1], reverse=True)
             best_gen_score = fitness_scores[0][1]
-            logger.info(f"Gen {gen+1} Best Score: {best_gen_score:.4f}")
-            
+            logger.info(f"Gen {gen + 1} Best Score: {best_gen_score:.4f}")
+
             if self._progress_callback:
                 self._progress_callback(
-                    gen, 
-                    self.config.generations, 
-                    f"Evolution Gen {gen+1}: Best Score {best_gen_score:.2f}"
+                    gen,
+                    self.config.generations,
+                    f"Evolution Gen {gen + 1}: Best Score {best_gen_score:.2f}",
                 )
 
             # Selection (Elite + Tournament)
             elite_count = max(2, int(self.config.population_size * 0.1))
             new_pop = [x[0] for x in fitness_scores[:elite_count]]
-            
+
             while len(new_pop) < self.config.population_size:
                 # Tournament selection for parents
                 parent1 = self._tournament_select(fitness_scores)
-                
+
                 if self.rng.random() < self.config.crossover_rate:
                     parent2 = self._tournament_select(fitness_scores)
                     child = self._crossover_indicators(parent1, parent2)
                 else:
                     child = self._mutate_indicator(parent1)
-                
+
                 new_pop.append(child)
-                
+
             population = new_pop
-            
+
         # Return the best found in the last generation
         if not population:
             return None
-            
+
         # Evaluate one last time to find the actual best
         final_scores = []
         for ind in population:
@@ -418,13 +438,15 @@ class IndicatorGenerator:
             pf = metrics.get("profit_factor", 0)
             dd = metrics.get("max_drawdown", 1.0)
             trades = metrics.get("trade_count", 0)
-            score = pf * (1.0 - dd) if trades >= self.config.min_trades else 0
+            score = pf * (1.0 - dd) if trades >= self.config.min_trades else 0.0
             final_scores.append((ind, score))
-            
+
         final_scores.sort(key=lambda x: x[1], reverse=True)
         return final_scores[0][0] if final_scores[0][1] > 0 else None
 
-    def _crossover_indicators(self, p1: BaseIndicator, p2: BaseIndicator) -> BaseIndicator:
+    def _crossover_indicators(
+        self, p1: BaseIndicator, p2: BaseIndicator
+    ) -> BaseIndicator:
         """Perform crossover between two indicators."""
         if not isinstance(p1, DynamicIndicator) or not isinstance(p2, DynamicIndicator):
             # If not dynamic, just return a mutated version of p1
@@ -448,43 +470,44 @@ class IndicatorGenerator:
         """Mutate an indicator."""
         # Only mutate DynamicIndicator source code for now
         if not isinstance(indicator, DynamicIndicator):
-            return indicator 
-            
+            return indicator
+
         code = indicator.get_parameters().get("source_code", "")
         if not code:
             return indicator
-            
+
         # Simple mutation: append or modify
         # For a robust implementation, we'd parse the AST.
         # Here we will just regenerate a part or parameter.
         # String manipulation is brittle, so let's try a simpler approach:
         # 50% chance to return a completely new random indicator (exploration)
-        # 50% chance to wrap the current one in a new operation? 
-        
+        # 50% chance to wrap the current one in a new operation?
+
         # ACTUALLY, simpler approach for V1:
-        # Just generate a new random code. 
+        # Just generate a new random code.
         # Real mutation needs AST.
         # Let's try to do string replacement of numbers at least?
-        
+
         import re
+
         new_code = code
-        
+
         # Replace numbers (parameters) with slightly different ones
         # Find all integers
         def replace_num(match):
             val = int(match.group())
             # +/- 20% or +/- 2
             change = self.rng.choice([-1, 1]) * max(1, int(val * 0.2))
-            return str(max(1, val + change)) # Keep positive
-            
+            return str(max(1, val + change))  # Keep positive
+
         if self.rng.random() < 0.5:
-            new_code = re.sub(r'\b\d+\b', replace_num, code)
+            new_code = re.sub(r"\b\d+\b", replace_num, code)
         else:
             # Wrap in a new operation
             op = self.rng.choice(["+", "-", "*"])
             operand = self.rng.choice(["data['close']", "data['volume']"])
             new_code = f"({code} {op} {operand})"
-            
+
         new_ind = DynamicIndicator()
         new_ind.set_parameter("source_code", new_code)
         return new_ind
@@ -511,10 +534,16 @@ class IndicatorGenerator:
         time_per_iter = elapsed / sample_iterations
 
         # Account for MC validation (~10x slower)
-        mc_factor = 10 if any([
-            self.config.use_mc_shuffling,
-            self.config.use_mc_noise,
-        ]) else 2
+        mc_factor = (
+            10
+            if any(
+                [
+                    self.config.use_mc_shuffling,
+                    self.config.use_mc_noise,
+                ]
+            )
+            else 2
+        )
 
         total_seconds = time_per_iter * self.config.max_iterations * mc_factor
         return total_seconds / 60
@@ -532,7 +561,7 @@ def _search_worker(args: tuple) -> tuple[BaseIndicator | None, float]:
         mc_noise,
         mc_sensitivity,
         mc_walk_forward,
-        min_trades
+        min_trades,
     ) = args
 
     # Quick pre-check
@@ -546,16 +575,20 @@ def _search_worker(args: tuple) -> tuple[BaseIndicator | None, float]:
     # Skip if basic metrics don't meet targets
     # Inline check for performance
     for name, target in target_metrics.items():
-        if name not in basic_metrics: continue
+        if name not in basic_metrics:
+            continue
         actual = basic_metrics[name]
         if name in ["max_drawdown", "consecutive_losses"]:
-            if actual > target: return None, 0.0
+            if actual > target:
+                return None, 0.0
         else:
-            if actual < target: return None, 0.0
+            if actual < target:
+                return None, 0.0
 
     # Run Monte Carlo validation
     # Note: We need a static version of MC validation or use engine directly
     from monte_neo.monte_carlo.engine import MCConfig, MonteCarloEngine
+
     mc_config = MCConfig(
         iterations=mc_iterations,
         use_shuffling=mc_shuffling,

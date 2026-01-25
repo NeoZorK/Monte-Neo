@@ -13,18 +13,20 @@ from rich.text import Text
 console = Console()
 
 # Questionary custom style (matches cline/claude code aesthetic)
-CUSTOM_STYLE = Style([
-    ("qmark", "fg:cyan bold"),
-    ("question", "fg:white bold"),
-    ("answer", "fg:green bold"),
-    ("pointer", "fg:cyan bold"),
-    ("highlighted", "fg:cyan bold"),
-    ("selected", "fg:green"),
-    ("separator", "fg:white"),
-    ("instruction", "fg:white dim"),
-    ("text", "fg:white"),
-    ("disabled", "fg:white dim"),
-])
+CUSTOM_STYLE = Style(
+    [
+        ("qmark", "fg:cyan bold"),
+        ("question", "fg:white bold"),
+        ("answer", "fg:green bold"),
+        ("pointer", "fg:cyan bold"),
+        ("highlighted", "fg:cyan bold"),
+        ("selected", "fg:green"),
+        ("separator", "fg:white"),
+        ("instruction", "fg:white dim"),
+        ("text", "fg:white"),
+        ("disabled", "fg:white dim"),
+    ]
+)
 
 
 def print_banner() -> None:

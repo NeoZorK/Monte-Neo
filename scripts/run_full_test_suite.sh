@@ -74,12 +74,12 @@ else
 fi
 
 # 7. Docker Build Verification (if Docker is available)
-if command -v docker &> /dev/null; then
+if command -v docker &> /dev/null && docker info &> /dev/null; then
     echo -e "\n${BLUE}[7/7] Verifying Docker Build...${NC}"
     docker build -t monte-neo-test -f docker/Dockerfile .
     echo -e "${GREEN}✓ Docker Build Successfully${NC}"
 else
-    echo -e "\n${RED}[7/7] Docker not found, skipping build verification.${NC}"
+    echo -e "\n${BLUE}[7/7] Docker daemon not running or not found, skipping build verification.${NC}"
 fi
 
 echo -e "\n${BLUE}===============================================${NC}"

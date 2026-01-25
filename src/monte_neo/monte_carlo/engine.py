@@ -13,13 +13,13 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 
+from monte_neo.core.gpu_engine import MLXBacktestEngine
 from monte_neo.monte_carlo.noise import NoiseInjector
 from monte_neo.monte_carlo.sensitivity import SensitivityAnalyzer
 from monte_neo.monte_carlo.shuffler import DataShuffler
 from monte_neo.monte_carlo.walk_forward import WalkForwardAnalyzer
 from monte_neo.utils.logger import get_logger
 from monte_neo.utils.parallel import ParallelExecutor
-from monte_neo.core.gpu_engine import MLXBacktestEngine
 
 if TYPE_CHECKING:
     from monte_neo.indicators.base import BaseIndicator
@@ -47,12 +47,12 @@ def _run_single_scenario(
     scenario_data: pd.DataFrame,
     indicator: BaseIndicator,
     metrics_calc: MetricsCalculator,
-    target_metrics: dict[str, float]
+    target_metrics: dict[str, float],
 ) -> tuple[bool, dict[str, float]]:
     """Helper for parallel execution."""
     signals = indicator.generate_signals(scenario_data)
     metrics = metrics_calc.calculate_all(scenario_data, signals)
-    
+
     # Inline check_targets to avoid dependency on self
     passed = True
     for metric_name, target_value in target_metrics.items():
@@ -103,9 +103,7 @@ class MonteCarloEngine:
 
         self._progress_callback: Callable[[int, int], None] | None = None
 
-    def set_progress_callback(
-        self, callback: Callable[[int, int], None]
-    ) -> None:
+    def set_progress_callback(self, callback: Callable[[int, int], None]) -> None:
         """Set progress callback function.
 
         Args:
@@ -145,13 +143,14 @@ class MonteCarloEngine:
         # We use a helper function to avoid pickling issues with 'self' if possible,
         # but ProcessPoolExecutor usually handles methods if they are defined at module level.
         # Alternatively, we can use a standalone function.
-        
+
         from functools import partial
+
         worker_func = partial(
             _run_single_scenario,
             indicator=indicator,
             metrics_calc=metrics_calc,
-            target_metrics=target_metrics
+            target_metrics=target_metrics,
         )
 
         executor = ParallelExecutor(n_workers=self.config.n_workers)
@@ -159,36 +158,43 @@ class MonteCarloEngine:
 
         # Process results
         # Try GPU acceleration if many scenarios
-        if len(scenarios) > 10 and self.config.use_noise: # Good candidate for GPU
+        if len(scenarios) > 10 and self.config.use_noise:  # Good candidate for GPU
             try:
                 logger.info(f"Offloading {total} scenarios to GPU (MLX)...")
                 gpu_results = self.gpu_engine.backtest_scenarios(indicator, scenarios)
-                
+
                 for i, res in enumerate(gpu_results):
                     # The GPU engine returns a dict with 'passed' and 'metrics'
                     if res["passed"]:
                         passed_count += 1
-                    all_results.append({
-                        "scenario_idx": i,
-                        "passed": res["passed"],
-                        "metrics": res["metrics"], # Ensure metrics are correctly extracted
-                    })
-                
+                    all_results.append(
+                        {
+                            "scenario_idx": i,
+                            "passed": res["passed"],
+                            "metrics": res[
+                                "metrics"
+                            ],  # Ensure metrics are correctly extracted
+                        }
+                    )
+
                 if self._progress_callback:
                     self._progress_callback(total, total)
-                    
-                return self._finalize_results(passed_count, total, all_results, start_time)
+
+                return self._finalize_results(
+                    passed_count, total, all_results, start_time
+                )
 
             except Exception as e:
                 logger.warning(f"GPU acceleration failed, falling back to CPU: {e}")
 
         # Fallback to CPU parallel execution
         from functools import partial
+
         worker_func = partial(
             _run_single_scenario,
             indicator=indicator,
             metrics_calc=metrics_calc,
-            target_metrics=target_metrics
+            target_metrics=target_metrics,
         )
 
         executor = ParallelExecutor(n_workers=self.config.n_workers)
@@ -201,24 +207,22 @@ class MonteCarloEngine:
             meets_targets, metrics = result
             if meets_targets:
                 passed_count += 1
-            
-            all_results.append({
-                "scenario_idx": i,
-                "passed": meets_targets,
-                "metrics": metrics,
-            })
-        
+
+            all_results.append(
+                {
+                    "scenario_idx": i,
+                    "passed": meets_targets,
+                    "metrics": metrics,
+                }
+            )
+
         if self._progress_callback:
             self._progress_callback(total, total)
 
         return self._finalize_results(passed_count, total, all_results, start_time)
 
     def _finalize_results(
-        self, 
-        passed_count: int, 
-        total: int, 
-        all_results: list, 
-        start_time: float
+        self, passed_count: int, total: int, all_results: list, start_time: float
     ) -> MCResult:
         """Helper to package results."""
         elapsed = time.time() - start_time

@@ -8,10 +8,10 @@ from monte_neo.data.storage import ParquetStorage
 
 def test_parquet_storage(tmp_path):
     storage = ParquetStorage(tmp_path)
-    data = pd.DataFrame({
-        "close": [100.0, 101.0, 102.0],
-        "volume": [10, 20, 30]
-    }, index=pd.date_range("2024-01-01", periods=3, freq="1h"))
+    data = pd.DataFrame(
+        {"close": [100.0, 101.0, 102.0], "volume": [10, 20, 30]},
+        index=pd.date_range("2024-01-01", periods=3, freq="1h"),
+    )
 
     # Save
     storage.save(data, "TEST", "1h")
@@ -26,6 +26,7 @@ def test_parquet_storage(tmp_path):
     files = storage.list_files()
     assert len(files) == 1
     assert files[0]["symbol"] == "TEST"
+
 
 def test_data_sampler(sample_ohlcv):
     sampler = DataSampler(random_seed=42)

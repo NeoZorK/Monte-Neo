@@ -47,8 +47,7 @@ class DynamicIndicator(BaseIndicator):
                 # We compile it as an expression that returns a value given 'data', 'np', 'pd'
                 # For safety, we wrap it in a function definition
                 func_code = (
-                    f"def _dynamic_calc(data, np, pd):\n"
-                    f"    return {self.source_code}"
+                    f"def _dynamic_calc(data, np, pd):\n    return {self.source_code}"
                 )
                 local_scope: dict[str, Any] = {}
                 exec(func_code, {}, local_scope)
@@ -74,19 +73,23 @@ class DynamicIndicator(BaseIndicator):
             # Execute the compiled function
             # We provide a limited scope
             indicator_values = self._compiled_code(data, np, pd)
-            
+
             # If it's a callable (like a method accidentally returned without parentheses)
-            if callable(indicator_values) and not isinstance(indicator_values, (pd.Series, pd.DataFrame)):
+            if callable(indicator_values) and not isinstance(
+                indicator_values, (pd.Series, pd.DataFrame)
+            ):
                 try:
                     indicator_values = indicator_values()
-                except:
+                except Exception:
                     pass
 
             # Ensure it returns a Series or DataFrame
             if isinstance(indicator_values, (pd.Series, np.ndarray)):
                 result["dynamic"] = indicator_values
             elif isinstance(indicator_values, pd.DataFrame):
-                result["dynamic"] = indicator_values.iloc[:, 0] if not indicator_values.empty else 0
+                result["dynamic"] = (
+                    indicator_values.iloc[:, 0] if not indicator_values.empty else 0
+                )
             else:
                 # If scalar, broadcast to series
                 result["dynamic"] = indicator_values
@@ -104,40 +107,40 @@ class DynamicIndicator(BaseIndicator):
 
         For dynamic indicators, the 'source_code' might calculate a boolean signal directly,
         or a continuous value.
-        
+
         If the value is boolean:
             True -> 1 (Buy)
             False -> -1 (Sell) (or 0?)
-            
+
         If numerical, we might need a threshold. For now, let's assume the
         generator produces a signal-like value or we use a wrapper.
-        
+
         Strategy:
         If the result is boolean: True=Buy(1), False=Hold(0).
         (This is simplistic, usually we want Buy/Sell/Hold).
-        
+
         Let's assume the generated code RETURNS a signal directly (-1, 0, 1) usually.
         Or, we can have a conventions.
-        
-        For this implementation, let's assume the source_code *returns a Series of signals* 
+
+        For this implementation, let's assume the source_code *returns a Series of signals*
         OR a Series of values that are interpreted as >0 buy, <0 sell.
         """
         calc = self.calculate(data)
         signals = pd.DataFrame(index=data.index)
         signals["signal"] = 0
-        
+
         vals = calc["dynamic"]
-        
+
         # If boolean
         if vals.dtype == bool:
-             signals.loc[vals, "signal"] = 1
-             # If strictly boolean, we might not have Sell signals.
-             # Maybe not ideal.
+            signals.loc[vals, "signal"] = 1
+            # If strictly boolean, we might not have Sell signals.
+            # Maybe not ideal.
         else:
             # If numeric, >0 is Buy, <0 is Sell
             signals.loc[vals > 0, "signal"] = 1
             signals.loc[vals < 0, "signal"] = -1
-            
+
         return signals
 
     def get_min_periods(self) -> int:

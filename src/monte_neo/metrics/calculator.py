@@ -6,7 +6,6 @@ Calculates all trading metrics from signals and data.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -19,7 +18,8 @@ from monte_neo.metrics.winrate import WinrateMetric
 from monte_neo.utils.logger import get_logger
 
 try:
-    from monte_neo.core import native_metrics
+    from monte_neo.core import native_metrics  # type: ignore
+
     HAS_NATIVE = True
 except ImportError:
     HAS_NATIVE = False
@@ -91,24 +91,20 @@ class MetricsCalculator:
             "profit_factor": self.profit_factor.calculate(pnls),
             "total_return": float(np.sum(pnl_pcts)),
             "avg_return": float(np.mean(pnl_pcts)) if pnl_pcts else 0,
-
             # Risk-adjusted metrics
             "sharpe_ratio": self.sharpe.calculate(returns),
             "sortino_ratio": self.sortino.calculate(returns),
-
             # Drawdown metrics
             "max_drawdown": self.drawdown.calculate_max(equity),
             "avg_drawdown": self.drawdown.calculate_avg(equity),
             "recovery_factor": self._recovery_factor(pnl_pcts, equity),
             "calmar_ratio": self._calmar_ratio(pnl_pcts, equity),
-
             # Win/loss metrics
             "winrate": self.winrate.calculate(pnls),
             "expectancy": self.winrate.expectancy(pnls),
             "avg_win": self.winrate.avg_win(pnls),
             "avg_loss": self.winrate.avg_loss(pnls),
             "win_loss_ratio": self.winrate.win_loss_ratio(pnls),
-
             # Trade statistics
             "trade_count": len(trades),
             "consecutive_wins": self._max_consecutive(pnls, True),
@@ -133,8 +129,8 @@ class MetricsCalculator:
         if HAS_NATIVE:
             # Use high-performance C++ extension
             raw_trades = native_metrics.extract_trades(
-                close_prices.tolist(), # pybind11 might need list if not using numpy bindings
-                signal_array.tolist()
+                close_prices.tolist(),  # pybind11 might need list if not using numpy bindings
+                signal_array.tolist(),
             )
             return [
                 TradeResult(
@@ -144,30 +140,28 @@ class MetricsCalculator:
                     exit_price=t.exit_price,
                     direction=t.direction,
                     pnl=t.pnl,
-                    pnl_pct=t.pnl_pct
-                ) for t in raw_trades
+                    pnl_pct=t.pnl_pct,
+                )
+                for t in raw_trades
             ]
 
         # Fallback to JIT-compiled Python
         raw_trades = self._extract_trades_fast(close_prices, signal_array)
-        
-        return [
-            TradeResult(*t) for t in raw_trades
-        ]
+
+        return [TradeResult(*t) for t in raw_trades]
 
     @staticmethod
     @njit
     def _extract_trades_fast(
-        prices: np.ndarray, 
-        signals: np.ndarray
+        prices: np.ndarray, signals: np.ndarray
     ) -> list[tuple[int, int, float, float, int, float, float]]:
         """Fast trade extraction using Numba JIT.
-        
+
         Note: Numba works best with primitive types, so we return a list of tuples
         and convert to TradeResult objects in the wrapper.
         """
         results = []
-        
+
         position = 0
         entry_idx = 0
         entry_price = 0.0
@@ -188,15 +182,9 @@ class MetricsCalculator:
                 pnl = (exit_price - entry_price) * position
                 pnl_pct = pnl / entry_price
 
-                results.append((
-                    entry_idx,
-                    i,
-                    entry_price,
-                    exit_price,
-                    position,
-                    pnl,
-                    pnl_pct
-                ))
+                results.append(
+                    (entry_idx, i, entry_price, exit_price, position, pnl, pnl_pct)
+                )
 
                 # Reset position
                 position = 0
@@ -212,7 +200,7 @@ class MetricsCalculator:
         # Equity starts at 1.0, then cumprod of (1 + pnl_pct)
         equity = np.ones(len(trades) + 1)
         equity[1:] = np.cumprod(1 + pnl_pcts)
-        
+
         return equity
 
     def _recovery_factor(

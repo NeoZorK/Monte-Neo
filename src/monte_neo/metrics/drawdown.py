@@ -165,25 +165,29 @@ class DrawdownMetric:
             elif dd == 0 and in_dd:
                 # End of drawdown
                 in_dd = False
-                periods.append({
-                    "start_idx": start_idx,
-                    "end_idx": i,
-                    "duration": i - start_idx,
-                    "max_drawdown": float(np.max(drawdowns[start_idx:i])),
-                    "peak_value": float(peak_val),
-                    "trough_value": float(np.min(equity[start_idx:i])),
-                })
+                periods.append(
+                    {
+                        "start_idx": start_idx,
+                        "end_idx": i,
+                        "duration": i - start_idx,
+                        "max_drawdown": float(np.max(drawdowns[start_idx:i])),
+                        "peak_value": float(peak_val),
+                        "trough_value": float(np.min(equity[start_idx:i])),
+                    }
+                )
 
         # Handle ongoing drawdown
         if in_dd:
-            periods.append({
-                "start_idx": start_idx,
-                "end_idx": len(equity) - 1,
-                "duration": len(equity) - start_idx,
-                "max_drawdown": float(np.max(drawdowns[start_idx:])),
-                "peak_value": float(peak_val),
-                "trough_value": float(np.min(equity[start_idx:])),
-            })
+            periods.append(
+                {
+                    "start_idx": start_idx,
+                    "end_idx": len(equity) - 1,
+                    "duration": len(equity) - start_idx,
+                    "max_drawdown": float(np.max(drawdowns[start_idx:])),
+                    "peak_value": float(peak_val),
+                    "trough_value": float(np.min(equity[start_idx:])),
+                }
+            )
 
         # Sort by max_drawdown and return worst N
         periods.sort(key=lambda x: x["max_drawdown"], reverse=True)
