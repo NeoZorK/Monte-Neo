@@ -18,7 +18,7 @@
 - **Interactive CLI**:
   - Arrow-key navigation for all configurations.
   - Real-time progress bars with ETA.
-  - Interactive candlestick charts directly in the terminal.
+  - **Terminal Charts**: High-resolution candlestick charts directly in the console.
 - **Automated Verification**:
   - Full test suite for algorithms and UI.
   - Memory and CPU stress testing.
