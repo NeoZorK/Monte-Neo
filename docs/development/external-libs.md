@@ -7,7 +7,9 @@ Monte-Neo leverages high-performance libraries to ensure fast and reliable calcu
 - **numpy**: High-performance numerical computing.
 - **pandas**: Data manipulation and analysis.
 - **pyarrow**: Fast Parquet I/O.
-- **numba**: JIT compilation for performance-critical paths (metrics).
+- **numba**: JIT compilation fallback.
+- **mlx**: Apple Silicon GPU-accelerated computing.
+- **pybind11**: Seamless C++/Python interoperability.
 - **python-binance**: Direct integration with Binance API.
 - **ta**: Technical Analysis library for base indicators.
 
