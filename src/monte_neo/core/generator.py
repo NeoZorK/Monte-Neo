@@ -16,54 +16,20 @@ import pandas as pd
 from monte_neo.indicators.base import BaseIndicator
 from monte_neo.indicators.dynamic import DynamicIndicator
 from monte_neo.indicators.technical import MACDIndicator, RSIIndicator, SMAIndicator
+from monte_neo.core.config import GeneratorConfig, GeneratorResult
+from monte_neo.core.evolution import EvolutionEngine
+from monte_neo.indicators.code_gen import CodeGenerator
 from monte_neo.metrics.calculator import MetricsCalculator
 from monte_neo.core.gpu_engine import MLXBacktestEngine
 from monte_neo.monte_carlo.engine import MCConfig, MonteCarloEngine
-from monte_neo.utils.ast_utils import crossover_trees
 from monte_neo.utils.logger import get_logger
 from monte_neo.utils.parallel import ParallelExecutor
+from monte_neo.monte_carlo.workers import init_worker_data
 
 if TYPE_CHECKING:
     pass
 
 logger = get_logger(__name__)
-
-
-@dataclass
-class GeneratorConfig:
-    """Generator configuration."""
-
-    max_iterations: int = 100000
-    target_metrics: dict[str, float] = field(default_factory=dict)
-    indicator_types: list[str] = field(
-        default_factory=lambda: ["sma", "rsi", "macd", "dynamic"]
-    )
-    mc_iterations: int = 1000
-    use_mc_shuffling: bool = True
-    use_mc_noise: bool = True
-    use_mc_sensitivity: bool = True
-    use_mc_walk_forward: bool = True
-    use_mc_block_bootstrap: bool = False
-    early_stopping: bool = True
-    min_trades: int = 30
-    population_size: int = 50
-    generations: int = 20
-    mutation_rate: float = 0.3
-    crossover_rate: float = 0.7
-
-
-@dataclass
-class GeneratorResult:
-    """Generator result."""
-
-    success: bool
-    indicator: BaseIndicator | None
-    parameters: dict
-    final_metrics: dict
-    mc_pass_rate: float
-    iterations_tried: int
-    elapsed_time: float
-    candidates_found: int
 
 
 class IndicatorGenerator:
@@ -158,7 +124,10 @@ class IndicatorGenerator:
         iterations_tried = 0
 
         # Initialize persistent executor
-        self.executor = ParallelExecutor()
+        self.executor = ParallelExecutor(
+            initializer=init_worker_data,
+            initargs=(data,)
+        )
         self.executor.__enter__()
 
         logger.info(
@@ -174,31 +143,33 @@ class IndicatorGenerator:
         # Pre-generate MC scenarios for Common Random Numbers (fair comparison + speed)
         # We'll use a temporary engine to generate them once
         mc_scenarios = None
-        try:
-            temp_mc_config = MCConfig(
-                iterations=self.config.mc_iterations,
-                use_shuffling=self.config.use_mc_shuffling,
-                use_noise=self.config.use_mc_noise,
-                use_sensitivity=self.config.use_mc_sensitivity,
-                use_walk_forward=self.config.use_mc_walk_forward,
-                use_block_bootstrap=self.config.use_mc_block_bootstrap,
-            )
-            
-            # Update progress bar status
-            if self._progress_callback:
-                self._progress_callback(
-                    0, 
-                    total_iterations, 
-                    "Generating shared MC scenarios..."
+        # Skip pre-generation for Block Bootstrap to use lazy evaluation (memory efficient)
+        if not self.config.use_mc_block_bootstrap:
+            try:
+                temp_mc_config = MCConfig(
+                    iterations=self.config.mc_iterations,
+                    use_shuffling=self.config.use_mc_shuffling,
+                    use_noise=self.config.use_mc_noise,
+                    use_sensitivity=self.config.use_mc_sensitivity,
+                    use_walk_forward=self.config.use_mc_walk_forward,
+                    use_block_bootstrap=False, # Force false here as we handle it separately
                 )
-            
-            logger.debug("Generating shared Monte Carlo scenarios...")
-            # We need to access the internal generation method
-            temp_engine = MonteCarloEngine(temp_mc_config)
-            mc_scenarios = temp_engine._generate_scenarios(data)
-            logger.debug(f"Generated {len(mc_scenarios)} shared scenarios for this run")
-        except Exception as e:
-            logger.warning(f"Failed to pre-generate scenarios: {e}. Will generate per candidate.")
+                
+                # Update progress bar status
+                if self._progress_callback:
+                    self._progress_callback(
+                        0, 
+                        total_iterations, 
+                        "Generating shared MC scenarios..."
+                    )
+                
+                logger.debug("Generating shared Monte Carlo scenarios...")
+                # We need to access the internal generation method
+                temp_engine = MonteCarloEngine(temp_mc_config)
+                mc_scenarios = temp_engine.scenario_builder.generate(data)
+                logger.debug(f"Generated {len(mc_scenarios)} shared scenarios for this run")
+            except Exception as e:
+                logger.warning(f"Failed to pre-generate scenarios: {e}. Will generate per candidate.")
 
         try:
             if self._progress_callback:
@@ -393,7 +364,8 @@ class IndicatorGenerator:
             indicator = MACDIndicator()
         elif ind_type == "dynamic":
             indicator = DynamicIndicator()
-            code = self._generate_dynamic_code()
+            code_gen = CodeGenerator(self.rng)
+            code = code_gen.generate_code()
             indicator.set_parameter("source_code", code)
             return indicator
         else:
@@ -406,60 +378,6 @@ class IndicatorGenerator:
             indicator.set_parameter(param_name, value)
 
         return indicator
-
-    def _generate_dynamic_code(self, depth: int = 0) -> str:
-        """Generate a random valid Python expression for an indicator."""
-        # Operands
-        operands = [
-            "data['close']",
-            "data['open']",
-            "data['high']",
-            "data['low']",
-            "data['volume']",
-        ]
-
-        # Terminal condition (max depth or random stop)
-        if depth >= 3 or (depth > 0 and self.rng.random() < 0.3):
-            return self.rng.choice(operands)
-
-        # Operators / Functions
-        # 0: Binary Op, 1: Unary/Func
-        op_type = self.rng.integers(0, 2)
-
-        if op_type == 0:
-            # Binary
-            # For simplicity, let's stick to arithmetic and let DynamicIndicator handle >0 logic
-            # UNLESS we explicitly want boolean signals.
-            # The current DynamicIndicator maps >0 to 1, <0 to -1.
-            # So (Close - MA) is good.
-
-            op = self.rng.choice(["+", "-", "*", "/"])
-            left = self._generate_dynamic_code(depth + 1)
-            right = self._generate_dynamic_code(depth + 1)
-            return f"({left} {op} {right})"
-
-        else:
-            # Functions
-            # rolling_mean, diff, shift
-
-            func_type = self.rng.choice(["mean", "max", "min", "std", "diff", "shift"])
-            period = self.rng.integers(3, 50)
-            inner = self._generate_dynamic_code(depth + 1)
-
-            if func_type == "mean":
-                return f"{inner}.rolling({period}).mean()"
-            elif func_type == "max":
-                return f"{inner}.rolling({period}).max()"
-            elif func_type == "min":
-                return f"{inner}.rolling({period}).min()"
-            elif func_type == "std":
-                return f"{inner}.rolling({period}).std()"
-            elif func_type == "diff":
-                return f"{inner}.diff()"  # Default diff 1
-            elif func_type == "shift":
-                return f"{inner}.shift({period})"
-
-        return "data['close']"  # Fallback
 
     def _meets_basic_targets(self, metrics: dict) -> bool:
         """Check if metrics meet basic targets."""
@@ -480,151 +398,16 @@ class IndicatorGenerator:
 
 
     def _run_evolution(self, data: pd.DataFrame) -> BaseIndicator | None:
-        """Run evolutionary optimization on candidates.
-
-        Returns:
-            Best indicator found during evolution or None.
-        """
-
+        """Run evolutionary optimization on candidates."""
         population = [c[0] for c in self._candidates]
-        # Pad population if needed
-        while len(population) < self.config.population_size:
-            population.append(self._generate_random_indicator())
-
-        for gen in range(self.config.generations):
-            # Evaluate fitness
-            fitness_scores = []
-            for ind in population:
-                signals = ind.generate_signals(data)
-                metrics = self.metrics_calc.calculate_all(data, signals)
-
-                # Fitness function: Profit Factor * (1 - Max Drawdown) * Log(Trades)
-                # This is simplified.
-                pf = metrics.get("profit_factor", 0)
-                dd = metrics.get("max_drawdown", 1.0)  # 0 to 1
-                trades = metrics.get("trade_count", 0)
-
-                if trades < self.config.min_trades:
-                    score = 0.0
-                else:
-                    score = pf * (1.0 - dd)
-
-                fitness_scores.append((ind, score))
-
-            # Sort
-            fitness_scores.sort(key=lambda x: x[1], reverse=True)
-            best_gen_score = fitness_scores[0][1]
-
-            if self._progress_callback:
-                self._progress_callback(
-                    gen + 1,
-                    self.config.generations,
-                    f"Evolution Gen {gen + 1}: Best Score {best_gen_score:.2f}",
-                )
-
-            # Selection (Elite + Tournament)
-            elite_count = max(2, int(self.config.population_size * 0.1))
-            new_pop = [x[0] for x in fitness_scores[:elite_count]]
-
-            while len(new_pop) < self.config.population_size:
-                # Tournament selection for parents
-                parent1 = self._tournament_select(fitness_scores)
-
-                if self.rng.random() < self.config.crossover_rate:
-                    parent2 = self._tournament_select(fitness_scores)
-                    child = self._crossover_indicators(parent1, parent2)
-                else:
-                    child = self._mutate_indicator(parent1)
-
-                new_pop.append(child)
-
-            population = new_pop
-
-        # Return the best found in the last generation
-        if not population:
-            return None
-
-        # Evaluate one last time to find the actual best
-        final_scores = []
-        for ind in population:
-            signals = ind.generate_signals(data)
-            metrics = self.metrics_calc.calculate_all(data, signals)
-            pf = metrics.get("profit_factor", 0)
-            dd = metrics.get("max_drawdown", 1.0)
-            trades = metrics.get("trade_count", 0)
-            score = pf * (1.0 - dd) if trades >= self.config.min_trades else 0.0
-            final_scores.append((ind, score))
-
-        final_scores.sort(key=lambda x: x[1], reverse=True)
-        return final_scores[0][0] if final_scores[0][1] > 0 else None
-
-    def _crossover_indicators(
-        self, p1: BaseIndicator, p2: BaseIndicator
-    ) -> BaseIndicator:
-        """Perform crossover between two indicators."""
-        if not isinstance(p1, DynamicIndicator) or not isinstance(p2, DynamicIndicator):
-            # If not dynamic, just return a mutated version of p1
-            return self._mutate_indicator(p1)
-
-        code1 = p1.get_parameters().get("source_code", "data['close']")
-        code2 = p2.get_parameters().get("source_code", "data['close']")
-
-        new_code = crossover_trees(code1, code2)
-
-        new_ind = DynamicIndicator()
-        new_ind.set_parameter("source_code", new_code)
-        return new_ind
-
-    def _tournament_select(self, fitness: list, k: int = 3) -> BaseIndicator:
-        indices = self.rng.integers(0, len(fitness), size=k)
-        best_idx = max(indices, key=lambda i: fitness[i][1])
-        return fitness[best_idx][0]
-
-    def _mutate_indicator(self, indicator: BaseIndicator) -> BaseIndicator:
-        """Mutate an indicator."""
-        # Only mutate DynamicIndicator source code for now
-        if not isinstance(indicator, DynamicIndicator):
-            return indicator
-
-        code = indicator.get_parameters().get("source_code", "")
-        if not code:
-            return indicator
-
-        # Simple mutation: append or modify
-        # For a robust implementation, we'd parse the AST.
-        # Here we will just regenerate a part or parameter.
-        # String manipulation is brittle, so let's try a simpler approach:
-        # 50% chance to return a completely new random indicator (exploration)
-        # 50% chance to wrap the current one in a new operation?
-
-        # ACTUALLY, simpler approach for V1:
-        # Just generate a new random code.
-        # Real mutation needs AST.
-        # Let's try to do string replacement of numbers at least?
-
-        import re
-
-        new_code = code
-
-        # Replace numbers (parameters) with slightly different ones
-        # Find all integers
-        def replace_num(match):
-            val = int(match.group())
-            # +/- 20% or +/- 2
-            change = self.rng.choice([-1, 1]) * max(1, int(val * 0.2))
-            return str(max(1, val + change))  # Keep positive
-
-        if self.rng.random() < 0.5:
-            new_code = re.sub(r"\b\d+\b", replace_num, code)
-        else:
-            # Wrap in a new operation
-            op = self.rng.choice(["+", "-", "*"])
-            operand = self.rng.choice(["data['close']", "data['volume']"])
-            new_code = f"({code} {op} {operand})"
-
-        new_ind = DynamicIndicator()
-        new_ind.set_parameter("source_code", new_code)
-        return new_ind
+        
+        evolution = EvolutionEngine(
+            self.config,
+            metrics_calc=self.metrics_calc,
+            progress_callback=self._progress_callback
+        )
+        
+        return evolution.run(data, population)
 
     def estimate_time(self, data: pd.DataFrame) -> float:
         """Estimate generation time in minutes.
