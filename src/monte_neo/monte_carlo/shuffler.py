@@ -127,7 +127,7 @@ class DataShuffler:
         samples = []
 
         # Group by session
-        if hasattr(data.index, 'date'):
+        if hasattr(data.index, "date"):
             data = data.copy()
             data["session"] = pd.to_datetime(data.index).date
         else:
@@ -210,13 +210,15 @@ class DataShuffler:
         l_ratio = original["low"] / original["close"]
 
         # Apply to new close
-        sample = pd.DataFrame({
-            "open": new_close * o_ratio.values,
-            "high": new_close * h_ratio.values,
-            "low": new_close * l_ratio.values,
-            "close": new_close,
-            "volume": original["volume"].values,
-        })
+        sample = pd.DataFrame(
+            {
+                "open": new_close * o_ratio.values,
+                "high": new_close * h_ratio.values,
+                "low": new_close * l_ratio.values,
+                "close": new_close,
+                "volume": original["volume"].values,
+            }
+        )
 
         # Ensure high >= max(open, close) and low <= min(open, close)
         sample["high"] = sample[["open", "high", "close"]].max(axis=1)

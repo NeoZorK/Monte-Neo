@@ -61,6 +61,7 @@ class MonteNeoCLI:
             Exit code.
         """
         from monte_neo.cli.headless import run_headless_generation
+
         return run_headless_generation(config_file)
 
 
@@ -72,14 +73,16 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--interactive", "-i",
+        "--interactive",
+        "-i",
         action="store_true",
         default=True,
         help="Run in interactive mode (default)",
     )
 
     parser.add_argument(
-        "--config", "-c",
+        "--config",
+        "-c",
         type=str,
         help="Path to YAML config file (for headless mode)",
     )
@@ -99,7 +102,8 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--version", "-v",
+        "--version",
+        "-v",
         action="version",
         version="monte-neo 0.0.1",
     )

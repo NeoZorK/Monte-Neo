@@ -14,21 +14,25 @@ def test_memory_stress():
     # Create 1M rows
     n_rows = 1_000_000
     dates = pd.date_range("2000-01-01", periods=n_rows, freq="1min")
-    data = pd.DataFrame({
-        "open": np.random.randn(n_rows).cumsum() + 1000,
-        "high": np.random.randn(n_rows).cumsum() + 1005,
-        "low": np.random.randn(n_rows).cumsum() + 995,
-        "close": np.random.randn(n_rows).cumsum() + 1000,
-        "volume": np.random.rand(n_rows) * 100
-    }, index=dates)
+    data = pd.DataFrame(
+        {
+            "open": np.random.randn(n_rows).cumsum() + 1000,
+            "high": np.random.randn(n_rows).cumsum() + 1005,
+            "low": np.random.randn(n_rows).cumsum() + 995,
+            "close": np.random.randn(n_rows).cumsum() + 1000,
+            "volume": np.random.rand(n_rows) * 100,
+        },
+        index=dates,
+    )
 
     # Basic sanity check
     assert len(data) == n_rows
-    assert data.memory_usage().sum() > 40 * 1024 * 1024 # ~40MB
+    assert data.memory_usage().sum() > 40 * 1024 * 1024  # ~40MB
 
     # Try a simple calculation on this data
     returns = data["close"].pct_change().dropna()
     assert len(returns) == n_rows - 1
+
 
 def test_cpu_stress():
     """Test parallel execution of heavy tasks."""
@@ -45,13 +49,14 @@ def test_cpu_stress():
     assert len(results) == 20
     assert elapsed > 0
 
+
 def test_high_iteration_monte_carlo(sample_ohlcv):
     """Verify generator doesn't leak or crash with many iterations."""
     config = GeneratorConfig(
         max_iterations=1000,
         mc_iterations=100,
         use_mc_shuffling=True,
-        early_stopping=True # Stop early if found
+        early_stopping=True,  # Stop early if found
     )
 
     generator = IndicatorGenerator(config)
@@ -61,4 +66,4 @@ def test_high_iteration_monte_carlo(sample_ohlcv):
     elapsed = time.time() - start
 
     print(f"Time per 1000 iter: {elapsed:.2f}s")
-    assert elapsed < 60 # Should be reasonably fast
+    assert elapsed < 60  # Should be reasonably fast

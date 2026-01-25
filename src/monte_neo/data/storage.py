@@ -155,12 +155,14 @@ class ParquetStorage:
         for path in category_dir.glob("*.parquet"):
             parts = path.stem.split("_")
             if len(parts) >= 2:
-                files.append({
-                    "symbol": parts[0],
-                    "timeframe": parts[1],
-                    "path": path,
-                    "size_mb": path.stat().st_size / (1024 * 1024),
-                })
+                files.append(
+                    {
+                        "symbol": parts[0],
+                        "timeframe": parts[1],
+                        "path": path,
+                        "size_mb": path.stat().st_size / (1024 * 1024),
+                    }
+                )
 
         return sorted(files, key=lambda x: x["symbol"])
 

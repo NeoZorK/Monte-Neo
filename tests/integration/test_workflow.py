@@ -14,16 +14,13 @@ def test_full_generation_workflow(tmp_path, sample_ohlcv):
 
     # Configure generator
     config = GeneratorConfig(
-        max_iterations=10, # Very few for testing
-        target_metrics={
-            "profit_factor": 1.1,
-            "sharpe_ratio": 0.5
-        },
+        max_iterations=10,  # Very few for testing
+        target_metrics={"profit_factor": 1.1, "sharpe_ratio": 0.5},
         indicator_types=["sma", "rsi"],
         mc_iterations=5,
         use_mc_shuffling=True,
         use_mc_noise=True,
-        early_stopping=False
+        early_stopping=False,
     )
 
     generator = IndicatorGenerator(config)
@@ -44,6 +41,7 @@ def test_full_generation_workflow(tmp_path, sample_ohlcv):
         signals = result.indicator.generate_signals(data)
         assert len(signals) == len(data)
 
+
 def test_metrics_consistency(sample_ohlcv):
     """Verify that multiple calculations yield same results."""
     calc = MetricsCalculator()
@@ -60,6 +58,7 @@ def test_metrics_consistency(sample_ohlcv):
     assert m1["profit_factor"] == m2["profit_factor"]
     assert m1["sharpe_ratio"] == m2["sharpe_ratio"]
     assert m1["max_drawdown"] == m2["max_drawdown"]
+
 
 def test_monte_carlo_engine_robustness(sample_ohlcv):
     from monte_neo.indicators.technical import SMAIndicator

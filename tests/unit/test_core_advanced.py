@@ -11,10 +11,7 @@ def test_parameter_optimizer(sample_ohlcv):
     indicator = SMAIndicator()
     metrics_calc = MetricsCalculator()
 
-    ranges = {
-        "fast_period": (5, 15),
-        "slow_period": (20, 40)
-    }
+    ranges = {"fast_period": (5, 15), "slow_period": (20, 40)}
 
     result = optimizer.optimize(
         indicator, ranges, sample_ohlcv, metrics_calc, objective="profit_factor"
@@ -24,17 +21,16 @@ def test_parameter_optimizer(sample_ohlcv):
     assert len(result.best_params) == 2
     assert "fast_period" in result.best_params
 
+
 def test_overfit_validator(sample_ohlcv):
-    validator = OverfitValidator(min_trades=1) # Small min trades for test
+    validator = OverfitValidator(min_trades=1)  # Small min trades for test
     indicator = SMAIndicator()
     metrics_calc = MetricsCalculator()
 
     # Needs some trades to pass
     target_metrics = {"profit_factor": 0.5}
 
-    result = validator.validate(
-        indicator, sample_ohlcv, metrics_calc, target_metrics
-    )
+    result = validator.validate(indicator, sample_ohlcv, metrics_calc, target_metrics)
 
     assert hasattr(result, "passed")
     assert isinstance(result.overall_score, float)

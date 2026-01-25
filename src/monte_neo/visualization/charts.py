@@ -25,6 +25,7 @@ class ChartGenerator:
         self._has_mplfinance = False
         try:
             import mplfinance  # noqa
+
             self._has_mplfinance = True
         except ImportError:
             logger.warning("mplfinance not available, using plotext")

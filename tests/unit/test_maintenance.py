@@ -1,5 +1,5 @@
-import re
 import os
+import re
 from pathlib import Path
 
 
@@ -59,13 +59,15 @@ def test_version_consistency():
     root_dir = find_root()
     version_file = root_dir / "src" / "monte_neo" / "_version.py"
 
-    assert version_file.exists(), f"src/monte_neo/_version.py must exist at {version_file}"
+    assert version_file.exists(), (
+        f"src/monte_neo/_version.py must exist at {version_file}"
+    )
 
     with open(version_file, encoding="utf-8") as f:
         content = f.read()
 
     version_match = re.search(r'__version__\s*=\s*["\']v(\d+\.\d+\.\d+)["\']', content)
-    
+
     # Extract actual version for better error message if it fails
     actual_version = "unknown"
     fallback_match = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', content)

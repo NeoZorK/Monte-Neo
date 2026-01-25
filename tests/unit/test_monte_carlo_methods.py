@@ -28,6 +28,7 @@ def test_data_shuffler(sample_ohlcv):
     )
     assert len(column_list) == 1
 
+
 def test_noise_injector(sample_ohlcv):
     gen = NoiseInjector(random_seed=42)
 
@@ -46,6 +47,7 @@ def test_noise_injector(sample_ohlcv):
     with_volume = gen.add_volume_noise(sample_ohlcv, n_samples=1, noise_level=0.1)
     assert len(with_volume) == 1
 
+
 def test_sensitivity_analyzer(sample_ohlcv):
     from monte_neo.indicators.technical import SMAIndicator
     from monte_neo.metrics.calculator import MetricsCalculator
@@ -60,11 +62,12 @@ def test_sensitivity_analyzer(sample_ohlcv):
         param_name="fast_period",
         base_value=12,
         data=sample_ohlcv,
-        metrics_calc=metrics_calc
+        metrics_calc=metrics_calc,
     )
 
     assert hasattr(results, "stability_score")
     assert results.stability_score >= 0
+
 
 def test_walk_forward(sample_ohlcv):
     from monte_neo.indicators.technical import SMAIndicator

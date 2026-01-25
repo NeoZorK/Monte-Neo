@@ -8,6 +8,7 @@ def test_generator_config():
     gen = IndicatorGenerator(config)
     assert gen.config.max_iterations == 500
 
+
 def test_generator_random_indicator():
     gen = IndicatorGenerator()
     indicator = gen._generate_random_indicator()

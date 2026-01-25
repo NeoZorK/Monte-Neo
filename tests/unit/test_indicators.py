@@ -23,6 +23,7 @@ def test_sma_indicator(sample_ohlcv):
     assert "signal" in signals.columns
     assert signals["signal"].isin([0, 1, -1]).all()
 
+
 def test_rsi_indicator(sample_ohlcv):
     ind = RSIIndicator()
     ind.set_parameters({"period": 10, "overbought": 70, "oversold": 30})
@@ -32,6 +33,7 @@ def test_rsi_indicator(sample_ohlcv):
 
     signals = ind.generate_signals(sample_ohlcv)
     assert "signal" in signals.columns
+
 
 def test_macd_indicator(sample_ohlcv):
     ind = MACDIndicator()
@@ -44,6 +46,7 @@ def test_macd_indicator(sample_ohlcv):
 
     signals = ind.generate_signals(sample_ohlcv)
     assert "signal" in signals.columns
+
 
 def test_custom_indicator_builder(sample_ohlcv):
     builder = CustomIndicatorBuilder()

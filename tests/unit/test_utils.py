@@ -10,15 +10,17 @@ def test_config_loading():
     assert isinstance(config, Config)
     assert hasattr(config, "default_symbol")
 
+
 def test_parallel_executor():
     # Test thread pool
     executor = ParallelExecutor(n_workers=2, use_processes=False)
-    results = executor.map(lambda x: x*x, [1, 2, 3, 4])
+    results = executor.map(lambda x: x * x, [1, 2, 3, 4])
     assert results == [1, 4, 9, 16]
 
     # Test starmap
-    results = executor.starmap(lambda x, y: x+y, [(1, 1), (2, 2)])
+    results = executor.starmap(lambda x, y: x + y, [(1, 1), (2, 2)])
     assert results == [2, 4]
+
 
 def test_logger_setup(tmp_path):
     log_file = tmp_path / "test.log"

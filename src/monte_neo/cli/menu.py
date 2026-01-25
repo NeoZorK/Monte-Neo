@@ -43,7 +43,7 @@ class InteractiveMenu:
         self._selected_symbol: str = config.default_symbol
         self._selected_timeframe: str = config.default_timeframe
         self._mc_methods: list[str] = []
-        
+
         # Evolutionary Settings
         self._pop_size: int = 50
         self._generations: int = 20
@@ -77,12 +77,15 @@ class InteractiveMenu:
             {"name": "❌ Exit", "value": "exit"},
         ]
 
-        return questionary.select(
-            "Select an option:",
-            choices=choices,
-            style=CUSTOM_STYLE,
-            use_shortcuts=True,
-        ).ask() or "exit"
+        return (
+            questionary.select(
+                "Select an option:",
+                choices=choices,
+                style=CUSTOM_STYLE,
+                use_shortcuts=True,
+            ).ask()
+            or "exit"
+        )
 
     def _handle_choice(self, choice: str) -> None:
         """Handle menu selection."""
@@ -306,7 +309,7 @@ class InteractiveMenu:
             ],
             style=CUSTOM_STYLE,
         ).ask()
-        
+
         if not iterations:
             return
 
@@ -314,16 +317,32 @@ class InteractiveMenu:
         indicator_types = questionary.checkbox(
             "Select indicator types to search:",
             choices=[
-                {"name": "SMA (Simple Moving Average)", "value": "sma", "checked": True},
-                {"name": "RSI (Relative Strength Index)", "value": "rsi", "checked": True},
-                {"name": "MACD (Moving Average Convergence Divergence)", "value": "macd", "checked": True},
-                {"name": "🧬 Dynamic (Genetic Programming)", "value": "dynamic", "checked": True},
+                {
+                    "name": "SMA (Simple Moving Average)",
+                    "value": "sma",
+                    "checked": True,
+                },
+                {
+                    "name": "RSI (Relative Strength Index)",
+                    "value": "rsi",
+                    "checked": True,
+                },
+                {
+                    "name": "MACD (Moving Average Convergence Divergence)",
+                    "value": "macd",
+                    "checked": True,
+                },
+                {
+                    "name": "🧬 Dynamic (Genetic Programming)",
+                    "value": "dynamic",
+                    "checked": True,
+                },
             ],
             style=CUSTOM_STYLE,
         ).ask()
 
         if not indicator_types:
-            indicator_types = ["dynamic"] # Fallback
+            indicator_types = ["dynamic"]  # Fallback
 
         if not iterations:
             return
@@ -363,7 +382,8 @@ class InteractiveMenu:
 
         result = generator.generate(data)
         import time
-        time.sleep(0.1) # Let the 100% state render
+
+        time.sleep(0.1)  # Let the 100% state render
         self.progress.stop()
 
         # Show results
@@ -424,8 +444,14 @@ class InteractiveMenu:
         choices = [
             {"name": f"👥 Population Size ({self._pop_size})", "value": "pop_size"},
             {"name": f"🔄 Generations ({self._generations})", "value": "generations"},
-            {"name": f"🧪 Mutation Rate ({self._mutation_rate:.2f})", "value": "mutation"},
-            {"name": f"🧬 Crossover Rate ({self._crossover_rate:.2f})", "value": "crossover"},
+            {
+                "name": f"🧪 Mutation Rate ({self._mutation_rate:.2f})",
+                "value": "mutation",
+            },
+            {
+                "name": f"🧬 Crossover Rate ({self._crossover_rate:.2f})",
+                "value": "crossover",
+            },
             {"name": "🔙 Back", "value": "back"},
         ]
 
@@ -436,18 +462,28 @@ class InteractiveMenu:
         ).ask()
 
         if choice == "pop_size":
-            val = questionary.text("Population Size:", default=str(self._pop_size)).ask()
-            if val: self._pop_size = int(val)
+            val = questionary.text(
+                "Population Size:", default=str(self._pop_size)
+            ).ask()
+            if val:
+                self._pop_size = int(val)
         elif choice == "generations":
             val = questionary.text("Generations:", default=str(self._generations)).ask()
-            if val: self._generations = int(val)
+            if val:
+                self._generations = int(val)
         elif choice == "mutation":
-            val = questionary.text("Mutation Rate (0.0-1.0):", default=str(self._mutation_rate)).ask()
-            if val: self._mutation_rate = float(val)
+            val = questionary.text(
+                "Mutation Rate (0.0-1.0):", default=str(self._mutation_rate)
+            ).ask()
+            if val:
+                self._mutation_rate = float(val)
         elif choice == "crossover":
-            val = questionary.text("Crossover Rate (0.0-1.0):", default=str(self._crossover_rate)).ask()
-            if val: self._crossover_rate = float(val)
+            val = questionary.text(
+                "Crossover Rate (0.0-1.0):", default=str(self._crossover_rate)
+            ).ask()
+            if val:
+                self._crossover_rate = float(val)
 
         if choice != "back":
             console.print("[green]✓ Settings updated[/]\n")
-            self._settings() # Recurse
+            self._settings()  # Recurse
