@@ -65,6 +65,29 @@ class WalkForwardAnalyzer:
         self.train_pct = train_pct
         self.anchored = anchored
 
+    def generate_scenarios(self, data: pd.DataFrame, n_splits: int | None = None) -> list[pd.DataFrame]:
+        """Generate walk-forward test scenarios (out-of-sample segments).
+
+        Args:
+            data: OHLCV data.
+            n_splits: Number of splits override.
+
+        Returns:
+            List of DataFrames representing out-of-sample periods.
+        """
+        if n_splits:
+            self.n_splits = n_splits
+
+        windows = self._generate_windows(len(data))
+        scenarios = []
+
+        for window in windows:
+            test_data = data.iloc[window.test_start : window.test_end].copy()
+            if not test_data.empty:
+                scenarios.append(test_data)
+
+        return scenarios
+
     def analyze(
         self,
         indicator: BaseIndicator,
