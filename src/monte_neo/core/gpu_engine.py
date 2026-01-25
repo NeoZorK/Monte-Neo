@@ -142,6 +142,10 @@ class MLXBacktestEngine:
                     "total_return": float(final_rets[i]) - 1.0,
                     "max_drawdown": float(max_dds[i]),
                     "passed": bool(final_rets[i] > 1.0 and max_dds[i] < 0.2),
+                    "metrics": {
+                        "total_return": float(final_rets[i]) - 1.0,
+                        "max_drawdown": float(max_dds[i]),
+                    },
                 }
             )
         return results
