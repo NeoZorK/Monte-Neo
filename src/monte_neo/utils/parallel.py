@@ -65,7 +65,7 @@ class ParallelExecutor:
                     result = future.result()
                     results.append((idx, result))
                 except Exception as e:
-                    logger.error(f"Error processing item {idx}: {e}")
+                    logger.error(f"Error processing item {idx}: {e}", exc_info=True)
                     results.append((idx, None))
 
         # Sort by original order
