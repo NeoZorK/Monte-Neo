@@ -451,6 +451,15 @@ class InteractiveMenu:
         console.print(table)
         console.print()
 
+        if result.candidates_found == 0:
+            console.print(
+                "[yellow]💡 Tip: No indicators met your target metrics.[/]\n"
+                "[dim]Try the following:\n"
+                "1. Relax target metrics (e.g., lower Profit Factor or Sharpe Ratio)\n"
+                "2. Increase number of iterations\n"
+                "3. Use a longer timeframe (e.g. 4h, 1d) which is often less noisy[/]\n"
+            )
+
         # Metrics
         if result.final_metrics:
             table = Table(title="Final Metrics")
