@@ -18,6 +18,7 @@ from monte_neo.monte_carlo.sensitivity import SensitivityAnalyzer
 from monte_neo.monte_carlo.shuffler import DataShuffler
 from monte_neo.monte_carlo.walk_forward import WalkForwardAnalyzer
 from monte_neo.utils.logger import get_logger
+from monte_neo.utils.parallel import ParallelExecutor
 
 if TYPE_CHECKING:
     from monte_neo.indicators.base import BaseIndicator
@@ -39,6 +40,33 @@ class MCConfig:
     walk_forward_splits: int = 5
     n_workers: int | None = None
     random_seed: int | None = None
+
+
+def _run_single_scenario(
+    scenario_data: pd.DataFrame,
+    indicator: BaseIndicator,
+    metrics_calc: MetricsCalculator,
+    target_metrics: dict[str, float]
+) -> tuple[bool, dict[str, float]]:
+    """Helper for parallel execution."""
+    signals = indicator.generate_signals(scenario_data)
+    metrics = metrics_calc.calculate_all(scenario_data, signals)
+    
+    # Inline check_targets to avoid dependency on self
+    passed = True
+    for metric_name, target_value in target_metrics.items():
+        if metric_name not in metrics:
+            continue
+        actual = metrics[metric_name]
+        if metric_name in ["max_drawdown", "consecutive_losses"]:
+            if actual > target_value:
+                passed = False
+                break
+        else:
+            if actual < target_value:
+                passed = False
+                break
+    return passed, metrics
 
 
 @dataclass
@@ -109,30 +137,41 @@ class MonteCarloEngine:
         scenarios = self._generate_scenarios(data)
         total = len(scenarios)
 
-        logger.debug(f"Running {total} Monte Carlo scenarios")
+        logger.debug(f"Running {total} Monte Carlo scenarios in parallel")
 
-        for i, scenario_data in enumerate(scenarios):
-            # Generate signals
-            signals = indicator.generate_signals(scenario_data)
+        # Prepare arguments for parallel execution
+        # We use a helper function to avoid pickling issues with 'self' if possible,
+        # but ProcessPoolExecutor usually handles methods if they are defined at module level.
+        # Alternatively, we can use a standalone function.
+        
+        from functools import partial
+        worker_func = partial(
+            _run_single_scenario,
+            indicator=indicator,
+            metrics_calc=metrics_calc,
+            target_metrics=target_metrics
+        )
 
-            # Calculate metrics
-            metrics = metrics_calc.calculate_all(scenario_data, signals)
+        executor = ParallelExecutor(n_workers=self.config.n_workers)
+        results = executor.map(worker_func, scenarios)
 
-            # Check if meets targets
-            meets_targets = self._check_targets(metrics, target_metrics)
-
+        # Process results
+        for i, (meets_targets, metrics) in enumerate(results):
             if meets_targets:
                 passed_count += 1
-
+            
             all_results.append({
                 "scenario_idx": i,
                 "passed": meets_targets,
                 "metrics": metrics,
             })
 
-            # Progress callback
-            if self._progress_callback and (i + 1) % 100 == 0:
-                self._progress_callback(i + 1, total)
+            # Since it's parallel and we get results at once (with ParallelExecutor.map),
+            # we can't easily do progress callbacks during execution without more complexity.
+            # But we can call it once at the end or update executor to support it.
+        
+        if self._progress_callback:
+            self._progress_callback(total, total)
 
         elapsed = time.time() - start_time
         pass_rate = passed_count / total if total > 0 else 0

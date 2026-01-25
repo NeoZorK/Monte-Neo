@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 
 from monte_neo.utils.ast_utils import crossover_trees
+from monte_neo.utils.parallel import ParallelExecutor
 from monte_neo.indicators.base import BaseIndicator
 from monte_neo.indicators.dynamic import DynamicIndicator
 from monte_neo.indicators.technical import MACDIndicator, RSIIndicator, SMAIndicator
@@ -126,45 +127,60 @@ class IndicatorGenerator:
             f"(max {self.config.max_iterations} iterations)"
         )
 
-        for i in range(self.config.max_iterations):
-            iterations_tried = i + 1
+        batch_size = max(10, self.config.population_size)
+        total_iterations = self.config.max_iterations
+        
+        logger.info(f"Starting parallel search with batch size {batch_size}")
+        
+        executor = ParallelExecutor()
+        
+        for batch_start in range(0, total_iterations, batch_size):
+            actual_batch_size = min(batch_size, total_iterations - batch_start)
+            
+            # Run batch in parallel
+            # We pass necessary state to worker
+            worker_args = []
+            for _ in range(actual_batch_size):
+                worker_args.append((
+                    self._generate_random_indicator(),
+                    data,
+                    self.metrics_calc,
+                    self.config.target_metrics,
+                    self.config.mc_iterations,
+                    self.config.use_mc_shuffling,
+                    self.config.use_mc_noise,
+                    self.config.use_mc_sensitivity,
+                    self.config.use_mc_walk_forward,
+                    self.config.min_trades
+                ))
+            
+            batch_results = executor.map(_search_worker, worker_args)
+            
+            # Process results
+            for indicator, mc_rate in batch_results:
+                if indicator is None:
+                    continue
+                    
+                iterations_tried += 1
+                
+                # Track candidates
+                if mc_rate > 0.5:
+                    self._candidates.append((indicator, mc_rate))
 
-            # Generate random indicator
-            indicator = self._generate_random_indicator()
-
-            # Quick pre-check
-            signals = indicator.generate_signals(data)
-            basic_metrics = self.metrics_calc.calculate_all(data, signals)
-
-            # Skip if too few trades
-            if basic_metrics.get("trade_count", 0) < self.config.min_trades:
-                continue
-
-            # Skip if basic metrics don't meet targets
-            if not self._meets_basic_targets(basic_metrics):
-                continue
-
-            # Run Monte Carlo validation
-            mc_rate = self._run_mc_validation(data, indicator)
-
-            # Track candidates
-            if mc_rate > 0.5:
-                self._candidates.append((indicator, mc_rate))
-
-            # Update best
-            if mc_rate > best_mc_rate:
-                best_mc_rate = mc_rate
-                best_indicator = indicator
-                logger.info(f"New best: {indicator.name} MC rate={mc_rate:.2%}")
+                # Update best
+                if mc_rate > best_mc_rate:
+                    best_mc_rate = mc_rate
+                    best_indicator = indicator
+                    logger.info(f"New best: {indicator.name} MC rate={mc_rate:.2%}")
 
             # Progress callback
             if self._progress_callback:
-                status = f"Best MC rate: {best_mc_rate:.1%}"
-                self._progress_callback(i + 1, self.config.max_iterations, status)
+                status = f"Best MC rate: {best_mc_rate:.1%} [Batch {batch_start // batch_size + 1}]"
+                self._progress_callback(min(batch_start + batch_size, total_iterations), total_iterations, status)
 
             # Early stopping if found good solution
             if self.config.early_stopping and best_mc_rate >= 0.95:
-                logger.info(f"Early stopping: found solution at iteration {i + 1}")
+                logger.info(f"Early stopping: found solution at iteration {batch_start + actual_batch_size}")
                 break
         
         # If dynamic type is selected, we run evolutionary optimization at the end
@@ -498,3 +514,52 @@ class IndicatorGenerator:
 
         total_seconds = time_per_iter * self.config.max_iterations * mc_factor
         return total_seconds / 60
+
+
+def _search_worker(args: tuple) -> tuple[BaseIndicator | None, float]:
+    """Worker for parallel indicator search."""
+    (
+        indicator,
+        data,
+        metrics_calc,
+        target_metrics,
+        mc_iterations,
+        mc_shuffling,
+        mc_noise,
+        mc_sensitivity,
+        mc_walk_forward,
+        min_trades
+    ) = args
+
+    # Quick pre-check
+    signals = indicator.generate_signals(data)
+    basic_metrics = metrics_calc.calculate_all(data, signals)
+
+    # Skip if too few trades
+    if basic_metrics.get("trade_count", 0) < min_trades:
+        return None, 0.0
+
+    # Skip if basic metrics don't meet targets
+    # Inline check for performance
+    for name, target in target_metrics.items():
+        if name not in basic_metrics: continue
+        actual = basic_metrics[name]
+        if name in ["max_drawdown", "consecutive_losses"]:
+            if actual > target: return None, 0.0
+        else:
+            if actual < target: return None, 0.0
+
+    # Run Monte Carlo validation
+    # Note: We need a static version of MC validation or use engine directly
+    from monte_neo.monte_carlo.engine import MCConfig, MonteCarloEngine
+    mc_config = MCConfig(
+        iterations=mc_iterations,
+        use_shuffling=mc_shuffling,
+        use_noise=mc_noise,
+        use_sensitivity=mc_sensitivity,
+        use_walk_forward=mc_walk_forward,
+    )
+    mc_engine = MonteCarloEngine(mc_config)
+    result = mc_engine.run(data, indicator, metrics_calc, target_metrics)
+
+    return indicator, result.pass_rate
