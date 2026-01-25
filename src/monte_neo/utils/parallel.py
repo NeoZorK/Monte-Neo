@@ -56,7 +56,8 @@ class ParallelExecutor:
         executor_cls = ProcessPoolExecutor if self.use_processes else ThreadPoolExecutor
         results = []
 
-        with executor_cls(max_workers=self.n_workers) as executor:
+        executor = executor_cls(max_workers=self.n_workers)
+        try:
             futures = {executor.submit(func, item): i for i, item in enumerate(items)}
 
             for future in as_completed(futures):
@@ -67,6 +68,14 @@ class ParallelExecutor:
                 except Exception as e:
                     logger.error(f"Error processing item {idx}: {e}", exc_info=True)
                     results.append((idx, None))
+        except KeyboardInterrupt:
+            logger.warning("Parallel execution interrupted. Shutting down workers...")
+            # Kill workers immediately
+            executor.shutdown(wait=False, cancel_futures=True)
+            raise
+        finally:
+            # Clean up properly if not already done
+            executor.shutdown(wait=False)
 
         # Sort by original order
         results.sort(key=lambda x: x[0])
