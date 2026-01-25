@@ -1,4 +1,5 @@
 import logging
+import time
 
 import numpy as np
 import pandas as pd
@@ -6,11 +7,12 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from monte_neo.cli.progress import ProgressTracker
 from monte_neo.core.generator import GeneratorConfig, IndicatorGenerator
 from monte_neo.indicators.dynamic import DynamicIndicator
 
-# Setup logging to see what's happening
-logging.basicConfig(level=logging.INFO)
+# Setup logging (suppress INFO to avoid cluttering progress bar)
+logging.basicConfig(level=logging.WARNING)
 console = Console()
 
 
@@ -47,9 +49,18 @@ def check_system():
     )
 
     generator = IndicatorGenerator(config)
+    progress = ProgressTracker()
 
     console.print("Starting generation...", style="yellow")
+
+    # Start progress tracking
+    progress.start(100, "Generating indicator...")
+    generator.set_progress_callback(progress.update)
+
     result = generator.generate(data)
+
+    time.sleep(0.1)  # Let UI catch up
+    progress.stop()
 
     console.print("\n[bold green]Results[/bold green]")
 

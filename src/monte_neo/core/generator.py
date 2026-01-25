@@ -186,7 +186,7 @@ class IndicatorGenerator:
                 # Get a sample formula for visual effect
                 sample_ind = worker_args[0][0]
                 scan_info = sample_ind.name
-                
+
                 # Try to get specific formula info
                 params = sample_ind.get_parameters()
                 if "source_code" in params:

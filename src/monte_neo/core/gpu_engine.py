@@ -1,3 +1,5 @@
+from typing import Any
+
 import mlx.core as mx
 import numpy as np
 import pandas as pd
@@ -17,7 +19,7 @@ class MLXBacktestEngine:
 
     def backtest_batch(
         self, data: pd.DataFrame, indicators: list[BaseIndicator]
-    ) -> list[dict[str, float]]:
+    ) -> list[dict[str, Any]]:
         """Run multiple backtests simultaneously on the GPU.
 
         Args:
@@ -111,7 +113,7 @@ class MLXBacktestEngine:
 
     def backtest_scenarios(
         self, indicator: BaseIndicator, scenarios: list[pd.DataFrame]
-    ) -> list[dict[str, float]]:
+    ) -> list[dict[str, Any]]:
         """Run one indicator across many data scenarios on GPU."""
         # 1. Prepare Returns Matrix (S_scenarios x T_bars)
         # Assuming OHLCV format, we pre-calculate returns for all scenarios
