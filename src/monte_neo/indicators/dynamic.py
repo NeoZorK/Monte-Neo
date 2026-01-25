@@ -64,15 +64,20 @@ class DynamicIndicator(BaseIndicator):
             # We provide a limited scope
             indicator_values = self._compiled_code(data, np, pd)
             
+            # If it's a callable (like a method accidentally returned without parentheses)
+            if callable(indicator_values) and not isinstance(indicator_values, (pd.Series, pd.DataFrame)):
+                try:
+                    indicator_values = indicator_values()
+                except:
+                    pass
+
             # Ensure it returns a Series or DataFrame
             if isinstance(indicator_values, (pd.Series, np.ndarray)):
                 result["dynamic"] = indicator_values
             elif isinstance(indicator_values, pd.DataFrame):
-                # If it returns a DF, join it? or assume it returns the DF with new cols?
-                # The generator usually produces a Series expression.
                 result["dynamic"] = indicator_values.iloc[:, 0] if not indicator_values.empty else 0
             else:
-                # Scalar or other
+                # If scalar, broadcast to series
                 result["dynamic"] = indicator_values
 
         except Exception as e:

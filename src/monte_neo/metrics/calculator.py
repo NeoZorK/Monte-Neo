@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
+from numba import njit
 
 from monte_neo.metrics.drawdown import DrawdownMetric
 from monte_neo.metrics.profit_factor import ProfitFactorMetric
@@ -127,65 +128,78 @@ class MetricsCalculator:
         Returns:
             List of TradeResult objects.
         """
-        trades: list[TradeResult] = []
-
         if "signal" not in signals.columns:
-            return trades
+            return []
 
+        # Convert to numpy for maximum speed
+        close_prices = data["close"].to_numpy()
+        signal_array = signals["signal"].to_numpy().astype(np.int32)
+
+        raw_trades = self._extract_trades_fast(close_prices, signal_array)
+        
+        return [
+            TradeResult(*t) for t in raw_trades
+        ]
+
+    @staticmethod
+    @njit
+    def _extract_trades_fast(
+        prices: np.ndarray, 
+        signals: np.ndarray
+    ) -> list[tuple[int, int, float, float, int, float, float]]:
+        """Fast trade extraction using Numba JIT.
+        
+        Note: Numba works best with primitive types, so we return a list of tuples
+        and convert to TradeResult objects in the wrapper.
+        """
+        results = []
+        
         position = 0
         entry_idx = 0
         entry_price = 0.0
 
-        for i, (idx, row) in enumerate(signals.iterrows()):
-            signal = row["signal"]
-            price = data.iloc[i]["close"]
+        for i in range(len(signals)):
+            signal = signals[i]
+            price = prices[i]
 
-            if position == 0 and signal != 0:
-                # Open position
-                position = signal
-                entry_idx = i
-                entry_price = price
-
-            elif position != 0 and signal == -position:
+            if position == 0:
+                if signal != 0:
+                    # Open position
+                    position = int(signal)
+                    entry_idx = i
+                    entry_price = price
+            elif signal == -position:
                 # Close position
                 exit_price = price
                 pnl = (exit_price - entry_price) * position
                 pnl_pct = pnl / entry_price
 
-                trades.append(
-                    TradeResult(
-                        entry_idx=entry_idx,
-                        exit_idx=i,
-                        entry_price=entry_price,
-                        exit_price=exit_price,
-                        direction=position,
-                        pnl=pnl,
-                        pnl_pct=pnl_pct,
-                    )
-                )
+                results.append((
+                    entry_idx,
+                    i,
+                    entry_price,
+                    exit_price,
+                    position,
+                    pnl,
+                    pnl_pct
+                ))
 
                 # Reset position
                 position = 0
 
-        return trades
+        return results
 
     def _calculate_equity(self, trades: list[TradeResult]) -> np.ndarray:
-        """Calculate equity curve from trades.
-
-        Args:
-            trades: List of trades.
-
-        Returns:
-            Equity curve array.
-        """
+        """Calculate equity curve from trades using vectorized cumprod."""
         if not trades:
             return np.array([1.0])
 
-        equity = [1.0]
-        for trade in trades:
-            equity.append(equity[-1] * (1 + trade.pnl_pct))
-
-        return np.array(equity)
+        pnl_pcts = np.array([t.pnl_pct for t in trades])
+        # Equity starts at 1.0, then cumprod of (1 + pnl_pct)
+        equity = np.ones(len(trades) + 1)
+        equity[1:] = np.cumprod(1 + pnl_pcts)
+        
+        return equity
 
     def _recovery_factor(
         self,
