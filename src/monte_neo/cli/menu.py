@@ -295,6 +295,16 @@ class InteractiveMenu:
 
         symbol, timeframe = selected.split("_")
 
+        # Get iterations
+        iterations = questionary.select(
+            "Number of iterations:",
+            choices=[
+                {"name": "1,000 (fast test)", "value": 1000},
+                {"name": "10,000 (standard)", "value": 10000},
+                {"name": "50,000 (thorough)", "value": 50000},
+                {"name": "100,000 (maximum)", "value": 100000},
+            ],
+            style=CUSTOM_STYLE,
         ).ask()
         
         if not iterations:
