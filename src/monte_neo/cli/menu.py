@@ -125,6 +125,14 @@ class InteractiveMenu:
             style=CUSTOM_STYLE,
         ).ask()
 
+        # Check if exists
+        if self.storage.exists(symbol, timeframe):
+            console.print(f"[yellow]⚠ Data for {symbol} {timeframe} already exists.[/]")
+            if not questionary.confirm(
+                "Overwrite existing data?", default=False, style=CUSTOM_STYLE
+            ).ask():
+                return
+
         # Select period
         days = questionary.select(
             "Historical period:",
