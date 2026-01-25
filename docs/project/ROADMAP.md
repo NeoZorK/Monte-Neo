@@ -12,7 +12,7 @@
 
 - [x] Sensitivity analysis (Parameter ±10%)
 - [x] Walk-forward analysis
-- [x] Numba-accelerated metrics
+- [x] Numba & C++ accelerated metrics
 - [x] Unit and integration test suite (uv + pytest)
 - [x] Dockerization and docker-compose
 
@@ -20,8 +20,8 @@
 
 - [x] Interactive terminal candlestick charts
 - [x] Trade list visualization (Rich tables)
+- [x] User-defined custom indicator templates
 - [ ] Multi-thread optimization for UI
-- [ ] User-defined custom indicator templates
 
 ## Version 0.0.4 - Advanced Analytics
 
@@ -29,7 +29,7 @@
 - [ ] Regime detection (Trend vs Range)
 - [ ] Machine learning integration for candidate selection
 
-## Version 1.0.0 - Full Release
+## Version 0.0.5 - High Performance & Cloud
 
 - [ ] C++ accelerated core for 1M+ iterations
 - [ ] Real-time data streaming (WebSockets)
@@ -45,4 +45,4 @@
 | v0.0.2 | Robustness Core & Tests | ✅ |
 | v0.0.3 | Visualization & UX | 🔄 |
 | v0.0.4 | Advanced Analytics | 📅 |
-| v1.0.0 | Full Release | 📅 |
+| v0.0.5 | High Performance & Cloud | 📅 |
