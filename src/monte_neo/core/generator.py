@@ -116,7 +116,12 @@ class IndicatorGenerator:
         """
         self._progress_callback = callback
 
-    def _run_mc_validation(self, data: pd.DataFrame, indicator: BaseIndicator) -> float:
+    def _run_mc_validation(
+        self, 
+        data: pd.DataFrame, 
+        indicator: BaseIndicator,
+        scenarios: list[pd.DataFrame] | None = None
+    ) -> float:
         """Run Monte Carlo validation for a single indicator."""
         mc_config = MCConfig(
             iterations=self.config.mc_iterations,
@@ -124,12 +129,17 @@ class IndicatorGenerator:
             use_noise=self.config.use_mc_noise,
             use_sensitivity=self.config.use_mc_sensitivity,
             use_walk_forward=self.config.use_mc_walk_forward,
+            use_block_bootstrap=self.config.use_mc_block_bootstrap,
         )
         mc_engine = MonteCarloEngine(mc_config)
-        # Use existing progress callback if needed, but maybe not for inner MC
-        # to avoid spamming the main progress bar.
         
-        result = mc_engine.run(data, indicator, self.metrics_calc, self.config.target_metrics)
+        result = mc_engine.run(
+            data, 
+            indicator, 
+            self.metrics_calc, 
+            self.config.target_metrics,
+            existing_scenarios=scenarios
+        )
         return result.pass_rate
 
     def generate(self, data: pd.DataFrame) -> GeneratorResult:
@@ -155,6 +165,26 @@ class IndicatorGenerator:
         total_iterations = self.config.max_iterations
 
         logger.info(f"Starting search with batch size {batch_size} (GPU-accelerated)")
+        
+        # Pre-generate MC scenarios for Common Random Numbers (fair comparison + speed)
+        # We'll use a temporary engine to generate them once
+        mc_scenarios = None
+        try:
+            temp_mc_config = MCConfig(
+                iterations=self.config.mc_iterations,
+                use_shuffling=self.config.use_mc_shuffling,
+                use_noise=self.config.use_mc_noise,
+                use_sensitivity=self.config.use_mc_sensitivity,
+                use_walk_forward=self.config.use_mc_walk_forward,
+                use_block_bootstrap=self.config.use_mc_block_bootstrap,
+            )
+            logger.info("Generating shared Monte Carlo scenarios...")
+            # We need to access the internal generation method
+            temp_engine = MonteCarloEngine(temp_mc_config)
+            mc_scenarios = temp_engine._generate_scenarios(data)
+            logger.info(f"Generated {len(mc_scenarios)} shared scenarios for this run")
+        except Exception as e:
+            logger.warning(f"Failed to pre-generate scenarios: {e}. Will generate per candidate.")
 
         try:
             for batch_start in range(0, total_iterations, batch_size):
@@ -194,7 +224,7 @@ class IndicatorGenerator:
                             continue
 
                         # 3. MC Validation
-                        mc_pass_rate = self._run_mc_validation(data, indicator)
+                        mc_pass_rate = self._run_mc_validation(data, indicator, scenarios=mc_scenarios)
 
                         # Track candidates
                         if mc_pass_rate > 0.0:
