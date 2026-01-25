@@ -24,6 +24,17 @@ class DynamicIndicator(BaseIndicator):
         self._parameters.setdefault("source_code", "data['close']")
         self._compiled_code = None
 
+    def __getstate__(self) -> dict[str, Any]:
+        """Prepare for pickling by removing compiled code."""
+        state = self.__dict__.copy()
+        state["_compiled_code"] = None
+        return state
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        """Restore state after unpickling."""
+        self.__dict__.update(state)
+        self._compiled_code = None
+
     @property
     def source_code(self) -> str:
         """Get the source code string."""
