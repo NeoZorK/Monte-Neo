@@ -43,6 +43,12 @@ class InteractiveMenu:
         self._selected_symbol: str = config.default_symbol
         self._selected_timeframe: str = config.default_timeframe
         self._mc_methods: list[str] = []
+        
+        # Evolutionary Settings
+        self._pop_size: int = 50
+        self._generations: int = 20
+        self._mutation_rate: float = 0.3
+        self._crossover_rate: float = 0.7
 
     def run(self) -> int:
         """Run the interactive menu loop.
@@ -289,25 +295,33 @@ class InteractiveMenu:
 
         symbol, timeframe = selected.split("_")
 
-        # Get iterations
-        iterations = questionary.select(
-            "Number of iterations:",
+        ).ask()
+        
+        if not iterations:
+            return
+
+        # Select indicator types
+        indicator_types = questionary.checkbox(
+            "Select indicator types to search:",
             choices=[
-                {"name": "1,000 (fast test)", "value": 1000},
-                {"name": "10,000 (standard)", "value": 10000},
-                {"name": "50,000 (thorough)", "value": 50000},
-                {"name": "100,000 (maximum)", "value": 100000},
+                {"name": "SMA (Simple Moving Average)", "value": "sma", "checked": True},
+                {"name": "RSI (Relative Strength Index)", "value": "rsi", "checked": True},
+                {"name": "MACD (Moving Average Convergence Divergence)", "value": "macd", "checked": True},
+                {"name": "🧬 Dynamic (Genetic Programming)", "value": "dynamic", "checked": True},
             ],
             style=CUSTOM_STYLE,
         ).ask()
+
+        if not indicator_types:
+            indicator_types = ["dynamic"] # Fallback
 
         if not iterations:
             return
 
         # Confirm
-        console.print("\n[bold]Configuration:[/]")
         console.print(f"  Data: {symbol} {timeframe}")
         console.print(f"  Iterations: {iterations:,}")
+        console.print(f"  Types: {', '.join(indicator_types)}")
         console.print(f"  Target metrics: {len(self._target_metrics)}")
         console.print(f"  MC methods: {len(self._mc_methods)}")
 
@@ -320,6 +334,11 @@ class InteractiveMenu:
         config = GeneratorConfig(
             max_iterations=iterations,
             target_metrics=self._target_metrics,
+            indicator_types=indicator_types,
+            population_size=self._pop_size,
+            generations=self._generations,
+            mutation_rate=self._mutation_rate,
+            crossover_rate=self._crossover_rate,
             use_mc_shuffling="shuffling" in self._mc_methods,
             use_mc_noise="noise" in self._mc_methods,
             use_mc_sensitivity="sensitivity" in self._mc_methods,
@@ -389,5 +408,36 @@ class InteractiveMenu:
         console.print("\n[yellow]Results viewer coming soon...[/]\n")
 
     def _settings(self) -> None:
-        """Settings menu."""
-        console.print("\n[yellow]Settings coming soon...[/]\n")
+        """Settings menu for evolutionary parameters."""
+        console.print("\n[bold cyan]⚙️  Evolutionary Settings[/]\n")
+
+        choices = [
+            {"name": f"👥 Population Size ({self._pop_size})", "value": "pop_size"},
+            {"name": f"🔄 Generations ({self._generations})", "value": "generations"},
+            {"name": f"🧪 Mutation Rate ({self._mutation_rate:.2f})", "value": "mutation"},
+            {"name": f"🧬 Crossover Rate ({self._crossover_rate:.2f})", "value": "crossover"},
+            {"name": "🔙 Back", "value": "back"},
+        ]
+
+        choice = questionary.select(
+            "Select setting to modify:",
+            choices=choices,
+            style=CUSTOM_STYLE,
+        ).ask()
+
+        if choice == "pop_size":
+            val = questionary.text("Population Size:", default=str(self._pop_size)).ask()
+            if val: self._pop_size = int(val)
+        elif choice == "generations":
+            val = questionary.text("Generations:", default=str(self._generations)).ask()
+            if val: self._generations = int(val)
+        elif choice == "mutation":
+            val = questionary.text("Mutation Rate (0.0-1.0):", default=str(self._mutation_rate)).ask()
+            if val: self._mutation_rate = float(val)
+        elif choice == "crossover":
+            val = questionary.text("Crossover Rate (0.0-1.0):", default=str(self._crossover_rate)).ask()
+            if val: self._crossover_rate = float(val)
+
+        if choice != "back":
+            console.print("[green]✓ Settings updated[/]\n")
+            self._settings() # Recurse
