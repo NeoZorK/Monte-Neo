@@ -4,11 +4,15 @@ import mlx.core as mx
 import numpy as np
 import pandas as pd
 
-from monte_neo.indicators.base import BaseIndicator
+from monte_neo.utils.parallel import ParallelExecutor
 from monte_neo.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+def _generate_signals_wrapper(args):
+    """Helper for parallel signal generation."""
+    indicator, df = args
+    return indicator.generate_signals(df)
 
 class MLXBacktestEngine:
     """GPU-accelerated backtesting engine using MLX."""
@@ -16,6 +20,7 @@ class MLXBacktestEngine:
     def __init__(self):
         # M1 Pro usually has enough memory to hold large matrices
         pass
+
 
     def backtest_batch(
         self, data: pd.DataFrame, indicators: list[BaseIndicator]
@@ -139,22 +144,50 @@ class MLXBacktestEngine:
         # Matrix: (S, T-1)
         returns_matrix = mx.array(np.stack(padded_returns))
 
-        # 2. Get Signals (CPU for now, as indicators vary)
-        # Note: If indicator is static, signals are same for many scenarios
-        # (shuffling scenarios might need different signals depending on calculation).
-        # We'll assume signals are per-scenario.
+        # 2. Get Signals (CPU parallelized)
+        # We use ParallelExecutor to speed up signal generation for many scenarios
         signal_list = []
-        for df in scenarios:
-            sigs = indicator.generate_signals(df)
-            # Signal length must match returns length (T-1)
-            sig_vals = sigs["signal"].to_numpy()[:-1].astype(np.float32)
+        
+        # Prepare args for parallel execution
+        # (indicator is pickleable usually)
+        tasks = [(indicator, df) for df in scenarios]
+        
+        # Use ProcessPoolExecutor for CPU-bound signal generation
+        # Adjust n_workers as needed, default is usually fine
+        # NOTE: Parallelizing might have overhead for small DataFrames. 
+        # But for 1000 scenarios, it should help.
+        
+        # If scenarios are few, do serial
+        if len(scenarios) < 50:
+             for df in scenarios:
+                sigs = indicator.generate_signals(df)
+                sig_vals = sigs["signal"].to_numpy()[:-1].astype(np.float32)
+                
+                # Pad signals if needed
+                pad_width = max_len - len(sig_vals)
+                if pad_width > 0:
+                    signal_list.append(np.pad(sig_vals, (0, pad_width), "constant", constant_values=0))
+                else:
+                    signal_list.append(sig_vals)
+        else:
+            # Parallel execution
+            executor = ParallelExecutor()
+            # Map returns results in order
+            raw_signals = executor.map(_generate_signals_wrapper, tasks)
             
-            # Pad signals if needed
-            pad_width = max_len - len(sig_vals)
-            if pad_width > 0:
-                signal_list.append(np.pad(sig_vals, (0, pad_width), "constant", constant_values=0))
-            else:
-                signal_list.append(sig_vals)
+            for i, sigs in enumerate(raw_signals):
+                if sigs is None: # Error case
+                     # Fill with zeros or handle error
+                     sig_vals = np.zeros(max_len, dtype=np.float32)
+                else:
+                    sig_vals = sigs["signal"].to_numpy()[:-1].astype(np.float32)
+                
+                # Pad signals if needed
+                pad_width = max_len - len(sig_vals)
+                if pad_width > 0:
+                    signal_list.append(np.pad(sig_vals, (0, pad_width), "constant", constant_values=0))
+                else:
+                    signal_list.append(sig_vals)
 
         # Matrix: (S, T-1)
         signal_matrix = mx.array(np.stack(signal_list))

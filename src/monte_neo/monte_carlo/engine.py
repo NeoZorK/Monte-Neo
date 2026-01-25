@@ -120,6 +120,7 @@ class MonteCarloEngine:
         indicator: BaseIndicator,
         metrics_calc: MetricsCalculator,
         target_metrics: dict[str, float],
+        existing_scenarios: list[pd.DataFrame] | None = None,
     ) -> MCResult:
         """Run Monte Carlo simulation.
 
@@ -128,6 +129,7 @@ class MonteCarloEngine:
             indicator: Indicator to test.
             metrics_calc: Metrics calculator.
             target_metrics: Target metrics to achieve.
+            existing_scenarios: Optional list of pre-generated scenarios.
 
         Returns:
             MCResult with simulation results.
@@ -137,7 +139,7 @@ class MonteCarloEngine:
         all_results = []
 
         # Generate test scenarios
-        scenarios = self._generate_scenarios(data)
+        scenarios = existing_scenarios if existing_scenarios is not None else self._generate_scenarios(data)
         total = len(scenarios)
 
         logger.debug(f"Running {total} Monte Carlo scenarios in parallel")
