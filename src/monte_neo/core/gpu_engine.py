@@ -23,13 +23,17 @@ class MLXBacktestEngine:
 
 
     def backtest_batch(
-        self, data: pd.DataFrame, indicators: list[BaseIndicator]
+        self, 
+        data: pd.DataFrame, 
+        indicators: list[BaseIndicator],
+        executor: ParallelExecutor | None = None
     ) -> list[dict[str, Any]]:
         """Run multiple backtests simultaneously on the GPU.
 
         Args:
             data: OHLCV DataFrame.
             indicators: List of indicators to test.
+            executor: Optional shared parallel executor for signal generation.
 
         Returns:
             List of results for each indicator.
@@ -41,9 +45,38 @@ class MLXBacktestEngine:
         # Note: Indicator signal generation is still CPU-bound or partially vectorized.
         # But we can stack the results for massive parallel equity calculation.
         signal_list = []
-        for ind in indicators:
-            signals = ind.generate_signals(data)
-            signal_list.append(signals["signal"].to_numpy().astype(np.float32))
+        
+        # Prepare args for parallel execution
+        # Each task is (indicator, data)
+        # Since data is same for all, we might want to avoid pickling it N times if it's huge.
+        # But for parallel execution, arguments must be pickled.
+        # ParallelExecutor uses process pool, so pickling is unavoidable.
+        tasks = [(ind, data) for ind in indicators]
+        
+        # Parallelize signal generation if batch size is large enough
+        if len(indicators) > 5:
+            if executor is None:
+                local_executor = ParallelExecutor()
+                raw_signals = local_executor.map(_generate_signals_wrapper, tasks)
+            else:
+                raw_signals = executor.map(_generate_signals_wrapper, tasks)
+        else:
+            # Serial execution for small batches
+            raw_signals = []
+            for ind in indicators:
+                try:
+                    raw_signals.append(ind.generate_signals(data))
+                except Exception:
+                    raw_signals.append(None)
+                    
+        # Process results
+        for sigs in raw_signals:
+            if sigs is None:
+                # Handle error case with zero signal
+                # Assuming data length
+                signal_list.append(np.zeros(len(data), dtype=np.float32))
+            else:
+                signal_list.append(sigs["signal"].to_numpy().astype(np.float32))
 
         # Shape: (N, T)
         signal_matrix = mx.array(np.stack(signal_list))

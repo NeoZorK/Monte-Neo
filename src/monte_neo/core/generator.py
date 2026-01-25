@@ -214,7 +214,11 @@ class IndicatorGenerator:
 
                 # GPU Backtest (Pre-filter)
                 try:
-                    gpu_results = self.gpu_engine.backtest_batch(data, batch_indicators)
+                    gpu_results = self.gpu_engine.backtest_batch(
+                        data, 
+                        batch_indicators,
+                        executor=self.executor
+                    )
                 except Exception as e:
                     logger.warning(f"GPU Backtest failed: {e}. Skipping batch.")
                     gpu_results = []
