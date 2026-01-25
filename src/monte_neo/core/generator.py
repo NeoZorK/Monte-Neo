@@ -43,6 +43,7 @@ class GeneratorConfig:
     use_mc_noise: bool = True
     use_mc_sensitivity: bool = True
     use_mc_walk_forward: bool = True
+    use_mc_block_bootstrap: bool = False
     early_stopping: bool = True
     min_trades: int = 30
     population_size: int = 50
@@ -155,86 +156,110 @@ class IndicatorGenerator:
 
         logger.info(f"Starting search with batch size {batch_size} (GPU-accelerated)")
 
-        for batch_start in range(0, total_iterations, batch_size):
-            actual_batch_size = min(batch_size, total_iterations - batch_start)
+        try:
+            for batch_start in range(0, total_iterations, batch_size):
+                actual_batch_size = min(batch_size, total_iterations - batch_start)
 
-            # Generate candidates batch
-            batch_indicators = [
-                self._generate_random_indicator() for _ in range(actual_batch_size)
-            ]
+                # Generate candidates batch
+                batch_indicators = [
+                    self._generate_random_indicator() for _ in range(actual_batch_size)
+                ]
 
-            # GPU Backtest (Pre-filter)
-            try:
-                gpu_results = self.gpu_engine.backtest_batch(data, batch_indicators)
-            except Exception as e:
-                logger.warning(f"GPU Backtest failed: {e}. Skipping batch.")
-                gpu_results = []
-
-            # Process results
-            for i, result in enumerate(gpu_results):
-                iterations_tried += 1
-                indicator = batch_indicators[i]
-                metrics = result["metrics"]
-
-                # 1. GPU Pre-filter
-                if not self._meets_basic_targets(metrics):
-                    continue
-
-                # 2. CPU Verification (Full Metrics)
+                # GPU Backtest (Pre-filter)
                 try:
-                    signals = indicator.generate_signals(data)
-                    full_metrics = self.metrics_calc.calculate_all(data, signals)
-
-                    if not self._meets_basic_targets(full_metrics):
-                        continue
-
-                    if full_metrics.get("trade_count", 0) < self.config.min_trades:
-                        continue
-
-                    # 3. MC Validation
-                    mc_pass_rate = self._run_mc_validation(data, indicator)
-
-                    # Track candidates
-                    if mc_pass_rate > 0.0:
-                        self._candidates.append((indicator, mc_pass_rate))
-
-                    # Update best
-                    if mc_pass_rate > best_mc_rate:
-                        best_mc_rate = mc_pass_rate
-                        best_indicator = indicator
-                        logger.info(
-                            f"New best: {indicator.name} MC rate={mc_pass_rate:.2%}"
-                        )
-
+                    gpu_results = self.gpu_engine.backtest_batch(data, batch_indicators)
                 except Exception as e:
-                    logger.warning(f"Error validating indicator: {e}")
-                    continue
+                    logger.warning(f"GPU Backtest failed: {e}. Skipping batch.")
+                    gpu_results = []
 
-            # Progress callback
-            if self._progress_callback:
-                current_iter = min(batch_start + batch_size, total_iterations)
-                elapsed = time.time() - start_time
-                ops_sec = current_iter / elapsed if elapsed > 0 else 0.0
+                # Process results
+                for i, result in enumerate(gpu_results):
+                    iterations_tried += 1
+                    indicator = batch_indicators[i]
+                    metrics = result["metrics"]
 
-                # Simplified status update to avoid string processing overhead
-                speed_str = (
-                    f"Speed: {ops_sec:.1f} op/s | "
-                    f"{ops_sec * 60:.0f} op/m | "
-                    f"{ops_sec * 3600:.0f} op/h"
-                )
-                status = f"Best MC rate: {best_mc_rate:.1%} | Scanning...\n{speed_str}"
-                self._progress_callback(
-                    current_iter,
-                    total_iterations,
-                    status,
-                )
+                    # 1. GPU Pre-filter
+                    if not self._meets_basic_targets(metrics):
+                        continue
 
-            # Early stopping if found good solution
-            if self.config.early_stopping and best_mc_rate >= 0.95:
-                logger.info(
-                    f"Early stopping: found solution at iteration {batch_start + actual_batch_size}"
+                    # 2. CPU Verification (Full Metrics)
+                    try:
+                        signals = indicator.generate_signals(data)
+                        full_metrics = self.metrics_calc.calculate_all(data, signals)
+
+                        if not self._meets_basic_targets(full_metrics):
+                            continue
+
+                        if full_metrics.get("trade_count", 0) < self.config.min_trades:
+                            continue
+
+                        # 3. MC Validation
+                        mc_pass_rate = self._run_mc_validation(data, indicator)
+
+                        # Track candidates
+                        if mc_pass_rate > 0.0:
+                            self._candidates.append((indicator, mc_pass_rate))
+
+                        # Update best
+                        if mc_pass_rate > best_mc_rate:
+                            best_mc_rate = mc_pass_rate
+                            best_indicator = indicator
+                            logger.info(
+                                f"New best: {indicator.name} MC rate={mc_pass_rate:.2%}"
+                            )
+
+                    except Exception as e:
+                        logger.warning(f"Error validating indicator: {e}")
+                        continue
+
+                # Progress callback
+                if self._progress_callback:
+                    current_iter = min(batch_start + batch_size, total_iterations)
+                    elapsed = time.time() - start_time
+                    ops_sec = current_iter / elapsed if elapsed > 0 else 0.0
+
+                    # Simplified status update to avoid string processing overhead
+                    speed_str = (
+                        f"Speed: {ops_sec:.1f} op/s | "
+                        f"{ops_sec * 60:.0f} op/m | "
+                        f"{ops_sec * 3600:.0f} op/h"
+                    )
+                    status = f"Best MC rate: {best_mc_rate:.1%} | Scanning...\n{speed_str}"
+                    self._progress_callback(
+                        current_iter,
+                        total_iterations,
+                        status,
+                    )
+
+                # Early stopping if found good solution
+                if self.config.early_stopping and best_mc_rate >= 0.95:
+                    logger.info(
+                        f"Early stopping: found solution at iteration {batch_start + actual_batch_size}"
+                    )
+                    break
+        
+        except KeyboardInterrupt:
+            logger.info("Generation interrupted by user")
+            from monte_neo.utils.console import console
+            console.print("\n[yellow]Interrupted! Saving best result so far...[/]")
+            if best_indicator:
+                # Calculate metrics
+                final_metrics = {}
+                if best_indicator:
+                    signals = best_indicator.generate_signals(data)
+                    final_metrics = self.metrics_calc.calculate_all(data, signals)
+                
+                return GeneratorResult(
+                    success=best_mc_rate >= 0.80,
+                    indicator=best_indicator,
+                    parameters=best_indicator.get_parameters(),
+                    final_metrics=final_metrics,
+                    mc_pass_rate=best_mc_rate,
+                    iterations_tried=iterations_tried,
+                    elapsed_time=time.time() - start_time,
+                    candidates_found=len(self._candidates),
                 )
-                break
+            raise
 
         # Ensure main progress is done
         if self._progress_callback:
@@ -248,17 +273,20 @@ class IndicatorGenerator:
         # If dynamic type is selected, we run evolutionary optimization at the end
         if "dynamic" in self.config.indicator_types and len(self._candidates) >= 2:
             logger.info("Starting evolutionary optimization on best candidates...")
-            evolved_best = self._run_evolution(data)
-            if evolved_best:
-                # Check MC rate for evolved best
-                mc_rate = self._run_mc_validation(data, evolved_best)
-                if mc_rate > best_mc_rate:
-                    best_mc_rate = mc_rate
-                    best_indicator = evolved_best
-                    logger.info(
-                        f"Evolution found better indicator: {evolved_best.name} "
-                        f"MC rate={mc_rate:.2%}"
-                    )
+            try:
+                evolved_best = self._run_evolution(data)
+                if evolved_best:
+                    # Check MC rate for evolved best
+                    mc_rate = self._run_mc_validation(data, evolved_best)
+                    if mc_rate > best_mc_rate:
+                        best_mc_rate = mc_rate
+                        best_indicator = evolved_best
+                        logger.info(
+                            f"Evolution found better indicator: {evolved_best.name} "
+                            f"MC rate={mc_rate:.2%}"
+                        )
+            except KeyboardInterrupt:
+                logger.info("Evolutionary optimization interrupted by user")
 
         elapsed = time.time() - start_time
 
@@ -395,12 +423,26 @@ class IndicatorGenerator:
         indicator: BaseIndicator,
     ) -> float:
         """Run Monte Carlo validation."""
+        # Use existing methods plus Block Bootstrap if configured
+        # Since MCConfig handles specific flags, we need to ensure block_bootstrap 
+        # is passed if it was part of the original selection.
+        # However, GeneratorConfig currently maps "use_mc_..." flags individually.
+        # We need to add "use_mc_block_bootstrap" to GeneratorConfig or handle it generically.
+        # For now, let's assume if it's not in GeneratorConfig, we can't pass it easily
+        # unless we update GeneratorConfig.
+        
+        # But wait, the user's input suggests they selected "block_bootstrap".
+        # Let's check where that is stored.
+        # In menu.py: use_mc_block_bootstrap="block_bootstrap" in self._mc_methods
+        # Let's check GeneratorConfig definition.
+        
         mc_config = MCConfig(
             iterations=self.config.mc_iterations,
             use_shuffling=self.config.use_mc_shuffling,
             use_noise=self.config.use_mc_noise,
             use_sensitivity=self.config.use_mc_sensitivity,
             use_walk_forward=self.config.use_mc_walk_forward,
+            use_block_bootstrap=self.config.use_mc_block_bootstrap,
         )
 
         mc_engine = MonteCarloEngine(mc_config)

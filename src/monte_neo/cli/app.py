@@ -128,7 +128,7 @@ def main() -> int:
 
     except KeyboardInterrupt:
         console.print("\n[yellow]Interrupted by user[/]")
-        return 130
+        sys.exit(0)
 
     except Exception as e:
         print_error(f"Error: {e}")
