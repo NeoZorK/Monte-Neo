@@ -54,6 +54,7 @@ A simplified guide to the Monte-Neo file structure.
 - src/monte_neo/core/generator.py - Main indicator generation logic
 - src/monte_neo/core/gpu_engine.py - MLX GPU backtesting engine
 - src/monte_neo/core/gpu_lazy.py - Lazy GPU backtesting helpers
+- src/monte_neo/core/gpu_scenarios.py - GPU scenario backtesting helper
 - src/monte_neo/core/optimizer.py - Parameter optimization strategies
 - src/monte_neo/core/validator.py - Overfitting and robustness validation
 
@@ -109,6 +110,7 @@ A simplified guide to the Monte-Neo file structure.
 - tests/conftest.py - Shared pytest fixtures
 - tests/unit/ - Targeted unit tests for all modules
   - tests/unit/test_dynamic_indicator.py - Tests for dynamic code generation and evolution
+  - tests/unit/test_gpu_engine_parallel.py - Tests for GPU parallel path selection
 - tests/integration/ - End-to-end workflow tests
 - tests/stress/ - Memory and CPU performance stress tests
 

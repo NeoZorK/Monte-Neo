@@ -1,23 +1,15 @@
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import mlx.core as mx
 import numpy as np
 import pandas as pd
-import os
 
 from monte_neo.core.gpu_lazy import backtest_lazy_scenarios as run_lazy_backtest
-from monte_neo.core.gpu_scenarios import (
-    run_scenarios_backtest,
-    normalize_signal_array
-)
+from monte_neo.core.gpu_scenarios import normalize_signal_array, run_scenarios_backtest
+from monte_neo.monte_carlo.workers import run_indicator_batch
 from monte_neo.utils.parallel import ParallelExecutor
-from monte_neo.monte_carlo.workers import (
-    _generate_signals_wrapper, 
-    init_worker_data, 
-    run_indicator_batch
-)
 
 if TYPE_CHECKING:
     from monte_neo.indicators.base import BaseIndicator
@@ -55,11 +47,14 @@ class MLXBacktestEngine:
 
 
     def backtest_batch(
-        self, 
-        data: pd.DataFrame, 
+        self,
+        data: pd.DataFrame,
         indicators: list[BaseIndicator],
         executor: ParallelExecutor | None = None,
-        use_shared_data: bool = False
+        use_shared_data: bool = False,
+        force_parallel: bool = False,
+        parallel_threshold: int = 1000,
+        dynamic_parallel_threshold: int = 10,
     ) -> list[dict[str, Any]]:
         """Run multiple backtests simultaneously on the GPU.
 
@@ -68,6 +63,9 @@ class MLXBacktestEngine:
             indicators: List of indicators to test.
             executor: Optional shared parallel executor for signal generation.
             use_shared_data: Whether to use shared memory for data (reduces IPC).
+            force_parallel: Force multiprocessing for signal generation.
+            parallel_threshold: Indicator count threshold for multiprocessing.
+            dynamic_parallel_threshold: Threshold for dynamic indicators multiprocessing.
 
         Returns:
             List of results for each indicator.
@@ -79,60 +77,44 @@ class MLXBacktestEngine:
         # Note: Indicator signal generation is still CPU-bound or partially vectorized.
         # But we can stack the results for massive parallel equity calculation.
         signal_list = []
-        
+
         # Prepare args for parallel execution
         # Each task is (indicator, data)
         # Since data is same for all, we might want to avoid pickling it N times if it's huge.
         # But for parallel execution, arguments must be pickled.
         # ParallelExecutor uses process pool, so pickling is unavoidable.
-        
-        # Parallelize signal generation if batch size is large enough
-        # Optimization: For simple indicators, serial execution is often faster due to IPC overhead.
-        # We increase the threshold and chunk size.
-        if len(indicators) > 1000 and executor and executor.use_processes:
-            # Batching optimization to reduce IPC overhead
-            n_workers = executor.n_workers if executor else (os.cpu_count() or 4)
-            # Target fewer, larger chunks to minimize IPC
-            # For 2000 indicators, 10 workers -> chunk_size 200
+
+        use_parallel = False
+        if executor and executor.use_processes:
+            has_dynamic = any(hasattr(ind, "_compile_if_needed") for ind in indicators)
+            use_parallel = (
+                force_parallel
+                or len(indicators) >= parallel_threshold
+                or (has_dynamic and len(indicators) >= dynamic_parallel_threshold)
+            )
+
+        if use_parallel and executor:
+            n_workers = executor.n_workers
             chunk_size = max(1, len(indicators) // n_workers)
-            
-            # Create chunks
             chunks = [
-                indicators[i : i + chunk_size] 
+                indicators[i : i + chunk_size]
                 for i in range(0, len(indicators), chunk_size)
             ]
-            
-            # Use provided executor
-            # If use_shared_data is True, pass None
-            task_data = None if use_shared_data else data
+            use_shared = use_shared_data and getattr(executor, "initializer", None) is not None
+            task_data = None if use_shared else data
             tasks = [(chunk, task_data) for chunk in chunks]
             batch_results = executor.map(run_indicator_batch, tasks)
-            
-            # ParallelExecutor.map returns sorted results
             raw_signals = []
             for batch in batch_results:
                 raw_signals.extend(batch)
-                
         else:
-            # Serial execution for small batches or when threading/no executor is used
-            # This is much faster for light workloads (avoiding pickling overhead)
-            # We can also use local threading if executor is None?
-            # But serial is extremely fast after optimization (>2000 ops/sec).
             raw_signals = []
-            
-            # Use a local list for speed
-            if use_shared_data and hasattr(executor, "initializer"):
-                 # If we are in a context where shared data is set, we could use it?
-                 # But serial access to 'data' arg is fastest.
-                 pass
-
             for ind in indicators:
                 try:
-                    # Direct call
                     raw_signals.append(ind.generate_signals(data))
                 except Exception:
                     raw_signals.append(None)
-                    
+
         # Process results
         for sigs in raw_signals:
             signal_list.append(normalize_signal_array(sigs, len(data)))
@@ -208,6 +190,15 @@ class MLXBacktestEngine:
 
         return results
 
+    def backtest_scenarios(
+        self,
+        indicator: BaseIndicator,
+        scenarios: list[pd.DataFrame],
+        executor: ParallelExecutor | None = None,
+    ) -> list[dict[str, Any]]:
+        """Run one indicator across many data scenarios on GPU."""
+        return run_scenarios_backtest(indicator, scenarios, executor)
+
     def backtest_lazy_scenarios(
         self,
         indicator: BaseIndicator,
@@ -224,5 +215,3 @@ class MLXBacktestEngine:
             block_size=block_size,
             base_seed=base_seed,
         )
-
-

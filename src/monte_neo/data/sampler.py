@@ -81,7 +81,7 @@ class DataSampler:
 
         n_blocks = n // block_size
         samples = []
-        
+
         # Vectorized index generation helper
         indices_range = np.arange(block_size)
 

@@ -217,21 +217,21 @@ class ParquetStorage:
         # Try to get date range from statistics
         start_date = None
         end_date = None
-        
+
         try:
             # Assuming timestamp is the index or first column
             # We check all row groups to find global min/max
             # This handles unsorted data too, though time data is usually sorted
             min_vals = []
             max_vals = []
-            
+
             # Find timestamp column index
             ts_col_idx = -1
             for i, name in enumerate(schema.names):
                 if name == "timestamp" or name == "__index_level_0__":
                     ts_col_idx = i
                     break
-            
+
             if ts_col_idx >= 0:
                 for rg in range(metadata.num_row_groups):
                     col_meta = metadata.row_group(rg).column(ts_col_idx)
@@ -240,7 +240,7 @@ class ParquetStorage:
                         if stats.has_min_max:
                             min_vals.append(stats.min)
                             max_vals.append(stats.max)
-                
+
                 if min_vals and max_vals:
                     start_date = min(min_vals)
                     end_date = max(max_vals)

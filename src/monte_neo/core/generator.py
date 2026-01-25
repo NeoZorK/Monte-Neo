@@ -7,24 +7,23 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 
-from monte_neo.indicators.base import BaseIndicator
-from monte_neo.indicators.dynamic import DynamicIndicator
-from monte_neo.indicators.technical import MACDIndicator, RSIIndicator, SMAIndicator
 from monte_neo.core.config import GeneratorConfig, GeneratorResult
 from monte_neo.core.evolution import EvolutionEngine
-from monte_neo.indicators.code_gen import CodeGenerator
-from monte_neo.metrics.calculator import MetricsCalculator
 from monte_neo.core.gpu_engine import MLXBacktestEngine
+from monte_neo.indicators.base import BaseIndicator
+from monte_neo.indicators.code_gen import CodeGenerator
+from monte_neo.indicators.dynamic import DynamicIndicator
+from monte_neo.indicators.technical import MACDIndicator, RSIIndicator, SMAIndicator
+from monte_neo.metrics.calculator import MetricsCalculator
 from monte_neo.monte_carlo.engine import MCConfig, MonteCarloEngine
+from monte_neo.monte_carlo.workers import init_worker_data
 from monte_neo.utils.logger import get_logger
 from monte_neo.utils.parallel import ParallelExecutor
-from monte_neo.monte_carlo.workers import init_worker_data
 
 if TYPE_CHECKING:
     pass
@@ -84,8 +83,8 @@ class IndicatorGenerator:
         self._progress_callback = callback
 
     def _run_mc_validation(
-        self, 
-        data: pd.DataFrame, 
+        self,
+        data: pd.DataFrame,
         indicator: BaseIndicator,
         scenarios: list[pd.DataFrame] | None = None
     ) -> float:
@@ -99,11 +98,11 @@ class IndicatorGenerator:
             use_block_bootstrap=self.config.use_mc_block_bootstrap,
         )
         mc_engine = MonteCarloEngine(mc_config, executor=self.executor)
-        
+
         result = mc_engine.run(
-            data, 
-            indicator, 
-            self.metrics_calc, 
+            data,
+            indicator,
+            self.metrics_calc,
             self.config.target_metrics,
             existing_scenarios=scenarios
         )
@@ -139,7 +138,7 @@ class IndicatorGenerator:
         total_iterations = self.config.max_iterations
 
         logger.debug(f"Starting search with batch size {batch_size} (GPU-accelerated)")
-        
+
         # Pre-generate MC scenarios for Common Random Numbers (fair comparison + speed)
         # We'll use a temporary engine to generate them once
         mc_scenarios = None
@@ -154,22 +153,26 @@ class IndicatorGenerator:
                     use_walk_forward=self.config.use_mc_walk_forward,
                     use_block_bootstrap=False, # Force false here as we handle it separately
                 )
-                
+
                 # Update progress bar status
                 if self._progress_callback:
                     self._progress_callback(
-                        0, 
-                        total_iterations, 
+                        0,
+                        total_iterations,
                         "Generating shared MC scenarios..."
                     )
-                
+
                 logger.debug("Generating shared Monte Carlo scenarios...")
                 # We need to access the internal generation method
                 temp_engine = MonteCarloEngine(temp_mc_config)
                 mc_scenarios = temp_engine.scenario_builder.generate(data)
-                logger.debug(f"Generated {len(mc_scenarios)} shared scenarios for this run")
+                logger.debug(
+                    f"Generated {len(mc_scenarios)} shared scenarios for this run"
+                )
             except Exception as e:
-                logger.warning(f"Failed to pre-generate scenarios: {e}. Will generate per candidate.")
+                logger.warning(
+                    f"Failed to pre-generate scenarios: {e}. Will generate per candidate."
+                )
 
         try:
             if self._progress_callback:
@@ -186,7 +189,7 @@ class IndicatorGenerator:
                 # GPU Backtest (Pre-filter)
                 try:
                     gpu_results = self.gpu_engine.backtest_batch(
-                        data, 
+                        data,
                         batch_indicators,
                         executor=self.executor,
                         use_shared_data=True
@@ -217,7 +220,11 @@ class IndicatorGenerator:
                             continue
 
                         # 3. MC Validation
-                        mc_pass_rate = self._run_mc_validation(data, indicator, scenarios=mc_scenarios)
+                        mc_pass_rate = self._run_mc_validation(
+                            data,
+                            indicator,
+                            scenarios=mc_scenarios,
+                        )
 
                         # Track candidates
                         if mc_pass_rate > 0.0:
@@ -257,10 +264,11 @@ class IndicatorGenerator:
                 # Early stopping if found good solution
                 if self.config.early_stopping and best_mc_rate >= 0.95:
                     logger.info(
-                        f"Early stopping: found solution at iteration {batch_start + actual_batch_size}"
+                        "Early stopping: found solution at iteration "
+                        f"{batch_start + actual_batch_size}"
                     )
                     break
-        
+
         except KeyboardInterrupt:
             # Cleanup executor immediately
             if self.executor:
@@ -276,7 +284,7 @@ class IndicatorGenerator:
                 if best_indicator:
                     signals = best_indicator.generate_signals(data)
                     final_metrics = self.metrics_calc.calculate_all(data, signals)
-                
+
                 return GeneratorResult(
                     success=best_mc_rate >= 0.80,
                     indicator=best_indicator,
@@ -407,13 +415,13 @@ class IndicatorGenerator:
     def _run_evolution(self, data: pd.DataFrame) -> BaseIndicator | None:
         """Run evolutionary optimization on candidates."""
         population = [c[0] for c in self._candidates]
-        
+
         evolution = EvolutionEngine(
             self.config,
             metrics_calc=self.metrics_calc,
             progress_callback=self._progress_callback
         )
-        
+
         return evolution.run(data, population)
 
     def estimate_time(self, data: pd.DataFrame) -> float:

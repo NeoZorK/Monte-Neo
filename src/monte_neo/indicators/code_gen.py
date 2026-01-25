@@ -10,7 +10,7 @@ class CodeGenerator:
 
     def __init__(self, rng: np.random.Generator | None = None):
         """Initialize generator.
-        
+
         Args:
             rng: Random number generator.
         """
