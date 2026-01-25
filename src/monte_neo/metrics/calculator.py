@@ -18,8 +18,11 @@ from monte_neo.metrics.sharpe import SharpeRatioMetric, SortinoRatioMetric
 from monte_neo.metrics.winrate import WinrateMetric
 from monte_neo.utils.logger import get_logger
 
-if TYPE_CHECKING:
-    pass
+try:
+    from monte_neo.core import native_metrics
+    HAS_NATIVE = True
+except ImportError:
+    HAS_NATIVE = False
 
 logger = get_logger(__name__)
 
@@ -119,15 +122,7 @@ class MetricsCalculator:
         data: pd.DataFrame,
         signals: pd.DataFrame,
     ) -> list[TradeResult]:
-        """Extract trades from signals.
-
-        Args:
-            data: OHLCV DataFrame.
-            signals: DataFrame with 'signal' column (1=buy, -1=sell, 0=hold).
-
-        Returns:
-            List of TradeResult objects.
-        """
+        """Extract trades from signals. Use C++ if available."""
         if "signal" not in signals.columns:
             return []
 
@@ -135,6 +130,25 @@ class MetricsCalculator:
         close_prices = data["close"].to_numpy()
         signal_array = signals["signal"].to_numpy().astype(np.int32)
 
+        if HAS_NATIVE:
+            # Use high-performance C++ extension
+            raw_trades = native_metrics.extract_trades(
+                close_prices.tolist(), # pybind11 might need list if not using numpy bindings
+                signal_array.tolist()
+            )
+            return [
+                TradeResult(
+                    entry_idx=t.entry_idx,
+                    exit_idx=t.exit_idx,
+                    entry_price=t.entry_price,
+                    exit_price=t.exit_price,
+                    direction=t.direction,
+                    pnl=t.pnl,
+                    pnl_pct=t.pnl_pct
+                ) for t in raw_trades
+            ]
+
+        # Fallback to JIT-compiled Python
         raw_trades = self._extract_trades_fast(close_prices, signal_array)
         
         return [

@@ -19,6 +19,7 @@ from monte_neo.monte_carlo.shuffler import DataShuffler
 from monte_neo.monte_carlo.walk_forward import WalkForwardAnalyzer
 from monte_neo.utils.logger import get_logger
 from monte_neo.utils.parallel import ParallelExecutor
+from monte_neo.core.gpu_engine import MLXBacktestEngine
 
 if TYPE_CHECKING:
     from monte_neo.indicators.base import BaseIndicator
@@ -98,6 +99,7 @@ class MonteCarloEngine:
         self.noise_injector = NoiseInjector(self.config.random_seed)
         self.sensitivity = SensitivityAnalyzer()
         self.walk_forward = WalkForwardAnalyzer()
+        self.gpu_engine = MLXBacktestEngine()
 
         self._progress_callback: Callable[[int, int], None] | None = None
 
@@ -156,6 +158,43 @@ class MonteCarloEngine:
         results = executor.map(worker_func, scenarios)
 
         # Process results
+        # Try GPU acceleration if many scenarios
+        if len(scenarios) > 10 and self.config.use_noise: # Good candidate for GPU
+            try:
+                logger.info(f"Offloading {total} scenarios to GPU (MLX)...")
+                gpu_results = self.gpu_engine.backtest_scenarios(indicator, scenarios)
+                
+                for i, res in enumerate(gpu_results):
+                    # The GPU engine returns a dict with 'passed' and 'metrics'
+                    if res["passed"]:
+                        passed_count += 1
+                    all_results.append({
+                        "scenario_idx": i,
+                        "passed": res["passed"],
+                        "metrics": res["metrics"], # Ensure metrics are correctly extracted
+                    })
+                
+                if self._progress_callback:
+                    self._progress_callback(total, total)
+                    
+                return self._finalize_results(passed_count, total, all_results, start_time)
+
+            except Exception as e:
+                logger.warning(f"GPU acceleration failed, falling back to CPU: {e}")
+
+        # Fallback to CPU parallel execution
+        from functools import partial
+        worker_func = partial(
+            _run_single_scenario,
+            indicator=indicator,
+            metrics_calc=metrics_calc,
+            target_metrics=target_metrics
+        )
+
+        executor = ParallelExecutor(n_workers=self.config.n_workers)
+        results = executor.map(worker_func, scenarios)
+
+        # Process CPU results
         for i, (meets_targets, metrics) in enumerate(results):
             if meets_targets:
                 passed_count += 1
@@ -165,14 +204,20 @@ class MonteCarloEngine:
                 "passed": meets_targets,
                 "metrics": metrics,
             })
-
-            # Since it's parallel and we get results at once (with ParallelExecutor.map),
-            # we can't easily do progress callbacks during execution without more complexity.
-            # But we can call it once at the end or update executor to support it.
         
         if self._progress_callback:
             self._progress_callback(total, total)
 
+        return self._finalize_results(passed_count, total, all_results, start_time)
+
+    def _finalize_results(
+        self, 
+        passed_count: int, 
+        total: int, 
+        all_results: list, 
+        start_time: float
+    ) -> MCResult:
+        """Helper to package results."""
         elapsed = time.time() - start_time
         pass_rate = passed_count / total if total > 0 else 0
 
