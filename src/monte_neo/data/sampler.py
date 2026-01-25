@@ -81,6 +81,9 @@ class DataSampler:
 
         n_blocks = n // block_size
         samples = []
+        
+        # Vectorized index generation helper
+        indices_range = np.arange(block_size)
 
         for _ in range(n_samples):
             # Randomly select block start positions
@@ -90,12 +93,13 @@ class DataSampler:
                 replace=True,
             )
 
-            # Collect blocks
-            blocks = []
-            for start in block_starts:
-                blocks.append(data.iloc[start : start + block_size])
+            # Construct all indices at once
+            # Broadcasting: (n_blocks, 1) + (block_size,) -> (n_blocks, block_size)
+            full_indices = (block_starts[:, None] + indices_range).ravel()
 
-            sample = pd.concat(blocks, ignore_index=True)
+            # Single slice operation is much faster than loop + concat
+            sample = data.iloc[full_indices].copy()
+            sample.reset_index(drop=True, inplace=True)
             samples.append(sample)
 
         logger.debug(
@@ -130,15 +134,16 @@ class DataSampler:
 
         # Create circular data
         circular_data = pd.concat([data, data], ignore_index=True)
+        indices_range = np.arange(block_size)
 
         for _ in range(n_samples):
             block_starts = self.rng.choice(n, size=n_blocks, replace=True)
 
-            blocks = []
-            for start in block_starts:
-                blocks.append(circular_data.iloc[start : start + block_size])
+            # Vectorized index generation
+            full_indices = (block_starts[:, None] + indices_range).ravel()
 
-            sample = pd.concat(blocks, ignore_index=True)
+            sample = circular_data.iloc[full_indices].copy()
+            sample.reset_index(drop=True, inplace=True)
             samples.append(sample)
 
         logger.debug(f"Generated {n_samples} circular block bootstrap samples")
