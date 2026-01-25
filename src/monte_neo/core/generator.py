@@ -157,12 +157,16 @@ class IndicatorGenerator:
             batch_results = executor.map(_search_worker, worker_args)
             
             # Process results
-            for indicator, mc_rate in batch_results:
+            for result in batch_results:
+                if result is None:
+                    continue
+
+                indicator, mc_rate = result
+                iterations_tried += 1
+
                 if indicator is None:
                     continue
-                    
-                iterations_tried += 1
-                
+
                 # Track candidates
                 if mc_rate > 0.5:
                     self._candidates.append((indicator, mc_rate))
