@@ -1,10 +1,13 @@
 
 import time
-import pandas as pd
+
 import numpy as np
-from monte_neo.core.generator import IndicatorGenerator
+import pandas as pd
+
 from monte_neo.core.config import GeneratorConfig
-from monte_neo.utils.logger import setup_logging, get_logger
+from monte_neo.core.generator import IndicatorGenerator
+from monte_neo.utils.logger import get_logger, setup_logging
+
 
 def generate_synthetic_data(length=1000):
     dates = pd.date_range(start="2020-01-01", periods=length, freq="1d")
@@ -13,7 +16,7 @@ def generate_synthetic_data(length=1000):
     low = close * (1 - np.random.random(length) * 0.02)
     open_ = close * (1 + np.random.random(length) * 0.01 - 0.005)
     volume = np.random.random(length) * 1000000
-    
+
     return pd.DataFrame({
         "timestamp": dates,
         "open": open_,
@@ -25,16 +28,16 @@ def generate_synthetic_data(length=1000):
 
 def benchmark():
     setup_logging()
-    
+
     logger = get_logger("Benchmark")
     logger.info("Starting benchmark...")
-    
+
     import cProfile
     import pstats
-    
+
     profiler = cProfile.Profile()
     profiler.enable()
-    
+
     # Config similar to user
     config = GeneratorConfig(
         max_iterations=100,  # Short run
@@ -44,27 +47,27 @@ def benchmark():
         target_metrics={"profit_factor": 0.5},  # Low target to ensure pass
         population_size=10
     )
-    
+
     data = generate_synthetic_data(2000)
     generator = IndicatorGenerator(config)
-    
+
     print("Starting benchmark...")
     start_time = time.time()
-    
+
     # Mock progress callback to track speed
     def progress(current, total, status):
         print(f"\r{current}/{total} - {status}", end="")
-        
+
     generator.set_progress_callback(progress)
-    
+
     try:
         generator.generate(data)
     except KeyboardInterrupt:
         pass
-        
+
     end_time = time.time()
     profiler.disable()
-    
+
     with open("profile_stats.txt", "w") as f:
         stats = pstats.Stats(profiler, stream=f).sort_stats("cumtime")
         stats.print_stats(50)

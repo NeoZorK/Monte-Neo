@@ -13,15 +13,14 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 
-from monte_neo.monte_carlo.workers import run_scenario_batch, run_single_scenario, init_worker_data
 from monte_neo.monte_carlo.scenarios import ScenarioBuilder
+from monte_neo.monte_carlo.workers import init_worker_data, run_scenario_batch, run_single_scenario
 from monte_neo.utils.logger import get_logger
 from monte_neo.utils.parallel import ParallelExecutor
 
 if TYPE_CHECKING:
     from monte_neo.indicators.base import BaseIndicator
     from monte_neo.metrics.calculator import MetricsCalculator
-    from monte_neo.core.gpu_engine import MLXBacktestEngine
 
 logger = get_logger(__name__)
 
@@ -58,7 +57,7 @@ class MonteCarloEngine:
     """Monte Carlo simulation engine."""
 
     def __init__(
-        self, 
+        self,
         config: MCConfig | None = None,
         executor: ParallelExecutor | None = None,
     ) -> None:
@@ -74,7 +73,7 @@ class MonteCarloEngine:
 
         # Initialize sub-modules
         self.scenario_builder = ScenarioBuilder(self.config)
-        
+
         from monte_neo.core.gpu_engine import MLXBacktestEngine
         self.gpu_engine = MLXBacktestEngine()
 
@@ -116,11 +115,11 @@ class MonteCarloEngine:
         if self.config.use_block_bootstrap and existing_scenarios is None:
             # Lazy generation for Block Bootstrap to avoid memory overhead
             logger.debug(f"Running lazy Block Bootstrap with {self.config.iterations} iterations")
-            
+
             # Ensure we have an executor with initialized data
             executor = self.executor
             should_shutdown = False
-            
+
             if executor is None:
                 # Create a local executor with data initialization
                 executor = ParallelExecutor(
@@ -130,7 +129,7 @@ class MonteCarloEngine:
                 )
                 should_shutdown = True
                 executor.__enter__()
-            
+
             try:
                 # Use GPU engine's lazy method
                 results = self.gpu_engine.backtest_lazy_scenarios(
@@ -140,11 +139,11 @@ class MonteCarloEngine:
                     block_size=None, # Auto-calculated
                     base_seed=self.config.random_seed or 42
                 )
-                
+
                 # Transform results
                 passed_count = sum(1 for r in results if r.get("passed", False))
                 total = len(results)
-                
+
                 all_results = []
                 for i, res in enumerate(results):
                     all_results.append({
@@ -152,17 +151,20 @@ class MonteCarloEngine:
                         "passed": res.get("passed", False),
                         "metrics": res.get("metrics", {})
                     })
-                
+
                 if self._progress_callback:
                     self._progress_callback(total, total)
-                    
+
                 return self._finalize_results(passed_count, total, all_results, start_time)
-                
+
             finally:
                 if should_shutdown and executor:
                     executor.__exit__(None, None, None)
 
-        scenarios = existing_scenarios if existing_scenarios is not None else self.scenario_builder.generate(data)
+        if existing_scenarios is not None:
+            scenarios = existing_scenarios
+        else:
+            scenarios = self.scenario_builder.generate(data)
         total = len(scenarios)
 
         logger.debug(f"Running {total} Monte Carlo scenarios in parallel")
@@ -177,7 +179,7 @@ class MonteCarloEngine:
             try:
                 logger.debug(f"Offloading {total} scenarios to GPU (MLX)...")
                 gpu_results = self.gpu_engine.backtest_scenarios(
-                    indicator, 
+                    indicator,
                     scenarios,
                     executor=self.executor
                 )
@@ -214,9 +216,9 @@ class MonteCarloEngine:
         if executor is None:
             n_workers = self.config.n_workers
             executor = ParallelExecutor(n_workers=n_workers)
-        
+
         n_workers = executor.n_workers
-        
+
         # If scenarios are few or workers=1, run sequentially without batching overhead
         if total < 50 or n_workers == 1:
             worker_func = partial(
@@ -226,7 +228,7 @@ class MonteCarloEngine:
                 target_metrics=target_metrics,
             )
             results = executor.map(worker_func, scenarios)
-            
+
             # Process results
             for i, result in enumerate(results):
                 if result is None:
@@ -243,19 +245,19 @@ class MonteCarloEngine:
             # Batch processing
             batch_size = max(10, total // (n_workers * 4))
             scenario_batches = [
-                scenarios[i : i + batch_size] 
+                scenarios[i : i + batch_size]
                 for i in range(0, total, batch_size)
             ]
-            
+
             batch_worker = partial(
                 run_scenario_batch,
                 indicator=indicator,
                 metrics_calc=metrics_calc,
                 target_metrics=target_metrics,
             )
-            
+
             batch_results_list = executor.map(batch_worker, scenario_batches)
-            
+
             # Flatten results
             current_idx = 0
             for batch_res in batch_results_list:

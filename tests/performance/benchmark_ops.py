@@ -1,28 +1,33 @@
-import time
-import pandas as pd
-import numpy as np
 import os
+import time
+
+import numpy as np
+import pandas as pd
+
 from monte_neo.core.gpu_engine import MLXBacktestEngine
-from monte_neo.indicators.technical import SMAIndicator, RSIIndicator
-from monte_neo.utils.parallel import ParallelExecutor
+from monte_neo.indicators.technical import RSIIndicator, SMAIndicator
 from monte_neo.monte_carlo.workers import init_worker_data
-from monte_neo.utils.logger import get_logger
+from monte_neo.utils.parallel import ParallelExecutor
+
 
 def benchmark():
     # Setup
-    data_len = 5000 
-    n_indicators = 2000 
-    
+    data_len = 5000
+    n_indicators = 2000
+
     print(f"Generating data ({data_len} bars)...")
     dates = pd.date_range(start="2020-01-01", periods=data_len, freq="min")
-    df = pd.DataFrame({
-        "open": np.random.rand(data_len) * 100,
-        "high": np.random.rand(data_len) * 100,
-        "low": np.random.rand(data_len) * 100,
-        "close": np.random.rand(data_len) * 100,
-        "volume": np.random.rand(data_len) * 1000,
-    }, index=dates)
-    
+    df = pd.DataFrame(
+        {
+            "open": np.random.rand(data_len) * 100,
+            "high": np.random.rand(data_len) * 100,
+            "low": np.random.rand(data_len) * 100,
+            "close": np.random.rand(data_len) * 100,
+            "volume": np.random.rand(data_len) * 1000,
+        },
+        index=dates,
+    )
+
     # Indicators
     print(f"Creating {n_indicators} indicators...")
     indicators = []
@@ -34,11 +39,11 @@ def benchmark():
             ind = RSIIndicator()
             ind.set_parameter("period", 5 + (i % 25))
         indicators.append(ind)
-        
+
     engine = MLXBacktestEngine()
-    
+
     print(f"Benchmarking {n_indicators} indicators on {data_len} bars...")
-    
+
     # 1. Serial Baseline
     print("Running Serial Baseline...")
     start_serial = time.time()
@@ -54,37 +59,47 @@ def benchmark():
 
     # 2. Parallel with Persistent Pool
     print("Running with GPU MLX + External ParallelExecutor (Persistent Pool)...")
-    
+
     # Create executor outside timing
     executor = ParallelExecutor(
         n_workers=os.cpu_count(),
-        initializer=init_worker_data, 
+        initializer=init_worker_data,
         initargs=(df,)
     )
-    
+
     with executor:
         start = time.time()
-        results = engine.backtest_batch(df, indicators, executor=executor, use_shared_data=True)
+        engine.backtest_batch(
+            df,
+            indicators,
+            executor=executor,
+            use_shared_data=True,
+        )
         elapsed = time.time() - start
 
     ops_sec = n_indicators / elapsed
-    
+
     print(f"Parallel Time: {elapsed:.4f}s")
     print(f"Parallel Ops/sec: {ops_sec:.2f}")
-    
+
     # 3. Threading
     print("Running with GPU MLX + Threading...")
     executor_threads = ParallelExecutor(
         n_workers=os.cpu_count(),
         use_processes=False,
-        initializer=init_worker_data, 
+        initializer=init_worker_data,
         initargs=(df,)
     )
     with executor_threads:
         start = time.time()
-        results = engine.backtest_batch(df, indicators, executor=executor_threads, use_shared_data=True)
+        engine.backtest_batch(
+            df,
+            indicators,
+            executor=executor_threads,
+            use_shared_data=True,
+        )
         elapsed = time.time() - start
-    
+
     ops_sec_threads = n_indicators / elapsed
     print(f"Threading Time: {elapsed:.4f}s")
     print(f"Threading Ops/sec: {ops_sec_threads:.2f}")
@@ -93,7 +108,7 @@ def benchmark():
         print("SUCCESS: Performance > 1000 ops/sec")
     else:
         print("WARNING: Performance < 1000 ops/sec")
-    
+
     return ops_sec
 
 if __name__ == "__main__":

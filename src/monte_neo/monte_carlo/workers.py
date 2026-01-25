@@ -30,7 +30,7 @@ def _generate_signals_wrapper(args):
             # We assume SHARED_DATA is set if df is None.
             return np.zeros(0, dtype=np.float32)
         df = SHARED_DATA
-        
+
     sigs = indicator.generate_signals(df)
     # Return numpy array to reduce IPC
     if isinstance(sigs, pd.DataFrame):
@@ -90,7 +90,7 @@ def run_scenario_batch(
     indices: list[int] | None = None,
 ) -> list[tuple[bool, dict[str, float]]]:
     """Run a batch of scenarios in a single worker task.
-    
+
     This reduces IPC overhead and allows reusing compiled indicator code.
     Can use explicitly passed scenarios OR shared scenarios via indices.
     """

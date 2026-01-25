@@ -136,13 +136,13 @@ class InteractiveMenu:
         info = self.storage.get_info(symbol, timeframe)
         if info:
             console.print(f"\n[yellow]⚠ Data for {symbol} {timeframe} already exists.[/]")
-            
+
             # Format info
             rows = info.get("rows", 0)
             start = info.get("start_date")
             end = info.get("end_date")
             size = info.get("size_mb", 0)
-            
+
             range_str = "Unknown"
             if start and end:
                 # Ensure readable format

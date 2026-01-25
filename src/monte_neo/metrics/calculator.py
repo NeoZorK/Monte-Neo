@@ -83,21 +83,21 @@ class MetricsCalculator:
         # Basic PnLs are needed for almost everything
         pnls = [t.pnl for t in trades]
         pnl_pcts = [t.pnl_pct for t in trades]
-        
+
         metrics = {}
-        
+
         # If required_metrics is provided, check what we need
         # Some intermediate values (equity, returns) are expensive, so calculate only if needed
-        
+
         need_all = required_metrics is None
         reqs = set(required_metrics) if required_metrics else set()
-        
+
         def needs(name: str) -> bool:
             return need_all or name in reqs
 
-        # Always calculate profit factor if any profit metric is needed? 
+        # Always calculate profit factor if any profit metric is needed?
         # Actually, let's just follow the requests.
-        
+
         # Profit metrics
         if needs("profit_factor"):
             metrics["profit_factor"] = self.profit_factor.calculate(pnls)
@@ -124,29 +124,29 @@ class MetricsCalculator:
 
         # Complex metrics requiring Equity Curve
         equity_metrics = {
-            "sharpe_ratio", "sortino_ratio", "max_drawdown", "avg_drawdown", 
+            "sharpe_ratio", "sortino_ratio", "max_drawdown", "avg_drawdown",
             "recovery_factor", "calmar_ratio"
         }
-        
+
         if need_all or not reqs.isdisjoint(equity_metrics):
             equity = self._calculate_equity(trades)
-            
+
             if needs("max_drawdown") or needs("recovery_factor") or needs("calmar_ratio"):
                 metrics["max_drawdown"] = self.drawdown.calculate_max(equity)
-            
+
             if needs("avg_drawdown"):
                 metrics["avg_drawdown"] = self.drawdown.calculate_avg(equity)
-                
+
             if needs("recovery_factor"):
                 metrics["recovery_factor"] = self._recovery_factor(pnl_pcts, equity)
-                
+
             if needs("calmar_ratio"):
                 metrics["calmar_ratio"] = self._calmar_ratio(pnl_pcts, equity)
 
             # Returns based metrics
             if needs("sharpe_ratio") or needs("sortino_ratio"):
                 returns = np.diff(equity) / equity[:-1] if len(equity) > 1 else []
-                
+
                 if needs("sharpe_ratio"):
                     metrics["sharpe_ratio"] = self.sharpe.calculate(returns)
                 if needs("sortino_ratio"):

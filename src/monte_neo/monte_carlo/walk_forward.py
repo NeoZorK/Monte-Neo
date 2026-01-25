@@ -65,7 +65,11 @@ class WalkForwardAnalyzer:
         self.train_pct = train_pct
         self.anchored = anchored
 
-    def generate_scenarios(self, data: pd.DataFrame, n_splits: int | None = None) -> list[pd.DataFrame]:
+    def generate_scenarios(
+        self,
+        data: pd.DataFrame,
+        n_splits: int | None = None,
+    ) -> list[pd.DataFrame]:
         """Generate walk-forward test scenarios (out-of-sample segments).
 
         Args:

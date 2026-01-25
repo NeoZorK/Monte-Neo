@@ -5,14 +5,15 @@ Handles generation of various Monte Carlo scenarios.
 
 from __future__ import annotations
 
-import pandas as pd
 from typing import TYPE_CHECKING
 
+import pandas as pd
+
+from monte_neo.data.sampler import DataSampler
 from monte_neo.monte_carlo.noise import NoiseInjector
 from monte_neo.monte_carlo.sensitivity import SensitivityAnalyzer
 from monte_neo.monte_carlo.shuffler import DataShuffler
 from monte_neo.monte_carlo.walk_forward import WalkForwardAnalyzer
-from monte_neo.data.sampler import DataSampler
 
 if TYPE_CHECKING:
     from monte_neo.monte_carlo.engine import MCConfig
@@ -23,7 +24,7 @@ class ScenarioBuilder:
 
     def __init__(self, config: MCConfig):
         """Initialize builder.
-        
+
         Args:
             config: Monte Carlo configuration.
         """
@@ -67,18 +68,20 @@ class ScenarioBuilder:
                 n_splits=self.config.walk_forward_splits,
             )
             scenarios.extend(wf_scenarios)
-            
+
         # Block Bootstrap scenarios
         if self.config.use_block_bootstrap:
             # Distribute iterations among enabled methods
-            n_methods = sum([
-                self.config.use_shuffling, 
-                self.config.use_noise, 
-                self.config.use_sensitivity,
-                self.config.use_block_bootstrap
-            ])
+            n_methods = sum(
+                [
+                    self.config.use_shuffling,
+                    self.config.use_noise,
+                    self.config.use_sensitivity,
+                    self.config.use_block_bootstrap,
+                ]
+            )
             n_per_method = self.config.iterations // max(1, n_methods)
-            
+
             bb_samples = self.sampler.block_bootstrap(data, n_samples=n_per_method)
             scenarios.extend(bb_samples)
 

@@ -130,7 +130,7 @@ class DynamicIndicator(BaseIndicator):
             # Ensure it returns a Series or DataFrame
             if isinstance(vals, pd.DataFrame):
                 vals = vals.iloc[:, 0] if not vals.empty else 0
-            
+
         except Exception as e:
             # During genetic evolution, many invalid formulas are generated.
             # We log these as DEBUG to avoid cluttering the output.

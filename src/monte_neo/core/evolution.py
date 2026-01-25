@@ -3,16 +3,17 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 
 from monte_neo.indicators.base import BaseIndicator
-from monte_neo.indicators.dynamic import DynamicIndicator
-from monte_neo.utils.ast_utils import crossover_trees
 from monte_neo.indicators.code_gen import CodeGenerator
+from monte_neo.indicators.dynamic import DynamicIndicator
 from monte_neo.metrics.calculator import MetricsCalculator
+from monte_neo.utils.ast_utils import crossover_trees
 
 if TYPE_CHECKING:
     from monte_neo.core.config import GeneratorConfig
@@ -22,13 +23,13 @@ class EvolutionEngine:
     """Evolutionary algorithm engine."""
 
     def __init__(
-        self, 
-        config: GeneratorConfig, 
+        self,
+        config: GeneratorConfig,
         metrics_calc: MetricsCalculator | None = None,
         progress_callback: Callable[[int, int, str], None] | None = None
     ):
         """Initialize engine.
-        
+
         Args:
             config: Generator configuration.
             metrics_calc: Metrics calculator.
@@ -41,8 +42,8 @@ class EvolutionEngine:
         self.progress_callback = progress_callback
 
     def run(
-        self, 
-        data: pd.DataFrame, 
+        self,
+        data: pd.DataFrame,
         initial_population: list[BaseIndicator]
     ) -> BaseIndicator | None:
         """Run evolutionary optimization.
@@ -54,17 +55,17 @@ class EvolutionEngine:
         Returns:
             Best indicator found.
         """
-        population = list(initial_population)
-        
+        population: list[BaseIndicator] = list(initial_population)
+
         # Pad population if needed
         while len(population) < self.config.population_size:
-            ind = DynamicIndicator()
-            ind.set_parameter("source_code", self.code_gen.generate_code())
-            population.append(ind)
+            new_indicator = DynamicIndicator()
+            new_indicator.set_parameter("source_code", self.code_gen.generate_code())
+            population.append(new_indicator)
 
         for gen in range(self.config.generations):
             # Evaluate fitness
-            fitness_scores = []
+            fitness_scores: list[tuple[BaseIndicator, float]] = []
             for ind in population:
                 try:
                     signals = ind.generate_signals(data)
@@ -97,7 +98,7 @@ class EvolutionEngine:
 
             # Selection (Elite + Tournament)
             elite_count = max(2, int(self.config.population_size * 0.1))
-            new_pop = [x[0] for x in fitness_scores[:elite_count]]
+            new_pop: list[BaseIndicator] = [x[0] for x in fitness_scores[:elite_count]]
 
             while len(new_pop) < self.config.population_size:
                 parent1 = self._tournament_select(fitness_scores)
@@ -117,7 +118,7 @@ class EvolutionEngine:
             return None
 
         # Final evaluation
-        final_scores = []
+        final_scores: list[tuple[BaseIndicator, float]] = []
         for ind in population:
             try:
                 signals = ind.generate_signals(data)
