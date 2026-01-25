@@ -172,7 +172,7 @@ class IndicatorGenerator:
                     continue
 
                 # Track candidates
-                if mc_rate > 0.5:
+                if mc_rate > 0.0:  # Any passed MC is a candidate, even if weak
                     self._candidates.append((indicator, mc_rate))
 
                 # Update best
@@ -183,7 +183,7 @@ class IndicatorGenerator:
 
             # Progress callback
             if self._progress_callback:
-                status = f"Best MC rate: {best_mc_rate:.1%} [Batch {batch_start // batch_size + 1}]"
+                status = f"Best MC rate: {best_mc_rate:.1%} [Batch {min(batch_start // batch_size + 1, total_iterations // batch_size)}]"
                 self._progress_callback(
                     min(batch_start + batch_size, total_iterations),
                     total_iterations,
