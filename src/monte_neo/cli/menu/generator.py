@@ -100,6 +100,7 @@ def _run_generation(menu: InteractiveMenu, symbol: str, timeframe: str, iteratio
         use_mc_sensitivity="sensitivity" in menu._mc_methods,
         use_mc_walk_forward="walk_forward" in menu._mc_methods,
         use_mc_block_bootstrap="block_bootstrap" in menu._mc_methods,
+        use_sequential_mc=getattr(menu, "_mc_sequential", False),
     )
 
     generator = IndicatorGenerator(config)

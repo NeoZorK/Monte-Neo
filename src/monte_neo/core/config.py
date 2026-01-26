@@ -24,6 +24,7 @@ class GeneratorConfig:
     use_mc_sensitivity: bool = True
     use_mc_walk_forward: bool = True
     use_mc_block_bootstrap: bool = True
+    use_sequential_mc: bool = False
     early_stopping: bool = True
     min_trades: int = 30
     population_size: int = 50
@@ -41,6 +42,7 @@ class GeneratorResult:
     parameters: dict
     final_metrics: dict
     mc_pass_rate: float
+    mc_details: dict = field(default_factory=dict)
     iterations_tried: int
     elapsed_time: float
     candidates_found: int
