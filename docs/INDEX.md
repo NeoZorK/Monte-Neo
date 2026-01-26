@@ -63,6 +63,7 @@ A simplified guide to the Monte-Neo file structure.
 - src/monte_neo/data/downloader.py - Binance OHLCV data downloader
 - src/monte_neo/data/storage.py - Efficient Parquet storage handler
 - src/monte_neo/data/sampler.py - Bootstrap and synthetic data sampling
+- src/monte_neo/data/websocket.py - Binance WebSocket streaming wrapper
 
 #### Monte Carlo (monte_carlo/)
 - src/monte_neo/monte_carlo/__init__.py - MC module exports
