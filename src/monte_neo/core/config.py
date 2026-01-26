@@ -19,11 +19,11 @@ class GeneratorConfig:
         default_factory=lambda: ["sma", "rsi", "macd", "dynamic"]
     )
     mc_iterations: int = 1000
-    use_mc_shuffling: bool = False
-    use_mc_noise: bool = False
-    use_mc_sensitivity: bool = False
-    use_mc_walk_forward: bool = False
-    use_mc_block_bootstrap: bool = True
+    use_mc_shuffling: bool = True
+    use_mc_noise: bool = True
+    use_mc_sensitivity: bool = True
+    use_mc_walk_forward: bool = True
+    use_mc_block_bootstrap: bool = False
     early_stopping: bool = True
     min_trades: int = 30
     population_size: int = 50
