@@ -346,8 +346,8 @@ class InteractiveMenu:
             choices=[
                 {"name": "1,000 (fast test)", "value": 1000},
                 {"name": "10,000 (standard)", "value": 10000},
-                {"name": "50,000 (thorough)", "value": 50000},
-                {"name": "100,000 (maximum)", "value": 100000},
+                {"name": "100,000 (thorough)", "value": 100000},
+                {"name": "1,000,000,000 (maximum)", "value": 1000000000},
             ],
             style=CUSTOM_STYLE,
         ).ask()

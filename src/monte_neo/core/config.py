@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 class GeneratorConfig:
     """Generator configuration."""
 
-    max_iterations: int = 100000
+    max_iterations: int = 1000000000
     target_metrics: dict[str, float] = field(default_factory=dict)
     indicator_types: list[str] = field(
         default_factory=lambda: ["sma", "rsi", "macd", "dynamic"]

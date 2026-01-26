@@ -22,7 +22,7 @@ class Config:
     # Generation settings
     default_symbol: str = "BTCUSDT"
     default_timeframe: str = "1h"
-    max_iterations: int = 100000
+    max_iterations: int = 1000000000
     mc_iterations: int = 1000
 
     # Default target metrics
