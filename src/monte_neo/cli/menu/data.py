@@ -94,20 +94,36 @@ def _process_download(menu: InteractiveMenu, symbol: str, timeframe: str) -> Non
             return
 
     # Select period
-    days = questionary.select(
+    choices = [
+        {"name": "30 days", "value": 30},
+        {"name": "90 days", "value": 90},
+        {"name": "180 days", "value": 180},
+        {"name": "365 days (1 year)", "value": 365},
+        {"name": "730 days (2 years)", "value": 730},
+        {"name": "1095 days (3 years)", "value": 1095},
+        {"name": "1825 days (5 years)", "value": 1825},
+        {"name": "3650 days (10 years)", "value": 3650},
+        {"name": "Custom days...", "value": "custom"},
+    ]
+    
+    days_val = questionary.select(
         "Historical period:",
-        choices=[
-            {"name": "30 days", "value": 30},
-            {"name": "90 days", "value": 90},
-            {"name": "180 days", "value": 180},
-            {"name": "365 days (1 year)", "value": 365},
-            {"name": "730 days (2 years)", "value": 730},
-        ],
+        choices=choices,
         style=CUSTOM_STYLE,
     ).ask()
 
-    if not days:
+    if not days_val:
         return
+
+    if days_val == "custom":
+        days_str = questionary.text("Enter number of days:").ask()
+        try:
+            days = int(days_str)
+        except (ValueError, TypeError):
+            console.print("[red]Invalid number of days.[/]")
+            return
+    else:
+        days = days_val
 
     menu._selected_symbol = symbol
     menu._selected_timeframe = timeframe
