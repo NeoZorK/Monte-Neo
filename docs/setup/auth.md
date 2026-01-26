@@ -2,7 +2,7 @@
 
 ## Binance API
 
-Monte-Neo uses the `python-binance` library to fetch market data.
+Monte-Neo uses the official `binance-connector` library to fetch market data.
 
 ### Public Data
 You do **not** need an API key to download public OHLCV data (Klines).
