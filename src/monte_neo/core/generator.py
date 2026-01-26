@@ -321,30 +321,44 @@ class IndicatorGenerator:
 
         # If dynamic type is selected, we run evolutionary optimization at the end
         if "dynamic" in self.config.indicator_types and len(self._candidates) >= 2:
-            logger.info("Starting evolutionary optimization on best candidates...")
+            logger.info(f"Starting evolutionary optimization on {len(self._candidates)} candidates...")
             try:
-                evolved_best = self._run_evolution(data)
-                if evolved_best:
-                    # Check MC rate for evolved best
-                    mc_result = self._run_mc_validation(data, evolved_best)
-                    mc_rate = mc_result.pass_rate
-                    if mc_rate > best_mc_rate:
-                        best_mc_rate = mc_rate
-                        best_indicator = evolved_best
-                        best_mc_details = {
-                            "step_results": [
-                                {
-                                    "method": r.method_name,
-                                    "passed": r.passed,
-                                    "rate": r.pass_rate,
-                                    "advice": r.advice
-                                } for r in mc_result.step_results
-                            ]
-                        }
-                        logger.info(
-                            f"Evolution found better indicator: {evolved_best.name} "
-                            f"MC rate={mc_rate:.2%}"
-                        )
+                # Filter candidates to only those with dynamic type for crossover to work best
+                dynamic_candidates = [
+                    c[0] for c in self._candidates 
+                    if isinstance(c[0], DynamicIndicator)
+                ]
+                
+                if len(dynamic_candidates) >= 2:
+                    evolved_best = self._run_evolution(data, initial_population=dynamic_candidates)
+                    if evolved_best:
+                        # Check MC rate for evolved best
+                        mc_result = self._run_mc_validation(data, evolved_best)
+                        mc_rate = mc_result.pass_rate
+                        
+                        # Even if rate is not better, track it if it's decent
+                        if mc_rate > 0:
+                            self._candidates.append((evolved_best, mc_rate))
+                            
+                        if mc_rate > best_mc_rate:
+                            best_mc_rate = mc_rate
+                            best_indicator = evolved_best
+                            best_mc_details = {
+                                "step_results": [
+                                    {
+                                        "method": r.method_name,
+                                        "passed": r.passed,
+                                        "rate": r.pass_rate,
+                                        "advice": r.advice
+                                    } for r in mc_result.step_results
+                                ]
+                            }
+                            logger.info(
+                                f"Evolution found better indicator: {evolved_best.name} "
+                                f"MC rate={mc_rate:.2%}"
+                            )
+            except Exception as e:
+                logger.error(f"Evolutionary optimization failed: {e}")
             except KeyboardInterrupt:
                 logger.info("Evolutionary optimization interrupted by user")
 
@@ -437,9 +451,9 @@ class IndicatorGenerator:
         return True
 
 
-    def _run_evolution(self, data: pd.DataFrame) -> BaseIndicator | None:
+    def _run_evolution(self, data: pd.DataFrame, initial_population: list[BaseIndicator] | None = None) -> BaseIndicator | None:
         """Run evolutionary optimization on candidates."""
-        population = [c[0] for c in self._candidates]
+        population = initial_population if initial_population is not None else [c[0] for c in self._candidates]
 
         evolution = EvolutionEngine(
             self.config,
