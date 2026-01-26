@@ -92,9 +92,10 @@ def show_generation_result(menu: InteractiveMenu, result) -> None:
     if result.success:
         console.print(f"[bold green]✓ Indicator generated successfully! (MC Pass Rate {result.mc_pass_rate:.1%} >= {threshold:.0%})[/]\n")
     elif result.indicator:
-        console.print(f"[bold yellow]⚠ Best indicator found but did not meet production criteria ({result.mc_pass_rate:.1%} < {threshold:.0%})[/]\n")
+        console.print(f"[bold yellow]⚠ Best indicator found but did not meet production criteria ({result.mc_pass_rate:.1%} < {threshold:.0%})[/]")
+        console.print(f"[dim]Requirement: Monte Carlo Pass Rate must be > {threshold:.0%} to be considered stable.[/]\n")
     else:
-        console.print("[bold red]❌ No suitable indicator found matching criteria[/]\n")
+        console.print(f"[bold red]❌ No suitable indicator found matching criteria (MC Rate > {threshold:.0%})[/]\n")
 
     table = Table(title="Generation Results")
     table.add_column("Metric", style="cyan")
@@ -122,18 +123,21 @@ def show_generation_result(menu: InteractiveMenu, result) -> None:
         console.print(steps_table)
 
     if result.indicator:
+        # Get formula using the new method
+        formula = result.indicator.get_formula()
+        
         console.print(Panel(
             f"[bold cyan]Indicator:[/] {result.indicator.name}\n"
-            f"[bold cyan]Formula:[/] {result.parameters.get('source_code', 'N/A')}\n"
+            f"[bold cyan]Formula:[/] {formula}\n"
             f"[bold cyan]Parameters:[/] {result.parameters}",
             title="Best Indicator Found",
-            border_style="green"
+            border_style="green" if result.success else "yellow"
         ))
         _save_result(menu, result)
         if questionary.confirm("Show chart?", style=CUSTOM_STYLE).ask():
             _plot_result(menu, result)
     else:
-        console.print("\n[yellow]⚠ No indicator passed the 80% MC threshold.[/]")
+        console.print("\n[yellow]⚠ No indicator was found during the search.[/]")
 
 
 def _save_result(menu: InteractiveMenu, result) -> None:

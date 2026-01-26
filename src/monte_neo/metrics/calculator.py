@@ -60,8 +60,8 @@ class MetricsCalculator:
 
     def calculate_all(
         self,
-        data: pd.DataFrame,
-        signals: pd.DataFrame,
+        data: pd.DataFrame | np.ndarray,
+        signals: pd.DataFrame | np.ndarray,
         required_metrics: list[str] | None = None,
         use_sl_tp: bool = False,
         sl_pct: float = 0.0,
@@ -70,8 +70,8 @@ class MetricsCalculator:
         """Calculate metrics.
 
         Args:
-            data: OHLCV DataFrame.
-            signals: DataFrame with entry/exit signals.
+            data: OHLCV DataFrame or numpy array (OHLCV).
+            signals: DataFrame with 'signal' column or numpy array of signals.
             required_metrics: Optional list of metrics to calculate. If None, calculate all.
             use_sl_tp: Whether to apply Stop Loss and Take Profit.
             sl_pct: Stop Loss percentage (e.g., 1.0 for 1%).
@@ -162,21 +162,34 @@ class MetricsCalculator:
 
     def _extract_trades(
         self,
-        data: pd.DataFrame,
-        signals: pd.DataFrame,
+        data: pd.DataFrame | np.ndarray,
+        signals: pd.DataFrame | np.ndarray,
         use_sl_tp: bool = False,
         sl_pct: float = 0.0,
         tp_pct: float = 0.0,
     ) -> list[TradeResult]:
         """Extract trades from signals. Use C++ if available."""
-        if "signal" not in signals.columns:
-            return []
+        # Convert data to numpy arrays if it's a DataFrame
+        if isinstance(data, pd.DataFrame):
+            close_prices = data["close"].to_numpy()
+            high_prices = data["high"].to_numpy()
+            low_prices = data["low"].to_numpy()
+        else:
+            # Assume data is a numpy array (OHLCV)
+            # col 2=high, 3=low, 4=close (standard)
+            # Wait, let's check what our common format is. 
+            # Usually OHLCV: 0=O, 1=H, 2=L, 3=C, 4=V
+            high_prices = data[:, 1]
+            low_prices = data[:, 2]
+            close_prices = data[:, 3]
 
-        # Convert to numpy for maximum speed
-        close_prices = data["close"].to_numpy()
-        high_prices = data["high"].to_numpy()
-        low_prices = data["low"].to_numpy()
-        signal_array = signals["signal"].to_numpy().astype(np.int32)
+        # Convert signals to numpy array if it's a DataFrame
+        if isinstance(signals, pd.DataFrame):
+            if "signal" not in signals.columns:
+                return []
+            signal_array = signals["signal"].to_numpy().astype(np.int32)
+        else:
+            signal_array = np.asarray(signals, dtype=np.int32)
 
         if HAS_NATIVE and not use_sl_tp:
             # Use high-performance C++ extension (native doesn't support SL/TP yet)

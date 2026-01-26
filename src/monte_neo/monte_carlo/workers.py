@@ -31,13 +31,9 @@ def _generate_signals_wrapper(args):
             return np.zeros(0, dtype=np.float32)
         df = SHARED_DATA
 
-    sigs = indicator.generate_signals(df)
+    sigs = indicator.generate_signals_fast(df)
     # Return numpy array to reduce IPC
-    if isinstance(sigs, pd.DataFrame):
-        return sigs["signal"].to_numpy(dtype=np.float32)
-    elif isinstance(sigs, pd.Series):
-        return sigs.to_numpy(dtype=np.float32)
-    return np.array(sigs, dtype=np.float32)
+    return np.asarray(sigs, dtype=np.float32)
 
 
 def run_indicator_batch(args: tuple[list[BaseIndicator], pd.DataFrame | None]) -> list[np.ndarray]:
@@ -51,14 +47,8 @@ def run_indicator_batch(args: tuple[list[BaseIndicator], pd.DataFrame | None]) -
     results = []
     for ind in indicators:
         try:
-            sigs = ind.generate_signals(df)
-            if isinstance(sigs, pd.DataFrame):
-                res = sigs["signal"].to_numpy(dtype=np.float32)
-            elif isinstance(sigs, pd.Series):
-                res = sigs.to_numpy(dtype=np.float32)
-            else:
-                res = np.array(sigs, dtype=np.float32)
-            results.append(res)
+            sigs = ind.generate_signals_fast(df)
+            results.append(np.asarray(sigs, dtype=np.float32))
         except Exception:
             # Return zeros on failure to keep alignment
             results.append(np.zeros(len(df), dtype=np.float32))
@@ -116,7 +106,7 @@ def run_scenario_batch(
 
     for data in batch_data:
         try:
-            signals = indicator.generate_signals(data)
+            signals = indicator.generate_signals_fast(data)
             metrics = metrics_calc.calculate_all(data, signals, required_metrics=required_metrics)
 
             # Inline check
@@ -147,7 +137,7 @@ def run_single_scenario(
     target_metrics: dict[str, float],
 ) -> tuple[bool, dict[str, float]]:
     """Helper for parallel execution (legacy/single mode)."""
-    signals = indicator.generate_signals(scenario_data)
+    signals = indicator.generate_signals_fast(scenario_data)
     metrics = metrics_calc.calculate_all(
         scenario_data, signals, required_metrics=list(target_metrics.keys())
     )
@@ -198,15 +188,10 @@ def run_block_bootstrap_scenario(
         if hasattr(indicator, "_compile_if_needed"):
             indicator._compile_if_needed()
 
-        signals = indicator.generate_signals(scenario_data)
+        signals = indicator.generate_signals_fast(scenario_data)
 
         # Extract signal array to reduce IPC
-        if isinstance(signals, pd.DataFrame):
-            signal_arr = signals["signal"].values.astype(np.float32)
-        elif isinstance(signals, pd.Series):
-            signal_arr = signals.values.astype(np.float32)
-        else:
-            signal_arr = np.array(signals, dtype=np.float32)
+        signal_arr = np.asarray(signals, dtype=np.float32)
 
         # Calculate returns for GPU engine
         close_prices = scenario_data["close"].values

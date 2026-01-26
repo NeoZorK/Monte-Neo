@@ -108,7 +108,7 @@ class MLXBacktestEngine:
             raw_signals = []
             for ind in indicators:
                 try:
-                    raw_signals.append(ind.generate_signals(data))
+                    raw_signals.append(ind.generate_signals_fast(data))
                 except Exception:
                     raw_signals.append(None)
 
@@ -185,6 +185,14 @@ class MLXBacktestEngine:
         running_max = mx.cummax(equity_curves, axis=1)
         max_dds = mx.max((running_max - equity_curves) / running_max, axis=1)
 
+        # Trade Count (Approximate as signal changes)
+        # Shift signals to find entries/exits
+        sig_diff = mx.abs(signal_matrix[:, 1:] - signal_matrix[:, :-1])
+        # A trade is usually an entry (0->1 or 0->-1) and an exit (1->0 or -1->0)
+        # or a reversal (1->-1).
+        # We can approximate trade count as sum of absolute changes divided by 2
+        trade_counts = mx.sum(sig_diff > 0, axis=1) / 2
+
         # Profit Factor
         wins = mx.where(strat_returns > 0, strat_returns, 0)
         losses = mx.where(strat_returns < 0, strat_returns, 0)
@@ -196,6 +204,7 @@ class MLXBacktestEngine:
         final_rets_np = np.array(final_returns)
         max_dds_np = np.array(max_dds)
         pf_np = np.array(profit_factor)
+        trade_counts_np = np.array(trade_counts)
 
         for i in range(len(indicators)):
             res = {
@@ -206,6 +215,7 @@ class MLXBacktestEngine:
                     "total_return": float(final_rets_np[i]) - 1.0,
                     "max_drawdown": float(max_dds_np[i]),
                     "profit_factor": float(pf_np[i]),
+                    "trade_count": int(trade_counts_np[i]),
                 },
             }
             results.append(res)
