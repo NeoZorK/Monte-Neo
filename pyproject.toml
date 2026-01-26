@@ -29,6 +29,7 @@ dependencies = [
     "ta>=0.10",
     "rich>=13.0",
     "questionary>=2.0",
+    "prompt-toolkit>=3.0",
     "plotext>=5.2",
     "mplfinance",
     "pyyaml>=6.0",
