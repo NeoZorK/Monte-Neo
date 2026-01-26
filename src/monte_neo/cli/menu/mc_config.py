@@ -36,20 +36,8 @@ def configure_mc_workflow(menu: InteractiveMenu) -> None:
     if selected is not None:
         menu._mc_methods = selected
         
-        # Also ask about sequential mode here as it's relevant to MC config
-        sequential = questionary.confirm(
-            "Use Sequential MC Mode (Step-by-step validation)?",
-            default=menu._mc_sequential,
-            style=CUSTOM_STYLE,
-        ).ask()
-        
-        if sequential is not None:
-            menu._mc_sequential = sequential
-
         console.print("\n[green]✓ Monte Carlo methods configured:[/]")
         for method in menu._mc_methods:
             console.print(f"  • {method}")
-        if menu._mc_sequential:
-            console.print("  • Sequential validation: [green]Enabled[/]")
         console.print()
 
