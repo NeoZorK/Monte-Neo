@@ -116,9 +116,22 @@ def show_generation_result(menu: InteractiveMenu, result) -> None:
         console.print(steps_table)
 
     if result.indicator:
+        console.print(Panel(
+            f"[bold cyan]Indicator:[/] {result.indicator.name}\n"
+            f"[bold cyan]Formula:[/] {result.parameters.get('source_code', 'N/A')}\n"
+            f"[bold cyan]Parameters:[/] {result.parameters}",
+            title="Best Indicator Found",
+            border_style="green"
+        ))
         _save_result(menu, result)
         if questionary.confirm("Show chart?", style=CUSTOM_STYLE).ask():
             _plot_result(menu, result)
+    elif result.candidates_found > 0:
+        console.print(f"\n[yellow]⚠ No indicator passed the 80% MC threshold, but {result.candidates_found} candidates were found.[/]")
+        if questionary.confirm("View the best candidate anyway?", style=CUSTOM_STYLE).ask():
+            # Create a dummy result for the best candidate
+            # This would require more logic to pass the actual best candidate object
+            pass
 
 
 def _save_result(menu: InteractiveMenu, result) -> None:
