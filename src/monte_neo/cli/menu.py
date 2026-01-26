@@ -50,6 +50,7 @@ class InteractiveMenu:
         self._generations: int = 20
         self._mutation_rate: float = 0.3
         self._crossover_rate: float = 0.7
+        self._cached_symbols: list[str] = []
 
     def run(self) -> int:
         """Run the interactive menu loop.
@@ -115,9 +116,26 @@ class InteractiveMenu:
         console.print("\n[bold cyan]📊 Download Market Data[/]\n")
 
         # Select symbol
-        symbol = questionary.text(
-            "Symbol (e.g., BTCUSDT):",
-            default=self._selected_symbol,
+        if not self._cached_symbols:
+            try:
+                self.progress.start(100, "Fetching available symbols from Binance...")
+                downloader = BinanceDownloader()
+                symbols = downloader.get_available_symbols()
+                # Prioritize USDT pairs and then others
+                usdt_pairs = [s for s in symbols if s.endswith("USDT")]
+                other_pairs = [s for s in symbols if not s.endswith("USDT")]
+                self._cached_symbols = sorted(usdt_pairs) + sorted(other_pairs)
+                self.progress.stop()
+            except Exception as e:
+                logger.error(f"Error fetching symbols: {e}")
+                self.progress.stop()
+                console.print(f"[red]Error fetching symbols: {e}. Using default.[/]")
+                self._cached_symbols = [self._selected_symbol]
+
+        symbol = questionary.select(
+            "Symbol (use arrows to select):",
+            choices=self._cached_symbols,
+            default=self._selected_symbol if self._selected_symbol in self._cached_symbols else "BTCUSDT",
             style=CUSTOM_STYLE,
         ).ask()
 
