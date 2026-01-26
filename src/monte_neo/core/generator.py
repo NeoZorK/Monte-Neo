@@ -127,6 +127,12 @@ class IndicatorGenerator:
         best_mc_rate = 0.0
         best_mc_details = {}
         iterations_tried = 0
+        final_metrics = {}
+        
+        # Fallback tracking (best by performance metrics on original data)
+        fallback_indicator = None
+        fallback_metrics = {}
+        best_performance_score = -float('inf')
 
         # Initialize persistent executor
         self.executor = ParallelExecutor(
@@ -209,11 +215,19 @@ class IndicatorGenerator:
                     logger.warning(f"Backtest failed: {e}. Skipping batch.")
                     gpu_results = []
 
-                # Process results
+                    # Process results
                 for i, result in enumerate(gpu_results):
                     iterations_tried += 1
                     indicator = batch_indicators[i]
                     metrics = result["metrics"]
+                    
+                    # Update fallback (best by return/risk on original data)
+                    # Score = Return / (MaxDD + 0.01) * ProfitFactor
+                    perf_score = (metrics.get("total_return", 0) * metrics.get("profit_factor", 1)) / (metrics.get("max_drawdown", 0) + 0.01)
+                    if perf_score > best_performance_score:
+                        best_performance_score = perf_score
+                        fallback_indicator = indicator
+                        fallback_metrics = metrics
 
                     # 1. GPU Pre-filter
                     if not self._meets_basic_targets(metrics):
@@ -408,6 +422,21 @@ class IndicatorGenerator:
         if self.executor:
             self.executor.__exit__(None, None, None)
             self.executor = None
+
+        # If no indicator met MC criteria, use the fallback (best performer on original data)
+        if not best_indicator and fallback_indicator:
+            best_indicator = fallback_indicator
+            final_metrics = fallback_metrics
+            # Ensure final_metrics has all fields if they are missing from GPU batch
+            if "total_return" not in final_metrics or len(final_metrics) < 5:
+                signals = best_indicator.generate_signals(data)
+                final_metrics = self.metrics_calc.calculate_all(
+                    data, 
+                    signals,
+                    use_sl_tp=self.config.use_sl_tp,
+                    sl_pct=self.config.stop_loss_pct,
+                    tp_pct=self.config.take_profit_pct
+                )
 
         # Return result - success is based on threshold, but we ALWAYS return the best indicator if one was found
         return GeneratorResult(

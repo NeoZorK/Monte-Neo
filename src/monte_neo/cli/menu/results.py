@@ -126,18 +126,22 @@ def show_generation_result(menu: InteractiveMenu, result) -> None:
         # Get formula using the new method
         formula = result.indicator.get_formula()
         
+        # Color based on success
+        border_color = "green" if result.success else "yellow"
+        header_text = "Best Indicator Found" if result.success else "Best Indicator Found (Below Criteria)"
+        
         console.print(Panel(
             f"[bold cyan]Indicator:[/] {result.indicator.name}\n"
             f"[bold cyan]Formula:[/] {formula}\n"
             f"[bold cyan]Parameters:[/] {result.parameters}",
-            title="Best Indicator Found",
-            border_style="green" if result.success else "yellow"
+            title=header_text,
+            border_style=border_color
         ))
         _save_result(menu, result)
         if questionary.confirm("Show chart?", style=CUSTOM_STYLE).ask():
             _plot_result(menu, result)
     else:
-        console.print("\n[yellow]⚠ No indicator was found during the search.[/]")
+        console.print("\n[red]❌ No indicator was found during the search.[/]")
 
 
 def _save_result(menu: InteractiveMenu, result) -> None:
