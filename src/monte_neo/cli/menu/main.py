@@ -31,7 +31,7 @@ class InteractiveMenu:
         self._target_metrics: dict = {}
         self._selected_symbol: str = config.default_symbol
         self._selected_timeframe: str = config.default_timeframe
-        self._mc_methods: list[str] = ["shuffling", "noise", "sensitivity"]
+        self._mc_methods: list[str] = ["shuffling", "noise", "sensitivity", "walk_forward", "block_bootstrap"]
         self._pop_size, self._generations = 50, 20
         self._mutation_rate, self._crossover_rate = 0.3, 0.7
         self._cached_symbols: list[str] = []
@@ -43,6 +43,7 @@ class InteractiveMenu:
         
         # Validation Settings
         self._mc_pass_threshold: float = 0.80
+        self._mc_sequential: bool = False
 
     def run(self) -> int:
         """Run the interactive menu loop."""
@@ -63,6 +64,7 @@ class InteractiveMenu:
         choices = [
             {"name": "📊 Download Market Data", "value": "download"},
             {"name": "🎯 Set Target Metrics", "value": "metrics"},
+            {"name": "🎲 Configure Monte Carlo Methods", "value": "mc_config"},
             {"name": " Generate Indicator", "value": "generate"},
             {"name": "📈 View Results", "value": "results"},
             {"name": "⚙️  Settings", "value": "settings"},
