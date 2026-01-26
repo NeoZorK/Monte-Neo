@@ -28,9 +28,13 @@ class InteractiveMenu:
         self.progress = ProgressTracker()
 
         # State
-        self._target_metrics: dict = {}
+        self._target_metrics: dict = {
+            "profit_factor": 2.0,
+            "sharpe_ratio": 1.0,
+            "max_drawdown": 0.20
+        }
         self._selected_symbol: str = config.default_symbol
-        self._selected_timeframe: str = config.default_timeframe
+        self._selected_timeframe: str = "1d"
         self._mc_methods: list[str] = ["shuffling", "noise", "sensitivity", "walk_forward", "block_bootstrap"]
         self._pop_size, self._generations = 50, 20
         self._mutation_rate, self._crossover_rate = 0.3, 0.7
