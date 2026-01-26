@@ -302,7 +302,7 @@ class InteractiveMenu:
                 {
                     "name": "📦 Block Bootstrap",
                     "value": "block_bootstrap",
-                    "checked": False,
+                    "checked": True,
                 },
             ],
             style=CUSTOM_STYLE,
