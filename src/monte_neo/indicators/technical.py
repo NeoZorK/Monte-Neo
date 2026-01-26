@@ -98,6 +98,44 @@ def rsi_numba(data: np.ndarray, period: int) -> np.ndarray:
     return res
 
 
+@njit
+def sma_crossover_signals_numba(data: np.ndarray, fast_period: int, slow_period: int) -> np.ndarray:
+    """Full SMA crossover signal generation in a single Numba pass."""
+    n = len(data)
+    res = np.zeros(n, dtype=np.float32)
+    if n < slow_period or fast_period >= slow_period:
+        return res
+    
+    sum_fast = 0.0
+    sum_slow = 0.0
+    
+    # Initial sums
+    for i in range(fast_period):
+        sum_fast += data[i]
+    for i in range(slow_period):
+        sum_slow += data[i]
+        
+    # Initial state
+    sma_fast = sum_fast / fast_period
+    sma_slow = sum_slow / slow_period
+    prev_state = 1 if sma_fast > sma_slow else -1
+    
+    for i in range(slow_period, n):
+        sum_fast = sum_fast - data[i - fast_period] + data[i]
+        sum_slow = sum_slow - data[i - slow_period] + data[i]
+        
+        sma_fast = sum_fast / fast_period
+        sma_slow = sum_slow / slow_period
+        
+        current_state = 1 if sma_fast > sma_slow else -1
+        
+        if current_state != prev_state:
+            res[i] = float(current_state)
+            prev_state = current_state
+            
+    return res
+
+
 class TechnicalIndicators:
     """Collection of technical indicator calculations."""
 
@@ -200,34 +238,16 @@ class SMAIndicator(BaseIndicator):
         return result
 
     def generate_signals(self, data: pd.DataFrame) -> pd.DataFrame:
-        # High-performance Numba-based signal generation
+        # High-performance single-pass Numba calculation
         close = data["close"].to_numpy()
         fast_period = self._parameters["fast_period"]
         slow_period = self._parameters["slow_period"]
         
-        fast = sma_numba(close, fast_period)
-        slow = sma_numba(close, slow_period)
-
-        sig_vals = np.zeros(len(data), dtype=np.float32)
-
-        # Crossover logic
-        # 1 where fast > slow, -1 where fast < slow
-        mask_buy = fast > slow
-        mask_sell = fast < slow
+        # Ensure fast < slow for crossover logic
+        p1 = min(fast_period, slow_period)
+        p2 = max(fast_period, slow_period)
         
-        sig_vals[mask_buy] = 1.0
-        sig_vals[mask_sell] = -1.0
-
-        # Only signal on crossover
-        sig_prev = np.zeros_like(sig_vals)
-        sig_prev[1:] = sig_vals[:-1]
-
-        diff = sig_vals - sig_prev
-
-        final_signals = np.zeros_like(sig_vals)
-        final_signals[diff > 0] = 1.0
-        final_signals[diff < 0] = -1.0
-
+        final_signals = sma_crossover_signals_numba(close, p1, p2)
         return pd.DataFrame({"signal": final_signals}, index=data.index)
 
     def get_min_periods(self) -> int:

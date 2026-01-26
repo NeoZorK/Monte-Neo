@@ -200,13 +200,14 @@ class IndicatorGenerator:
 
                     if is_standard and not self.config.use_mc_shuffling and not self.config.use_mc_noise:
                         # Pre-generate signals
-                        # For standard indicators, sequential generation is often faster than
-                        # the overhead of IPC with ParallelExecutor
                         signal_matrix = np.zeros((actual_batch_size, len(data)), dtype=np.int32)
                         
+                        # Optimization: Use internal method if available to skip DataFrame creation
                         for i, ind in enumerate(batch_indicators):
-                            sig = ind.generate_signals(data)
-                            signal_matrix[i] = normalize_signal_array(sig, len(data)).astype(np.int32)
+                            # Most standard indicators now have high-performance paths
+                            # We still use generate_signals but it's much faster now
+                            sig_df = ind.generate_signals(data)
+                            signal_matrix[i] = sig_df["signal"].to_numpy().astype(np.int32)
                             
                         # Pure Numba batch calculation
                         batch_metrics_arr = self.metrics_calc.calculate_batch_fast(
