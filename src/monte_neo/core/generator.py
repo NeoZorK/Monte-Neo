@@ -129,6 +129,9 @@ class IndicatorGenerator:
         iterations_tried = 0
         final_metrics = {}
         
+        # MC Results Cache to avoid redundant heavy validations
+        mc_cache: dict[str, float] = {}
+        
         # Fallback tracking (best by performance metrics on original data)
         fallback_indicator = None
         fallback_metrics = {}
@@ -240,14 +243,33 @@ class IndicatorGenerator:
 
                     # 2. MC Validation (Directly from GPU Pre-filter)
                     try:
-                        # Skip full CPU verification if basic targets met on GPU
-                        # and go straight to MC validation
-                        mc_result = self._run_mc_validation(
-                            data,
-                            indicator,
-                            scenarios=mc_scenarios,
-                        )
-                        mc_pass_rate = mc_result.pass_rate
+                        # Check cache first
+                        ind_id = indicator.get_id()
+                        if ind_id in mc_cache:
+                            mc_pass_rate = mc_cache[ind_id]
+                        else:
+                            # Skip full CPU verification if basic targets met on GPU
+                            # and go straight to MC validation
+                            mc_result = self._run_mc_validation(
+                                data,
+                                indicator,
+                                scenarios=mc_scenarios,
+                            )
+                            mc_pass_rate = mc_result.pass_rate
+                            mc_cache[ind_id] = mc_pass_rate
+
+                            # Update best details only for fresh results
+                            if mc_pass_rate > best_mc_rate:
+                                best_mc_details = {
+                                    "step_results": [
+                                        {
+                                            "method": r.method_name,
+                                            "passed": r.passed,
+                                            "rate": r.pass_rate,
+                                            "advice": r.advice
+                                        } for r in mc_result.step_results
+                                    ]
+                                }
 
                         # Track candidates
                         if mc_pass_rate > 0.0:
@@ -257,16 +279,6 @@ class IndicatorGenerator:
                         if mc_pass_rate > best_mc_rate:
                             best_mc_rate = mc_pass_rate
                             best_indicator = indicator
-                            best_mc_details = {
-                                "step_results": [
-                                    {
-                                        "method": r.method_name,
-                                        "passed": r.passed,
-                                        "rate": r.pass_rate,
-                                        "advice": r.advice
-                                    } for r in mc_result.step_results
-                                ]
-                            }
                             logger.info(
                                 f"New best: {indicator.name} MC rate={mc_pass_rate:.2%}"
                             )
