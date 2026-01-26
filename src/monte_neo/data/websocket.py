@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable
 from typing import Any
 
@@ -53,8 +54,12 @@ class BinanceWebsocketStreamer:
             stream_url=stream_url or "wss://stream.binance.com:9443",
             on_message=self._dispatch_message,
             on_error=self._handle_error,
+            on_close=self._handle_close,
         )
         self._started = False
+        self._active_streams: set[str] = set()
+        self._reconnect_attempts = 0
+        self._max_reconnect_attempts = 5
 
     def __enter__(self) -> BinanceWebsocketStreamer:
         """Enter context manager."""
@@ -68,16 +73,20 @@ class BinanceWebsocketStreamer:
     def start(self) -> None:
         """Start WebSocket connection."""
         if not self._started:
+            logger.info("Starting WebSocket connection...")
             self._client.start()
             self._started = True
+            self._reconnect_attempts = 0
 
     def stop(self) -> None:
         """Stop WebSocket connection."""
         if self._started:
+            logger.info("Stopping WebSocket connection...")
             try:
+                self._started = False  # Set flag first to prevent auto-reconnect
                 self._client.stop()
-            finally:
-                self._started = False
+            except Exception as exc:
+                logger.error("Error stopping WebSocket: %s", exc)
 
     def subscribe_kline(
         self,
@@ -96,13 +105,14 @@ class BinanceWebsocketStreamer:
         """
         normalized_symbol = self._normalize_symbol(symbol)
         normalized_interval = self._normalize_interval(interval)
-        self._register_callback(callback)
+        
+        stream_name = f"{normalized_symbol}@kline_{normalized_interval}"
+        self._active_streams.add(stream_name)
+        
         self.start()
-        self._client.kline(
-            symbol=normalized_symbol,
-            interval=normalized_interval,
-            id=stream_id,
-        )
+        self._register_callback(callback)
+        # Use subscribe directly to maintain consistency with reconnection logic
+        self._client.subscribe(stream=stream_name, id=stream_id)
 
     def subscribe_mini_ticker(
         self,
@@ -118,9 +128,12 @@ class BinanceWebsocketStreamer:
             stream_id: Client message id.
         """
         normalized_symbol = self._normalize_symbol(symbol)
+        stream_name = f"{normalized_symbol}@miniTicker"
+        self._active_streams.add(stream_name)
+        
         self.start()
         self._register_callback(callback)
-        self._client.mini_ticker(symbol=normalized_symbol, id=stream_id)
+        self._client.subscribe(stream=stream_name, id=stream_id)
 
     def subscribe_streams(
         self,
@@ -136,6 +149,9 @@ class BinanceWebsocketStreamer:
             stream_id: Client message id.
         """
         normalized_streams = self._normalize_streams(streams)
+        for stream in normalized_streams:
+            self._active_streams.add(stream)
+            
         self.start()
         self._register_callback(callback)
         self._client.subscribe(stream=normalized_streams, id=stream_id)
@@ -182,3 +198,56 @@ class BinanceWebsocketStreamer:
 
     def _handle_error(self, error: Any) -> None:
         logger.error("WebSocket error: %s", error)
+        self._attempt_reconnect()
+
+    def _handle_close(self, *args) -> None:
+        """Handle WebSocket close event."""
+        logger.info("WebSocket connection closed")
+        if self._started:
+            logger.warning("Unexpected close, attempting reconnect...")
+            self._attempt_reconnect()
+
+    def _attempt_reconnect(self) -> None:
+        """Attempt to reconnect to WebSocket stream with backoff."""
+        if not self._started:
+            return
+
+        if self._reconnect_attempts >= self._max_reconnect_attempts:
+            logger.error(
+                "Max reconnect attempts (%d) reached. Giving up.",
+                self._max_reconnect_attempts,
+            )
+            self._started = False
+            return
+
+        self._reconnect_attempts += 1
+        delay = min(2**self._reconnect_attempts, 60)  # Exponential backoff
+        logger.info(
+            "Attempting reconnect %d/%d in %ds...",
+            self._reconnect_attempts,
+            self._max_reconnect_attempts,
+            delay,
+        )
+
+        time.sleep(delay)
+
+        try:
+            # Force stop old connection to be safe
+            try:
+                self._client.stop()
+            except Exception:
+                pass
+
+            self._client.start()
+
+            # Resubscribe to active streams
+            if self._active_streams:
+                logger.info("Resubscribing to %d streams...", len(self._active_streams))
+                self._client.subscribe(stream=list(self._active_streams))
+
+            logger.info("Reconnect successful")
+
+        except Exception as exc:
+            logger.error("Reconnect failed: %s", exc)
+            # If immediate reconnect failed, try again recursively
+            self._attempt_reconnect()
