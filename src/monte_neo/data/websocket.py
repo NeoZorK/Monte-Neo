@@ -105,10 +105,10 @@ class BinanceWebsocketStreamer:
         """
         normalized_symbol = self._normalize_symbol(symbol)
         normalized_interval = self._normalize_interval(interval)
-        
+
         stream_name = f"{normalized_symbol}@kline_{normalized_interval}"
         self._active_streams.add(stream_name)
-        
+
         self.start()
         self._register_callback(callback)
         # Use subscribe directly to maintain consistency with reconnection logic
@@ -130,7 +130,7 @@ class BinanceWebsocketStreamer:
         normalized_symbol = self._normalize_symbol(symbol)
         stream_name = f"{normalized_symbol}@miniTicker"
         self._active_streams.add(stream_name)
-        
+
         self.start()
         self._register_callback(callback)
         self._client.subscribe(stream=stream_name, id=stream_id)
@@ -151,7 +151,7 @@ class BinanceWebsocketStreamer:
         normalized_streams = self._normalize_streams(streams)
         for stream in normalized_streams:
             self._active_streams.add(stream)
-            
+
         self.start()
         self._register_callback(callback)
         self._client.subscribe(stream=normalized_streams, id=stream_id)
