@@ -48,46 +48,67 @@ def run_scenarios_backtest(
     sl_pct: float = 0.0,
     tp_pct: float = 0.0,
 ) -> list[dict[str, Any]]:
-    """Run one indicator across many data scenarios on GPU.
-
-    Args:
-        indicator: Indicator to test.
-        scenarios: List of data scenarios.
-        executor: Optional shared parallel executor for signal generation.
-        use_sl_tp: Whether to apply Stop Loss and Take Profit.
-        sl_pct: Stop Loss percentage.
-        tp_pct: Take Profit percentage.
-    """
+    """Run one indicator across many data scenarios on GPU."""
     if use_sl_tp:
-        # SL/TP requires path-dependent calculation (CPU)
-        calc = MetricsCalculator()
+        # Optimization: Use parallelized batch Numba for SL/TP on multiple scenarios
+        # This is much faster than the previous Python loop
+        
+        # 1. Get Signals (CPU parallelized)
+        tasks = [(indicator, df) for df in scenarios]
+        if executor is None:
+            local_executor = ParallelExecutor()
+            raw_signals = local_executor.map(_generate_signals_wrapper, tasks)
+        else:
+            raw_signals = executor.map(_generate_signals_wrapper, tasks)
+            
+        # 2. Prepare Data and Signal Matrix
+        max_len = max(len(df) for df in scenarios)
+        
+        # We need a unified price matrix for Numba batch
+        # Since scenarios can have different prices, we pad them
+        close_matrix = np.zeros((len(scenarios), max_len), dtype=np.float64)
+        high_matrix = np.zeros((len(scenarios), max_len), dtype=np.float64)
+        low_matrix = np.zeros((len(scenarios), max_len), dtype=np.float64)
+        signal_matrix = np.zeros((len(scenarios), max_len), dtype=np.int32)
+        
+        for i, df in enumerate(scenarios):
+            l = len(df)
+            close_matrix[i, :l] = df["close"].values
+            high_matrix[i, :l] = df["high"].values
+            low_matrix[i, :l] = df["low"].values
+            signal_matrix[i, :l] = normalize_signal_array(raw_signals[i], l).astype(np.int32)
+            
+        # 3. Run Batch Calculation (Multi-scenario version)
+        # We use calculate_batch_multi_price_fast because each scenario has its own prices
+        batch_metrics = MetricsCalculator.calculate_batch_multi_price_fast(
+            close_matrix,
+            high_matrix,
+            low_matrix,
+            signal_matrix,
+            use_sl_tp,
+            sl_pct,
+            tp_pct
+        )
+        
         results = []
-        for df in scenarios:
-            try:
-                sigs = indicator.generate_signals(df)
-                if not isinstance(sigs, pd.DataFrame):
-                    sigs_df = pd.DataFrame({"signal": sigs}, index=df.index)
-                else:
-                    sigs_df = sigs
-                
-                metrics = calc.calculate_all(
-                    df, sigs_df, use_sl_tp=use_sl_tp, sl_pct=sl_pct, tp_pct=tp_pct
-                )
-                results.append({
-                    "total_return": metrics.get("total_return", -1.0),
-                    "max_drawdown": metrics.get("max_drawdown", 1.0),
-                    "profit_factor": metrics.get("profit_factor", 0.0),
-                    "passed": bool(metrics.get("total_return", -1.0) > 0.0 and metrics.get("max_drawdown", 1.0) < 0.2),
-                    "metrics": metrics
-                })
-            except Exception:
-                results.append({
-                    "total_return": -1.0, 
-                    "max_drawdown": 1.0, 
-                    "profit_factor": 0.0,
-                    "passed": False,
-                    "metrics": {}
-                })
+        for i in range(len(scenarios)):
+            total_return = float(batch_metrics[i, 0])
+            max_dd = float(batch_metrics[i, 1])
+            pf = float(batch_metrics[i, 2])
+            trade_count = int(batch_metrics[i, 3])
+            
+            results.append({
+                "total_return": total_return,
+                "max_drawdown": max_dd,
+                "profit_factor": pf,
+                "passed": bool(total_return > 0.0 and max_dd < 0.2),
+                "metrics": {
+                    "total_return": total_return,
+                    "max_drawdown": max_dd,
+                    "profit_factor": pf,
+                    "trade_count": trade_count,
+                }
+            })
         return results
 
     # 1. Prepare Returns Matrix (S_scenarios x T_bars)

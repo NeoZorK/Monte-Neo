@@ -212,6 +212,9 @@ def run_block_bootstrap_scenario(
         close_prices = scenario_data["close"].values
         returns = (close_prices[1:] / close_prices[:-1]) - 1
 
-        return signal_arr, returns.astype(np.float32)
+        # Extract OHLC for SL/TP calculations
+        ohlc = scenario_data[["open", "high", "low", "close"]].values.astype(np.float32)
+
+        return signal_arr, returns.astype(np.float32), ohlc
     except Exception:
         return None

@@ -46,34 +46,70 @@ def backtest_lazy_scenarios(
     raw_results = executor.map(_generate_lazy_scenario_wrapper, tasks)
 
     if use_sl_tp:
-        # SL/TP requires path-dependent calculation (CPU)
-        calc = MetricsCalculator()
-        results = []
-        for res in raw_results:
-            if res is None:
-                results.append({
-                    "total_return": -1.0, "max_drawdown": 1.0, "profit_factor": 0.0,
-                    "passed": False, "metrics": {}
-                })
-                continue
+        # Optimization: Use parallelized batch Numba for SL/TP on multiple scenarios
+        # This is much faster than the previous Python loop
+        
+        # 1. Extract valid results (sigs, rets, ohlc)
+        valid_data = [res for res in raw_results if res is not None]
+        if not valid_data:
+            return []
             
-            sigs, df = res # In lazy wrapper, it returns (signals, df)
+        # 2. Prepare Data and Signal Matrix
+        max_len = max(len(res[2]) for res in valid_data)
+        
+        close_matrix = np.zeros((len(valid_data), max_len), dtype=np.float64)
+        high_matrix = np.zeros((len(valid_data), max_len), dtype=np.float64)
+        low_matrix = np.zeros((len(valid_data), max_len), dtype=np.float64)
+        signal_matrix = np.zeros((len(valid_data), max_len), dtype=np.int32)
+        
+        for i, (sigs, _, ohlc) in enumerate(valid_data):
+            l = len(ohlc)
+            # ohlc is [open, high, low, close]
+            high_matrix[i, :l] = ohlc[:, 1]
+            low_matrix[i, :l] = ohlc[:, 2]
+            close_matrix[i, :l] = ohlc[:, 3]
             
-            # Ensure sigs is converted to DataFrame if needed
-            if not isinstance(sigs, pd.DataFrame):
-                sigs_df = pd.DataFrame({"signal": sigs}, index=df.index)
+            # Normalize signals
+            if hasattr(sigs, "to_numpy"):
+                s_arr = sigs["signal"].to_numpy() if "signal" in sigs.columns else sigs.to_numpy().reshape(-1)
             else:
-                sigs_df = sigs
-
-            metrics = calc.calculate_all(
-                df, sigs_df, use_sl_tp=use_sl_tp, sl_pct=sl_pct, tp_pct=tp_pct
-            )
+                s_arr = np.asarray(sigs).reshape(-1)
+            
+            s_arr = s_arr.astype(np.int32, copy=False)
+            if s_arr.size >= l:
+                signal_matrix[i, :l] = s_arr[:l]
+            else:
+                signal_matrix[i, :s_arr.size] = s_arr
+            
+        # 3. Run Batch Calculation
+        batch_metrics = MetricsCalculator.calculate_batch_multi_price_fast(
+            close_matrix,
+            high_matrix,
+            low_matrix,
+            signal_matrix,
+            use_sl_tp,
+            sl_pct,
+            tp_pct
+        )
+        
+        results = []
+        for i in range(len(valid_data)):
+            total_return = float(batch_metrics[i, 0])
+            max_dd = float(batch_metrics[i, 1])
+            pf = float(batch_metrics[i, 2])
+            trade_count = int(batch_metrics[i, 3])
+            
             results.append({
-                "total_return": metrics.get("total_return", -1.0),
-                "max_drawdown": metrics.get("max_drawdown", 1.0),
-                "profit_factor": metrics.get("profit_factor", 0.0),
-                "passed": bool(metrics.get("total_return", -1.0) > 0.0 and metrics.get("max_drawdown", 1.0) < 0.2),
-                "metrics": metrics
+                "total_return": total_return,
+                "max_drawdown": max_dd,
+                "profit_factor": pf,
+                "passed": bool(total_return > 0.0 and max_dd < 0.2),
+                "metrics": {
+                    "total_return": total_return,
+                    "max_drawdown": max_dd,
+                    "profit_factor": pf,
+                    "trade_count": trade_count,
+                }
             })
         return results
 
@@ -83,7 +119,7 @@ def backtest_lazy_scenarios(
     for res in raw_results:
         if res is None:
             continue
-        sigs, rets = res
+        sigs, rets, _ = res
         sig_vals = sigs.reshape(-1).astype(np.float32)
         sig_vals = sig_vals[:-1]
         signal_list.append(sig_vals)
