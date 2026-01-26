@@ -55,9 +55,9 @@ def test_subscribe_kline_builds_stream(monkeypatch: pytest.MonkeyPatch) -> None:
     streamer.subscribe_kline(symbol="BTCUSDT", interval="1m", callback=handler)
 
     assert dummy.calls[0] == ("start",)
-    assert dummy.calls[1][0] == "kline"
-    assert dummy.calls[1][1] == "btcusdt"
-    assert dummy.calls[1][2] == "1m"
+    # Now we use subscribe directly
+    assert dummy.calls[1][0] == "subscribe"
+    assert dummy.calls[1][1] == "btcusdt@kline_1m"
 
 
 def test_subscribe_mini_ticker_normalizes_symbol(
@@ -72,8 +72,46 @@ def test_subscribe_mini_ticker_normalizes_symbol(
     streamer.subscribe_mini_ticker(symbol="EthUsdt", callback=handler)
 
     assert dummy.calls[0] == ("start",)
-    assert dummy.calls[1][0] == "mini_ticker"
-    assert dummy.calls[1][1] == "ethusdt"
+    # Now we use subscribe directly
+    assert dummy.calls[1][0] == "subscribe"
+    assert dummy.calls[1][1] == "ethusdt@miniTicker"
+
+
+def test_reconnect_resubscribes(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that reconnect logic resubscribes to active streams."""
+    # Mock time.sleep to avoid waiting
+    monkeypatch.setattr(ws_module.time, "sleep", lambda x: None)
+    
+    streamer, dummy = _setup_dummy(monkeypatch)
+
+    def handler(message: dict) -> None:
+        pass
+
+    # Subscribe to populate active streams
+    streamer.subscribe_kline(symbol="BTCUSDT", interval="1m", callback=handler)
+    
+    # Clear calls to track reconnect actions
+    dummy.calls = []
+    
+    # Trigger reconnect via error handler
+    # Error handler calls _attempt_reconnect
+    # _attempt_reconnect calls stop (try), start, subscribe
+    streamer._handle_error(Exception("Connection lost"))
+
+    # Verify sequence: stop -> start -> subscribe
+    # Note: stop is called inside try/except, so it might appear
+    
+    # Filter for relevant calls
+    actions = [call[0] for call in dummy.calls]
+    assert "start" in actions
+    assert "subscribe" in actions
+    
+    # Verify subscription restoration
+    subscribe_calls = [call for call in dummy.calls if call[0] == "subscribe"]
+    assert len(subscribe_calls) > 0
+    # The stream list might be passed as a list, check content
+    streams = subscribe_calls[0][1]
+    assert "btcusdt@kline_1m" in streams
 
 
 def test_invalid_interval_raises(monkeypatch: pytest.MonkeyPatch) -> None:
