@@ -104,6 +104,10 @@ class DynamicIndicator(BaseIndicator):
                 logger.debug(f"Runtime error in safe dynamic indicator: {safe_error}")
                 return np.nan
 
+    def get_formula(self) -> str:
+        """Get the source code string used for calculation."""
+        return f"Dynamic: {self.source_code}"
+
     def calculate(self, data: pd.DataFrame) -> pd.DataFrame:
         """Calculate indicator values using the generated code.
 

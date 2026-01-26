@@ -250,6 +250,22 @@ class SMAIndicator(BaseIndicator):
         final_signals = sma_crossover_signals_numba(close, p1, p2)
         return pd.DataFrame({"signal": final_signals}, index=data.index)
 
+    def generate_signals_fast(self, data: pd.DataFrame | np.ndarray) -> np.ndarray:
+        if isinstance(data, pd.DataFrame):
+            close = data["close"].to_numpy()
+        else:
+            # Assume 1D close prices or OHLC matrix (close is col 3)
+            close = data[:, 3] if data.ndim > 1 else data
+            
+        p1 = min(self._parameters["fast_period"], self._parameters["slow_period"])
+        p2 = max(self._parameters["fast_period"], self._parameters["slow_period"])
+        return sma_crossover_signals_numba(close, p1, p2)
+
+    def get_formula(self) -> str:
+        p1 = min(self._parameters["fast_period"], self._parameters["slow_period"])
+        p2 = max(self._parameters["fast_period"], self._parameters["slow_period"])
+        return f"SMA({p1}) Cross SMA({p2})"
+
     def get_min_periods(self) -> int:
         return self._parameters["slow_period"]
 
@@ -285,6 +301,24 @@ class RSIIndicator(BaseIndicator):
         sig_vals[rsi_vals > overbought] = -1.0
 
         return pd.DataFrame({"signal": sig_vals}, index=data.index)
+
+    def generate_signals_fast(self, data: pd.DataFrame | np.ndarray) -> np.ndarray:
+        if isinstance(data, pd.DataFrame):
+            close = data["close"].to_numpy()
+        else:
+            close = data[:, 3] if data.ndim > 1 else data
+            
+        rsi_vals = rsi_numba(close, self._parameters["period"])
+        sig_vals = np.zeros(len(close), dtype=np.float32)
+        sig_vals[rsi_vals < self._parameters["oversold"]] = 1.0
+        sig_vals[rsi_vals > self._parameters["overbought"]] = -1.0
+        return sig_vals
+
+    def get_formula(self) -> str:
+        p = self._parameters["period"]
+        ob = self._parameters["overbought"]
+        os = self._parameters["oversold"]
+        return f"RSI({p}) [Buy < {os}, Sell > {ob}]"
 
     def get_min_periods(self) -> int:
         return self._parameters["period"] + 1
@@ -342,6 +376,37 @@ class MACDIndicator(BaseIndicator):
         final_signals[diff < 0] = -1.0
 
         return pd.DataFrame({"signal": final_signals}, index=data.index)
+
+    def generate_signals_fast(self, data: pd.DataFrame | np.ndarray) -> np.ndarray:
+        if isinstance(data, pd.DataFrame):
+            close = data["close"].to_numpy()
+        else:
+            close = data[:, 3] if data.ndim > 1 else data
+            
+        fast_ema = ema_numba(close, self._parameters["fast"])
+        slow_ema = ema_numba(close, self._parameters["slow"])
+        macd_line = fast_ema - slow_ema
+        signal_line = ema_numba(macd_line, self._parameters["signal"])
+        hist_vals = macd_line - signal_line
+        
+        sig_vals = np.zeros(len(close), dtype=np.float32)
+        sig_vals[hist_vals > 0] = 1.0
+        sig_vals[hist_vals < 0] = -1.0
+        
+        sig_prev = np.zeros_like(sig_vals)
+        sig_prev[1:] = sig_vals[:-1]
+        diff = sig_vals - sig_prev
+        
+        final_signals = np.zeros_like(sig_vals)
+        final_signals[diff > 0] = 1.0
+        final_signals[diff < 0] = -1.0
+        return final_signals
+
+    def get_formula(self) -> str:
+        f = self._parameters["fast"]
+        s = self._parameters["slow"]
+        sig = self._parameters["signal"]
+        return f"MACD({f}, {s}, {sig}) Histogram Cross 0"
 
     def get_min_periods(self) -> int:
         return self._parameters["slow"] + self._parameters["signal"]

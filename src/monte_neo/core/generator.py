@@ -194,54 +194,19 @@ class IndicatorGenerator:
 
                 # GPU Backtest (Pre-filter)
                 try:
-                    # Optimize: If only standard indicators and no MC scenarios, 
-                    # use super fast pure-Numba batch calculation
-                    is_standard = all(not hasattr(ind, "source_code") for ind in batch_indicators)
-
-                    if is_standard and not self.config.use_mc_shuffling and not self.config.use_mc_noise:
-                        # Pre-generate signals
-                        signal_matrix = np.zeros((actual_batch_size, len(data)), dtype=np.int32)
-                        
-                        # Optimization: Use internal method if available to skip DataFrame creation
-                        for i, ind in enumerate(batch_indicators):
-                            # Most standard indicators now have high-performance paths
-                            # We still use generate_signals but it's much faster now
-                            sig_df = ind.generate_signals(data)
-                            signal_matrix[i] = sig_df["signal"].to_numpy().astype(np.int32)
-                            
-                        # Pure Numba batch calculation
-                        batch_metrics_arr = self.metrics_calc.calculate_batch_fast(
-                            data["close"].values,
-                            data["high"].values,
-                            data["low"].values,
-                            signal_matrix,
-                            use_sl_tp=self.config.use_sl_tp,
-                            sl_pct=self.config.stop_loss_pct,
-                            tp_pct=self.config.take_profit_pct,
-                        )
-                        
-                        gpu_results = []
-                        for i in range(actual_batch_size):
-                            gpu_results.append({
-                                "metrics": {
-                                    "total_return": batch_metrics_arr[i, 0],
-                                    "max_drawdown": batch_metrics_arr[i, 1],
-                                    "profit_factor": batch_metrics_arr[i, 2],
-                                    "trade_count": int(batch_metrics_arr[i, 3]),
-                                }
-                            })
-                    else:
-                        gpu_results = self.gpu_engine.backtest_batch(
-                            data,
-                            batch_indicators,
-                            executor=self.executor,
-                            use_shared_data=True,
-                            use_sl_tp=self.config.use_sl_tp,
-                            sl_pct=self.config.stop_loss_pct,
-                            tp_pct=self.config.take_profit_pct
-                        )
+                    # Optimize: For all indicator types, use MLX GPU Backtest
+                    # It handles signal generation in parallel and metrics on GPU/Numba
+                    gpu_results = self.gpu_engine.backtest_batch(
+                        data,
+                        batch_indicators,
+                        executor=self.executor,
+                        use_shared_data=True,
+                        use_sl_tp=self.config.use_sl_tp,
+                        sl_pct=self.config.stop_loss_pct,
+                        tp_pct=self.config.take_profit_pct
+                    )
                 except Exception as e:
-                    logger.warning(f"GPU Backtest failed: {e}. Skipping batch.")
+                    logger.warning(f"Backtest failed: {e}. Skipping batch.")
                     gpu_results = []
 
                 # Process results
@@ -254,24 +219,15 @@ class IndicatorGenerator:
                     if not self._meets_basic_targets(metrics):
                         continue
 
-                    # 2. CPU Verification (Full Metrics)
+                    # Optimization: Use metrics already calculated by GPU batch if they are sufficient
+                    # metrics from GPU batch already contain: total_return, max_drawdown, profit_factor, trade_count
+                    if metrics.get("trade_count", 0) < self.config.min_trades:
+                        continue
+
+                    # 2. MC Validation (Directly from GPU Pre-filter)
                     try:
-                        signals = indicator.generate_signals(data)
-                        full_metrics = self.metrics_calc.calculate_all(
-                            data,
-                            signals,
-                            use_sl_tp=self.config.use_sl_tp,
-                            sl_pct=self.config.stop_loss_pct,
-                            tp_pct=self.config.take_profit_pct,
-                        )
-
-                        if not self._meets_basic_targets(full_metrics):
-                            continue
-
-                        if full_metrics.get("trade_count", 0) < self.config.min_trades:
-                            continue
-
-                        # 3. MC Validation
+                        # Skip full CPU verification if basic targets met on GPU
+                        # and go straight to MC validation
                         mc_result = self._run_mc_validation(
                             data,
                             indicator,
@@ -377,6 +333,17 @@ class IndicatorGenerator:
                 status,
             )
 
+        # Final metrics for the best found (even if not passing threshold)
+        if best_indicator:
+            signals = best_indicator.generate_signals(data)
+            final_metrics = self.metrics_calc.calculate_all(
+                data, 
+                signals,
+                use_sl_tp=self.config.use_sl_tp,
+                sl_pct=self.config.stop_loss_pct,
+                tp_pct=self.config.take_profit_pct
+            )
+
         # If dynamic type is selected, we run evolutionary optimization at the end
         if "dynamic" in self.config.indicator_types and len(self._candidates) >= 2:
             logger.info(f"Starting evolutionary optimization on {len(self._candidates)} candidates...")
@@ -415,30 +382,21 @@ class IndicatorGenerator:
                                 f"Evolution found better indicator: {evolved_best.name} "
                                 f"MC rate={mc_rate:.2%}"
                             )
+                            # Re-calculate final metrics for evolved best
+                            signals = best_indicator.generate_signals(data)
+                            final_metrics = self.metrics_calc.calculate_all(
+                                data, 
+                                signals,
+                                use_sl_tp=self.config.use_sl_tp,
+                                sl_pct=self.config.stop_loss_pct,
+                                tp_pct=self.config.take_profit_pct
+                            )
             except Exception as e:
                 logger.error(f"Evolutionary optimization failed: {e}")
             except KeyboardInterrupt:
                 logger.info("Evolutionary optimization interrupted by user")
 
         elapsed = time.time() - start_time
-
-        if self._progress_callback:
-            status = f"Best MC rate: {best_mc_rate:.1%} [Finishing...]"
-            self._progress_callback(
-                self.config.max_iterations, self.config.max_iterations, status
-            )
-
-        # Get final metrics for best indicator
-        final_metrics = {}
-        if best_indicator:
-            signals = best_indicator.generate_signals(data)
-            final_metrics = self.metrics_calc.calculate_all(
-                data, 
-                signals,
-                use_sl_tp=self.config.use_sl_tp,
-                sl_pct=self.config.stop_loss_pct,
-                tp_pct=self.config.take_profit_pct
-            )
 
         if self._progress_callback:
             status = f"Best MC rate: {best_mc_rate:.1%} [Done]"
@@ -584,7 +542,7 @@ def _search_worker(args: tuple) -> tuple[BaseIndicator | None, float]:
     ) = args
 
     # Quick pre-check
-    signals = indicator.generate_signals(data)
+    signals = indicator.generate_signals_fast(data)
     basic_metrics = metrics_calc.calculate_all(
         data, signals, use_sl_tp=use_sl_tp, sl_pct=sl_pct, tp_pct=tp_pct
     )

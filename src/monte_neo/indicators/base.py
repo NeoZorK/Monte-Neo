@@ -94,6 +94,28 @@ class BaseIndicator(ABC):
         """
         pass
 
+    def generate_signals_fast(self, data: pd.DataFrame | np.ndarray) -> np.ndarray:
+        """Fast version of signal generation returning numpy array.
+        
+        Default implementation calls generate_signals and extracts the array.
+        Subclasses should override this for better performance.
+        """
+        if isinstance(data, pd.DataFrame):
+            sigs = self.generate_signals(data)
+            if isinstance(sigs, pd.DataFrame):
+                return sigs["signal"].to_numpy(dtype=np.float32)
+            return np.asarray(sigs, dtype=np.float32)
+        
+        # If it's already a numpy array, we might need a dummy DataFrame
+        # but this is exactly what we want to avoid.
+        # Subclasses MUST override this if they want to support pure numpy paths.
+        dummy_df = pd.DataFrame({"close": data[:, 3] if data.ndim > 1 else data})
+        return self.generate_signals(dummy_df)["signal"].to_numpy(dtype=np.float32)
+
+    def get_formula(self) -> str:
+        """Get the formula or logic of the indicator."""
+        return self.name
+
     def validate_data(self, data: pd.DataFrame) -> bool:
         """Validate input data.
 
