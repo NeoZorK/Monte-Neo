@@ -62,7 +62,22 @@ Since the generated code can return anything, the `DynamicIndicator` applies a s
 
 ---
 
-## 3. Workflow Summary
+## 3. Monte Carlo Validation Workflow
+
+Once a candidate indicator is evolved and passes basic backtesting, it enters the **Monte Carlo Validation** phase:
+
+### Parallel Execution (GPU/Numba)
+- **MLX Engine**: For large-scale testing, scenarios are offloaded to the GPU.
+- **Numba Parallelism**: Metrics calculations for SL/TP and scenarios are processed in parallel using JIT-compiled code, reaching 300k+ operations per second.
+
+### Sequential Mode (Optimized Workflow)
+To maximize efficiency, validation can run in **Sequential Mode**:
+1.  **Step-by-Step**: Each Monte Carlo method (Walk-Forward, Shuffling, etc.) is executed one after another.
+2.  **Early Termination**: If an indicator fails to pass the **Pass Threshold** (e.g., 95%) in any single method, the entire validation for that candidate is aborted. This prevents wasting CPU/GPU time on candidates that are already proven non-robust.
+
+---
+
+## 4. Workflow Summary
 
 1.  **Generator** creates a string: `"(data['close'] - data['close'].rolling(14).mean())"`
 2.  **DynamicIndicator** compiles it into a Python function.

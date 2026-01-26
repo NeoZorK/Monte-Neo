@@ -124,7 +124,8 @@ class SequentialMCRunner:
         pass_rate = passed_count / len(results) if results else 0.0
         passed = pass_rate >= self.engine.config.pass_threshold
 
-        summary = self.engine._summarize_metrics(results)
+        from monte_neo.monte_carlo.utils import summarize_metrics
+        summary = summarize_metrics(results)
         advice = self._generate_advice(name, pass_rate, summary)
 
         return MCStepResult(
