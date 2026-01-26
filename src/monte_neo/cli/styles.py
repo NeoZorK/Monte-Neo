@@ -37,13 +37,13 @@ def print_banner() -> None:
     )  # noqa: E501
     banner.append("║", style="cyan")
     banner.append(
-        "            🎲 Monte-Neo v0.0.1                            ",
+        "            🎲 Monte-Neo v0.0.1                           ",
         style="bold white",
     )  # noqa: E501
     banner.append("║\n", style="cyan")
     banner.append("║", style="cyan")
     banner.append(
-        "      Monte Carlo Indicator Generator Framework            ",
+        "      Monte Carlo Indicator Generator Framework           ",
         style="dim white",
     )  # noqa: E501
     banner.append("║\n", style="cyan")
