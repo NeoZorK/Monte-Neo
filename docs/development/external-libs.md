@@ -10,7 +10,7 @@ Monte-Neo leverages high-performance libraries to ensure fast and reliable calcu
 - **numba**: JIT compilation fallback.
 - **mlx**: Apple Silicon GPU-accelerated computing.
 - **pybind11**: Seamless C++/Python interoperability.
-- **python-binance**: Direct integration with Binance API.
+- **binance-connector**: Official Binance API connector.
 - **ta**: Technical Analysis library for base indicators.
 
 ## CLI & Visualization

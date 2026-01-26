@@ -43,7 +43,7 @@ Extremeley fast Python package manager and project manager. Replaces `pip`, `pip
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| `python-binance` | >=1.0.17 | Binance API |
+| `binance-connector` | >=3.12.0 | Binance API |
 | `ta` | >=0.10 | Technical indicators |
 
 ### CLI & Visualization
