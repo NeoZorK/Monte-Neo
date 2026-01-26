@@ -117,6 +117,8 @@ class WalkForwardAnalyzer:
             # Get train and test data
             train_data = data.iloc[window.train_start : window.train_end]
             test_data = data.iloc[window.test_start : window.test_end]
+            if train_data.empty or test_data.empty:
+                continue
 
             # Optimize on training data (simplified - just calculate metrics)
             train_signals = indicator.generate_signals(train_data)
@@ -159,23 +161,30 @@ class WalkForwardAnalyzer:
         Returns:
             List of WalkForwardWindow objects.
         """
+        if n_samples <= 0 or self.n_splits <= 0:
+            return []
+
         windows = []
         window_size = n_samples // self.n_splits
+        if window_size <= 1:
+            return []
+
         train_size = int(window_size * self.train_pct)
+        test_size = window_size - train_size
+        if train_size <= 0 or test_size <= 0:
+            return []
 
         for i in range(self.n_splits):
             if self.anchored:
-                # Anchored: train always starts from 0
                 train_start = 0
-                train_end = (i + 1) * window_size
+                train_end = train_size + (i * test_size)
                 test_start = train_end
-                test_end = min(test_start + window_size - train_size, n_samples)
+                test_end = min(test_start + test_size, n_samples)
             else:
-                # Rolling: train window moves forward
-                train_start = i * window_size
+                train_start = i * test_size
                 train_end = train_start + train_size
                 test_start = train_end
-                test_end = min(train_start + window_size, n_samples)
+                test_end = min(test_start + test_size, n_samples)
 
             if test_start < test_end:
                 windows.append(
@@ -209,6 +218,8 @@ class WalkForwardAnalyzer:
                 continue
 
             actual = metrics[metric_name]
+            if not np.isfinite(actual):
+                return False
 
             # Handle metrics that should be less than target
             if metric_name in ["max_drawdown", "consecutive_losses"]:
@@ -238,8 +249,12 @@ class WalkForwardAnalyzer:
             all_keys.update(m.keys())
 
         for key in all_keys:
-            values = [m.get(key) for m in metrics_list if key in m]
-            if values and all(isinstance(v, (int, float)) for v in values):
+            raw_values = [m.get(key) for m in metrics_list if key in m]
+            values = [
+                v for v in raw_values
+                if isinstance(v, (int, float)) and np.isfinite(v)
+            ]
+            if values:
                 aggregated[key] = {
                     "mean": float(np.mean(values)),
                     "std": float(np.std(values)),
@@ -271,8 +286,11 @@ class WalkForwardAnalyzer:
 
         for w in windows:
             if "profit_factor" in w.train_metrics and "profit_factor" in w.test_metrics:
-                train_pf.append(w.train_metrics["profit_factor"])
-                test_pf.append(w.test_metrics["profit_factor"])
+                train_value = w.train_metrics["profit_factor"]
+                test_value = w.test_metrics["profit_factor"]
+                if np.isfinite(train_value) and np.isfinite(test_value):
+                    train_pf.append(train_value)
+                    test_pf.append(test_value)
 
         if not train_pf or np.mean(train_pf) == 0:
             return 0.0
