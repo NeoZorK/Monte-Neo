@@ -23,7 +23,7 @@ class GeneratorConfig:
     use_mc_noise: bool = True
     use_mc_sensitivity: bool = True
     use_mc_walk_forward: bool = True
-    use_mc_block_bootstrap: bool = False
+    use_mc_block_bootstrap: bool = True
     early_stopping: bool = True
     min_trades: int = 30
     population_size: int = 50

@@ -34,7 +34,7 @@ class MCConfig:
     use_noise: bool = True
     use_sensitivity: bool = True
     use_walk_forward: bool = True
-    use_block_bootstrap: bool = False
+    use_block_bootstrap: bool = True
     sensitivity_range: float = 0.10  # ±10%
     walk_forward_splits: int = 5
     n_workers: int | None = None
@@ -112,7 +112,17 @@ class MonteCarloEngine:
         all_results = []
 
         # Generate test scenarios
-        if self.config.use_block_bootstrap and existing_scenarios is None:
+        other_methods_enabled = (
+            self.config.use_shuffling
+            or self.config.use_noise
+            or self.config.use_sensitivity
+            or self.config.use_walk_forward
+        )
+        if (
+            self.config.use_block_bootstrap
+            and not other_methods_enabled
+            and existing_scenarios is None
+        ):
             # Lazy generation for Block Bootstrap to avoid memory overhead
             logger.debug(f"Running lazy Block Bootstrap with {self.config.iterations} iterations")
 
