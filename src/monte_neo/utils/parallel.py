@@ -53,7 +53,15 @@ class ParallelExecutor:
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Context manager exit."""
         if self._pool:
-            self._pool.shutdown(wait=True)
+            self._shutdown_requested = True
+            # Cancel all pending futures if possible
+            if hasattr(self._pool, "_pending_work_items"): # ProcessPoolExecutor internal
+                try:
+                    for future in self._pool._pending_work_items.values():
+                        future.cancel()
+                except Exception:
+                    pass
+            self._pool.shutdown(wait=False, cancel_futures=True)
             self._pool = None
 
     def map(
@@ -93,6 +101,8 @@ class ParallelExecutor:
             futures = {executor.submit(func, item): i for i, item in enumerate(items)}
 
             for future in as_completed(futures):
+                if getattr(self, "_shutdown_requested", False):
+                    break
                 idx = futures[future]
                 try:
                     result = future.result()

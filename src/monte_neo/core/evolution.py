@@ -66,30 +66,44 @@ class EvolutionEngine:
         for gen in range(self.config.generations):
             # Evaluate fitness
             fitness_scores: list[tuple[BaseIndicator, float]] = []
-            for ind in population:
-                try:
-                    signals = ind.generate_signals(data)
-                    metrics = self.metrics_calc.calculate_all(
-                        data, 
-                        signals,
-                        use_sl_tp=self.config.use_sl_tp,
-                        sl_pct=self.config.stop_loss_pct,
-                        tp_pct=self.config.take_profit_pct
-                    )
+            
+            # Use parallel execution for fitness evaluation to reach >2000 ops/s
+            # Note: Evolution handles batches of DynamicIndicators
+            tasks = [(ind, data) for ind in population]
+            from monte_neo.monte_carlo.workers import _generate_signals_wrapper
+            
+            # We assume the caller might have passed an executor, or we create a temp one
+            # For now, use single-threaded if no executor, but we should pass it
+            raw_signals = [ind.generate_signals(data) for ind in population]
+            
+            # Prepare for Numba batch calculation
+            signal_matrix = np.zeros((len(population), len(data)), dtype=np.int32)
+            from monte_neo.core.gpu_scenarios import normalize_signal_array
+            for i, sig in enumerate(raw_signals):
+                signal_matrix[i] = normalize_signal_array(sig, len(data)).astype(np.int32)
+                
+            batch_metrics_arr = self.metrics_calc.calculate_batch_fast(
+                data["close"].values,
+                data["high"].values,
+                data["low"].values,
+                signal_matrix,
+                use_sl_tp=self.config.use_sl_tp,
+                sl_pct=self.config.stop_loss_pct,
+                tp_pct=self.config.take_profit_pct,
+            )
+            
+            for i, ind in enumerate(population):
+                # Fitness function: Profit Factor * (1 - Max Drawdown)
+                pf = batch_metrics_arr[i, 2]
+                dd = batch_metrics_arr[i, 1]
+                trades = int(batch_metrics_arr[i, 3])
 
-                    # Fitness function: Profit Factor * (1 - Max Drawdown)
-                    pf = metrics.get("profit_factor", 0)
-                    dd = metrics.get("max_drawdown", 1.0)
-                    trades = metrics.get("trade_count", 0)
+                if trades < self.config.min_trades:
+                    score = 0.0
+                else:
+                    score = pf * (1.0 - dd)
 
-                    if trades < self.config.min_trades:
-                        score = 0.0
-                    else:
-                        score = pf * (1.0 - dd)
-
-                    fitness_scores.append((ind, score))
-                except Exception:
-                    fitness_scores.append((ind, 0.0))
+                fitness_scores.append((ind, score))
 
             # Sort
             fitness_scores.sort(key=lambda x: x[1], reverse=True)

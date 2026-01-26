@@ -63,8 +63,7 @@ class InteractiveMenu:
         choices = [
             {"name": "📊 Download Market Data", "value": "download"},
             {"name": "🎯 Set Target Metrics", "value": "metrics"},
-            {"name": "🔧 Configure Monte Carlo Methods", "value": "mc_config"},
-            {"name": "🚀 Generate Indicator", "value": "generate"},
+            {"name": " Generate Indicator", "value": "generate"},
             {"name": "📈 View Results", "value": "results"},
             {"name": "⚙️  Settings", "value": "settings"},
             {"name": "❌ Exit", "value": "exit"},

@@ -15,23 +15,26 @@ if TYPE_CHECKING:
 console = Console()
 
 
-def configure_mc_workflow(menu: InteractiveMenu) -> None:
-    """Configure Monte Carlo methods."""
+def configure_mc_workflow_inline(menu: InteractiveMenu) -> bool:
+    """Configure Monte Carlo methods inline within generation workflow."""
     console.print("\n[bold cyan]🔧 Configure Monte Carlo Methods[/]\n")
 
     methods = questionary.checkbox(
         "Select MC methods:",
         choices=[
-            {"name": "🔀 Return Shuffling", "value": "shuffling", "checked": True},
-            {"name": "🎲 Noise Injection", "value": "noise", "checked": True},
-            {"name": "📏 Sensitivity Analysis (±10%)", "value": "sensitivity", "checked": True},
-            {"name": "📅 Walk-Forward Analysis", "value": "walk_forward", "checked": True},
-            {"name": "📦 Block Bootstrap", "value": "block_bootstrap", "checked": True},
+            {"name": "🔀 Return Shuffling", "value": "shuffling", "checked": "shuffling" in menu._mc_methods},
+            {"name": "🎲 Noise Injection", "value": "noise", "checked": "noise" in menu._mc_methods},
+            {"name": "📏 Sensitivity Analysis (±10%)", "value": "sensitivity", "checked": "sensitivity" in menu._mc_methods},
+            {"name": "📅 Walk-Forward Analysis", "value": "walk_forward", "checked": "walk_forward" in menu._mc_methods},
+            {"name": "📦 Block Bootstrap", "value": "block_bootstrap", "checked": "block_bootstrap" in menu._mc_methods},
         ],
         style=CUSTOM_STYLE,
     ).ask()
 
-    menu._mc_methods = methods or []
+    if methods is None:
+        return False
+        
+    menu._mc_methods = methods
     
     sequential = questionary.confirm(
         "Use Sequential MC Mode (Step-by-step validation)?",
@@ -39,12 +42,14 @@ def configure_mc_workflow(menu: InteractiveMenu) -> None:
         style=CUSTOM_STYLE,
     ).ask()
     
+    if sequential is None:
+        return False
+        
     menu._mc_sequential = sequential
-    
-    if questionary.confirm(
-        f"Selected {len(menu._mc_methods)} methods (Sequential: {sequential}). Start generation?",
-        default=True,
-        style=CUSTOM_STYLE
-    ).ask():
-        from monte_neo.cli.menu.generator import generate_indicator_workflow
-        generate_indicator_workflow(menu)
+    return True
+
+
+def configure_mc_workflow(menu: InteractiveMenu) -> None:
+    """Legacy entry point, redirects to generation with MC config."""
+    from monte_neo.cli.menu.generator import generate_indicator_workflow
+    generate_indicator_workflow(menu)
