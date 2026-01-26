@@ -85,8 +85,14 @@ def _display_result_file(file_path):
 def show_generation_result(menu: InteractiveMenu, result) -> None:
     """Display generation results and optionally save/plot."""
     console.print()
+    
+    # Success depends on mc_pass_rate >= mc_pass_threshold
+    threshold = getattr(menu, "_mc_pass_threshold", 0.80)
+    
     if result.success:
-        console.print("[bold green]✓ Indicator generated successfully![/]\n")
+        console.print(f"[bold green]✓ Indicator generated successfully! (MC Pass Rate {result.mc_pass_rate:.1%} >= {threshold:.0%})[/]\n")
+    elif result.indicator:
+        console.print(f"[bold yellow]⚠ Best indicator found but did not meet production criteria ({result.mc_pass_rate:.1%} < {threshold:.0%})[/]\n")
     else:
         console.print("[bold red]❌ No suitable indicator found matching criteria[/]\n")
 
