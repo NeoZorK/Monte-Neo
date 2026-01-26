@@ -329,15 +329,35 @@ class MonteCarloEngine:
         # Calculate summary stats
         summary = {}
         for name, values in metric_values.items():
-            arr = np.array(values)
+            arr = np.array(values, dtype=float)
+
+            # Handle infinite values which cause warnings in std calculation
+            # We replace inf with nan and use nan-aware functions
+            is_inf = np.isinf(arr)
+            if np.any(is_inf):
+                arr[is_inf] = np.nan
+
+            # Check if we have any valid data left
+            if np.all(np.isnan(arr)):
+                summary[name] = {
+                    "mean": 0.0,
+                    "std": 0.0,
+                    "min": 0.0,
+                    "max": 0.0,
+                    "median": 0.0,
+                    "p5": 0.0,
+                    "p95": 0.0,
+                }
+                continue
+
             summary[name] = {
-                "mean": float(np.mean(arr)),
-                "std": float(np.std(arr)),
-                "min": float(np.min(arr)),
-                "max": float(np.max(arr)),
-                "median": float(np.median(arr)),
-                "p5": float(np.percentile(arr, 5)),
-                "p95": float(np.percentile(arr, 95)),
+                "mean": float(np.nanmean(arr)),
+                "std": float(np.nanstd(arr)),
+                "min": float(np.nanmin(arr)),
+                "max": float(np.nanmax(arr)),
+                "median": float(np.nanmedian(arr)),
+                "p5": float(np.nanpercentile(arr, 5)),
+                "p95": float(np.nanpercentile(arr, 95)),
             }
 
         return summary
