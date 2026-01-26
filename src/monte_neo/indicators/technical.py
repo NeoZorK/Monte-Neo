@@ -7,11 +7,95 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+from numba import njit
 
 from monte_neo.indicators.base import BaseIndicator, IndicatorConfig
 from monte_neo.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+@njit
+def sma_numba(data: np.ndarray, period: int) -> np.ndarray:
+    """Fast SMA calculation."""
+    res = np.full(data.shape, np.nan)
+    if len(data) < period:
+        return res
+    
+    current_sum = 0.0
+    for i in range(period):
+        current_sum += data[i]
+    
+    res[period - 1] = current_sum / period
+    
+    for i in range(period, len(data)):
+        current_sum = current_sum - data[i - period] + data[i]
+        res[i] = current_sum / period
+        
+    return res
+
+
+@njit
+def ema_numba(data: np.ndarray, period: int) -> np.ndarray:
+    """Fast EMA calculation."""
+    res = np.full(data.shape, np.nan)
+    if len(data) == 0:
+        return res
+    
+    alpha = 2.0 / (period + 1)
+    res[0] = data[0]
+    
+    for i in range(1, len(data)):
+        res[i] = (data[i] - res[i - 1]) * alpha + res[i - 1]
+        
+    return res
+
+
+@njit
+def rsi_numba(data: np.ndarray, period: int) -> np.ndarray:
+    """Fast RSI calculation."""
+    res = np.full(data.shape, np.nan)
+    if len(data) <= period:
+        return res
+    
+    deltas = np.diff(data)
+    gains = np.zeros(len(deltas))
+    losses = np.zeros(len(deltas))
+    
+    for i in range(len(deltas)):
+        if deltas[i] > 0:
+            gains[i] = deltas[i]
+        else:
+            losses[i] = -deltas[i]
+            
+    avg_gain = 0.0
+    avg_loss = 0.0
+    
+    for i in range(period):
+        avg_gain += gains[i]
+        avg_loss += losses[i]
+        
+    avg_gain /= period
+    avg_loss /= period
+    
+    if avg_loss == 0:
+        res[period] = 100.0
+    else:
+        rs = avg_gain / avg_loss
+        res[period] = 100.0 - (100.0 / (1.0 + rs))
+        
+    for i in range(period + 1, len(data)):
+        # Wilder's smoothing
+        avg_gain = (avg_gain * (period - 1) + gains[i - 1]) / period
+        avg_loss = (avg_loss * (period - 1) + losses[i - 1]) / period
+        
+        if avg_loss == 0:
+            res[i] = 100.0
+        else:
+            rs = avg_gain / avg_loss
+            res[i] = 100.0 - (100.0 / (1.0 + rs))
+            
+    return res
 
 
 class TechnicalIndicators:
@@ -116,26 +200,27 @@ class SMAIndicator(BaseIndicator):
         return result
 
     def generate_signals(self, data: pd.DataFrame) -> pd.DataFrame:
-        # Optimized: Use numpy for speed
-        fast = TechnicalIndicators.sma(data["close"], self._parameters["fast_period"]).to_numpy()
-        slow = TechnicalIndicators.sma(data["close"], self._parameters["slow_period"]).to_numpy()
+        # High-performance Numba-based signal generation
+        close = data["close"].to_numpy()
+        fast_period = self._parameters["fast_period"]
+        slow_period = self._parameters["slow_period"]
+        
+        fast = sma_numba(close, fast_period)
+        slow = sma_numba(close, slow_period)
 
         sig_vals = np.zeros(len(data), dtype=np.float32)
 
-        # Crossover signals
+        # Crossover logic
         # 1 where fast > slow, -1 where fast < slow
-        condition_buy = fast > slow
-        condition_sell = fast < slow
+        mask_buy = fast > slow
+        mask_sell = fast < slow
+        
+        sig_vals[mask_buy] = 1.0
+        sig_vals[mask_sell] = -1.0
 
-        sig_vals[condition_buy] = 1.0
-        sig_vals[condition_sell] = -1.0
-
-        # Only signal on crossover (change from previous)
-        # diff = current - previous
-        # We want to capture the transition.
-        # shift right
-        sig_prev = np.roll(sig_vals, 1)
-        sig_prev[0] = 0 # Handle first element
+        # Only signal on crossover
+        sig_prev = np.zeros_like(sig_vals)
+        sig_prev[1:] = sig_vals[:-1]
 
         diff = sig_vals - sig_prev
 
@@ -166,13 +251,13 @@ class RSIIndicator(BaseIndicator):
         return result
 
     def generate_signals(self, data: pd.DataFrame) -> pd.DataFrame:
-        # Optimized: Inline calculation, use numpy
+        # High-performance Numba-based RSI signals
+        close = data["close"].to_numpy()
         period = self._parameters["period"]
         oversold = self._parameters["oversold"]
         overbought = self._parameters["overbought"]
 
-        rsi_series = TechnicalIndicators.rsi(data["close"], period)
-        rsi_vals = rsi_series.to_numpy()
+        rsi_vals = rsi_numba(close, period)
 
         sig_vals = np.zeros(len(data), dtype=np.float32)
 
@@ -208,14 +293,17 @@ class MACDIndicator(BaseIndicator):
         return result
 
     def generate_signals(self, data: pd.DataFrame) -> pd.DataFrame:
-        # Optimized: Use numpy for speed
-        _, _, hist = TechnicalIndicators.macd(
-            data["close"],
-            self._parameters["fast"],
-            self._parameters["slow"],
-            self._parameters["signal"],
-        )
-        hist_vals = hist.to_numpy()
+        # High-performance Numba-based MACD signals
+        close = data["close"].to_numpy()
+        fast_p = self._parameters["fast"]
+        slow_p = self._parameters["slow"]
+        sig_p = self._parameters["signal"]
+        
+        fast_ema = ema_numba(close, fast_p)
+        slow_ema = ema_numba(close, slow_p)
+        macd_line = fast_ema - slow_ema
+        signal_line = ema_numba(macd_line, sig_p)
+        hist_vals = macd_line - signal_line
 
         sig_vals = np.zeros(len(data), dtype=np.float32)
 
@@ -224,8 +312,8 @@ class MACDIndicator(BaseIndicator):
         sig_vals[hist_vals < 0] = -1.0
 
         # Only signal on crossover
-        sig_prev = np.roll(sig_vals, 1)
-        sig_prev[0] = 0
+        sig_prev = np.zeros_like(sig_vals)
+        sig_prev[1:] = sig_vals[:-1]
 
         diff = sig_vals - sig_prev
 

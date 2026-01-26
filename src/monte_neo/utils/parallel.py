@@ -57,11 +57,19 @@ class ParallelExecutor:
             # Cancel all pending futures if possible
             if hasattr(self._pool, "_pending_work_items"): # ProcessPoolExecutor internal
                 try:
-                    for future in self._pool._pending_work_items.values():
+                    for future in list(self._pool._pending_work_items.values()):
                         future.cancel()
                 except Exception:
                     pass
-            self._pool.shutdown(wait=False, cancel_futures=True)
+            
+            # Use wait=False to avoid hanging on exit
+            # cancel_futures=True is supported in Python 3.9+
+            try:
+                self._pool.shutdown(wait=False, cancel_futures=True)
+            except TypeError:
+                # Fallback for older Python versions
+                self._pool.shutdown(wait=False)
+            
             self._pool = None
 
     def map(
@@ -85,6 +93,7 @@ class ParallelExecutor:
         if len(items) == 0:
             return []
 
+        # Reduce overhead for small batches or single worker
         if len(items) == 1 or self.n_workers == 1:
             return [func(item) for item in items]
 
@@ -98,34 +107,57 @@ class ParallelExecutor:
             is_temp_pool = True
 
         try:
-            futures = {executor.submit(func, item): i for i, item in enumerate(items)}
+            # Submit tasks and store futures
+            futures_map = {executor.submit(func, item): i for i, item in enumerate(items)}
+            pending = set(futures_map.keys())
 
-            for future in as_completed(futures):
+            while pending:
                 if getattr(self, "_shutdown_requested", False):
+                    # Cancel all remaining if shutdown requested
+                    for f in pending:
+                        f.cancel()
                     break
-                idx = futures[future]
-                try:
-                    result = future.result()
-                    results.append((idx, result))
-                except Exception as e:
-                    logger.error(f"Error processing item {idx}: {e}", exc_info=True)
-                    results.append((idx, None))
-        except KeyboardInterrupt:
-            logger.warning("Parallel execution interrupted. Shutting down workers...")
+
+                # Wait for some futures to complete with a small timeout to allow checking _shutdown_requested
+                done, pending = as_completed_with_timeout(pending, timeout=0.1)
+                
+                for future in done:
+                    idx = futures_map[future]
+                    try:
+                        result = future.result()
+                        results.append((idx, result))
+                    except Exception as e:
+                        # Only log if not a cancellation/shutdown error
+                        if not getattr(self, "_shutdown_requested", False):
+                            logger.error(f"Error processing item {idx}: {e}")
+                        results.append((idx, None))
+
+        except (KeyboardInterrupt, SystemExit):
+            self._shutdown_requested = True
             # Kill workers immediately
-            if is_temp_pool and executor:
-                executor.shutdown(wait=False, cancel_futures=True)
-            elif self._pool:
-                 self._pool.shutdown(wait=False, cancel_futures=True)
+            if executor:
+                try:
+                    executor.shutdown(wait=False, cancel_futures=True)
+                except (TypeError, Exception):
+                    executor.shutdown(wait=False)
             raise
         finally:
             # Clean up properly if it was a temp pool
             if is_temp_pool and executor:
-                executor.shutdown(wait=False)
+                try:
+                    executor.shutdown(wait=False, cancel_futures=True)
+                except (TypeError, Exception):
+                    executor.shutdown(wait=False)
 
         # Sort by original order
         results.sort(key=lambda x: x[0])
         return [r[1] for r in results]
+
+def as_completed_with_timeout(fs, timeout=None):
+    """Wait for some futures to complete with a timeout."""
+    from concurrent.futures import wait, FIRST_COMPLETED
+    done_set = wait(fs, timeout=timeout, return_when=FIRST_COMPLETED).done
+    return done_set, fs - done_set
 
     def starmap(
         self,

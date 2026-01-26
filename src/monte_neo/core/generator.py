@@ -196,17 +196,16 @@ class IndicatorGenerator:
                 try:
                     # Optimize: If only standard indicators and no MC scenarios, 
                     # use super fast pure-Numba batch calculation
-                    if not self.config.use_mc_shuffling and not self.config.use_mc_noise and \
-                       all(not hasattr(ind, "source_code") for ind in batch_indicators):
-                        
-                        # Pre-generate signals in parallel
+                    is_standard = all(not hasattr(ind, "source_code") for ind in batch_indicators)
+
+                    if is_standard and not self.config.use_mc_shuffling and not self.config.use_mc_noise:
+                        # Pre-generate signals
+                        # For standard indicators, sequential generation is often faster than
+                        # the overhead of IPC with ParallelExecutor
                         signal_matrix = np.zeros((actual_batch_size, len(data)), dtype=np.int32)
                         
-                        # Use executor for signal generation
-                        tasks = [(ind, data) for ind in batch_indicators]
-                        raw_signals = self.executor.map(_generate_signals_wrapper, tasks)
-                        
-                        for i, sig in enumerate(raw_signals):
+                        for i, ind in enumerate(batch_indicators):
+                            sig = ind.generate_signals(data)
                             signal_matrix[i] = normalize_signal_array(sig, len(data)).astype(np.int32)
                             
                         # Pure Numba batch calculation
