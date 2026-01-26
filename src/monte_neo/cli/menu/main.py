@@ -43,7 +43,6 @@ class InteractiveMenu:
         
         # Validation Settings
         self._mc_pass_threshold: float = 0.80
-        self._mc_sequential: bool = False
 
     def run(self) -> int:
         """Run the interactive menu loop."""
@@ -65,7 +64,8 @@ class InteractiveMenu:
             {"name": "📊 Download Market Data", "value": "download"},
             {"name": "🎯 Set Target Metrics", "value": "metrics"},
             {"name": "🎲 Configure Monte Carlo Methods", "value": "mc_config"},
-            {"name": " Generate Indicator", "value": "generate"},
+            {"name": "🚀 Generate Indicator", "value": "generate"},
+            {"name": "🔄 Sequential Generate Indicator", "value": "generate_sequential"},
             {"name": "📈 View Results", "value": "results"},
             {"name": "⚙️  Settings", "value": "settings"},
             {"name": "❌ Exit", "value": "exit"},
@@ -82,11 +82,17 @@ class InteractiveMenu:
         from monte_neo.cli.menu.results import view_results_workflow
         from monte_neo.cli.menu.settings import settings_workflow
 
+        if choice == "generate":
+            generate_indicator_workflow(self, sequential=False)
+            return
+        elif choice == "generate_sequential":
+            generate_indicator_workflow(self, sequential=True)
+            return
+
         handlers = {
             "download": download_data_workflow,
             "metrics": set_metrics_workflow,
             "mc_config": configure_mc_workflow,
-            "generate": generate_indicator_workflow,
             "results": view_results_workflow,
             "settings": settings_workflow,
         }

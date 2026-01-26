@@ -19,9 +19,10 @@ if TYPE_CHECKING:
 console = Console()
 
 
-def generate_indicator_workflow(menu: InteractiveMenu) -> None:
+def generate_indicator_workflow(menu: InteractiveMenu, sequential: bool = False) -> None:
     """Generate indicator workflow."""
-    console.print("\n[bold cyan]🚀 Generate Indicator[/]\n")
+    title = "🚀 Generate Indicator" if not sequential else "🔄 Sequential Generate Indicator"
+    console.print(f"\n[bold cyan]{title}[/]\n")
 
     if not menu._target_metrics:
         console.print("[yellow]⚠ Please set target metrics first[/]\n")
@@ -51,7 +52,7 @@ def generate_indicator_workflow(menu: InteractiveMenu) -> None:
     if not questionary.confirm("Start generation?", style=CUSTOM_STYLE).ask():
         return
 
-    _run_generation(menu, symbol, timeframe, iterations, indicator_types)
+    _run_generation(menu, symbol, timeframe, iterations, indicator_types, sequential)
 
 
 def _get_iterations() -> int | None:
@@ -83,7 +84,7 @@ def _get_indicator_types() -> list[str] | None:
     ).ask()
 
 
-def _run_generation(menu: InteractiveMenu, symbol: str, timeframe: str, iterations: int, types: list[str]) -> None:
+def _run_generation(menu: InteractiveMenu, symbol: str, timeframe: str, iterations: int, types: list[str], sequential: bool = False) -> None:
     data = menu.storage.load(symbol, timeframe)
     menu._last_data = data
 
@@ -103,7 +104,7 @@ def _run_generation(menu: InteractiveMenu, symbol: str, timeframe: str, iteratio
         use_mc_sensitivity="sensitivity" in menu._mc_methods,
         use_mc_walk_forward="walk_forward" in menu._mc_methods,
         use_mc_block_bootstrap="block_bootstrap" in menu._mc_methods,
-        use_sequential_mc=getattr(menu, "_mc_sequential", False),
+        use_sequential_mc=sequential,
         mc_pass_threshold=getattr(menu, "_mc_pass_threshold", 0.80),
     )
 
