@@ -72,7 +72,14 @@ def _process_download(menu: InteractiveMenu, symbol: str, timeframe: str) -> Non
     if info:
         console.print(f"\n[yellow]⚠ Data for {symbol} {timeframe} already exists.[/]")
         
-        range_str = f"{info.get('start_date')} ➜ {info.get('end_date')}"
+        start = info.get('start_date')
+        end = info.get('end_date')
+        
+        # Format dates if they exist
+        start_str = str(start).split(".")[0] if start else "Unknown"
+        end_str = str(end).split(".")[0] if end else "Unknown"
+        range_str = f"{start_str} ➜ {end_str}"
+        
         console.print(Panel(
             f"Rows:  {info.get('rows', 0):,}\n"
             f"Range: {range_str}\n"
@@ -116,10 +123,13 @@ def _process_download(menu: InteractiveMenu, symbol: str, timeframe: str) -> Non
         )
         menu.progress.update(100, 100, "Done")
         menu.progress.stop()
+        
         menu.storage.save(data, symbol, timeframe)
 
         console.print(f"[green]✓ Downloaded {len(data)} candles[/]")
         console.print(f"[dim]Saved to: data/raw/{symbol}_{timeframe}.parquet[/]\n")
 
     except Exception as e:
+        menu.progress.stop()
         console.print(f"[red]✗ Download failed: {e}[/]\n")
+        logger.error(f"Download failed for {symbol}: {e}")
