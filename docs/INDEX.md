@@ -112,6 +112,7 @@ A simplified guide to the Monte-Neo file structure.
 - tests/unit/ - Targeted unit tests for all modules
   - tests/unit/test_dynamic_indicator.py - Tests for dynamic code generation and evolution
   - tests/unit/test_gpu_engine_parallel.py - Tests for GPU parallel path selection
+  - tests/unit/test_binance_websocket.py - Tests for Binance WebSocket streaming
 - tests/integration/ - End-to-end workflow tests
 - tests/stress/ - Memory and CPU performance stress tests
 
