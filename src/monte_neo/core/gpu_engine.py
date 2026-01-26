@@ -112,30 +112,50 @@ class MLXBacktestEngine:
                 except Exception:
                     raw_signals.append(None)
 
-        # 3. Handle Backtest calculation (GPU for simple, Numba for SL/TP)
+        # 3. Handle Backtest calculation (GPU for simple, Numba Batch for SL/TP)
         if use_sl_tp:
-            # SL/TP requires path-dependent calculation (Numba on CPU)
-            calc = MetricsCalculator()
-            results = []
+            # SL/TP requires path-dependent calculation
+            # Use parallelized batch Numba for maximum speed on CPU
+            
+            # Prepare data arrays
+            close_prices_np = data["close"].to_numpy().astype(np.float64)
+            high_prices_np = data["high"].to_numpy().astype(np.float64)
+            low_prices_np = data["low"].to_numpy().astype(np.float64)
+            
+            # Prepare signal matrix
+            signal_list = []
             for sigs in raw_signals:
-                if sigs is None:
-                    results.append({"metrics": {"total_return": -1.0, "max_drawdown": 1.0, "profit_factor": 0.0}})
-                    continue
+                signal_list.append(normalize_signal_array(sigs, len(data)).astype(np.int32))
+            signal_matrix = np.stack(signal_list)
+            
+            # Run batch calculation
+            batch_metrics = MetricsCalculator.calculate_batch_fast(
+                close_prices_np,
+                high_prices_np,
+                low_prices_np,
+                signal_matrix,
+                use_sl_tp,
+                sl_pct,
+                tp_pct
+            )
+            
+            results = []
+            for i in range(len(indicators)):
+                total_return = float(batch_metrics[i, 0])
+                max_dd = float(batch_metrics[i, 1])
+                pf = float(batch_metrics[i, 2])
+                trade_count = int(batch_metrics[i, 3])
                 
-                # We need to convert signals to DataFrame if it's not already
-                if not isinstance(sigs, pd.DataFrame):
-                    sigs_df = pd.DataFrame({"signal": sigs}, index=data.index)
-                else:
-                    sigs_df = sigs
-                
-                metrics = calc.calculate_all(
-                    data, sigs_df, use_sl_tp=use_sl_tp, sl_pct=sl_pct, tp_pct=tp_pct
-                )
                 results.append({
-                    "total_return": metrics.get("total_return", -1.0),
-                    "max_drawdown": metrics.get("max_drawdown", 1.0),
-                    "profit_factor": metrics.get("profit_factor", 0.0),
-                    "metrics": metrics
+                    "total_return": total_return,
+                    "max_drawdown": max_dd,
+                    "profit_factor": pf,
+                    "metrics": {
+                        "total_return": total_return,
+                        "max_drawdown": max_dd,
+                        "profit_factor": pf,
+                        "trade_count": trade_count,
+                    }
                 })
             return results
 
