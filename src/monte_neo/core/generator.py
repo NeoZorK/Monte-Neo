@@ -97,6 +97,10 @@ class IndicatorGenerator:
             use_walk_forward=self.config.use_mc_walk_forward,
             use_block_bootstrap=self.config.use_mc_block_bootstrap,
             use_sequential=self.config.use_sequential_mc,
+            pass_threshold=self.config.mc_pass_threshold,
+            use_sl_tp=self.config.use_sl_tp,
+            sl_pct=self.config.stop_loss_pct,
+            tp_pct=self.config.take_profit_pct,
         )
         mc_engine = MonteCarloEngine(mc_config, executor=self.executor)
 

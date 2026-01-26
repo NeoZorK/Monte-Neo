@@ -269,7 +269,7 @@ class MonteCarloEngine:
         logger.debug(f"MC complete: {passed_count}/{total} passed ({pass_rate:.1%})")
 
         return MCResult(
-            passed=pass_rate >= 0.95,  # 95% pass rate required
+            passed=pass_rate >= self.config.pass_threshold,
             pass_rate=pass_rate,
             iterations_run=total,
             elapsed_time=elapsed,

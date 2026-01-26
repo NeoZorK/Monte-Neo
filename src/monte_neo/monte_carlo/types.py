@@ -30,6 +30,9 @@ class MCConfig:
     sl_pct: float = 0.0
     tp_pct: float = 0.0
 
+    # Validation
+    pass_threshold: float = 0.95  # 95% threshold by default
+
 
 @dataclass
 class MCStepResult:

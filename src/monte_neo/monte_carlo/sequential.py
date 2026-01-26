@@ -111,11 +111,18 @@ class SequentialMCRunner:
             return self._run_sensitivity_step(indicator, data, metrics_calc, target_metrics)
 
         # Run backtests for scenarios
-        results = self.engine.gpu_engine.backtest_scenarios(indicator, scenarios, executor=self.engine.executor)
+        results = self.engine.gpu_engine.backtest_scenarios(
+            indicator,
+            scenarios,
+            executor=self.engine.executor,
+            use_sl_tp=self.engine.config.use_sl_tp,
+            sl_pct=self.engine.config.sl_pct,
+            tp_pct=self.engine.config.tp_pct,
+        )
         
         passed_count = sum(1 for r in results if r["passed"])
         pass_rate = passed_count / len(results) if results else 0.0
-        passed = pass_rate >= 0.95 # 95% threshold
+        passed = pass_rate >= self.engine.config.pass_threshold
 
         summary = self.engine._summarize_metrics(results)
         advice = self._generate_advice(name, pass_rate, summary)
