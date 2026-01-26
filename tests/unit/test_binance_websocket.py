@@ -81,7 +81,7 @@ def test_reconnect_resubscribes(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that reconnect logic resubscribes to active streams."""
     # Mock time.sleep to avoid waiting
     monkeypatch.setattr(ws_module.time, "sleep", lambda x: None)
-    
+
     streamer, dummy = _setup_dummy(monkeypatch)
 
     def handler(message: dict) -> None:
@@ -89,10 +89,10 @@ def test_reconnect_resubscribes(monkeypatch: pytest.MonkeyPatch) -> None:
 
     # Subscribe to populate active streams
     streamer.subscribe_kline(symbol="BTCUSDT", interval="1m", callback=handler)
-    
+
     # Clear calls to track reconnect actions
     dummy.calls = []
-    
+
     # Trigger reconnect via error handler
     # Error handler calls _attempt_reconnect
     # _attempt_reconnect calls stop (try), start, subscribe
@@ -100,12 +100,12 @@ def test_reconnect_resubscribes(monkeypatch: pytest.MonkeyPatch) -> None:
 
     # Verify sequence: stop -> start -> subscribe
     # Note: stop is called inside try/except, so it might appear
-    
+
     # Filter for relevant calls
     actions = [call[0] for call in dummy.calls]
     assert "start" in actions
     assert "subscribe" in actions
-    
+
     # Verify subscription restoration
     subscribe_calls = [call for call in dummy.calls if call[0] == "subscribe"]
     assert len(subscribe_calls) > 0

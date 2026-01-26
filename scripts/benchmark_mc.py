@@ -46,7 +46,7 @@ def benchmark_mc():
     print(f"Generating {iterations} Block Bootstrap scenarios (shared)...")
     # Generate scenarios once to isolate MC engine overhead
     temp_engine = MonteCarloEngine(config)
-    scenarios = temp_engine._generate_scenarios(data)
+    scenarios = temp_engine.scenario_builder.generate(data)
 
     print("\n--- Benchmarking Persistent Executor ---")
 
