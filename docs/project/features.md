@@ -13,6 +13,8 @@
   - **Sensitivity Analysis**: Varies parameters by ±10% to ensure stability.
   - **Walk-Forward Analysis**: Realistic out-of-sample validation.
   - **Block Bootstrap**: Resamples contiguous blocks to preserve market structure.
+  - **Sequential Validation Mode**: Runs methods one-by-one with early termination to save time.
+  - **Dynamic Pass Threshold**: Configurable success criteria (e.g., 95% pass rate required).
 - **Data Management**:
   - Fast Parquet-based storage.
   - One-click Binance data downloader.

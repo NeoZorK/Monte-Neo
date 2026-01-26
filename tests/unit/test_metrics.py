@@ -67,3 +67,54 @@ def test_sl_tp_extraction():
     assert metrics_tp["trade_count"] == 1
     # entry 100, TP at 102.
     assert metrics_tp["total_return"] == 0.02
+
+def test_calculate_batch_fast(sample_ohlcv):
+    """Test parallel batch calculation functions."""
+    import numpy as np
+    from monte_neo.metrics.calculator import MetricsCalculator
+    
+    calc = MetricsCalculator()
+    
+    # Setup data
+    ohlc = sample_ohlcv[["open", "high", "low", "close"]].values.astype(np.float32)
+    prices = ohlc[:, 3]
+    highs = ohlc[:, 1]
+    lows = ohlc[:, 2]
+    
+    # 3 identical scenarios
+    signals_matrix = np.zeros((3, len(ohlc)), dtype=np.float32)
+    signals_matrix[:, 0] = 1 # Long entry for all
+    
+    # Test single-price batch (same OHLC for all)
+    results = calc.calculate_batch_fast(
+        prices,
+        highs,
+        lows,
+        signals_matrix,
+        use_sl_tp=True,
+        sl_pct=2.0,
+        tp_pct=4.0
+    )
+    
+    assert len(results) == 3
+    for res in results:
+        assert res[3] == 1 # n_trades is at index 3
+        
+    # Test multi-price batch (different OHLC for each)
+    price_matrix = np.stack([prices] * 3) # (3, L)
+    high_matrix = np.stack([highs] * 3)
+    low_matrix = np.stack([lows] * 3)
+    
+    results_multi = calc.calculate_batch_multi_price_fast(
+        price_matrix,
+        high_matrix,
+        low_matrix,
+        signals_matrix,
+        use_sl_tp=True,
+        sl_pct=2.0,
+        tp_pct=4.0
+    )
+    
+    assert len(results_multi) == 3
+    for res in results_multi:
+        assert res[3] == 1
