@@ -8,6 +8,7 @@ import pandas as pd
 
 from monte_neo.core.gpu_lazy import backtest_lazy_scenarios as run_lazy_backtest
 from monte_neo.core.gpu_scenarios import normalize_signal_array, run_scenarios_backtest
+from monte_neo.metrics.calculator import MetricsCalculator
 from monte_neo.monte_carlo.workers import run_indicator_batch
 from monte_neo.utils.parallel import ParallelExecutor
 
@@ -55,6 +56,9 @@ class MLXBacktestEngine:
         force_parallel: bool = False,
         parallel_threshold: int = 1000,
         dynamic_parallel_threshold: int = 10,
+        use_sl_tp: bool = False,
+        sl_pct: float = 0.0,
+        tp_pct: float = 0.0,
     ) -> list[dict[str, Any]]:
         """Run multiple backtests simultaneously on the GPU.
 
@@ -66,6 +70,9 @@ class MLXBacktestEngine:
             force_parallel: Force multiprocessing for signal generation.
             parallel_threshold: Indicator count threshold for multiprocessing.
             dynamic_parallel_threshold: Threshold for dynamic indicators multiprocessing.
+            use_sl_tp: Whether to apply Stop Loss and Take Profit.
+            sl_pct: Stop Loss percentage.
+            tp_pct: Take Profit percentage.
 
         Returns:
             List of results for each indicator.
@@ -73,17 +80,7 @@ class MLXBacktestEngine:
         # 1. Prepare Price Data (Constant for all indicators)
         close_prices = mx.array(data["close"].to_numpy().astype(np.float32))
 
-        # 2. Collect Signals into a Matrix (N_indicators x T_bars)
-        # Note: Indicator signal generation is still CPU-bound or partially vectorized.
-        # But we can stack the results for massive parallel equity calculation.
-        signal_list = []
-
-        # Prepare args for parallel execution
-        # Each task is (indicator, data)
-        # Since data is same for all, we might want to avoid pickling it N times if it's huge.
-        # But for parallel execution, arguments must be pickled.
-        # ParallelExecutor uses process pool, so pickling is unavoidable.
-
+        # 2. Collect Signals (CPU parallelized if needed)
         use_parallel = False
         if executor and executor.use_processes:
             has_dynamic = any(hasattr(ind, "_compile_if_needed") for ind in indicators)
@@ -115,40 +112,58 @@ class MLXBacktestEngine:
                 except Exception:
                     raw_signals.append(None)
 
-        # Process results
+        # 3. Handle Backtest calculation (GPU for simple, Numba for SL/TP)
+        if use_sl_tp:
+            # SL/TP requires path-dependent calculation (Numba on CPU)
+            calc = MetricsCalculator()
+            results = []
+            for sigs in raw_signals:
+                if sigs is None:
+                    results.append({"metrics": {"total_return": -1.0, "max_drawdown": 1.0, "profit_factor": 0.0}})
+                    continue
+                
+                # We need to convert signals to DataFrame if it's not already
+                if not isinstance(sigs, pd.DataFrame):
+                    sigs_df = pd.DataFrame({"signal": sigs}, index=data.index)
+                else:
+                    sigs_df = sigs
+                
+                metrics = calc.calculate_all(
+                    data, sigs_df, use_sl_tp=use_sl_tp, sl_pct=sl_pct, tp_pct=tp_pct
+                )
+                results.append({
+                    "total_return": metrics.get("total_return", -1.0),
+                    "max_drawdown": metrics.get("max_drawdown", 1.0),
+                    "profit_factor": metrics.get("profit_factor", 0.0),
+                    "metrics": metrics
+                })
+            return results
+
+        # Normal GPU calculation (Simple vectorized model)
+        signal_list = []
         for sigs in raw_signals:
             signal_list.append(normalize_signal_array(sigs, len(data)))
 
         # Shape: (N, T)
         signal_matrix = mx.array(np.stack(signal_list))
 
-        # 3. Calculate Trades / Equity on GPU
-        # Simple backtesting on GPU:
-        # returns = signals[t-1] * (price[t] / price[t-1] - 1)
-
         # Shift prices for returns calculation
-        # returns_pct = (close[1:] / close[:-1]) - 1
         returns_pct = (close_prices[1:] / close_prices[:-1]) - 1
 
-        # Shift signals to avoid look-ahead bias (signals[t] affects return between t and t+1)
-        # We align: signal[0] * returns_pct[0] (which is move from close[0] to close[1])
+        # Shift signals to avoid look-ahead bias
         strat_returns = signal_matrix[:, :-1] * returns_pct
 
         # Cumulative returns (Equity Curves)
-        # log_returns = mx.log1p(strat_returns) # For precision, but simple cumprod is fine too
         equity_curves = mx.exp(
             mx.cumsum(mx.log1p(mx.clip(strat_returns, -0.999, 10.0)), axis=1)
         )
 
-        # 4. Calculate Metrics on GPU
         # Final Return
         final_returns = equity_curves[:, -1]
 
-        # Max Drawdown (Vectorized across all indicators)
-        # running_max = mx.maximum.accumulate(equity_curves, axis=1) # type: ignore
+        # Max Drawdown
         running_max = mx.cummax(equity_curves, axis=1)
-        drawdowns = (running_max - equity_curves) / running_max
-        max_drawdowns = mx.max(drawdowns, axis=1)
+        max_dds = mx.max((running_max - equity_curves) / running_max, axis=1)
 
         # Profit Factor
         wins = mx.where(strat_returns > 0, strat_returns, 0)
@@ -157,36 +172,23 @@ class MLXBacktestEngine:
         gross_loss = mx.abs(mx.sum(losses, axis=1))
         profit_factor = mx.where(gross_loss > 0, gross_profit / gross_loss, 100.0)
 
-        # Sharp Ratio (simplified)
-        mean_ret = mx.mean(strat_returns, axis=1)
-        std_ret = mx.std(strat_returns, axis=1)
-        sharpe = mx.where(
-            std_ret > 0, mean_ret / std_ret * mx.sqrt(float(252)), 0.0
-        )  # Assume daily for annualization
-
-        # 5. Bring back to CPU
         results = []
         final_rets_np = np.array(final_returns)
-        max_dds_np = np.array(max_drawdowns)
-        sharpe_np = np.array(sharpe)
+        max_dds_np = np.array(max_dds)
         pf_np = np.array(profit_factor)
 
         for i in range(len(indicators)):
-            results.append(
-                {
+            res = {
+                "total_return": float(final_rets_np[i]) - 1.0,
+                "max_drawdown": float(max_dds_np[i]),
+                "profit_factor": float(pf_np[i]),
+                "metrics": {
                     "total_return": float(final_rets_np[i]) - 1.0,
                     "max_drawdown": float(max_dds_np[i]),
-                    "sharpe_ratio": float(sharpe_np[i]),
                     "profit_factor": float(pf_np[i]),
-                    "success": bool(final_rets_np[i] > 1.0 and max_dds_np[i] < 0.2),
-                    "metrics": {
-                        "total_return": float(final_rets_np[i]) - 1.0,
-                        "max_drawdown": float(max_dds_np[i]),
-                        "sharpe_ratio": float(sharpe_np[i]),
-                        "profit_factor": float(pf_np[i]),
-                    },
-                }
-            )
+                },
+            }
+            results.append(res)
 
         return results
 
@@ -195,9 +197,19 @@ class MLXBacktestEngine:
         indicator: BaseIndicator,
         scenarios: list[pd.DataFrame],
         executor: ParallelExecutor | None = None,
+        use_sl_tp: bool = False,
+        sl_pct: float = 0.0,
+        tp_pct: float = 0.0,
     ) -> list[dict[str, Any]]:
         """Run one indicator across many data scenarios on GPU."""
-        return run_scenarios_backtest(indicator, scenarios, executor)
+        return run_scenarios_backtest(
+            indicator, 
+            scenarios, 
+            executor,
+            use_sl_tp=use_sl_tp,
+            sl_pct=sl_pct,
+            tp_pct=tp_pct
+        )
 
     def backtest_lazy_scenarios(
         self,
@@ -205,7 +217,10 @@ class MLXBacktestEngine:
         n_scenarios: int,
         executor: ParallelExecutor,
         block_size: int | None = None,
-        base_seed: int = 42
+        base_seed: int = 42,
+        use_sl_tp: bool = False,
+        sl_pct: float = 0.0,
+        tp_pct: float = 0.0,
     ) -> list[dict[str, Any]]:
         """Run backtest with lazy scenario generation (Block Bootstrap)."""
         return run_lazy_backtest(
@@ -214,4 +229,7 @@ class MLXBacktestEngine:
             executor=executor,
             block_size=block_size,
             base_seed=base_seed,
+            use_sl_tp=use_sl_tp,
+            sl_pct=sl_pct,
+            tp_pct=tp_pct,
         )

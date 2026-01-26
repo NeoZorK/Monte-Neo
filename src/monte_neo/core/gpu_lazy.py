@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 import mlx.core as mx
 import numpy as np
 
+from monte_neo.metrics.calculator import MetricsCalculator
 from monte_neo.monte_carlo.workers import _generate_lazy_scenario_wrapper
 from monte_neo.utils.parallel import ParallelExecutor
 
@@ -20,6 +21,9 @@ def backtest_lazy_scenarios(
     executor: ParallelExecutor,
     block_size: int | None = None,
     base_seed: int = 42,
+    use_sl_tp: bool = False,
+    sl_pct: float = 0.0,
+    tp_pct: float = 0.0,
 ) -> list[dict[str, Any]]:
     """Run backtest with lazy scenario generation (Block Bootstrap).
 
@@ -29,6 +33,9 @@ def backtest_lazy_scenarios(
         executor: Shared parallel executor.
         block_size: Optional block size for bootstrap.
         base_seed: Base seed for reproducible scenarios.
+        use_sl_tp: Whether to apply Stop Loss and Take Profit.
+        sl_pct: Stop Loss percentage.
+        tp_pct: Take Profit percentage.
 
     Returns:
         List of result dictionaries.
@@ -37,6 +44,38 @@ def backtest_lazy_scenarios(
     tasks = [(indicator, seed, block_size) for seed in seeds]
 
     raw_results = executor.map(_generate_lazy_scenario_wrapper, tasks)
+
+    if use_sl_tp:
+        # SL/TP requires path-dependent calculation (CPU)
+        calc = MetricsCalculator()
+        results = []
+        for res in raw_results:
+            if res is None:
+                results.append({
+                    "total_return": -1.0, "max_drawdown": 1.0, "profit_factor": 0.0,
+                    "passed": False, "metrics": {}
+                })
+                continue
+            
+            sigs, df = res # In lazy wrapper, it returns (signals, df)
+            
+            # Ensure sigs is converted to DataFrame if needed
+            if not isinstance(sigs, pd.DataFrame):
+                sigs_df = pd.DataFrame({"signal": sigs}, index=df.index)
+            else:
+                sigs_df = sigs
+
+            metrics = calc.calculate_all(
+                df, sigs_df, use_sl_tp=use_sl_tp, sl_pct=sl_pct, tp_pct=tp_pct
+            )
+            results.append({
+                "total_return": metrics.get("total_return", -1.0),
+                "max_drawdown": metrics.get("max_drawdown", 1.0),
+                "profit_factor": metrics.get("profit_factor", 0.0),
+                "passed": bool(metrics.get("total_return", -1.0) > 0.0 and metrics.get("max_drawdown", 1.0) < 0.2),
+                "metrics": metrics
+            })
+        return results
 
     signal_list = []
     returns_list = []

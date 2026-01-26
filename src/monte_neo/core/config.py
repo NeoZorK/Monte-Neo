@@ -32,6 +32,11 @@ class GeneratorConfig:
     mutation_rate: float = 0.3
     crossover_rate: float = 0.7
 
+    # Risk Management
+    stop_loss_pct: float = 1.0  # Default 1%
+    take_profit_pct: float = 2.0  # Default 2% (2:1 RR)
+    use_sl_tp: bool = True
+
 
 @dataclass
 class GeneratorResult:

@@ -30,4 +30,8 @@
   - Sharpe, Sortino, Calmar ratios.
   - Max Drawdown with duration analysis.
   - Expectancy and Recovery factor.
+  - **Risk Management**:
+    - Built-in Stop Loss (SL) and Take Profit (TP) support.
+    - Configuration via Risk Ratio (e.g., 2:1, 3:1).
+    - Configurable presets (Conservative, Standard, Aggressive).
   - Parallelized calculation for high efficiency.
