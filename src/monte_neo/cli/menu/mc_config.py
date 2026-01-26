@@ -32,4 +32,12 @@ def configure_mc_workflow(menu: InteractiveMenu) -> None:
     ).ask()
 
     menu._mc_methods = methods or []
-    console.print(f"\n[green]✓ Selected {len(menu._mc_methods)} methods[/]\n")
+    
+    sequential = questionary.confirm(
+        "Use Sequential MC Mode (Step-by-step validation)?",
+        default=getattr(menu, "_mc_sequential", False),
+        style=CUSTOM_STYLE,
+    ).ask()
+    
+    menu._mc_sequential = sequential
+    console.print(f"\n[green]✓ Selected {len(menu._mc_methods)} methods (Sequential: {sequential})[/]\n")

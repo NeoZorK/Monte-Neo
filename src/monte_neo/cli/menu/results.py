@@ -55,6 +55,23 @@ def _display_result_file(file_path):
                 val = f"{v:.4f}" if isinstance(v, float) else str(v)
                 table.add_row(k, val)
             console.print(table)
+
+        if "mc_details" in data and data["mc_details"].get("step_results"):
+            steps_table = Table(title="Monte Carlo Sequential Details")
+            steps_table.add_column("Method", style="cyan")
+            steps_table.add_column("Status", style="bold")
+            steps_table.add_column("Pass Rate", style="green")
+            steps_table.add_column("Advice", style="yellow")
+            
+            for step in data["mc_details"]["step_results"]:
+                status = "[green]PASS[/]" if step["passed"] else "[red]FAIL[/]"
+                steps_table.add_row(
+                    step["method"],
+                    status,
+                    f"{step['rate']:.1%}",
+                    step["advice"]
+                )
+            console.print(steps_table)
             
         if "config" in data:
             config = data['config']
@@ -81,6 +98,23 @@ def show_generation_result(menu: InteractiveMenu, result) -> None:
     table.add_row("MC Pass Rate", f"{result.mc_pass_rate:.1%}")
     console.print(table)
 
+    if hasattr(result, "mc_details") and result.mc_details.get("step_results"):
+        steps_table = Table(title="Monte Carlo Sequential Details")
+        steps_table.add_column("Method", style="cyan")
+        steps_table.add_column("Status", style="bold")
+        steps_table.add_column("Pass Rate", style="green")
+        steps_table.add_column("Advice", style="yellow")
+        
+        for step in result.mc_details["step_results"]:
+            status = "[green]PASS[/]" if step["passed"] else "[red]FAIL[/]"
+            steps_table.add_row(
+                step["method"],
+                status,
+                f"{step['rate']:.1%}",
+                step["advice"]
+            )
+        console.print(steps_table)
+
     if result.indicator:
         _save_result(menu, result)
         if questionary.confirm("Show chart?", style=CUSTOM_STYLE).ask():
@@ -101,6 +135,7 @@ def _save_result(menu: InteractiveMenu, result) -> None:
         "metrics": result.final_metrics,
         "config": result.parameters,
         "mc_pass_rate": result.mc_pass_rate,
+        "mc_details": getattr(result, "mc_details", {}),
     }
     
     with open(file_path, "w") as f:

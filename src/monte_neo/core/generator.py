@@ -87,7 +87,7 @@ class IndicatorGenerator:
         data: pd.DataFrame,
         indicator: BaseIndicator,
         scenarios: list[pd.DataFrame] | None = None
-    ) -> float:
+    ) -> MCResult:
         """Run Monte Carlo validation for a single indicator."""
         mc_config = MCConfig(
             iterations=self.config.mc_iterations,
@@ -96,17 +96,17 @@ class IndicatorGenerator:
             use_sensitivity=self.config.use_mc_sensitivity,
             use_walk_forward=self.config.use_mc_walk_forward,
             use_block_bootstrap=self.config.use_mc_block_bootstrap,
+            use_sequential=self.config.use_sequential_mc,
         )
         mc_engine = MonteCarloEngine(mc_config, executor=self.executor)
 
-        result = mc_engine.run(
+        return mc_engine.run(
             data,
             indicator,
             self.metrics_calc,
             self.config.target_metrics,
             existing_scenarios=scenarios
         )
-        return result.pass_rate
 
     def generate(self, data: pd.DataFrame) -> GeneratorResult:
         """Generate a robust indicator.
@@ -120,6 +120,7 @@ class IndicatorGenerator:
         start_time = time.time()
         best_indicator = None
         best_mc_rate = 0.0
+        best_mc_details = {}
         iterations_tried = 0
 
         # Initialize persistent executor
@@ -220,11 +221,12 @@ class IndicatorGenerator:
                             continue
 
                         # 3. MC Validation
-                        mc_pass_rate = self._run_mc_validation(
+                        mc_result = self._run_mc_validation(
                             data,
                             indicator,
                             scenarios=mc_scenarios,
                         )
+                        mc_pass_rate = mc_result.pass_rate
 
                         # Track candidates
                         if mc_pass_rate > 0.0:
@@ -234,6 +236,16 @@ class IndicatorGenerator:
                         if mc_pass_rate > best_mc_rate:
                             best_mc_rate = mc_pass_rate
                             best_indicator = indicator
+                            best_mc_details = {
+                                "step_results": [
+                                    {
+                                        "method": r.method_name,
+                                        "passed": r.passed,
+                                        "rate": r.pass_rate,
+                                        "advice": r.advice
+                                    } for r in mc_result.step_results
+                                ]
+                            }
                             logger.info(
                                 f"New best: {indicator.name} MC rate={mc_pass_rate:.2%}"
                             )
@@ -291,6 +303,7 @@ class IndicatorGenerator:
                     parameters=best_indicator.get_parameters(),
                     final_metrics=final_metrics,
                     mc_pass_rate=best_mc_rate,
+                    mc_details=best_mc_details,
                     iterations_tried=iterations_tried,
                     elapsed_time=time.time() - start_time,
                     candidates_found=len(self._candidates),
@@ -313,10 +326,21 @@ class IndicatorGenerator:
                 evolved_best = self._run_evolution(data)
                 if evolved_best:
                     # Check MC rate for evolved best
-                    mc_rate = self._run_mc_validation(data, evolved_best)
+                    mc_result = self._run_mc_validation(data, evolved_best)
+                    mc_rate = mc_result.pass_rate
                     if mc_rate > best_mc_rate:
                         best_mc_rate = mc_rate
                         best_indicator = evolved_best
+                        best_mc_details = {
+                            "step_results": [
+                                {
+                                    "method": r.method_name,
+                                    "passed": r.passed,
+                                    "rate": r.pass_rate,
+                                    "advice": r.advice
+                                } for r in mc_result.step_results
+                            ]
+                        }
                         logger.info(
                             f"Evolution found better indicator: {evolved_best.name} "
                             f"MC rate={mc_rate:.2%}"
@@ -355,6 +379,7 @@ class IndicatorGenerator:
             parameters=best_indicator.get_parameters() if best_indicator else {},
             final_metrics=final_metrics,
             mc_pass_rate=best_mc_rate,
+            mc_details=best_mc_details,
             iterations_tried=iterations_tried,
             elapsed_time=elapsed,
             candidates_found=len(self._candidates),
