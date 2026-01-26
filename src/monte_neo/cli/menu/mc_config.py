@@ -40,4 +40,11 @@ def configure_mc_workflow(menu: InteractiveMenu) -> None:
     ).ask()
     
     menu._mc_sequential = sequential
-    console.print(f"\n[green]✓ Selected {len(menu._mc_methods)} methods (Sequential: {sequential})[/]\n")
+    
+    if questionary.confirm(
+        f"Selected {len(menu._mc_methods)} methods (Sequential: {sequential}). Start generation?",
+        default=True,
+        style=CUSTOM_STYLE
+    ).ask():
+        from monte_neo.cli.menu.generator import generate_indicator_workflow
+        generate_indicator_workflow(menu)
