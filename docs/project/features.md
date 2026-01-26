@@ -12,6 +12,7 @@
   - **Noise Injection**: Simulates market volatility and slippage.
   - **Sensitivity Analysis**: Varies parameters by ±10% to ensure stability.
   - **Walk-Forward Analysis**: Realistic out-of-sample validation.
+  - **Block Bootstrap**: Resamples contiguous blocks to preserve market structure.
 - **Data Management**:
   - Fast Parquet-based storage.
   - One-click Binance data downloader.

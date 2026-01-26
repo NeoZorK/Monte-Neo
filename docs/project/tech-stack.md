@@ -128,4 +128,5 @@ monte_carlo:
     - noise
     - sensitivity
     - walk_forward
+    - block_bootstrap
 ```

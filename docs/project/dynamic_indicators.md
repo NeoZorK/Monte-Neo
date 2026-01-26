@@ -46,16 +46,15 @@ A dynamic indicator is defined by a **Source Code String**. This string is a val
 - Arithmetic: `+`, `-`, `*`, `/`
 - Comparison: `>`, `<`, `==` (for signals)
 
-### Available Functions
-- `abs(x)`
-- `log(x)` (numpy)
-- `sqrt(x)` (numpy)
-- `shift(x, n)`
-- `diff(x)`
-- `rolling_mean(x, window)`
-- `rolling_max(x, window)`
-- `rolling_min(x, window)`
-- `rolling_std(x, window)`
+### Available Functions (Pandas/Numpy-native)
+- `Series.shift(n)`
+- `Series.diff()`
+- `Series.rolling(window).mean()`
+- `Series.rolling(window).std()`
+- `Series.rolling(window).max()`
+- `Series.rolling(window).min()`
+- `np.log(x)`
+- `np.sqrt(x)`
 
 ## Example Generated Indicators
 
@@ -70,11 +69,13 @@ close > (rolling_mean(close, 20) + 2 * rolling_std(close, 20))
 (rolling_mean(close, 14) / shift(close, 5)) - 1
 ```
 
-## Security Implementation
+## Secure Compilation & Fallback
 
-The system uses `exec()` or `eval()` to run these generated strings. To mitigate security risks:
-- The scope passed to `eval()` is strictly limited to allowed data and safe functions.
-- No access to `os`, `sys`, or other system modules is provided.
+- Generated expressions are compiled into a small wrapper function via `exec()`:
+  - Signature: `_dynamic_calc(data, np, pd)`
+  - Scope is restricted to `data` (OHLCV DataFrame), `numpy`, and `pandas`
+- If compilation fails (e.g., invalid syntax), the indicator automatically falls back to a safe expression (`data['close']`) and recompiles.
+- At runtime, if evaluation fails (e.g., calling a method without parentheses), the indicator retries with the safe expression to avoid interrupting the search/evolution loop.
 
 ## Evolutionary Optimization
 
@@ -84,7 +85,7 @@ To find the best strategies, the system uses **Genetic Programming**:
 2.  **Evolution**: If enough candidates are found, it starts an evolutionary loop:
     - **Selection**: Indicators with the highest "Survival Score" (based on Profit, Drawdown, and Monte Carlo robustness) are chosen as parents.
     - **Mutation**: Random parts of the formula are changed or wrapped in new operations.
-    - **Crossover**: Future feature to swap logical parts between parents.
+    - **Crossover**: AST‑based subtree swap between parent code strings.
 3.  **Final Validation**: The best evolved individual undergoes a final strict Monte Carlo validation before being presented as the winner.
 
 This process runs for multiple generations, constantly refining the population towards robust profitability.
