@@ -47,6 +47,12 @@ def generate_indicator_workflow(menu: InteractiveMenu) -> None:
     indicator_types = _get_indicator_types()
     if not indicator_types: return
 
+    # MC Configuration (Integrated here)
+    from monte_neo.cli.menu.mc_config import configure_mc_workflow_inline
+    mc_config_result = configure_mc_workflow_inline(menu)
+    if not mc_config_result:
+        return
+
     # Confirm and Run
     if not questionary.confirm("Start generation?", style=CUSTOM_STYLE).ask():
         return

@@ -21,7 +21,8 @@ from monte_neo.indicators.dynamic import DynamicIndicator
 from monte_neo.indicators.technical import MACDIndicator, RSIIndicator, SMAIndicator
 from monte_neo.metrics.calculator import MetricsCalculator
 from monte_neo.monte_carlo.engine import MCConfig, MonteCarloEngine
-from monte_neo.monte_carlo.workers import init_worker_data
+from monte_neo.monte_carlo.workers import _generate_signals_wrapper, init_worker_data
+from monte_neo.core.gpu_scenarios import normalize_signal_array
 from monte_neo.utils.logger import get_logger
 from monte_neo.utils.parallel import ParallelExecutor
 
@@ -193,15 +194,52 @@ class IndicatorGenerator:
 
                 # GPU Backtest (Pre-filter)
                 try:
-                    gpu_results = self.gpu_engine.backtest_batch(
-                        data,
-                        batch_indicators,
-                        executor=self.executor,
-                        use_shared_data=True,
-                        use_sl_tp=self.config.use_sl_tp,
-                        sl_pct=self.config.stop_loss_pct,
-                        tp_pct=self.config.take_profit_pct
-                    )
+                    # Optimize: If only standard indicators and no MC scenarios, 
+                    # use super fast pure-Numba batch calculation
+                    if not self.config.use_mc_shuffling and not self.config.use_mc_noise and \
+                       all(not hasattr(ind, "source_code") for ind in batch_indicators):
+                        
+                        # Pre-generate signals in parallel
+                        signal_matrix = np.zeros((actual_batch_size, len(data)), dtype=np.int32)
+                        
+                        # Use executor for signal generation
+                        tasks = [(ind, data) for ind in batch_indicators]
+                        raw_signals = self.executor.map(_generate_signals_wrapper, tasks)
+                        
+                        for i, sig in enumerate(raw_signals):
+                            signal_matrix[i] = normalize_signal_array(sig, len(data)).astype(np.int32)
+                            
+                        # Pure Numba batch calculation
+                        batch_metrics_arr = self.metrics_calc.calculate_batch_fast(
+                            data["close"].values,
+                            data["high"].values,
+                            data["low"].values,
+                            signal_matrix,
+                            use_sl_tp=self.config.use_sl_tp,
+                            sl_pct=self.config.stop_loss_pct,
+                            tp_pct=self.config.take_profit_pct,
+                        )
+                        
+                        gpu_results = []
+                        for i in range(actual_batch_size):
+                            gpu_results.append({
+                                "metrics": {
+                                    "total_return": batch_metrics_arr[i, 0],
+                                    "max_drawdown": batch_metrics_arr[i, 1],
+                                    "profit_factor": batch_metrics_arr[i, 2],
+                                    "trade_count": int(batch_metrics_arr[i, 3]),
+                                }
+                            })
+                    else:
+                        gpu_results = self.gpu_engine.backtest_batch(
+                            data,
+                            batch_indicators,
+                            executor=self.executor,
+                            use_shared_data=True,
+                            use_sl_tp=self.config.use_sl_tp,
+                            sl_pct=self.config.stop_loss_pct,
+                            tp_pct=self.config.take_profit_pct
+                        )
                 except Exception as e:
                     logger.warning(f"GPU Backtest failed: {e}. Skipping batch.")
                     gpu_results = []
@@ -295,6 +333,7 @@ class IndicatorGenerator:
                     break
 
         except KeyboardInterrupt:
+            logger.info("KeyboardInterrupt caught in generator. Cleaning up...")
             # Cleanup executor immediately
             if self.executor:
                 self.executor.__exit__(None, None, None)

@@ -8,12 +8,18 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 
+from rich.console import Console
+from rich.table import Table
+
 from monte_neo.monte_carlo.types import MCStepResult, MCResult
 
 if TYPE_CHECKING:
     from monte_neo.indicators.base import BaseIndicator
     from monte_neo.metrics.calculator import MetricsCalculator
     from monte_neo.monte_carlo.engine import MonteCarloEngine
+
+
+console = Console()
 
 
 class SequentialMCRunner:
@@ -58,6 +64,14 @@ class SequentialMCRunner:
             ("Sensitivity Analysis", "sensitivity"),
         ]
 
+        # Use rich table for sequential output if it's the main display
+        console.print(f"\n[bold yellow]🔍 Sequential MC Validation for: {indicator.name}[/]")
+        
+        table = Table(title="Monte Carlo Steps", show_header=True, header_style="bold magenta")
+        table.add_column("Method", style="cyan")
+        table.add_column("Pass Rate", justify="right")
+        table.add_column("Status", justify="center")
+
         for display_name, method_key in methods:
             # Check if method is enabled in config
             is_enabled = getattr(self.engine.config, f"use_{method_key}")
@@ -70,8 +84,18 @@ class SequentialMCRunner:
             )
             step_results.append(step_result)
 
+            # Update output
+            status = "[green]PASSED[/]" if step_result.passed else "[red]FAILED[/]"
+            table.add_row(display_name, f"{step_result.pass_rate:.1%}", status)
+            
+            # Print current state
+            console.clear()
+            console.print(f"\n[bold yellow]🔍 Sequential MC Validation for: {indicator.name}[/]")
+            console.print(table)
+
             if not step_result.passed:
                 all_passed = False
+                console.print(f"\n[bold red]❌ Aborted: {display_name} failed.[/]")
                 break
 
         elapsed = time.time() - start_time
