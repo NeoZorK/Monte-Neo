@@ -70,6 +70,12 @@ class BaseIndicator(ABC):
         for name, value in params.items():
             self.set_parameter(name, value)
 
+    def get_id(self) -> str:
+        """Get unique identifier for this indicator instance."""
+        import json
+        params_str = json.dumps(self._parameters, sort_keys=True)
+        return f"{self.__class__.__name__}_{params_str}"
+
     @abstractmethod
     def calculate(self, data: pd.DataFrame) -> pd.DataFrame:
         """Calculate indicator values.
