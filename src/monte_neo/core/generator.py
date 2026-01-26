@@ -387,6 +387,7 @@ class IndicatorGenerator:
             self.executor.__exit__(None, None, None)
             self.executor = None
 
+        # Return result - success is based on threshold, but we ALWAYS return the best indicator if one was found
         return GeneratorResult(
             success=best_mc_rate >= 0.80,
             indicator=best_indicator,
