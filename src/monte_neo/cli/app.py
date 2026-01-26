@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 from rich.console import Console
 
+from monte_neo._version import __version__
 from monte_neo.cli.menu import InteractiveMenu
 from monte_neo.cli.styles import print_banner, print_error
 from monte_neo.utils.config import load_config
@@ -105,7 +106,7 @@ def parse_args() -> argparse.Namespace:
         "--version",
         "-v",
         action="version",
-        version="monte-neo 0.0.1",
+        version=f"monte-neo {__version__}",
     )
 
     return parser.parse_args()
