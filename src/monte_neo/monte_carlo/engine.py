@@ -30,11 +30,11 @@ class MCConfig:
     """Monte Carlo configuration."""
 
     iterations: int = 10000
-    use_shuffling: bool = True
-    use_noise: bool = True
-    use_sensitivity: bool = True
-    use_walk_forward: bool = True
-    use_block_bootstrap: bool = False
+    use_shuffling: bool = False
+    use_noise: bool = False
+    use_sensitivity: bool = False
+    use_walk_forward: bool = False
+    use_block_bootstrap: bool = True
     sensitivity_range: float = 0.10  # ±10%
     walk_forward_splits: int = 5
     n_workers: int | None = None
