@@ -65,7 +65,7 @@ class SymbolSelector:
             layout=Layout(
                 HSplit([
                     Frame(self.search_field, title="Type to Search"),
-                    Frame(self.grid_window, title="Select Symbol (Arrows to navigate, Enter to select)"),
+                    Frame(self.grid_window, title=self._get_title),
                 ]),
                 focused_element=self.search_field,
             ),
@@ -75,6 +75,12 @@ class SymbolSelector:
             mouse_support=True,
         )
         self.result = None
+
+    def _get_title(self) -> str:
+        """Return dynamic title with counts."""
+        total = len(self.symbols)
+        filtered = len(self.filtered_symbols)
+        return f"Select Symbol ({filtered}/{total} tokens) (Arrows to navigate, Enter to select)"
 
     def _get_cursor_position(self):
         """Return the (x, y) position of the currently selected symbol for scrolling."""
