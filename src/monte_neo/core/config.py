@@ -42,7 +42,7 @@ class GeneratorResult:
     parameters: dict
     final_metrics: dict
     mc_pass_rate: float
-    mc_details: dict = field(default_factory=dict)
     iterations_tried: int
     elapsed_time: float
     candidates_found: int
+    mc_details: dict = field(default_factory=dict)
