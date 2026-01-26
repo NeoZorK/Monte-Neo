@@ -40,6 +40,9 @@ class InteractiveMenu:
         self._stop_loss_pct: float = 1.0
         self._take_profit_pct: float = 2.0
         self._use_sl_tp: bool = True
+        
+        # Validation Settings
+        self._mc_pass_threshold: float = 0.80
 
     def run(self) -> int:
         """Run the interactive menu loop."""

@@ -313,9 +313,9 @@ class IndicatorGenerator:
                     )
 
                 return GeneratorResult(
-                    success=best_mc_rate >= 0.80,
+                    success=best_mc_rate >= self.config.mc_pass_threshold,
                     indicator=best_indicator,
-                    parameters=best_indicator.get_parameters(),
+                    parameters=best_indicator.get_parameters() if best_indicator else {},
                     final_metrics=final_metrics,
                     mc_pass_rate=best_mc_rate,
                     mc_details=best_mc_details,
@@ -410,7 +410,7 @@ class IndicatorGenerator:
 
         # Return result - success is based on threshold, but we ALWAYS return the best indicator if one was found
         return GeneratorResult(
-            success=best_mc_rate >= 0.80,
+            success=best_mc_rate >= self.config.mc_pass_threshold,
             indicator=best_indicator,
             parameters=best_indicator.get_parameters() if best_indicator else {},
             final_metrics=final_metrics,

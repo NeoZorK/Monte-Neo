@@ -27,6 +27,7 @@ def settings_workflow(menu: InteractiveMenu) -> None:
         {"name": f"🛡️  Stop Loss ({menu._stop_loss_pct:.1f}%)", "value": "sl"},
         {"name": f"🎯 Take Profit ({menu._take_profit_pct:.1f}%)", "value": "tp"},
         {"name": f"⚖️  Use SL/TP ({'✅' if menu._use_sl_tp else '❌'})", "value": "use_sl_tp"},
+        {"name": f"🏁 MC Threshold ({menu._mc_pass_threshold:.0%})", "value": "mc_threshold"},
         {"name": "🔙 Back", "value": "back"},
     ]
 
@@ -73,3 +74,6 @@ def settings_workflow(menu: InteractiveMenu) -> None:
             menu._take_profit_pct = val
     elif choice == "use_sl_tp":
         menu._use_sl_tp = not menu._use_sl_tp
+    elif choice == "mc_threshold":
+        val = questionary.text("MC Pass Threshold (0.0-1.0):", default=str(menu._mc_pass_threshold)).ask()
+        if val: menu._mc_pass_threshold = float(val)
