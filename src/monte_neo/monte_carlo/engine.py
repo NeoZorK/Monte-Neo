@@ -123,7 +123,10 @@ class MonteCarloEngine:
                     self.config.iterations,
                     executor=executor,
                     block_size=None, # Auto-calculated
-                    base_seed=self.config.random_seed or 42
+                    base_seed=self.config.random_seed or 42,
+                    use_sl_tp=self.config.use_sl_tp,
+                    sl_pct=self.config.sl_pct,
+                    tp_pct=self.config.tp_pct,
                 )
 
                 # Transform results
@@ -167,7 +170,10 @@ class MonteCarloEngine:
                 gpu_results = self.gpu_engine.backtest_scenarios(
                     indicator,
                     scenarios,
-                    executor=self.executor
+                    executor=self.executor,
+                    use_sl_tp=self.config.use_sl_tp,
+                    sl_pct=self.config.sl_pct,
+                    tp_pct=self.config.tp_pct,
                 )
 
                 for i, res in enumerate(gpu_results):

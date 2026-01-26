@@ -25,6 +25,11 @@ class MCConfig:
     n_workers: int | None = None
     random_seed: int | None = None
 
+    # Risk Management
+    use_sl_tp: bool = False
+    sl_pct: float = 0.0
+    tp_pct: float = 0.0
+
 
 @dataclass
 class MCStepResult:

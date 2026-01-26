@@ -69,7 +69,13 @@ class EvolutionEngine:
             for ind in population:
                 try:
                     signals = ind.generate_signals(data)
-                    metrics = self.metrics_calc.calculate_all(data, signals)
+                    metrics = self.metrics_calc.calculate_all(
+                        data, 
+                        signals,
+                        use_sl_tp=self.config.use_sl_tp,
+                        sl_pct=self.config.stop_loss_pct,
+                        tp_pct=self.config.take_profit_pct
+                    )
 
                     # Fitness function: Profit Factor * (1 - Max Drawdown)
                     pf = metrics.get("profit_factor", 0)

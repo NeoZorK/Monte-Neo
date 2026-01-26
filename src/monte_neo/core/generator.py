@@ -193,7 +193,10 @@ class IndicatorGenerator:
                         data,
                         batch_indicators,
                         executor=self.executor,
-                        use_shared_data=True
+                        use_shared_data=True,
+                        use_sl_tp=self.config.use_sl_tp,
+                        sl_pct=self.config.stop_loss_pct,
+                        tp_pct=self.config.take_profit_pct
                     )
                 except Exception as e:
                     logger.warning(f"GPU Backtest failed: {e}. Skipping batch.")
@@ -212,7 +215,13 @@ class IndicatorGenerator:
                     # 2. CPU Verification (Full Metrics)
                     try:
                         signals = indicator.generate_signals(data)
-                        full_metrics = self.metrics_calc.calculate_all(data, signals)
+                        full_metrics = self.metrics_calc.calculate_all(
+                            data,
+                            signals,
+                            use_sl_tp=self.config.use_sl_tp,
+                            sl_pct=self.config.stop_loss_pct,
+                            tp_pct=self.config.take_profit_pct,
+                        )
 
                         if not self._meets_basic_targets(full_metrics):
                             continue
@@ -295,7 +304,13 @@ class IndicatorGenerator:
                 final_metrics = {}
                 if best_indicator:
                     signals = best_indicator.generate_signals(data)
-                    final_metrics = self.metrics_calc.calculate_all(data, signals)
+                    final_metrics = self.metrics_calc.calculate_all(
+                        data, 
+                        signals,
+                        use_sl_tp=self.config.use_sl_tp,
+                        sl_pct=self.config.stop_loss_pct,
+                        tp_pct=self.config.take_profit_pct
+                    )
 
                 return GeneratorResult(
                     success=best_mc_rate >= 0.80,
@@ -374,7 +389,13 @@ class IndicatorGenerator:
         final_metrics = {}
         if best_indicator:
             signals = best_indicator.generate_signals(data)
-            final_metrics = self.metrics_calc.calculate_all(data, signals)
+            final_metrics = self.metrics_calc.calculate_all(
+                data, 
+                signals,
+                use_sl_tp=self.config.use_sl_tp,
+                sl_pct=self.config.stop_loss_pct,
+                tp_pct=self.config.take_profit_pct
+            )
 
         if self._progress_callback:
             status = f"Best MC rate: {best_mc_rate:.1%} [Done]"
@@ -514,11 +535,16 @@ def _search_worker(args: tuple) -> tuple[BaseIndicator | None, float]:
         mc_sensitivity,
         mc_walk_forward,
         min_trades,
+        use_sl_tp,
+        sl_pct,
+        tp_pct,
     ) = args
 
     # Quick pre-check
     signals = indicator.generate_signals(data)
-    basic_metrics = metrics_calc.calculate_all(data, signals)
+    basic_metrics = metrics_calc.calculate_all(
+        data, signals, use_sl_tp=use_sl_tp, sl_pct=sl_pct, tp_pct=tp_pct
+    )
 
     # Skip if too few trades
     if basic_metrics.get("trade_count", 0) < min_trades:
@@ -547,6 +573,9 @@ def _search_worker(args: tuple) -> tuple[BaseIndicator | None, float]:
         use_noise=mc_noise,
         use_sensitivity=mc_sensitivity,
         use_walk_forward=mc_walk_forward,
+        use_sl_tp=use_sl_tp,
+        sl_pct=sl_pct,
+        tp_pct=tp_pct,
     )
     mc_engine = MonteCarloEngine(mc_config)
     result = mc_engine.run(data, indicator, metrics_calc, target_metrics)

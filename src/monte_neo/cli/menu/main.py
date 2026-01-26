@@ -35,6 +35,11 @@ class InteractiveMenu:
         self._pop_size, self._generations = 50, 20
         self._mutation_rate, self._crossover_rate = 0.3, 0.7
         self._cached_symbols: list[str] = []
+        
+        # Risk Management Settings
+        self._stop_loss_pct: float = 1.0
+        self._take_profit_pct: float = 2.0
+        self._use_sl_tp: bool = True
 
     def run(self) -> int:
         """Run the interactive menu loop."""

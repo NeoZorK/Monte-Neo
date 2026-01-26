@@ -63,6 +63,9 @@ class MetricsCalculator:
         data: pd.DataFrame,
         signals: pd.DataFrame,
         required_metrics: list[str] | None = None,
+        use_sl_tp: bool = False,
+        sl_pct: float = 0.0,
+        tp_pct: float = 0.0,
     ) -> dict[str, float]:
         """Calculate metrics.
 
@@ -70,12 +73,15 @@ class MetricsCalculator:
             data: OHLCV DataFrame.
             signals: DataFrame with entry/exit signals.
             required_metrics: Optional list of metrics to calculate. If None, calculate all.
+            use_sl_tp: Whether to apply Stop Loss and Take Profit.
+            sl_pct: Stop Loss percentage (e.g., 1.0 for 1%).
+            tp_pct: Take Profit percentage (e.g., 2.0 for 2%).
 
         Returns:
             Dictionary of metrics.
         """
         # Extract trades from signals
-        trades = self._extract_trades(data, signals)
+        trades = self._extract_trades(data, signals, use_sl_tp, sl_pct, tp_pct)
 
         if not trades:
             return self._empty_metrics()
@@ -158,6 +164,9 @@ class MetricsCalculator:
         self,
         data: pd.DataFrame,
         signals: pd.DataFrame,
+        use_sl_tp: bool = False,
+        sl_pct: float = 0.0,
+        tp_pct: float = 0.0,
     ) -> list[TradeResult]:
         """Extract trades from signals. Use C++ if available."""
         if "signal" not in signals.columns:
@@ -165,10 +174,12 @@ class MetricsCalculator:
 
         # Convert to numpy for maximum speed
         close_prices = data["close"].to_numpy()
+        high_prices = data["high"].to_numpy()
+        low_prices = data["low"].to_numpy()
         signal_array = signals["signal"].to_numpy().astype(np.int32)
 
-        if HAS_NATIVE:
-            # Use high-performance C++ extension
+        if HAS_NATIVE and not use_sl_tp:
+            # Use high-performance C++ extension (native doesn't support SL/TP yet)
             raw_trades = native_metrics.extract_trades(
                 close_prices.tolist(),  # pybind11 might need list if not using numpy bindings
                 signal_array.tolist(),
@@ -187,29 +198,38 @@ class MetricsCalculator:
             ]
 
         # Fallback to JIT-compiled Python
-        raw_trades = self._extract_trades_fast(close_prices, signal_array)
+        raw_trades = self._extract_trades_fast(
+            close_prices, high_prices, low_prices, signal_array, use_sl_tp, sl_pct, tp_pct
+        )
 
         return [TradeResult(*t) for t in raw_trades]
 
     @staticmethod
     @njit
     def _extract_trades_fast(
-        prices: np.ndarray, signals: np.ndarray
+        prices: np.ndarray,
+        highs: np.ndarray,
+        lows: np.ndarray,
+        signals: np.ndarray,
+        use_sl_tp: bool = False,
+        sl_pct: float = 0.0,
+        tp_pct: float = 0.0,
     ) -> list[tuple[int, int, float, float, int, float, float]]:
-        """Fast trade extraction using Numba JIT.
-
-        Note: Numba works best with primitive types, so we return a list of tuples
-        and convert to TradeResult objects in the wrapper.
-        """
+        """Fast trade extraction using Numba JIT."""
         results = []
 
         position = 0
         entry_idx = 0
         entry_price = 0.0
+        
+        sl_price = 0.0
+        tp_price = 0.0
 
         for i in range(len(signals)):
             signal = signals[i]
             price = prices[i]
+            high = highs[i]
+            low = lows[i]
 
             if position == 0:
                 if signal != 0:
@@ -217,18 +237,51 @@ class MetricsCalculator:
                     position = int(signal)
                     entry_idx = i
                     entry_price = price
-            elif signal == -position:
-                # Close position
+                    
+                    if use_sl_tp:
+                        if position == 1: # Long
+                            sl_price = entry_price * (1.0 - sl_pct / 100.0)
+                            tp_price = entry_price * (1.0 + tp_pct / 100.0)
+                        else: # Short
+                            sl_price = entry_price * (1.0 + sl_pct / 100.0)
+                            tp_price = entry_price * (1.0 - tp_pct / 100.0)
+            else:
+                # Check for SL/TP first
+                hit_exit = False
                 exit_price = price
-                pnl = (exit_price - entry_price) * position
-                pnl_pct = pnl / entry_price
+                
+                if use_sl_tp:
+                    if position == 1: # Long
+                        if low <= sl_price:
+                            exit_price = sl_price
+                            hit_exit = True
+                        elif high >= tp_price:
+                            exit_price = tp_price
+                            hit_exit = True
+                    else: # Short
+                        if high >= sl_price:
+                            exit_price = sl_price
+                            hit_exit = True
+                        elif low <= tp_price:
+                            exit_price = tp_price
+                            hit_exit = True
+                
+                # Check for signal exit if SL/TP not hit
+                if not hit_exit and signal == -position:
+                    exit_price = price
+                    hit_exit = True
+                
+                if hit_exit:
+                    # Close position
+                    pnl = (exit_price - entry_price) * position
+                    pnl_pct = pnl / entry_price
 
-                results.append(
-                    (entry_idx, i, entry_price, exit_price, position, pnl, pnl_pct)
-                )
+                    results.append(
+                        (entry_idx, i, entry_price, exit_price, position, pnl, pnl_pct)
+                    )
 
-                # Reset position
-                position = 0
+                    # Reset position
+                    position = 0
 
         return results
 
