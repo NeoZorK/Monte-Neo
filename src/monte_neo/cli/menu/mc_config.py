@@ -15,41 +15,41 @@ if TYPE_CHECKING:
 console = Console()
 
 
-def configure_mc_workflow_inline(menu: InteractiveMenu) -> bool:
-    """Configure Monte Carlo methods inline within generation workflow."""
-    console.print("\n[bold cyan]🔧 Configure Monte Carlo Methods[/]\n")
-
-    methods = questionary.checkbox(
-        "Select MC methods:",
-        choices=[
-            {"name": "🔀 Return Shuffling", "value": "shuffling", "checked": "shuffling" in menu._mc_methods},
-            {"name": "🎲 Noise Injection", "value": "noise", "checked": "noise" in menu._mc_methods},
-            {"name": "📏 Sensitivity Analysis (±10%)", "value": "sensitivity", "checked": "sensitivity" in menu._mc_methods},
-            {"name": "📅 Walk-Forward Analysis", "value": "walk_forward", "checked": "walk_forward" in menu._mc_methods},
-            {"name": "📦 Block Bootstrap", "value": "block_bootstrap", "checked": "block_bootstrap" in menu._mc_methods},
-        ],
-        style=CUSTOM_STYLE,
-    ).ask()
-
-    if methods is None:
-        return False
-        
-    menu._mc_methods = methods
-    
-    sequential = questionary.confirm(
-        "Use Sequential MC Mode (Step-by-step validation)?",
-        default=getattr(menu, "_mc_sequential", False),
-        style=CUSTOM_STYLE,
-    ).ask()
-    
-    if sequential is None:
-        return False
-        
-    menu._mc_sequential = sequential
-    return True
-
-
 def configure_mc_workflow(menu: InteractiveMenu) -> None:
-    """Legacy entry point, redirects to generation with MC config."""
-    from monte_neo.cli.menu.generator import generate_indicator_workflow
-    generate_indicator_workflow(menu)
+    """Configure Monte Carlo methods workflow."""
+    console.print("\n[bold cyan]🎲 Configure Monte Carlo Methods[/]\n")
+
+    methods_choices = [
+        {"name": "🔀 Return Shuffling", "value": "shuffling", "checked": "shuffling" in menu._mc_methods},
+        {"name": "🎲 Noise Injection", "value": "noise", "checked": "noise" in menu._mc_methods},
+        {"name": "📏 Sensitivity Analysis (±10%)", "value": "sensitivity", "checked": "sensitivity" in menu._mc_methods},
+        {"name": "📅 Walk-Forward Analysis", "value": "walk_forward", "checked": "walk_forward" in menu._mc_methods},
+        {"name": "📦 Block Bootstrap", "value": "block_bootstrap", "checked": "block_bootstrap" in menu._mc_methods},
+    ]
+
+    selected = questionary.checkbox(
+        "Select MC methods:",
+        choices=methods_choices,
+        style=CUSTOM_STYLE,
+    ).ask()
+
+    if selected is not None:
+        menu._mc_methods = selected
+        
+        # Also ask about sequential mode here as it's relevant to MC config
+        sequential = questionary.confirm(
+            "Use Sequential MC Mode (Step-by-step validation)?",
+            default=menu._mc_sequential,
+            style=CUSTOM_STYLE,
+        ).ask()
+        
+        if sequential is not None:
+            menu._mc_sequential = sequential
+
+        console.print("\n[green]✓ Monte Carlo methods configured:[/]")
+        for method in menu._mc_methods:
+            console.print(f"  • {method}")
+        if menu._mc_sequential:
+            console.print("  • Sequential validation: [green]Enabled[/]")
+        console.print()
+
