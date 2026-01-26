@@ -44,8 +44,6 @@ class DynamicIndicator(BaseIndicator):
         """Compile the source code if not already compiled."""
         if self._compiled_code is None:
             try:
-                # We compile it as an expression that returns a value given 'data', 'np', 'pd'
-                # For safety, we wrap it in a function definition
                 func_code = (
                     f"def _dynamic_calc(data, np, pd):\n    return {self.source_code}"
                 )
@@ -53,8 +51,58 @@ class DynamicIndicator(BaseIndicator):
                 exec(func_code, {}, local_scope)
                 self._compiled_code = local_scope["_dynamic_calc"]
             except Exception as e:
-                logger.error(f"Failed to compile dynamic indicator: {e}")
-                raise ValueError(f"Invalid indicator source code: {e}") from e
+                logger.debug(f"Failed to compile dynamic indicator: {e}")
+                self._reset_to_safe_source()
+                try:
+                    func_code = (
+                        f"def _dynamic_calc(data, np, pd):\n    return {self.source_code}"
+                    )
+                    safe_scope: dict[str, Any] = {}
+                    exec(func_code, {}, safe_scope)
+                    self._compiled_code = safe_scope["_dynamic_calc"]
+                except Exception as safe_error:
+                    logger.error(f"Failed to compile safe dynamic indicator: {safe_error}")
+                    raise ValueError(
+                        f"Invalid indicator source code: {safe_error}"
+                    ) from safe_error
+
+    def _reset_to_safe_source(self) -> None:
+        if self._parameters.get("source_code") != "data['close']":
+            self._parameters["source_code"] = "data['close']"
+            self._compiled_code = None
+
+    def _evaluate(self, data: pd.DataFrame) -> Any:
+        self._compile_if_needed()
+        assert self._compiled_code is not None
+
+        indicator_values = self._compiled_code(data, np, pd)
+
+        if callable(indicator_values) and not isinstance(
+            indicator_values, (pd.Series, pd.DataFrame)
+        ):
+            try:
+                indicator_values = indicator_values()
+            except Exception:
+                indicator_values = np.nan
+
+        if isinstance(indicator_values, pd.DataFrame):
+            indicator_values = (
+                indicator_values.iloc[:, 0] if not indicator_values.empty else 0
+            )
+
+        return indicator_values
+
+    def _evaluate_with_fallback(self, data: pd.DataFrame) -> Any:
+        try:
+            return self._evaluate(data)
+        except Exception as e:
+            logger.debug(f"Runtime error in dynamic indicator: {e}")
+            self._reset_to_safe_source()
+            try:
+                return self._evaluate(data)
+            except Exception as safe_error:
+                logger.debug(f"Runtime error in safe dynamic indicator: {safe_error}")
+                return np.nan
 
     def calculate(self, data: pd.DataFrame) -> pd.DataFrame:
         """Calculate indicator values using the generated code.
@@ -65,40 +113,13 @@ class DynamicIndicator(BaseIndicator):
         Returns:
             DataFrame with 'value' column (for now) or dynamic columns.
         """
-        self._compile_if_needed()
-        assert self._compiled_code is not None
-
         result = data.copy()
-        try:
-            # Execute the compiled function
-            # We provide a limited scope
-            indicator_values = self._compiled_code(data, np, pd)
+        indicator_values = self._evaluate_with_fallback(data)
 
-            # If it's a callable (like a method accidentally returned without parentheses)
-            if callable(indicator_values) and not isinstance(
-                indicator_values, (pd.Series, pd.DataFrame)
-            ):
-                try:
-                    indicator_values = indicator_values()
-                except Exception:
-                    indicator_values = np.nan
-
-            # Ensure it returns a Series or DataFrame
-            if isinstance(indicator_values, (pd.Series, np.ndarray)):
-                result["dynamic"] = indicator_values
-            elif isinstance(indicator_values, pd.DataFrame):
-                result["dynamic"] = (
-                    indicator_values.iloc[:, 0] if not indicator_values.empty else 0
-                )
-            else:
-                # If scalar, broadcast to series
-                result["dynamic"] = indicator_values
-
-        except Exception as e:
-            # During genetic evolution, many invalid formulas are generated.
-            # We log these as DEBUG to avoid cluttering the output.
-            logger.debug(f"Runtime error in dynamic indicator: {e}")
-            result["dynamic"] = np.nan
+        if isinstance(indicator_values, (pd.Series, np.ndarray)):
+            result["dynamic"] = indicator_values
+        else:
+            result["dynamic"] = indicator_values
 
         return result
 
@@ -108,59 +129,25 @@ class DynamicIndicator(BaseIndicator):
         For dynamic indicators, the 'source_code' might calculate a boolean signal directly,
         or a continuous value.
         """
-        self._compile_if_needed()
-        assert self._compiled_code is not None
-
-        try:
-            # Execute the compiled function
-            # Optimization: Call directly to avoid data.copy() in calculate()
-            indicator_values = self._compiled_code(data, np, pd)
-
-            # If it's a callable (like a method accidentally returned without parentheses)
-            if callable(indicator_values) and not isinstance(
-                indicator_values, (pd.Series, pd.DataFrame)
-            ):
-                try:
-                    indicator_values = indicator_values()
-                except Exception:
-                    indicator_values = np.nan
-
-            vals = indicator_values
-
-            # Ensure it returns a Series or DataFrame
-            if isinstance(vals, pd.DataFrame):
-                vals = vals.iloc[:, 0] if not vals.empty else 0
-
-        except Exception as e:
-            # During genetic evolution, many invalid formulas are generated.
-            # We log these as DEBUG to avoid cluttering the output.
-            logger.warning(f"Runtime error in dynamic indicator: {e}")
-            vals = np.nan
+        vals = self._evaluate_with_fallback(data)
 
         signals = pd.DataFrame(index=data.index)
         signals["signal"] = 0
 
-        # Ensure numeric
-        vals = pd.to_numeric(vals, errors='coerce').fillna(0)
+        vals = pd.to_numeric(vals, errors="coerce")
 
-        # If boolean
-        if vals.dtype == bool:
-            signals.loc[vals, "signal"] = 1
-            # If strictly boolean, we might not have Sell signals.
-            # Maybe not ideal.
+        if isinstance(vals, pd.Series):
+            aligned = vals.reindex(data.index).fillna(0)
+        elif isinstance(vals, np.ndarray):
+            aligned = pd.Series(vals, index=data.index).fillna(0)
         else:
-            # If numeric, >0 is Buy, <0 is Sell
-            # Use numpy values for speed if available
-            if isinstance(vals, pd.Series):
-                v = vals.values
-                signals.loc[v > 0, "signal"] = 1
-                signals.loc[v < 0, "signal"] = -1
-            elif isinstance(vals, np.ndarray):
-                signals.loc[vals > 0, "signal"] = 1
-                signals.loc[vals < 0, "signal"] = -1
-            else:
-                signals.loc[vals > 0, "signal"] = 1
-                signals.loc[vals < 0, "signal"] = -1
+            aligned = pd.Series([vals] * len(data), index=data.index).fillna(0)
+
+        if aligned.dtype == bool:
+            signals.loc[aligned, "signal"] = 1
+        else:
+            signals.loc[aligned > 0, "signal"] = 1
+            signals.loc[aligned < 0, "signal"] = -1
 
         return signals
 
