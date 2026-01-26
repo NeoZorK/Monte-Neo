@@ -1,0 +1,63 @@
+"""Metrics configuration workflow."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+import questionary
+from rich.console import Console
+
+from monte_neo.cli.styles import CUSTOM_STYLE
+
+if TYPE_CHECKING:
+    from monte_neo.cli.menu.main import InteractiveMenu
+
+console = Console()
+
+
+def set_metrics_workflow(menu: InteractiveMenu) -> None:
+    """Set target metrics workflow."""
+    console.print("\n[bold cyan]🎯 Set Target Metrics[/]\n")
+
+    metrics_choices = [
+        {"name": "📈 Profit Factor (> 2.0)", "value": "profit_factor", "checked": True},
+        {"name": "📊 Sharpe Ratio (> 1.0)", "value": "sharpe_ratio", "checked": True},
+        {"name": "📉 Max Drawdown (< 20%)", "value": "max_drawdown", "checked": True},
+        {"name": "🎯 Winrate (> 45%)", "value": "winrate", "checked": False},
+        {"name": "💹 Sortino Ratio (> 1.5)", "value": "sortino_ratio", "checked": False},
+        {"name": "🔄 Recovery Factor (> 2.0)", "value": "recovery_factor", "checked": False},
+        {"name": "📆 Calmar Ratio (> 0.5)", "value": "calmar_ratio", "checked": False},
+    ]
+
+    selected = questionary.checkbox(
+        "Select metrics to target:",
+        choices=metrics_choices,
+        style=CUSTOM_STYLE,
+    ).ask()
+
+    if not selected:
+        return
+
+    # Get values for selected metrics
+    menu._target_metrics = {}
+    defaults = {
+        "profit_factor": 2.0, "sharpe_ratio": 1.0, "max_drawdown": 0.20,
+        "winrate": 0.45, "sortino_ratio": 1.5, "recovery_factor": 2.0,
+        "calmar_ratio": 0.5,
+    }
+
+    for metric in selected:
+        value = questionary.text(
+            f"{metric}:",
+            default=str(defaults.get(metric, 1.0)),
+            style=CUSTOM_STYLE,
+        ).ask()
+
+        if value:
+            menu._target_metrics[metric] = float(value)
+
+    # Show summary
+    console.print("\n[green]✓ Target metrics set:[/]")
+    for k, v in menu._target_metrics.items():
+        console.print(f"  • {k}: {v}")
+    console.print()
