@@ -8,15 +8,11 @@ from __future__ import annotations
 import os
 from collections.abc import Callable
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING
 
 import pandas as pd
-from binance.client import Client
+from binance.spot import Spot
 
 from monte_neo.utils.logger import get_logger
-
-if TYPE_CHECKING:
-    pass
 
 logger = get_logger(__name__)
 
@@ -25,14 +21,14 @@ class BinanceDownloader:
     """Download OHLCV data from Binance."""
 
     TIMEFRAME_MAP = {
-        "1m": Client.KLINE_INTERVAL_1MINUTE,
-        "5m": Client.KLINE_INTERVAL_5MINUTE,
-        "15m": Client.KLINE_INTERVAL_15MINUTE,
-        "30m": Client.KLINE_INTERVAL_30MINUTE,
-        "1h": Client.KLINE_INTERVAL_1HOUR,
-        "4h": Client.KLINE_INTERVAL_4HOUR,
-        "1d": Client.KLINE_INTERVAL_1DAY,
-        "1w": Client.KLINE_INTERVAL_1WEEK,
+        "1m": "1m",
+        "5m": "5m",
+        "15m": "15m",
+        "30m": "30m",
+        "1h": "1h",
+        "4h": "4h",
+        "1d": "1d",
+        "1w": "1w",
     }
 
     COLUMNS = [
@@ -63,7 +59,7 @@ class BinanceDownloader:
         """
         self.api_key = api_key or os.getenv("BINANCE_API_KEY", "")
         self.api_secret = api_secret or os.getenv("BINANCE_API_SECRET", "")
-        self.client = Client(self.api_key, self.api_secret)
+        self.client = Spot(api_key=self.api_key, api_secret=self.api_secret)
         logger.info("Binance client initialized")
 
     def get_available_symbols(self) -> list[str]:
@@ -72,10 +68,37 @@ class BinanceDownloader:
         Returns:
             List of symbol strings (e.g., ['BTCUSDT', 'ETHUSDT']).
         """
-        info = self.client.get_exchange_info()
+        info = self.client.exchange_info()
         return sorted(
             [s["symbol"] for s in info["symbols"] if s["status"] == "TRADING"]
         )
+
+    def _fetch_klines(
+        self,
+        symbol: str,
+        interval: str,
+        start_ms: int,
+        end_ms: int,
+    ) -> list[list[str | int | float]]:
+        klines: list[list[str | int | float]] = []
+        current_start = start_ms
+        while current_start < end_ms:
+            batch = self.client.klines(
+                symbol=symbol,
+                interval=interval,
+                startTime=current_start,
+                endTime=end_ms,
+                limit=1000,
+            )
+            if not batch:
+                break
+            klines.extend(batch)
+            last_close = int(batch[-1][6])
+            next_start = last_close + 1
+            if next_start <= current_start:
+                break
+            current_start = next_start
+        return klines
 
     def download(
         self,
@@ -110,7 +133,6 @@ class BinanceDownloader:
         if progress_callback:
             progress_callback(0, 100, "Initializing...")
 
-        # Split into 30-day chunks for progress tracking
         chunks = []
         current_start = start_date
         total_days = (end_date - start_date).days or 1
@@ -125,14 +147,16 @@ class BinanceDownloader:
                     pct, 100, f"Fetching {current_start.strftime('%Y-%m')}"
                 )
 
-            klines = self.client.get_historical_klines(
+            start_ms = int(current_start.timestamp() * 1000)
+            end_ms = int(current_end.timestamp() * 1000)
+            klines = self._fetch_klines(
                 symbol=symbol,
                 interval=interval,
-                start_str=current_start.strftime("%d %b %Y %H:%M:%S"),
-                end_str=current_end.strftime("%d %b %Y %H:%M:%S"),
+                start_ms=start_ms,
+                end_ms=end_ms,
             )
             chunks.extend(klines)
-            current_start = current_end + timedelta(milliseconds=1)  # Avoid overlap
+            current_start = current_end + timedelta(milliseconds=1)
 
         if progress_callback:
             progress_callback(100, 100, "Processing...")

@@ -26,7 +26,6 @@ dependencies = [
     "pandas>=2.0",
     "pyarrow>=14.0",
     "numba>=0.58",
-    "python-binance>=1.0.17",
     "ta>=0.10",
     "rich>=13.0",
     "questionary>=2.0",
@@ -36,6 +35,7 @@ dependencies = [
     "python-dotenv>=1.0",
     "mlx>=0.11.0",
     "pybind11>=2.10.0",
+    "binance-connector>=3.12.0",
 ]
 
 [dependency-groups]
@@ -70,10 +70,7 @@ packages = ["src/monte_neo"]
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-v --tb=short"
-filterwarnings = [
-    "ignore:.*WebSocketClientProtocol is deprecated:DeprecationWarning:binance\\.ws\\.websocket_api",
-    "ignore:.*websockets\\.legacy is deprecated.*:DeprecationWarning:websockets\\.legacy",
-]
+filterwarnings = []
 
 [tool.mypy]
 python_version = "3.11"
