@@ -69,6 +69,7 @@ class MetalFloat8Engine:
         self.e4m3_to_float32_func = library.newFunctionWithName_("float8_e4m3_to_float32")
         self.float32_to_e5m2_func = library.newFunctionWithName_("float32_to_float8_e5m2")
         self.e5m2_to_float32_func = library.newFunctionWithName_("float8_e5m2_to_float32")
+        self.generate_scenarios_func = library.newFunctionWithName_("generate_shuffle_scenarios_coalesced")
     
     def _create_default_shaders(self) -> None:
         """Create default compute pipeline for basic operations."""
@@ -217,6 +218,75 @@ class MetalFloat8Engine:
         
         return output_array.reshape(input_array.shape)
     
+    def generate_scenarios_e4m3(self, base_prices: np.ndarray, n_scenarios: int, seed: int = 42) -> np.ndarray:
+        """Generate scenarios using Metal C++ shader."""
+        if self.generate_scenarios_func is None:
+            raise RuntimeError("Scenario generation function not available")
+        
+        time_steps = len(base_prices)
+        n_elements = n_scenarios * time_steps
+        
+        # Generate random indices (N x T-1)
+        np.random.seed(seed)
+        random_indices = np.random.randint(0, time_steps - 1, (n_scenarios, time_steps - 1)).astype(np.uint32)
+        
+        # Create output array
+        output_array = np.zeros(n_elements, dtype=np.uint8)
+        
+        # Create Metal buffers
+        base_prices_buffer = self.device.newBufferWithBytes_length_options_(
+            base_prices.ctypes.data, time_steps, 0
+        )
+        scenarios_buffer = self.device.newBufferWithLength_options_(n_elements, 0)
+        indices_buffer = self.device.newBufferWithBytes_length_options_(
+            random_indices.ctypes.data, random_indices.nbytes, 0
+        )
+        
+        # Create compute pipeline
+        pipeline = self.device.newComputePipelineStateWithFunction_error_(
+            self.generate_scenarios_func, None
+        )
+        
+        # Create command encoder
+        command_buffer = self.command_queue.commandBuffer()
+        encoder = command_buffer.computeCommandEncoder()
+        encoder.setComputePipelineState_(pipeline)
+        
+        # Set buffers
+        encoder.setBuffer_offset_atIndex_(base_prices_buffer, 0, 0)
+        encoder.setBuffer_offset_atIndex_(scenarios_buffer, 0, 1)
+        encoder.setBuffer_offset_atIndex_(indices_buffer, 0, 2)
+        
+        # Set constants
+        # Using bytes to pass uint32 values to Metal
+        n_scen_bytes = n_scenarios.to_bytes(4, byteorder='little')
+        t_steps_bytes = time_steps.to_bytes(4, byteorder='little')
+        
+        encoder.setBytes_length_atIndex_(n_scen_bytes, 4, 3)
+        encoder.setBytes_length_atIndex_(t_steps_bytes, 4, 4)
+        
+        # Dispatch threads
+        threads_per_threadgroup = pipeline.maxTotalThreadsPerThreadgroup()
+        threadgroups = (n_elements + threads_per_threadgroup - 1) // threads_per_threadgroup
+        
+        encoder.dispatchThreadgroups_threadsPerThreadgroup_(
+            (threadgroups, 1, 1), (threads_per_threadgroup, 1, 1)
+        )
+        
+        encoder.endEncoding()
+        command_buffer.commit()
+        command_buffer.waitUntilCompleted()
+        
+        # Copy result back
+        output_data = scenarios_buffer.contents()
+        ctypes.memmove(
+            output_array.ctypes.data,
+            output_data,
+            n_elements
+        )
+        
+        return output_array.reshape((n_scenarios, time_steps))
+
     def get_memory_bandwidth_improvement(self) -> float:
         """Calculate theoretical memory bandwidth improvement."""
         # Float32: 32 bits per element

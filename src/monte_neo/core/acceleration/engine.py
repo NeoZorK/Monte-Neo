@@ -16,23 +16,36 @@ from monte_neo.core.acceleration.tensor_ops import generate_noise_scenarios, gen
 class GpuAccelerationEngine:
     """High-performance GPU engine."""
     
-    def __init__(self, batch_size: int = 50000, precision: str = "float32"):
+    def __init__(self, batch_size: int = 50000, precision: str = "float32", use_metal_cpp: bool = False):
         """
         Initialize GPU engine.
         
         Args:
             batch_size: Number of scenarios to process in each batch
             precision: 'float32', 'float16', 'float8_e4m3', or 'float8_e5m2'
+            use_metal_cpp: Whether to use native Metal C++ shaders for float8
         """
         self.batch_size = batch_size
         self.precision = precision
+        self.use_metal_cpp = use_metal_cpp
         
         # Initialize float8 encoder if needed
         self.float8_encoder = None
+        self.metal_engine = None
+        
         if precision.startswith("float8"):
-            from monte_neo.core.acceleration.float8 import Float8Encoder
-            format_type = "e4m3" if "e4m3" in precision else "e5m2"
-            self.float8_encoder = Float8Encoder(format_type)
+            if use_metal_cpp:
+                try:
+                    from monte_neo.core.native.metal_engine import MetalFloat8Engine
+                    self.metal_engine = MetalFloat8Engine()
+                except (ImportError, RuntimeError) as e:
+                    print(f"Warning: Could not initialize Metal engine: {e}. Falling back to Python encoder.")
+                    self.use_metal_cpp = False
+            
+            if not self.use_metal_cpp:
+                from monte_neo.core.acceleration.float8 import Float8Encoder
+                format_type = "e4m3" if "e4m3" in precision else "e5m2"
+                self.float8_encoder = Float8Encoder(format_type)
         
     def run_simulation(
         self,
@@ -62,7 +75,21 @@ class GpuAccelerationEngine:
             current_batch = min(self.batch_size, n_scenarios - processed)
             
             # 2. Scenarios
-            if method == "shuffling":
+            if self.use_metal_cpp and self.precision.startswith("float8"):
+                # Use Metal C++ engine for float8 scenarios
+                # First convert close to float8 using Metal
+                close_np = np.array(close).astype(np.float32)
+                if self.precision == "float8_e4m3":
+                    close_f8 = self.metal_engine.encode_float32_to_e4m3(close_np)
+                    # Note: For now we'll just use the metal engine to generate scenarios
+                    # In a full implementation, we'd have a specialized generate_shuffle_scenarios_metal
+                    scenarios_f8 = self.metal_engine.generate_scenarios_e4m3(close_f8, current_batch, seed=seed+processed)
+                    scenarios_np = self.metal_engine.decode_e4m3_to_float32(scenarios_f8)
+                    scenarios = mx.array(scenarios_np)
+                else:
+                    # Fallback to MLX for e5m2 if not fully implemented in Metal yet
+                    scenarios = generate_shuffle_scenarios(close, current_batch, seed=seed+processed)
+            elif method == "shuffling":
                 scenarios = generate_shuffle_scenarios(close, current_batch, seed=seed+processed)
             elif method == "noise":
                 scenarios = generate_noise_scenarios(close, current_batch, seed=seed+processed)

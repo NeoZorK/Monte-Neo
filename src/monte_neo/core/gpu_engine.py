@@ -22,25 +22,20 @@ from monte_neo.core.acceleration.engine import GpuAccelerationEngine
 class MLXBacktestEngine:
     """GPU-accelerated backtesting engine using MLX."""
 
-    def __init__(self, precision: str = "float32") -> None:
+    def __init__(self, precision: str = "float32", use_metal_cpp: bool = False) -> None:
         """
         Initialize GPU engine with specified precision.
         
         Args:
             precision: 'float32', 'float16', 'float8_e4m3', or 'float8_e5m2'
+            use_metal_cpp: Whether to use native Metal C++ shaders
         """
         self.precision = precision
-        self.pure_gpu_engine = GpuAccelerationEngine(precision=precision)
-        
-        # Initialize Metal engine for float8 if needed
-        self.metal_engine = None
-        if precision.startswith("float8"):
-            try:
-                from monte_neo.core.native.metal_engine import MetalFloat8Engine
-                self.metal_engine = MetalFloat8Engine()
-            except ImportError:
-                # Fallback to MLX if Metal not available
-                pass
+        self.use_metal_cpp = use_metal_cpp
+        self.pure_gpu_engine = GpuAccelerationEngine(
+            precision=precision, 
+            use_metal_cpp=use_metal_cpp
+        )
 
     def run_full_simulation(
         self,

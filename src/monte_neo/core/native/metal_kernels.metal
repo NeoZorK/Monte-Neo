@@ -242,19 +242,17 @@ kernel void generate_shuffle_scenarios_coalesced(
     uint time_steps [[buffer(4)]],
     uint id [[thread_position_in_grid]])
 {
-    // Coalesced memory access pattern
+    // Coalesced memory access pattern: adjacent threads access adjacent time steps
+    // Output layout is (num_scenarios, time_steps)
     uint global_idx = id;
     uint total_elements = num_scenarios * time_steps;
     
     if (global_idx >= total_elements) return;
     
-    // Calculate scenario and time indices for coalesced access
-    uint scenario_idx = global_idx % num_scenarios;
-    uint time_idx = global_idx / num_scenarios;
+    uint scenario_idx = global_idx / time_steps;
+    uint time_idx = global_idx % time_steps;
     
-    if (time_idx >= time_steps) return;
-    
-    uint output_idx = scenario_idx * time_steps + time_idx;
+    uint output_idx = global_idx; // Since global_idx = scenario_idx * time_steps + time_idx
     
     if (time_idx == 0) {
         scenarios[output_idx] = base_prices[0];
