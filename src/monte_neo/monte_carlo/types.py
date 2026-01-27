@@ -33,6 +33,11 @@ class MCConfig:
     # Validation
     pass_threshold: float = 0.95  # 95% threshold by default
 
+    # Hardware Acceleration
+    use_gpu: bool = True
+    gpu_precision: str = "float32"  # float32, float16, float8
+    use_metal_cpp: bool = False  # If True, use custom Metal shaders instead of MLX
+
 
 @dataclass
 class MCStepResult:

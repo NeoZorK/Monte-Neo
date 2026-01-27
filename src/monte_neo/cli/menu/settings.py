@@ -28,6 +28,9 @@ def settings_workflow(menu: InteractiveMenu) -> None:
         {"name": f"🎯 Take Profit ({menu._take_profit_pct:.1f}%)", "value": "tp"},
         {"name": f"⚖️  Use SL/TP ({'✅' if menu._use_sl_tp else '❌'})", "value": "use_sl_tp"},
         {"name": f"🏁 MC Threshold ({menu._mc_pass_threshold:.0%})", "value": "mc_threshold"},
+        {"name": f"🚀 Use GPU ({'✅' if menu._use_gpu else '❌'})", "value": "use_gpu"},
+        {"name": f"💎 GPU Precision ({menu._gpu_precision})", "value": "gpu_precision"},
+        {"name": f"⚡ Metal Shaders C++ ({'✅' if menu._use_metal_cpp else '❌'})", "value": "use_metal_cpp"},
         {"name": "🔙 Back", "value": "back"},
     ]
 
@@ -77,3 +80,15 @@ def settings_workflow(menu: InteractiveMenu) -> None:
     elif choice == "mc_threshold":
         val = questionary.text("MC Pass Threshold (0.0-1.0):", default=str(menu._mc_pass_threshold)).ask()
         if val: menu._mc_pass_threshold = float(val)
+    elif choice == "use_gpu":
+        menu._use_gpu = not menu._use_gpu
+    elif choice == "gpu_precision":
+        prec_choices = [
+            {"name": "float32 (Standard)", "value": "float32"},
+            {"name": "float16 (Faster)", "value": "float16"},
+            {"name": "float8 (Extreme - v0.0.4)", "value": "float8"},
+        ]
+        val = questionary.select("Select GPU Precision:", choices=prec_choices, style=CUSTOM_STYLE).ask()
+        if val: menu._gpu_precision = val
+    elif choice == "use_metal_cpp":
+        menu._use_metal_cpp = not menu._use_metal_cpp

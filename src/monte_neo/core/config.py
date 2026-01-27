@@ -40,6 +40,11 @@ class GeneratorConfig:
     # Validation
     mc_pass_threshold: float = 0.80  # Default 80% for production
 
+    # Hardware Acceleration
+    use_gpu: bool = True
+    gpu_precision: str = "float32"
+    use_metal_cpp: bool = False
+
 
 @dataclass
 class GeneratorResult:

@@ -96,10 +96,6 @@ class SequentialMCRunner:
             console.print(f"\n[bold magenta]👉 Stage {idx}/{total_steps}: {display_name}[/]")
             console.print(Panel(descriptions.get(method_key, ""), title="Educational Info", border_style="blue"))
             
-            if interactive:
-                if not questionary.confirm(f"Ready to run {display_name}?", default=True, style=CUSTOM_STYLE).ask():
-                     continue
-
             # Run method
             step_result = self._run_step(
                 display_name, method_key, data, indicator, metrics_calc, target_metrics
@@ -132,20 +128,21 @@ class SequentialMCRunner:
                 f"Iterations: {step_result.iterations}[/]"
             )
 
-            if interactive:
-                if not step_result.passed:
-                    all_passed = False
-                    console.print(f"\n[bold red]❌ Aborted: {display_name} failed.[/]")
-                    console.print("[red]Review the advice above and adjust your strategy parameters or logic.[/]")
-                    if not questionary.confirm("Continue anyway (not recommended)?", default=False, style=CUSTOM_STYLE).ask():
+            if not step_result.passed:
+                all_passed = False
+                console.print(f"\n[bold red]❌ FAILED: {display_name} did not meet robustness criteria.[/]")
+                console.print(f"[red]To reach Production-Ready status, the indicator must pass all stages.[/]")
+                console.print("[red]Review the advice above and adjust your strategy parameters or logic.[/]")
+                
+                if interactive:
+                    if not questionary.confirm("Continue to next stage anyway (not recommended)?", default=False, style=CUSTOM_STYLE).ask():
                         break
                 else:
-                     questionary.press_any_key_to_continue("Press any key to proceed to next step...", style=CUSTOM_STYLE).ask()
-            else:
-                if not step_result.passed:
-                    all_passed = False
-                    console.print(f"\n[bold red]❌ Aborted: {display_name} failed.[/]")
                     break
+            else:
+                console.print(f"\n[bold green]✅ STAGE PASSED: {display_name}[/]")
+                if interactive and idx < total_steps:
+                    questionary.press_any_key_to_continue("Press any key to proceed to next stage...", style=CUSTOM_STYLE).ask()
 
         elapsed = time.time() - start_time
         total_enabled = max(1, len(enabled_methods))

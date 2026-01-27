@@ -48,6 +48,12 @@ class InteractiveMenu:
 
         # Validation Settings
         self._mc_pass_threshold: float = 0.80
+
+        # Hardware Settings
+        self._use_gpu: bool = True
+        self._gpu_precision: str = "float32"
+        self._use_metal_cpp: bool = False
+
         self._last_data: pd.DataFrame | None = None
 
     def run(self) -> int:
