@@ -131,7 +131,7 @@ class SequentialMCRunner:
             if not step_result.passed:
                 all_passed = False
                 console.print(f"\n[bold red]❌ FAILED: {display_name} did not meet robustness criteria.[/]")
-                console.print(f"[red]To reach Production-Ready status, the indicator must pass all stages.[/]")
+                console.print("[red]To reach Production-Ready status, the indicator must pass all stages.[/]")
                 console.print("[red]Review the advice above and adjust your strategy parameters or logic.[/]")
                 
                 if interactive:
