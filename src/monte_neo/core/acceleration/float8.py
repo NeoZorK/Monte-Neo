@@ -60,8 +60,9 @@ class Float8Encoder:
         
         # Extract exponent and mantissa from float32
         float32_bias = 127
-        float32_exp = ((bits >> 23) & 0xFF) - float32_bias
-        float32_mant = bits & 0x7FFFFF
+        # Cast to int to avoid unsigned subtraction issues
+        float32_exp = int((bits >> 23) & 0xFF) - float32_bias
+        float32_mant = int(bits & 0x7FFFFF)
         
         # Convert exponent
         mantissa_shift = 23 - self.mantissa_bits

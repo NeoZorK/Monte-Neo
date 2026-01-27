@@ -95,6 +95,7 @@ class InteractiveMenu:
         from monte_neo.cli.menu.metrics import set_metrics_workflow
         from monte_neo.cli.menu.results import view_results_workflow
         from monte_neo.cli.menu.settings import settings_workflow
+        from monte_neo.cli.menu.hardware import hardware_workflow
 
         if choice == "generate":
             generate_indicator_workflow(self, sequential=False)
