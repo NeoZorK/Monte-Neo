@@ -24,10 +24,10 @@ class ProgressTracker:
     """Track progress with ETA estimation.
     
     V0.0.5 Development Stages:
-    1. Metal Foundation: C++/Metal bridge and BaseKernel.
-    2. Indicators Library: SMA, EMA, RSI, ATR in MSL.
-    3. Optimization: GPU Grid Search and Walk-Forward.
-    4. Production Gate: Robustness scoring and Certification.
+    1. Metal Foundation: C++/Metal bridge and BaseKernel. [DONE]
+    2. Indicators Library: SMA, EMA, RSI, ATR in MSL. [DONE]
+    3. Optimization: GPU Grid Search and Walk-Forward. [DONE]
+    4. Production Gate: Robustness scoring and Certification. [DONE]
     """
 
     def __init__(self) -> None:

@@ -19,6 +19,7 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/features.md - Detailed overview of framework features
 - docs/project/dynamic_indicators.md - Explanation of dynamic indicator generation
 - docs/project/ROADMAP.md - Development roadmap and milestones (v0.0.4)
+- docs/project/v0.0.5_plan.md - Development plan for v0.0.5
 - docs/project/tech-stack.md - Technology stack and performance targets
 
 ### Setup & Configuration (docs/setup/)

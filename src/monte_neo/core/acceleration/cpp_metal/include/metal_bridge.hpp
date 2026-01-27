@@ -6,6 +6,14 @@
 
 namespace monte_neo {
 
+struct Candle {
+    float open;
+    float high;
+    float low;
+    float close;
+    float volume;
+};
+
 struct BacktestResult {
     float total_return;
     int trade_count;
@@ -22,7 +30,7 @@ public:
     bool init();
     
     std::vector<BacktestResult> run_backtest(
-        const std::vector<float>& close_prices,
+        const std::vector<Candle>& data,
         const std::vector<float>& params,
         int n_scenarios
     );
