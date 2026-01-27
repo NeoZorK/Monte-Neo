@@ -20,6 +20,7 @@ struct BacktestResult {
     float win_rate;
     float max_drawdown;
     float profit_factor;
+    float sharpe_ratio;
 };
 
 // PIMPL to keep Metal/C++ headers clean and avoid Objective-C in public headers
