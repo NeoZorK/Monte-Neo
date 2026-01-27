@@ -26,12 +26,30 @@ class MyIndicator(BaseIndicator):
         self.rsi_upper = 70
         self.rsi_lower = 30
 
-    def generate(self, data: pd.DataFrame) -> pd.DataFrame:
+    def calculate(self, data: pd.DataFrame) -> pd.DataFrame:
         """
-        Generate signals based on your custom logic.
+        Calculate indicator values.
         
         Args:
             data: DataFrame with 'open', 'high', 'low', 'close', 'volume'.
+            
+        Returns:
+            DataFrame with indicator columns added.
+        """
+        df = data.copy()
+        
+        # Example Logic: RSI Reversal
+        # 1. Calculate RSI
+        df['rsi'] = talib.RSI(df['close'].values, timeperiod=self.rsi_period)
+        
+        return df
+
+    def generate_signals(self, data: pd.DataFrame) -> pd.DataFrame:
+        """
+        Generate trading signals based on calculated values.
+        
+        Args:
+            data: OHLCV DataFrame (or result from calculate).
             
         Returns:
             DataFrame with added 'signal' column:
@@ -39,14 +57,15 @@ class MyIndicator(BaseIndicator):
             -1 = Sell
             0  = Hold
         """
-        df = data.copy()
-        
-        # Example Logic: RSI Reversal
-        # 1. Calculate RSI
-        rsi = talib.RSI(df['close'].values, timeperiod=self.rsi_period)
-        
+        # Ensure we have indicator values
+        if 'rsi' not in data.columns:
+            df = self.calculate(data)
+        else:
+            df = data.copy()
+            
         # 2. Create Signal Column (Default 0)
         df['signal'] = 0
+        rsi = df['rsi'].values
         
         # 3. Buy when RSI crosses above 30 (Oversold)
         # Note: This is a simplified vector operation.

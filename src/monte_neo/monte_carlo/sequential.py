@@ -6,7 +6,9 @@ import time
 from typing import TYPE_CHECKING
 
 import pandas as pd
+import questionary
 from rich.console import Console
+from rich.panel import Panel
 from rich.table import Table
 
 from monte_neo.monte_carlo.types import MCResult, MCStepResult
@@ -16,6 +18,8 @@ if TYPE_CHECKING:
     from monte_neo.metrics.calculator import MetricsCalculator
     from monte_neo.monte_carlo.engine import MonteCarloEngine
 
+
+from monte_neo.cli.styles import CUSTOM_STYLE
 
 console = Console()
 
@@ -62,6 +66,15 @@ class SequentialMCRunner:
             ("Sensitivity Analysis", "sensitivity"),
         ]
 
+        # Educational descriptions for each method
+        descriptions = {
+            "walk_forward": "Проверяет работоспособность стратегии на 'будущих' данных, которые не использовались при обучении. Это помогает обнаружить переобучение (overfitting).",
+            "block_bootstrap": "Создает новые рыночные сценарии, перемешивая блоки исторических данных. Проверяет устойчивость стратегии к изменению рыночных режимов.",
+            "shuffling": "Перемешивает последовательность доходностей, разрушая временную структуру. Если стратегия полагается на реальные паттерны, её результаты должны ухудшиться (или измениться) на перемешанных данных.",
+            "noise": "Добавляет случайный шум к ценам (Open, High, Low, Close). Проверяет, насколько стратегия чувствительна к мелким изменениям цены и волатильности.",
+            "sensitivity": "Варьирует параметры индикатора в небольшом диапазоне (например, ±10%). Устойчивая стратегия не должна ломаться при небольшом изменении настроек."
+        }
+
         # Use rich table for sequential output if it's the main display
         console.print(f"\n[bold yellow]🔍 Sequential MC Validation for: {indicator.name}[/]")
 
@@ -75,6 +88,13 @@ class SequentialMCRunner:
             is_enabled = getattr(self.engine.config, f"use_{method_key}")
             if not is_enabled:
                 continue
+            
+            # Show educational info
+            console.print(f"\n[bold magenta]👉 Next Step: {display_name}[/]")
+            console.print(Panel(descriptions.get(method_key, ""), title="Educational Info", border_style="blue"))
+            
+            if not questionary.confirm(f"Ready to run {display_name}?", default=True, style=CUSTOM_STYLE).ask():
+                 continue
 
             # Run method
             step_result = self._run_step(
@@ -106,10 +126,10 @@ class SequentialMCRunner:
                 all_passed = False
                 console.print(f"\n[bold red]❌ Aborted: {display_name} failed.[/]")
                 console.print("[red]Review the advice above and adjust your strategy parameters or logic.[/]")
-                break
-            
-            # Optional: Pause for user to read
-            # input("Press Enter to continue...")
+                if not questionary.confirm("Continue anyway (not recommended)?", default=False, style=CUSTOM_STYLE).ask():
+                    break
+            else:
+                 questionary.press_any_key_to_continue("Press any key to proceed to next step...", style=CUSTOM_STYLE).ask()
 
         elapsed = time.time() - start_time
         pass_rate = 1.0 if all_passed else (len([r for r in step_results if r.passed]) / len(methods))

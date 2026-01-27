@@ -30,10 +30,12 @@ class BenchmarkIndicator(BaseIndicator):
 
     def generate_signals(self, data: pd.DataFrame) -> pd.DataFrame:
         df = self.calculate(data)
-        df["signal"] = 0
+        signals = np.zeros(len(df), dtype=int)
         close = df["close"].values
         sma = df["sma"].values
-        df.loc[self.period:, "signal"] = np.where(close[self.period:] > sma[self.period:], 1, -1)
+        if len(df) > self.period:
+             signals[self.period:] = np.where(close[self.period:] > sma[self.period:], 1, -1)
+        df["signal"] = signals
         return df
 
     def generate(self, data: pd.DataFrame) -> pd.DataFrame:
@@ -66,7 +68,8 @@ def run_benchmark():
         use_shuffling=True,
         iterations=n_scenarios,
         random_seed=42,
-        use_sl_tp=False # Start without SL/TP for max throughput test
+        use_sl_tp=False, # Start without SL/TP for max throughput test
+        n_workers=1
     )
     
     engine = MonteCarloEngine(config=config)
