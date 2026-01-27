@@ -23,8 +23,15 @@ PYBIND11_MODULE(metal_engine, m) {
         .def_readonly("max_drawdown", &monte_neo::BacktestResult::max_drawdown);
 
     py::class_<monte_neo::MetalBacktestBridge>(m, "MetalBacktestBridge")
-        .def(py::init<>())
+        .def(py::init<monte_neo::MetalBacktestBridge::Driver>(), py::arg("driver") = monte_neo::MetalBacktestBridge::Driver::CPP)
         .def("init", &monte_neo::MetalBacktestBridge::init)
         .def("run_backtest", &monte_neo::MetalBacktestBridge::run_backtest,
-             py::arg("data"), py::arg("params"), py::arg("n_scenarios"));
+             py::arg("data"), py::arg("params"), py::arg("n_scenarios"))
+        .def_property_readonly("driver", &monte_neo::MetalBacktestBridge::get_driver);
+
+    py::enum_<monte_neo::MetalBacktestBridge::Driver>(m, "Driver")
+        .value("CPP", monte_neo::MetalBacktestBridge::Driver::CPP)
+        .value("OBJC", monte_neo::MetalBacktestBridge::Driver::OBJC)
+        .value("SWIFT", monte_neo::MetalBacktestBridge::Driver::SWIFT)
+        .export_values();
 }

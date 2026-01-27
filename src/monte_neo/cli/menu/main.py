@@ -52,7 +52,7 @@ class InteractiveMenu:
         # Hardware Settings
         self._use_gpu: bool = True
         self._gpu_precision: str = "float32"
-        self._use_metal_cpp: bool = False
+        self._metal_driver: str = "cpp" # cpp, objc, swift
 
         self._last_data: pd.DataFrame | None = None
 

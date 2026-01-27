@@ -36,7 +36,7 @@ class MCConfig:
     # Hardware Acceleration
     use_gpu: bool = True
     gpu_precision: str = "float32"  # float32, float16, float8
-    use_metal_cpp: bool = False  # If True, use custom Metal shaders instead of MLX
+    metal_driver: str = "cpp"  # cpp, objc, swift
 
 
 @dataclass

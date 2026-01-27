@@ -8,6 +8,9 @@ EXTENSION_NAME="metal_engine"
 PYTHON_INCLUDES=$(python3 -m pybind11 --includes)
 PYTHON_SUFFIX=$(python3-config --extension-suffix)
 
+echo "🚀 Compiling Swift Bridge..."
+swiftc -c $OUTPUT_DIR/MetalBridgeSwift.swift -o $OUTPUT_DIR/MetalBridgeSwift.o -parse-as-library
+
 echo "🚀 Compiling Metal Engine extension..."
 
 clang++ -O3 -shared -std=c++17 -undefined dynamic_lookup \
@@ -15,8 +18,9 @@ clang++ -O3 -shared -std=c++17 -undefined dynamic_lookup \
     -I$OUTPUT_DIR/include \
     $OUTPUT_DIR/metal_bridge.mm \
     $OUTPUT_DIR/bindings.mm \
+    $OUTPUT_DIR/MetalBridgeSwift.o \
     -o $OUTPUT_DIR/$EXTENSION_NAME$PYTHON_SUFFIX \
-    -framework Metal -framework Foundation -framework QuartzCore
+    -framework Metal -framework Foundation -framework QuartzCore -L/usr/lib/swift -lswiftCore -lswiftMetal -lswiftFoundation
 
 if [ $? -eq 0 ]; then
     echo "✅ Successfully compiled $EXTENSION_NAME$PYTHON_SUFFIX"

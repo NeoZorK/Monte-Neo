@@ -2,15 +2,19 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+import time
 import mlx.core as mx
 import numpy as np
 import pandas as pd
+import logging
 
 from monte_neo.core.gpu_lazy import backtest_lazy_scenarios as run_lazy_backtest
 from monte_neo.core.gpu_scenarios import normalize_signal_array, run_scenarios_backtest
 from monte_neo.metrics.calculator import MetricsCalculator
 from monte_neo.monte_carlo.workers import run_indicator_batch
 from monte_neo.utils.parallel import ParallelExecutor
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from monte_neo.indicators.base import BaseIndicator
@@ -22,19 +26,19 @@ from monte_neo.core.acceleration.engine import GpuAccelerationEngine
 class MLXBacktestEngine:
     """GPU-accelerated backtesting engine using MLX."""
 
-    def __init__(self, precision: str = "float32", use_metal_cpp: bool = False) -> None:
+    def __init__(self, precision: str = "float32", metal_driver: str = "cpp") -> None:
         """
         Initialize GPU engine with specified precision.
         
         Args:
             precision: 'float32', 'float16', 'float8_e4m3', or 'float8_e5m2'
-            use_metal_cpp: Whether to use native Metal C++ shaders
+            metal_driver: Metal driver to use ('cpp', 'objc', 'swift')
         """
         self.precision = precision
-        self.use_metal_cpp = use_metal_cpp
+        self.metal_driver = metal_driver
         self.pure_gpu_engine = GpuAccelerationEngine(
             precision=precision,
-            use_metal_cpp=use_metal_cpp
+            metal_driver=metal_driver
         )
 
     def run_full_simulation(
@@ -50,6 +54,7 @@ class MLXBacktestEngine:
         **kwargs: Any,
     ) -> list[dict[str, Any]]:
         """Run full simulation (Data -> Scenarios -> Signals -> Backtest) on GPU."""
+        start_time = time.perf_counter()
         
         # Extract kwargs
         std_dev = kwargs.get("std_dev", 0.01)
@@ -80,16 +85,9 @@ class MLXBacktestEngine:
             signals = mlx_strategy.generate_signals(scenarios)
             
             # 3. Move to CPU for SL/TP Numba calc
-            # We need high/low for SL/TP, but scenarios only have close.
-            # This is a limitation: Pure GPU scenarios currently only simulate 'close'.
-            # To support SL/TP correctly in scenarios, we'd need to simulate OHLC.
-            # For now, we'll use close as high/low proxy or warn.
-            
             scenarios_np = np.array(scenarios).astype(np.float64)
             signals_np = np.array(signals).astype(np.int32)
             
-            # Use scenarios_np as high/low proxy if they are not available
-            # (In shuffling/noise scenarios, we typically only have 'close')
             batch_metrics = MetricsCalculator.calculate_batch_multi_price_fast(
                 scenarios_np, # prices
                 scenarios_np, # highs
@@ -113,10 +111,12 @@ class MLXBacktestEngine:
                         "trade_count": int(batch_metrics[i, 3]),
                     }
                 })
+            
+            elapsed = time.perf_counter() - start_time
+            logger.info(f"GPU Simulation (MLX + Numba) for {n_scenarios} iterations took {elapsed:.4f}s")
             return results
 
         # 2. Run Simulation
-        # Note: GpuAccelerationEngine handles batching
         results = self.pure_gpu_engine.run_simulation(
             data=data,
             mlx_strategy=mlx_strategy,
@@ -125,6 +125,8 @@ class MLXBacktestEngine:
             seed=seed
         )
         
+        elapsed = time.perf_counter() - start_time
+        logger.info(f"GPU Simulation (Pure MLX) for {n_scenarios} iterations took {elapsed:.4f}s")
         return results
 
     def _normalize_signal_array(
@@ -164,23 +166,9 @@ class MLXBacktestEngine:
         sl_pct: float = 0.0,
         tp_pct: float = 0.0,
     ) -> list[dict[str, Any]]:
-        """Run multiple backtests simultaneously on the GPU.
-
-        Args:
-            data: OHLCV DataFrame.
-            indicators: List of indicators to test.
-            executor: Optional shared parallel executor for signal generation.
-            use_shared_data: Whether to use shared memory for data (reduces IPC).
-            force_parallel: Force multiprocessing for signal generation.
-            parallel_threshold: Indicator count threshold for multiprocessing.
-            dynamic_parallel_threshold: Threshold for dynamic indicators multiprocessing.
-            use_sl_tp: Whether to apply Stop Loss and Take Profit.
-            sl_pct: Stop Loss percentage.
-            tp_pct: Take Profit percentage.
-
-        Returns:
-            List of results for each indicator.
-        """
+        """Run multiple backtests simultaneously on the GPU."""
+        start_time = time.perf_counter()
+        
         # 1. Prepare Price Data (Constant for all indicators)
         close_prices = mx.array(data["close"].to_numpy().astype(np.float32))
 
@@ -261,6 +249,9 @@ class MLXBacktestEngine:
                         "trade_count": trade_count,
                     }
                 })
+            
+            elapsed = time.perf_counter() - start_time
+            logger.info(f"GPU Batch Backtest (Numba) for {len(indicators)} indicators took {elapsed:.4f}s")
             return results
 
         # Normal GPU calculation (Simple vectorized model)

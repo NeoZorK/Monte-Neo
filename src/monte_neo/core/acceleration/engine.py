@@ -16,33 +16,33 @@ from monte_neo.core.acceleration.tensor_ops import generate_noise_scenarios, gen
 class GpuAccelerationEngine:
     """High-performance GPU engine."""
     
-    def __init__(self, batch_size: int = 50000, precision: str = "float32", use_metal_cpp: bool = False):
+    def __init__(self, batch_size: int = 50000, precision: str = "float32", metal_driver: str = "cpp"):
         """
         Initialize GPU engine.
         
         Args:
             batch_size: Number of scenarios to process in each batch
             precision: 'float32', 'float16', 'float8_e4m3', or 'float8_e5m2'
-            use_metal_cpp: Whether to use native Metal C++ shaders for float8
+            metal_driver: Metal driver to use ('cpp', 'objc', 'swift')
         """
         self.batch_size = batch_size
         self.precision = precision
-        self.use_metal_cpp = use_metal_cpp
+        self.metal_driver = metal_driver
         
         # Initialize float8 encoder if needed
         self.float8_encoder = None
         self.metal_engine = None
         
         if precision.startswith("float8"):
-            if use_metal_cpp:
-                try:
-                    from monte_neo.core.native.metal_engine import MetalFloat8Engine
-                    self.metal_engine = MetalFloat8Engine()
-                except (ImportError, RuntimeError) as e:
-                    print(f"Warning: Could not initialize Metal engine: {e}. Falling back to Python encoder.")
-                    self.use_metal_cpp = False
+            # For float8 we still use the specialized MetalFloat8Engine for now
+            # but we can pass the driver if it supports it in the future
+            try:
+                from monte_neo.core.native.metal_engine import MetalFloat8Engine
+                self.metal_engine = MetalFloat8Engine()
+            except (ImportError, RuntimeError) as e:
+                print(f"Warning: Could not initialize Metal engine: {e}. Falling back to Python encoder.")
             
-            if not self.use_metal_cpp:
+            if not self.metal_engine:
                 from monte_neo.core.acceleration.float8 import Float8Encoder
                 format_type = "e4m3" if "e4m3" in precision else "e5m2"
                 self.float8_encoder = Float8Encoder(format_type)
@@ -90,8 +90,8 @@ class GpuAccelerationEngine:
             current_batch = min(self.batch_size, n_scenarios - processed)
             
             # 2. Scenarios
-            if self.use_metal_cpp and self.precision.startswith("float8"):
-                # Use Metal C++ engine for float8 scenarios
+            if self.metal_engine and self.precision.startswith("float8"):
+                # Use Metal engine for float8 scenarios
                 # First convert close to float8 using Metal
                 close_np = np.array(close).astype(np.float32)
                 if self.precision == "float8_e4m3":
