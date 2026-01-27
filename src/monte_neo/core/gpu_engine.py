@@ -22,6 +22,12 @@ if TYPE_CHECKING:
 
 from monte_neo.core.acceleration.engine import GpuAccelerationEngine
 
+try:
+    from monte_neo.core.acceleration.cpp_metal.metal_engine import MetalBacktestBridge, Candle, Driver
+    METAL_EXTENSION_AVAILABLE = True
+except ImportError:
+    METAL_EXTENSION_AVAILABLE = False
+
 
 class MLXBacktestEngine:
     """GPU-accelerated backtesting engine using MLX."""
@@ -40,6 +46,18 @@ class MLXBacktestEngine:
             precision=precision,
             metal_driver=metal_driver
         )
+        
+        # Initialize native Metal bridge if available
+        self.native_bridge = None
+        if METAL_EXTENSION_AVAILABLE:
+            driver_enum = Driver.CPP
+            if metal_driver == "objc": driver_enum = Driver.OBJC
+            elif metal_driver == "swift": driver_enum = Driver.SWIFT
+            
+            self.native_bridge = MetalBacktestBridge(driver_enum)
+            if not self.native_bridge.init():
+                logger.warning(f"Failed to initialize native Metal bridge with driver {metal_driver}")
+                self.native_bridge = None
 
     def run_full_simulation(
         self,
@@ -64,6 +82,41 @@ class MLXBacktestEngine:
         if mlx_strategy is None:
             raise ValueError("Indicator does not support Pure GPU execution")
             
+        # Try to use native Metal Bridge for end-to-end execution if supported
+        # For now, only for RSI+ATR based indicators which match our kernel
+        if self.native_bridge and method == "shuffling" and hasattr(indicator, "get_metal_params"):
+            try:
+                logger.info(f"Using native Metal bridge ({self.metal_driver}) for end-to-end execution")
+                
+                # Convert data to native Candles
+                candles = [Candle(r.open, r.high, r.low, r.close, r.volume) for r in data.itertuples()]
+                
+                # Get strategy parameters for Metal
+                # Indicator should provide a list of 5 floats for the kernel
+                metal_params = indicator.get_metal_params()
+                
+                # Expand params for all scenarios (n_scenarios * 5)
+                # In our current kernel, params are unique per scenario if needed, 
+                # but for grid search/MC we often use the same params.
+                full_params = metal_params * n_scenarios
+                
+                results = self.native_bridge.run_backtest(candles, full_params, n_scenarios)
+                
+                # Convert BacktestResult to dict format
+                formatted_results = []
+                for res in results:
+                    formatted_results.append({
+                        "metrics": {
+                            "total_return": res.total_return,
+                            "trade_count": res.trade_count,
+                            "win_rate": res.win_rate,
+                            "max_drawdown": res.max_drawdown
+                        }
+                    })
+                return formatted_results
+            except Exception as e:
+                logger.warning(f"Native Metal bridge execution failed, falling back to MLX: {e}")
+
         if use_sl_tp:
             # Pure GPU engine doesn't support SL/TP path dependency yet.
             # We must use Numba batch calculation.

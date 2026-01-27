@@ -101,6 +101,10 @@ class BaseIndicator(ABC):
         """
         pass
 
+    def get_metal_params(self) -> list[float] | None:
+        """Return parameters for native Metal kernel (5 floats)."""
+        return None
+
     def to_mlx_representation(self) -> Any | None:
         """Convert to MLX representation for GPU execution.
         

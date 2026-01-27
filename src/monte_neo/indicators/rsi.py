@@ -58,3 +58,14 @@ class RSIIndicator(BaseIndicator):
 
     def get_min_periods(self) -> int:
         return self._parameters["period"] + 1
+
+    def get_metal_params(self) -> list[float] | None:
+        """Return parameters for native Metal kernel (RSI, ATR, SL, TP, TS)."""
+        # Metal kernel expects: [RSI_Period, ATR_Period, SL_Mult, TP_Mult, TS_Mult]
+        return [
+            float(self._parameters.get("period", 14)),
+            14.0,  # Default ATR period
+            1.5,   # Default SL ATR mult
+            3.0,   # Default TP ATR mult
+            2.0    # Default TS ATR mult
+        ]
