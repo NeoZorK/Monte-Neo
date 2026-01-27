@@ -60,12 +60,16 @@ class RSIIndicator(BaseIndicator):
         return self._parameters["period"] + 1
 
     def get_metal_params(self) -> list[float] | None:
-        """Return parameters for native Metal kernel (RSI, ATR, SL, TP, TS)."""
-        # Metal kernel expects: [RSI_Period, ATR_Period, SL_Mult, TP_Mult, TS_Mult]
+        """Return parameters for native Metal kernel."""
+        # Layout: [type, p1, p2, p3, atr_period, sl_mult, tp_mult, ts_mult]
+        # type 1: RSI
         return [
+            1.0,  # type
             float(self._parameters.get("period", 14)),
-            14.0,  # Default ATR period
-            1.5,   # Default SL ATR mult
-            3.0,   # Default TP ATR mult
-            2.0    # Default TS ATR mult
+            float(self._parameters.get("overbought", 70)),
+            float(self._parameters.get("oversold", 30)),
+            14.0, # ATR
+            1.5,  # SL
+            3.0,  # TP
+            2.0   # TS
         ]

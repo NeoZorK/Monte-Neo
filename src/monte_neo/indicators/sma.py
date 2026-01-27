@@ -70,13 +70,17 @@ class SMAIndicator(BaseIndicator):
 
     def get_metal_params(self) -> list[float] | None:
         """Return parameters for native Metal kernel."""
-        # Metal kernel expects: [Fast_Period, Slow_Period, SL_Mult, TP_Mult, TS_Mult]
+        # Layout: [type, p1, p2, p3, atr_period, sl_mult, tp_mult, ts_mult]
+        # type 0: SMA
         return [
+            0.0, # type
             float(self._parameters.get("fast_period", 10)),
             float(self._parameters.get("slow_period", 20)),
-            1.5,   # Default SL ATR mult
-            3.0,   # Default TP ATR mult
-            2.0    # Default TS ATR mult
+            0.0, # p3
+            14.0, # ATR
+            1.5, # SL
+            3.0, # TP
+            2.0  # TS
         ]
 
     def to_mlx_representation(self):

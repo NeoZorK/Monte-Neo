@@ -33,10 +33,10 @@ def test_pipeline():
 
     # Config for quick test
     config = GeneratorConfig(
-        max_iterations=50, # Reduced
+        max_iterations=20, # Reduced
         target_metrics={"profit_factor": 0.5}, # Low target to ensure we find something
-        indicator_types=["sma"], # Keep it simple
-        mc_iterations=1000,
+        indicator_types=["sma", "rsi", "macd"], # Test all
+        mc_iterations=500,
         use_mc_shuffling=True,
         use_mc_noise=False,
         use_mc_sensitivity=False,

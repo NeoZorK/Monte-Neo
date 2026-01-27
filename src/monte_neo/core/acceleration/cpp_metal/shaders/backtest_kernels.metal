@@ -90,11 +90,14 @@ kernel void backtest_kernel(
     device uint& total_candles [[buffer(3)]]
 ) {
     // 1. Setup parameters
-    float p1 = params[scenario_id * 5 + 0]; // RSI Period
-    float p2 = params[scenario_id * 5 + 1]; // ATR Period
-    float sl_mult = params[scenario_id * 5 + 2]; // SL Multiplier (ATR)
-    float tp_mult = params[scenario_id * 5 + 3]; // TP Multiplier (ATR)
-    float ts_mult = params[scenario_id * 5 + 4]; // Trailing Stop Multiplier (ATR)
+    int strategy_type = (int)params[scenario_id * 8 + 0];
+    float p1 = params[scenario_id * 8 + 1]; // Param A
+    float p2 = params[scenario_id * 8 + 2]; // Param B
+    float p3 = params[scenario_id * 8 + 3]; // Param C
+    int atr_period = (int)params[scenario_id * 8 + 4];
+    float sl_mult = params[scenario_id * 8 + 5];
+    float tp_mult = params[scenario_id * 8 + 6];
+    float ts_mult = params[scenario_id * 8 + 7];
 
     // 2. State Management
     float equity = 1.0f;
@@ -102,13 +105,15 @@ kernel void backtest_kernel(
     float entry_price = 0.0f;
     float sl_price = 0.0f;
     float tp_price = 0.0f;
-    float ts_activation_price = 0.0f;
     int trades = 0;
     int wins = 0;
     
     // Indicator state
     float avg_gain = 0.0f;
     float avg_loss = 0.0f;
+    float fast_ema = 0.0f;
+    float slow_ema = 0.0f;
+    float signal_ema = 0.0f; // Added for MACD Signal line
     float current_atr = 0.0f;
     float max_dd = 0.0f;
     float peak_equity = 1.0f;
@@ -121,18 +126,41 @@ kernel void backtest_kernel(
         const device Candle& prev_c = data[i-1];
         
         // Update Indicators
-        float rsi = Indicators::update_rsi(c.close, prev_c.close, avg_gain, avg_loss, (int)p1, i);
-        current_atr = Indicators::update_atr(c, prev_c, current_atr, (int)p2, i);
+        float signal_val = 0.0f;
+        
+        if (strategy_type == 0) { // SMA Crossover
+            float sma_fast = Indicators::calculate_sma(data, i, (int)p1);
+            float sma_slow = Indicators::calculate_sma(data, i, (int)p2);
+            if (sma_fast > sma_slow) signal_val = 1.0f;
+            else if (sma_fast < sma_slow) signal_val = -1.0f;
+        } 
+        else if (strategy_type == 1) { // RSI
+            float rsi = Indicators::update_rsi(c.close, prev_c.close, avg_gain, avg_loss, (int)p1, i);
+            if (rsi < p3) signal_val = 1.0f;      // Use p3 as Oversold (e.g. 30)
+            else if (rsi > p2) signal_val = -1.0f; // Use p2 as Overbought (e.g. 70)
+            else signal_val = (float)pos; // Maintain
+        }
+        else if (strategy_type == 2) { // MACD
+            fast_ema = (i == 1) ? c.close : Indicators::update_ema(c.close, fast_ema, (int)p1);
+            slow_ema = (i == 1) ? c.close : Indicators::update_ema(c.close, slow_ema, (int)p2);
+            float macd = fast_ema - slow_ema;
+            signal_ema = (i == 1) ? macd : Indicators::update_ema(macd, signal_ema, (int)p3);
+            float hist = macd - signal_ema;
+            if (hist > 0) signal_val = 1.0f;
+            else if (hist < 0) signal_val = -1.0f;
+        }
 
-        // Strategy Logic (e.g., RSI Mean Reversion)
+        current_atr = Indicators::update_atr(c, prev_c, current_atr, atr_period, i);
+
+        // Strategy Execution
         if (pos == 0) {
-            if (rsi < 30.0f) { // Oversold -> Buy
+            if (signal_val == 1.0f) {
                 pos = 1;
                 entry_price = c.close;
                 sl_price = entry_price - (current_atr * sl_mult);
                 tp_price = entry_price + (current_atr * tp_mult);
                 trades++;
-            } else if (rsi > 70.0f) { // Overbought -> Sell
+            } else if (signal_val == -1.0f) {
                 pos = -1;
                 entry_price = c.close;
                 sl_price = entry_price + (current_atr * sl_mult);
@@ -140,7 +168,7 @@ kernel void backtest_kernel(
                 trades++;
             }
         } else {
-            // --- Trailing Stop Logic ---
+            // Trailing Stop
             if (ts_mult > 0) {
                 if (pos == 1) {
                     float new_sl = c.close - (current_atr * ts_mult);
@@ -151,18 +179,18 @@ kernel void backtest_kernel(
                 }
             }
 
-            // Check SL/TP
+            // Check SL/TP or Signal reversal
             bool exit = false;
             float pnl_pct = 0.0f;
 
             if (pos == 1) {
                 if (c.low <= sl_price) { exit = true; pnl_pct = (sl_price / entry_price) - 1.0f; }
                 else if (c.high >= tp_price) { exit = true; pnl_pct = (tp_price / entry_price) - 1.0f; }
-                else if (rsi > 50.0f) { exit = true; pnl_pct = (c.close / entry_price) - 1.0f; } // Exit at neutral
+                else if (signal_val <= 0.0f) { exit = true; pnl_pct = (c.close / entry_price) - 1.0f; }
             } else {
                 if (c.high >= sl_price) { exit = true; pnl_pct = (entry_price / sl_price) - 1.0f; }
                 else if (c.low <= tp_price) { exit = true; pnl_pct = (entry_price / tp_price) - 1.0f; }
-                else if (rsi < 50.0f) { exit = true; pnl_pct = (entry_price / c.close) - 1.0f; } // Exit at neutral
+                else if (signal_val >= 0.0f) { exit = true; pnl_pct = (entry_price / c.close) - 1.0f; }
             }
 
             if (exit) {
@@ -174,8 +202,6 @@ kernel void backtest_kernel(
                     total_losses_val += abs(pnl_pct);
                 }
                 pos = 0;
-                
-                // Drawdown tracking
                 if (equity > peak_equity) peak_equity = equity;
                 float dd = (peak_equity - equity) / peak_equity;
                 if (dd > max_dd) max_dd = dd;
