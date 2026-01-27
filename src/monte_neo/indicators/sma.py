@@ -67,3 +67,12 @@ class SMAIndicator(BaseIndicator):
 
     def get_min_periods(self) -> int:
         return self._parameters["slow_period"]
+
+    def to_mlx_representation(self):
+        try:
+            from monte_neo.core.acceleration.indicators import MLXSMACrossStrategy
+            fast = int(self._parameters["fast_period"])
+            slow = int(self._parameters["slow_period"])
+            return MLXSMACrossStrategy(fast, slow)
+        except ImportError:
+            return None

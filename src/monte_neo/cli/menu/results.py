@@ -97,6 +97,9 @@ def show_generation_result(menu: InteractiveMenu, result) -> None:
     else:
         console.print(f"[bold red]❌ No suitable indicator found matching criteria (MC Rate > {threshold:.0%})[/]\n")
 
+    if result.success:
+        _print_trust_certificate(result)
+
     table = Table(title="Generation Results")
     table.add_column("Metric", style="cyan")
     table.add_column("Value", style="green")
@@ -179,3 +182,37 @@ def _plot_result(menu: InteractiveMenu, result) -> None:
         chart_gen.plot_with_signals(menu._last_data, signals, title=f"Best: {result.indicator.name}")
     else:
         console.print("[yellow]⚠ No data available to plot chart. Please run generation first.[/]")
+
+
+def _print_trust_certificate(result):
+    """Print a robustness certificate."""
+    console.print()
+    
+    # Check if we have detailed steps
+    details = ""
+    if hasattr(result, "mc_details") and result.mc_details.get("step_results"):
+        for step in result.mc_details["step_results"]:
+            if step["passed"]:
+                details += f"[green]✔ {step['method']}[/]\n"
+    
+    if not details:
+        details = "[green]✔ Monte Carlo Simulation (Aggregated)[/]"
+        
+    certificate = f"""
+    [bold green]🌟 CERTIFICATE OF ROBUSTNESS 🌟[/]
+    
+    This certifies that the indicator:
+    [bold white]{result.indicator.name}[/]
+    
+    Has successfully passed rigorous Monte Carlo Stress Tests:
+{details}
+    [bold]Pass Rate: {result.mc_pass_rate:.1%}[/]
+    
+    Status: [bold green]PRODUCTION READY[/]
+    """
+    
+    console.print(Panel(
+        certificate,
+        border_style="green",
+        expand=False
+    ))

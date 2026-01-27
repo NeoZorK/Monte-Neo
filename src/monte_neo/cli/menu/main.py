@@ -72,6 +72,7 @@ class InteractiveMenu:
             {"name": "🎲 Configure Monte Carlo Methods", "value": "mc_config"},
             {"name": "🚀 Generate Indicator", "value": "generate"},
             {"name": "🔄 Sequential Generate Indicator", "value": "generate_sequential"},
+            {"name": "🧪 Test Custom Formula", "value": "test_custom"},
             {"name": "📈 View Results", "value": "results"},
             {"name": "⚙️  Settings", "value": "settings"},
             {"name": "❌ Exit", "value": "exit"},
@@ -93,6 +94,10 @@ class InteractiveMenu:
             return
         elif choice == "generate_sequential":
             generate_indicator_workflow(self, sequential=True)
+            return
+        elif choice == "test_custom":
+            from monte_neo.cli.menu.custom_test import test_custom_indicator_workflow
+            test_custom_indicator_workflow(self)
             return
 
         handlers = {

@@ -90,11 +90,26 @@ class SequentialMCRunner:
             console.clear()
             console.print(f"\n[bold yellow]🔍 Sequential MC Validation for: {indicator.name}[/]")
             console.print(table)
+            
+            # Print Detailed Advice for the current step
+            console.print(f"\n[bold cyan]💡 Analysis & Advice for {display_name}:[/]")
+            console.print(f"[italic]{step_result.advice}[/]")
+            
+            # Show key metrics for this step
+            if step_result.metrics_summary:
+                pf = step_result.metrics_summary.get("profit_factor", {}).get("mean", 0.0)
+                sr = step_result.metrics_summary.get("sharpe_ratio", {}).get("mean", 0.0)
+                dd = step_result.metrics_summary.get("max_drawdown", {}).get("mean", 0.0)
+                console.print(f"[dim]Stats: PF={pf:.2f}, Sharpe={sr:.2f}, DD={dd:.1%}[/]")
 
             if not step_result.passed:
                 all_passed = False
                 console.print(f"\n[bold red]❌ Aborted: {display_name} failed.[/]")
+                console.print("[red]Review the advice above and adjust your strategy parameters or logic.[/]")
                 break
+            
+            # Optional: Pause for user to read
+            # input("Press Enter to continue...")
 
         elapsed = time.time() - start_time
         pass_rate = 1.0 if all_passed else (len([r for r in step_results if r.passed]) / len(methods))
