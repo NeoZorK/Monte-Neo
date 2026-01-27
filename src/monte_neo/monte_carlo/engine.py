@@ -85,6 +85,19 @@ class MonteCarloEngine:
         passed_count = 0
         all_results = []
 
+        def _meets_targets(metrics: dict[str, float]) -> bool:
+            for metric_name, target_value in target_metrics.items():
+                if metric_name not in metrics:
+                    continue
+                actual = metrics[metric_name]
+                if metric_name in ["max_drawdown", "consecutive_losses"]:
+                    if actual > target_value:
+                        return False
+                else:
+                    if actual < target_value:
+                        return False
+            return True
+
         if self.config.use_sequential:
             return self.run_sequential(data, indicator, metrics_calc, target_metrics, interactive=interactive)
 
@@ -120,15 +133,17 @@ class MonteCarloEngine:
                 )
                 
                 # Transform results to match MCResult format
-                passed_count = sum(1 for r in results if r.get("passed", False))
+                passed_count = sum(1 for r in results if _meets_targets(r.get("metrics", {})))
                 total = len(results)
                 
                 all_results = []
                 for i, res in enumerate(results):
-                     all_results.append({
+                    metrics = res.get("metrics", {})
+                    passed = _meets_targets(metrics)
+                    all_results.append({
                         "scenario_idx": i,
-                        "passed": res.get("passed", False),
-                        "metrics": res.get("metrics", {})
+                        "passed": passed,
+                        "metrics": metrics
                     })
 
                 if self._progress_callback:
@@ -183,15 +198,17 @@ class MonteCarloEngine:
                 )
 
                 # Transform results
-                passed_count = sum(1 for r in results if r.get("passed", False))
+                passed_count = sum(1 for r in results if _meets_targets(r.get("metrics", {})))
                 total = len(results)
 
                 all_results = []
                 for i, res in enumerate(results):
+                    metrics = res.get("metrics", {})
+                    passed = _meets_targets(metrics)
                     all_results.append({
                         "scenario_idx": i,
-                        "passed": res.get("passed", False),
-                        "metrics": res.get("metrics", {})
+                        "passed": passed,
+                        "metrics": metrics
                     })
 
                 if self._progress_callback:
@@ -231,15 +248,15 @@ class MonteCarloEngine:
 
                 for i, res in enumerate(gpu_results):
                     # The GPU engine returns a dict with 'passed' and 'metrics'
-                    if res["passed"]:
+                    metrics = res.get("metrics", {})
+                    passed = _meets_targets(metrics)
+                    if passed:
                         passed_count += 1
                     all_results.append(
                         {
                             "scenario_idx": i,
-                            "passed": res["passed"],
-                            "metrics": res[
-                                "metrics"
-                            ],  # Ensure metrics are correctly extracted
+                            "passed": passed,
+                            "metrics": metrics,
                         }
                     )
 

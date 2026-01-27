@@ -43,6 +43,7 @@ class MCStepResult:
     pass_rate: float
     metrics_summary: dict
     advice: str
+    iterations: int = 0
 
 
 @dataclass

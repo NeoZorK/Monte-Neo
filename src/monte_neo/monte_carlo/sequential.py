@@ -68,6 +68,11 @@ class SequentialMCRunner:
             ("Sensitivity Analysis", "sensitivity"),
         ]
 
+        enabled_methods = [
+            (display, key) for (display, key) in methods
+            if getattr(self.engine.config, f"use_{key}")
+        ]
+
         # Educational descriptions for each method
         descriptions = {
             "walk_forward": "Проверяет работоспособность стратегии на 'будущих' данных, которые не использовались при обучении. Это помогает обнаружить переобучение (overfitting).",
@@ -81,18 +86,14 @@ class SequentialMCRunner:
         console.print(f"\n[bold yellow]🔍 Sequential MC Validation for: {indicator.name}[/]")
 
         table = Table(title="Monte Carlo Steps", show_header=True, header_style="bold magenta")
+        table.add_column("Step", justify="right")
         table.add_column("Method", style="cyan")
         table.add_column("Pass Rate", justify="right")
         table.add_column("Status", justify="center")
 
-        for display_name, method_key in methods:
-            # Check if method is enabled in config
-            is_enabled = getattr(self.engine.config, f"use_{method_key}")
-            if not is_enabled:
-                continue
-            
-            # Show educational info
-            console.print(f"\n[bold magenta]👉 Next Step: {display_name}[/]")
+        total_steps = len(enabled_methods)
+        for idx, (display_name, method_key) in enumerate(enabled_methods, start=1):
+            console.print(f"\n[bold magenta]👉 Этап {idx}/{total_steps}: {display_name}[/]")
             console.print(Panel(descriptions.get(method_key, ""), title="Educational Info", border_style="blue"))
             
             if interactive:
@@ -107,10 +108,11 @@ class SequentialMCRunner:
 
             # Update output
             status = "[green]PASSED[/]" if step_result.passed else "[red]FAILED[/]"
-            table.add_row(display_name, f"{step_result.pass_rate:.1%}", status)
+            table.add_row(f"{idx}/{total_steps}", display_name, f"{step_result.pass_rate:.1%}", status)
 
             # Print current state
-            console.clear()
+            if interactive:
+                console.clear()
             console.print(f"\n[bold yellow]🔍 Sequential MC Validation for: {indicator.name}[/]")
             console.print(table)
             
@@ -124,6 +126,11 @@ class SequentialMCRunner:
                 sr = step_result.metrics_summary.get("sharpe_ratio", {}).get("mean", 0.0)
                 dd = step_result.metrics_summary.get("max_drawdown", {}).get("mean", 0.0)
                 console.print(f"[dim]Stats: PF={pf:.2f}, Sharpe={sr:.2f}, DD={dd:.1%}[/]")
+            console.print(
+                f"[dim]Pass Rate: {step_result.pass_rate:.1%} | "
+                f"Threshold: {self.engine.config.pass_threshold:.1%} | "
+                f"Iterations: {step_result.iterations}[/]"
+            )
 
             if interactive:
                 if not step_result.passed:
@@ -141,12 +148,15 @@ class SequentialMCRunner:
                     break
 
         elapsed = time.time() - start_time
-        pass_rate = 1.0 if all_passed else (len([r for r in step_results if r.passed]) / len(methods))
+        total_enabled = max(1, len(enabled_methods))
+        total_executed = len(step_results)
+        pass_rate = (len([r for r in step_results if r.passed]) / total_executed) if total_executed else 0.0
+        total_iterations = sum(r.iterations for r in step_results)
 
         return MCResult(
-            passed=all_passed,
+            passed=all_passed and total_executed > 0,
             pass_rate=pass_rate,
-            iterations_run=sum(len(r.metrics_summary) for r in step_results), # Approximate
+            iterations_run=total_iterations,
             elapsed_time=elapsed,
             step_results=step_results,
         )
@@ -186,7 +196,24 @@ class SequentialMCRunner:
             tp_pct=self.engine.config.tp_pct,
         )
 
-        passed_count = sum(1 for r in results if r["passed"])
+        passed_count = 0
+        for r in results:
+            metrics = r.get("metrics", {})
+            passed = True
+            for metric_name, target_value in target_metrics.items():
+                if metric_name not in metrics:
+                    continue
+                actual = metrics[metric_name]
+                if metric_name in ["max_drawdown", "consecutive_losses"]:
+                    if actual > target_value:
+                        passed = False
+                        break
+                else:
+                    if actual < target_value:
+                        passed = False
+                        break
+            if passed:
+                passed_count += 1
         pass_rate = passed_count / len(results) if results else 0.0
         passed = pass_rate >= self.engine.config.pass_threshold
 
@@ -200,6 +227,7 @@ class SequentialMCRunner:
             pass_rate=pass_rate,
             metrics_summary=summary,
             advice=advice,
+            iterations=len(results),
         )
 
     def _run_sensitivity_step(
@@ -232,6 +260,7 @@ class SequentialMCRunner:
             pass_rate=pass_rate,
             metrics_summary=summary,
             advice=advice,
+            iterations=len(results),
         )
 
     def _generate_advice(self, method_name: str, pass_rate: float, summary: dict) -> str:
