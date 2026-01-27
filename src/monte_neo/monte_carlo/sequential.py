@@ -75,11 +75,11 @@ class SequentialMCRunner:
 
         # Educational descriptions for each method
         descriptions = {
-            "walk_forward": "    '' ,     .     (overfitting).",
-            "block_bootstrap": "   ,    .       .",
-            "shuffling": "  ,   .      ,     ( )   .",
-            "noise": "     (Open, High, Low, Close). ,         .",
-            "sensitivity": "      (, ±10%).         ."
+            "walk_forward": "Validates strategy performance on 'future' data not used during training. Helps detect overfitting.",
+            "block_bootstrap": "Creates new market scenarios by shuffling historical data blocks. Tests strategy resilience to market regime changes.",
+            "shuffling": "Shuffles the sequence of returns, destroying temporal structure. If a strategy relies on real patterns, performance should degrade on shuffled data.",
+            "noise": "Adds random noise to OHLC prices. Tests strategy sensitivity to minor price changes and volatility.",
+            "sensitivity": "Varies indicator parameters within a small range (e.g., ±10%). A robust strategy should not break with small setting changes."
         }
 
         # Use rich table for sequential output if it's the main display
@@ -93,7 +93,7 @@ class SequentialMCRunner:
 
         total_steps = len(enabled_methods)
         for idx, (display_name, method_key) in enumerate(enabled_methods, start=1):
-            console.print(f"\n[bold magenta]👉  {idx}/{total_steps}: {display_name}[/]")
+            console.print(f"\n[bold magenta]👉 Stage {idx}/{total_steps}: {display_name}[/]")
             console.print(Panel(descriptions.get(method_key, ""), title="Educational Info", border_style="blue"))
             
             if interactive:
