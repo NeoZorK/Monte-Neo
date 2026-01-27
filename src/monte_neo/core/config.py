@@ -43,7 +43,7 @@ class GeneratorConfig:
     # Hardware Acceleration
     use_gpu: bool = True
     gpu_precision: str = "float32"
-    use_metal_cpp: bool = False
+    metal_driver: str = "cpp"  # cpp, objc, swift
 
 
 @dataclass

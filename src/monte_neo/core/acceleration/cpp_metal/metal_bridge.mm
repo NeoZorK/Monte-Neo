@@ -3,6 +3,21 @@
 #include "include/metal_bridge.hpp"
 #include <iostream>
 #include <vector>
+#include <chrono>
+
+// Swift function declarations
+extern "C" {
+    void* swift_init_metal();
+    bool swift_run_backtest(
+        void* devicePtr,
+        const void* dataPtr,
+        int dataCount,
+        const float* paramsPtr,
+        int paramsCount,
+        int nScenarios,
+        void* resultsPtr
+    );
+}
 
 namespace monte_neo {
 
@@ -11,10 +26,20 @@ public:
     id<MTLDevice> device;
     id<MTLCommandQueue> commandQueue;
     id<MTLComputePipelineState> pipelineState;
+    Driver driver;
 
-    Impl() : device(nil), commandQueue(nil), pipelineState(nil) {}
+    Impl(Driver d) : device(nil), commandQueue(nil), pipelineState(nil), driver(d) {}
     
     bool init() {
+        if (driver == Driver::SWIFT) {
+            void* dev = swift_init_metal();
+            if (dev) {
+                device = (__bridge id<MTLDevice>)dev;
+                return true;
+            }
+            return false;
+        }
+
         @autoreleasepool {
             device = MTLCreateSystemDefaultDevice();
             if (!device) return false;
@@ -49,11 +74,21 @@ public:
     }
 };
 
-MetalBacktestBridge::MetalBacktestBridge() : pimpl(std::make_unique<Impl>()) {}
+MetalBacktestBridge::MetalBacktestBridge(Driver driver) 
+    : pimpl(std::make_unique<Impl>(driver)), driver_(driver) {}
 MetalBacktestBridge::~MetalBacktestBridge() = default;
 
 bool MetalBacktestBridge::init() {
-    return pimpl->init();
+    auto start = std::chrono::high_resolution_clock::now();
+    bool success = pimpl->init();
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff = end - start;
+    
+    std::string driver_name = (driver_ == Driver::CPP) ? "Clang C++" : 
+                             (driver_ == Driver::OBJC) ? "Objective-C++" : "Apple Swift";
+                             
+    std::cout << "MetalBridge: " << driver_name << " initialized in " << diff.count() << "s" << std::endl;
+    return success;
 }
 
 std::vector<BacktestResult> MetalBacktestBridge::run_backtest(
@@ -61,12 +96,31 @@ std::vector<BacktestResult> MetalBacktestBridge::run_backtest(
     const std::vector<float>& params,
     int n_scenarios
 ) {
+    auto start = std::chrono::high_resolution_clock::now();
     std::vector<BacktestResult> results(n_scenarios);
     
-    @autoreleasepool {
-        id<MTLBuffer> dataBuffer = [pimpl->device newBufferWithBytes:data.data() 
-                                                            length:data.size() * sizeof(Candle) 
-                                                           options:MTLResourceStorageModeShared];
+    if (driver_ == Driver::SWIFT) {
+        bool success = swift_run_backtest(
+            (__bridge void*)pimpl->device,
+            data.data(),
+            (int)data.size(),
+            params.data(),
+            (int)params.size(),
+            n_scenarios,
+            results.data()
+        );
+        
+        if (!success) {
+            std::cerr << "Swift driver execution failed" << std::endl;
+        }
+    } else {
+        @autoreleasepool {
+            // Both CPP and OBJC currently use the same Obj-C++ host logic
+            // In a real comparison, CPP would use metal-cpp headers.
+            
+            id<MTLBuffer> dataBuffer = [pimpl->device newBufferWithBytes:data.data() 
+                                                                length:data.size() * sizeof(Candle) 
+                                                               options:MTLResourceStorageModeShared];
         
         id<MTLBuffer> resultsBuffer = [pimpl->device newBufferWithLength:n_scenarios * sizeof(BacktestResult) 
                                                                options:MTLResourceStorageModeShared];
@@ -82,27 +136,39 @@ std::vector<BacktestResult> MetalBacktestBridge::run_backtest(
 
         id<MTLCommandBuffer> commandBuffer = [pimpl->commandQueue commandBuffer];
         id<MTLComputeCommandEncoder> encoder = [commandBuffer computeCommandEncoder];
-
+        
         [encoder setComputePipelineState:pimpl->pipelineState];
         [encoder setBuffer:dataBuffer offset:0 atIndex:0];
         [encoder setBuffer:resultsBuffer offset:0 atIndex:1];
         [encoder setBuffer:paramsBuffer offset:0 atIndex:2];
         [encoder setBuffer:countBuffer offset:0 atIndex:3];
 
-        NSUInteger w = pimpl->pipelineState.threadExecutionWidth;
-        NSUInteger h = pimpl->pipelineState.maxTotalThreadsPerThreadgroup / w;
-        MTLSize threadsPerThreadgroup = MTLSizeMake(w, 1, 1);
-        MTLSize threadsPerGrid = MTLSizeMake(n_scenarios, 1, 1);
+        MTLSize gridSize = MTLSizeMake(n_scenarios, 1, 1);
+        NSUInteger threadGroupSizeVal = pimpl->pipelineState.maxTotalThreadsPerThreadgroup;
+        if (threadGroupSizeVal > (NSUInteger)n_scenarios) {
+            threadGroupSizeVal = (NSUInteger)n_scenarios;
+        }
+        MTLSize threadGroupSize = MTLSizeMake(threadGroupSizeVal, 1, 1);
 
-        [encoder dispatchThreads:threadsPerGrid threadsPerThreadgroup:threadsPerThreadgroup];
+        [encoder dispatchThreads:gridSize threadsPerThreadgroup:threadGroupSize];
         [encoder endEncoding];
-        
+
         [commandBuffer commit];
         [commandBuffer waitUntilCompleted];
 
         std::memcpy(results.data(), [resultsBuffer contents], n_scenarios * sizeof(BacktestResult));
+        }
     }
     
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff = end - start;
+    
+    std::string driver_name = (driver_ == Driver::CPP) ? "Clang C++" : 
+                             (driver_ == Driver::OBJC) ? "Objective-C++" : "Apple Swift";
+                             
+    std::cout << "MetalBridge: " << driver_name << " execution time: " << diff.count() << "s (" 
+              << n_scenarios / (diff.count() + 1e-9) << " scenarios/sec)" << std::endl;
+              
     return results;
 }
 

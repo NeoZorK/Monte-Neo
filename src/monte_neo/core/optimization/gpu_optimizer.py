@@ -9,11 +9,19 @@ logger = logging.getLogger(__name__)
 class GPUOptimizer:
     """Orchestrates GPU-accelerated Grid Search and Backtesting using Metal."""
     
-    def __init__(self):
-        self.bridge = metal_engine.MetalBacktestBridge()
+    def __init__(self, driver: str = "cpp"):
+        # Map string driver to MetalBridge enum
+        driver_map = {
+            "cpp": metal_engine.Driver.CPP,
+            "objc": metal_engine.Driver.OBJC,
+            "swift": metal_engine.Driver.SWIFT
+        }
+        selected_driver = driver_map.get(driver.lower(), metal_engine.Driver.CPP)
+        
+        self.bridge = metal_engine.MetalBacktestBridge(selected_driver)
         if not self.bridge.init():
-            raise RuntimeError("Failed to initialize Metal GPU Bridge")
-        logger.info("GPUOptimizer: Metal Bridge initialized successfully")
+            raise RuntimeError(f"Failed to initialize Metal GPU Bridge with driver: {driver}")
+        logger.info(f"GPUOptimizer: Metal Bridge initialized successfully with driver: {driver}")
 
     def run_grid_search(self, df: pd.DataFrame, param_grid: Dict[str, List[float]]) -> pd.DataFrame:
         """
@@ -50,8 +58,14 @@ class GPUOptimizer:
             
         logger.info(f"GPUOptimizer: Starting grid search for {n_scenarios} scenarios...")
         
+        import time
+        start_t = time.perf_counter()
+        
         # 3. Run on GPU
         results = self.bridge.run_backtest(candles, flat_params, n_scenarios)
+        
+        duration = time.perf_counter() - start_t
+        logger.info(f"GPUOptimizer: Metal Grid Search completed in {duration:.4f} seconds ({n_scenarios / (duration + 1e-9):.2f} scenarios/sec)")
         
         # 4. Process results
         processed_results = []

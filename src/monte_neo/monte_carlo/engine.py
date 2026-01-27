@@ -49,7 +49,7 @@ class MonteCarloEngine:
         from monte_neo.core.gpu_engine import MLXBacktestEngine
         self.gpu_engine = MLXBacktestEngine(
             precision=self.config.gpu_precision,
-            use_metal_cpp=self.config.use_metal_cpp
+            metal_driver=self.config.metal_driver
         )
 
         self._progress_callback: Callable[[int, int], None] | None = None
@@ -335,18 +335,21 @@ class MonteCarloEngine:
     def _finalize_results(
         self, passed_count: int, total: int, all_results: list, start_time: float
     ) -> MCResult:
-        """Helper to package results."""
+        """Finalize and summarize results."""
         elapsed = time.time() - start_time
         pass_rate = passed_count / total if total > 0 else 0
+        passed = pass_rate >= self.config.pass_threshold
+        metrics_summary = summarize_metrics(all_results)
 
-        logger.debug(f"MC complete: {passed_count}/{total} passed ({pass_rate:.1%})")
+        logger.info(f"✨ Monte Carlo simulation completed in {elapsed:.2f}s ({total} iterations)")
+        logger.info(f"📊 Pass Rate: {pass_rate:.1%} ({'PASSED' if passed else 'FAILED'})")
 
         return MCResult(
-            passed=pass_rate >= self.config.pass_threshold,
+            passed=passed,
             pass_rate=pass_rate,
             iterations_run=total,
             elapsed_time=elapsed,
-            metrics_summary=summarize_metrics(all_results),
+            metrics_summary=metrics_summary,
             detailed_results=all_results,
         )
 

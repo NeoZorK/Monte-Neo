@@ -24,7 +24,13 @@ struct BacktestResult {
 // PIMPL to keep Metal/C++ headers clean and avoid Objective-C in public headers
 class MetalBacktestBridge {
 public:
-    MetalBacktestBridge();
+    enum class Driver {
+        CPP,
+        OBJC,
+        SWIFT
+    };
+
+    MetalBacktestBridge(Driver driver = Driver::CPP);
     ~MetalBacktestBridge();
 
     bool init();
@@ -35,9 +41,12 @@ public:
         int n_scenarios
     );
 
+    Driver get_driver() const { return driver_; }
+
 private:
     class Impl;
     std::unique_ptr<Impl> pimpl;
+    Driver driver_;
 };
 
 } // namespace monte_neo

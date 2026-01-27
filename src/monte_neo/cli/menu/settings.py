@@ -30,7 +30,7 @@ def settings_workflow(menu: InteractiveMenu) -> None:
         {"name": f"🏁 MC Threshold ({menu._mc_pass_threshold:.0%})", "value": "mc_threshold"},
         {"name": f"🚀 Use GPU ({'✅' if menu._use_gpu else '❌'})", "value": "use_gpu"},
         {"name": f"💎 GPU Precision ({menu._gpu_precision})", "value": "gpu_precision"},
-        {"name": f"⚡ Metal Shaders C++ ({'✅' if menu._use_metal_cpp else '❌'})", "value": "use_metal_cpp"},
+        {"name": f"⚡ Metal Driver ({menu._metal_driver.upper()})", "value": "metal_driver"},
         {"name": "🔙 Back", "value": "back"},
     ]
 
@@ -91,5 +91,11 @@ def settings_workflow(menu: InteractiveMenu) -> None:
         ]
         val = questionary.select("Select GPU Precision:", choices=prec_choices, style=CUSTOM_STYLE).ask()
         if val: menu._gpu_precision = val
-    elif choice == "use_metal_cpp":
-        menu._use_metal_cpp = not menu._use_metal_cpp
+    elif choice == "metal_driver":
+        driver_choices = [
+            {"name": "Clang C++ (Default, Optimized)", "value": "cpp"},
+            {"name": "Objective-C++ (Native, Fast)", "value": "objc"},
+            {"name": "Apple Swift (Modern, Safe)", "value": "swift"},
+        ]
+        val = questionary.select("Select Metal Driver:", choices=driver_choices, style=CUSTOM_STYLE).ask()
+        if val: menu._metal_driver = val
