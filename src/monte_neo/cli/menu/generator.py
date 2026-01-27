@@ -104,6 +104,9 @@ def _run_generation(menu: InteractiveMenu, symbol: str, timeframe: str, iteratio
         use_mc_block_bootstrap="block_bootstrap" in menu._mc_methods,
         use_sequential_mc=sequential,
         mc_pass_threshold=getattr(menu, "_mc_pass_threshold", 0.80),
+        use_gpu=getattr(menu, "_use_gpu", True),
+        gpu_precision=getattr(menu, "_gpu_precision", "float32"),
+        use_metal_cpp=getattr(menu, "_use_metal_cpp", False),
     )
 
     generator = IndicatorGenerator(config)

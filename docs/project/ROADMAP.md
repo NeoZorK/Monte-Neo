@@ -1,57 +1,39 @@
-# 🗺️ Monte-Neo Roadmap (v0.0.3)
-
-## Version 0.0.2 - Completed
-
-- [x] Project architecture and folder structure
-- [x] Basic OHLCV downloader for Binance
-- [x] Initial Monte Carlo Engine (Shuffling, Noise)
-- [x] Basic Metrics (Profit Factor, Winrate)
-- [x] Interactive CLI Menu
-- [x] Sensitivity analysis (Parameter ±10%)
-- [x] Walk-forward analysis
-- [x] Numba & C++ accelerated metrics
-- [x] Unit and integration test suite (uv + pytest)
-- [x] Dockerization and docker-compose
+# 🗺️ Monte-Neo Roadmap (v0.0.4)
 
 ## Version 0.0.3 - Completed (Performance, Workflows & Trust)
 
-### 1. High-Performance Core (>300k ops/sec)
-- [x] **GPU/Metal Acceleration**: Implement `gpu_core` using MLX (Apple Silicon) or Metal Shaders for massive parallelization of Monte Carlo simulations.
-- [x] **Benchmark Suite**: Achieve and verify >300,000 operations/sec throughput (Achieved ~780k/sec).
+- [x] **GPU/Metal Acceleration**: Initial implementation using MLX (Apple Silicon).
+- [x] **Benchmark Suite**: Verified high-throughput throughput.
+- [x] **Sequential "Wizard" Mode**: Interactive step-by-step Monte Carlo validation.
+- [x] **Discovery Proof**: Enhanced visualization and robustness certificates.
 
-### 2. Sequential "Wizard" Mode
-- [x] **Interactive Step-by-Step**: "Sequential Indicator Generator" mode where MC methods run one by one.
-- [x] **Detailed Feedback Loop**: After each MC step (e.g., Shuffling), pause and show:
-    - Exact pass rate (e.g., "Survived 950/1000 shuffles").
-    - Interpretation (e.g., "Strategy is robust against trend removal").
-    - Actionable advice for the next step.
+## Version 0.0.4 - Extreme Performance & Metal Core (Current)
 
-### 3. "Trust the System" Visualization
-- [x] **Discovery Proof**: Explicitly demonstrate the *search* and *validation* process. Show that the final indicator is a "survivor" of rigorous stress testing.
-- [x] **Robustness Certificate**: Final report explaining *why* the indicator is production-ready (e.g., "Profitability maintained across 5 market regimes").
+### 1. Hardware-Level Optimization
+- [ ] **Float8 Precision Support**: Implement float8 (E4M3/E5M2) support for massive memory bandwidth savings and increased throughput during Monte Carlo simulations.
+- [ ] **Direct Metal Shaders (C++)**: Move core simulation kernels from MLX to custom Metal Shaders (C++) for maximum control over Apple Silicon hardware.
+- [ ] **Optimized Memory Access**: Implement tiling and memory coalescing in C++/Metal kernels.
 
-### 4. Custom Strategy Lab ("Bring Your Own Formula")
-- [x] **Custom Formula Menu**: New menu option "🧪 Test Custom Formula".
-- [x] **Template System**: Provide `user_indicators/template.py` with working examples for users to plug in their logic.
-- [x] **Full Diagnostic Suite**:
-    - Run user's formula against all enabled Monte Carlo methods.
-    - Check for Overfitting (Training vs Test divergence).
-    - Check for Robustness (Noise/Parameter sensitivity).
-- [x] **Educational Report**: Generate a detailed "Health Check" for the user's formula:
-    - "Good": Stable parameters, high win rate.
-    - "Needs Work": Fails walk-forward, high drawdown in noise tests.
-    - Explanation of each MC method used on *their* specific formula.
+### 2. Production Readiness & Logic
+- [ ] **Advanced Sequential Logic**: Fix and improve Sequential MC flow to ensure all tests are passed sequentially with hard gates.
+- [ ] **Production Readiness Scoring**: Implement a "Production Score" based on MC survivability, walk-forward efficiency, and parameter stability.
+- [ ] **Actionable Production Advice**: Detailed reports on what exactly needs to be improved for an indicator to be "Production Ready" (e.g., "Increase stop-loss distance to survive noise tests").
 
-## Version 0.0.4 - Advanced Analytics
+### 3. Settings & Configuration
+- [ ] **Hardware Toggle Menu**: Add CLI settings to toggle between CPU (Numba), GPU (MLX), and Extreme GPU (Metal C++).
+- [ ] **Precision Selection**: Menu option to choose between float32, float16, and float8 execution modes.
 
-- [ ] Correlation analysis between indicators
-- [ ] Regime detection (Trend vs Range)
-- [ ] Machine learning integration for candidate selection
+## Version 0.0.5 - Advanced Analytics & Intelligence
 
-## Version 0.0.5 - High Performance & Cloud
+- [ ] **Correlation Analysis**: Detect and eliminate redundant indicator signals.
+- [ ] **Regime Detection**: Automatic detection of Trend vs Range markets.
+- [ ] **ML Candidate Selection**: Use light gradient boosting or simple neural nets to pre-screen indicator candidates before MC testing.
 
-- [ ] Real-time data streaming (WebSockets)
-- [ ] Cloud deployment templates (AWS/GCP)
+## Version 0.0.6 - Cloud & Scale
+
+- [ ] **Real-time Data Streaming**: WebSockets integration for live validation.
+- [ ] **Distributed MC**: Run Monte Carlo across multiple machines/containers.
+- [ ] **Cloud Deployment**: AWS/GCP templates for high-performance scaling.
 
 ---
 
@@ -62,5 +44,6 @@
 | v0.0.1 | Initial Alpha Setup | ✅ |
 | v0.0.2 | Robustness Core & Tests | ✅ |
 | v0.0.3 | Performance & Workflows | ✅ |
-| v0.0.4 | Advanced Analytics | 📅 |
-| v0.0.5 | High Performance & Cloud | 📅 |
+| v0.0.4 | Extreme Performance & Metal | 🏗️ |
+| v0.0.5 | Advanced Analytics | 📅 |
+| v0.0.6 | Cloud & Scale | 📅 |

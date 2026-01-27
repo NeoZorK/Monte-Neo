@@ -1,4 +1,4 @@
-# 🎲 Monte-Neo v0.0.3
+# 🎲 Monte-Neo v0.0.4
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -18,7 +18,7 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/project-structure.md - Deep dive into physical directory layout
 - docs/project/features.md - Detailed overview of framework features
 - docs/project/dynamic_indicators.md - Explanation of dynamic indicator generation
-- docs/project/ROADMAP.md - Development roadmap and milestones
+- docs/project/ROADMAP.md - Development roadmap and milestones (v0.0.4)
 - docs/project/tech-stack.md - Technology stack and performance targets
 
 ### Setup & Configuration (docs/setup/)
@@ -46,7 +46,7 @@ A simplified guide to the Monte-Neo file structure.
 - docker/docker-compose.yml - Docker Compose service definitions
 
 ### Source Code (src/monte_neo/)
-- src/monte_neo/_version.py - Central version management (v0.0.3)
+- src/monte_neo/_version.py - Central version management (v0.0.4)
 - src/monte_neo/__init__.py - Main package entry point
 
 #### Core Engine (core/)
@@ -60,6 +60,7 @@ A simplified guide to the Monte-Neo file structure.
 - src/monte_neo/core/gpu_scenarios.py - GPU scenario backtesting helper
 - src/monte_neo/core/optimizer.py - Parameter optimization strategies
 - src/monte_neo/core/validator.py - Overfitting and robustness validation
+- src/monte_neo/core/acceleration/ - Directory for Metal/C++ accelerators (v0.0.4)
 
 #### Data Handling (data/)
 - src/monte_neo/data/__init__.py - Data module exports
@@ -71,6 +72,9 @@ A simplified guide to the Monte-Neo file structure.
 #### Monte Carlo (monte_carlo/)
 - src/monte_neo/monte_carlo/__init__.py - MC module exports
 - src/monte_neo/monte_carlo/engine.py - Main simulation execution engine
+- src/monte_neo/monte_carlo/types.py - MC configuration and result types
+- src/monte_neo/monte_carlo/sequential.py - Sequential MC "Wizard" runner
+- src/monte_neo/monte_carlo/scenarios.py - Scenario generation logic
 - src/monte_neo/monte_carlo/shuffler.py - Return and block shuffling methods
 - src/monte_neo/monte_carlo/noise.py - Noise injection and slippage simulation
 - src/monte_neo/monte_carlo/sensitivity.py - Parameter sensitivity analysis

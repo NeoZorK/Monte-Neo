@@ -77,6 +77,9 @@ class IndicatorGenerator:
             use_sl_tp=self.config.use_sl_tp,
             sl_pct=self.config.stop_loss_pct,
             tp_pct=self.config.take_profit_pct,
+            use_gpu=self.config.use_gpu,
+            gpu_precision=self.config.gpu_precision,
+            use_metal_cpp=self.config.use_metal_cpp,
         )
         mc_engine = MonteCarloEngine(mc_config, executor=self.executor)
 
