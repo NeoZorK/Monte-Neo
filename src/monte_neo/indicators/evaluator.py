@@ -70,13 +70,25 @@ def evaluate_fast_signals(compiled_code: Callable, data: pd.DataFrame | np.ndarr
         }
         n_rows = len(data)
     else:
-        fast_data = {
-            "open": pd.Series(data[:, 0]),
-            "high": pd.Series(data[:, 1]),
-            "low": pd.Series(data[:, 2]),
-            "close": pd.Series(data[:, 3]),
-            "volume": pd.Series(data[:, 4]),
-        }
+        # If it's a numpy array, check dimensions
+        if data.ndim == 1:
+            # Only close prices provided (typical for MC scenarios)
+            fast_data = {
+                "open": pd.Series(data),
+                "high": pd.Series(data),
+                "low": pd.Series(data),
+                "close": pd.Series(data),
+                "volume": pd.Series(np.ones_like(data)),
+            }
+        else:
+            # OHLCV provided
+            fast_data = {
+                "open": pd.Series(data[:, 0]),
+                "high": pd.Series(data[:, 1]),
+                "low": pd.Series(data[:, 2]),
+                "close": pd.Series(data[:, 3]),
+                "volume": pd.Series(data[:, 4]),
+            }
         n_rows = len(data)
 
     try:

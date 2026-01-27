@@ -62,3 +62,58 @@ def plot_metrics_summary(results: List[Dict[str, Any]]):
     
     plt.tight_layout()
     return fig
+
+def plot_stress_test_summary(stress_results: Dict[str, Any]):
+    """Plot a summary of stress test results."""
+    plt.figure(figsize=(10, 6))
+    
+    names = []
+    values = []
+    
+    # 1. Black Swan Impact
+    bs = stress_results.get("black_swan", {})
+    if bs:
+        names.append("Black Swan Ret")
+        values.append(bs.get("total_return", 0))
+        
+    # 2. Sensitivity
+    sens = stress_results.get("sensitivity", {})
+    if sens:
+        names.append("Sens. Std Var")
+        values.append(sens.get("std_return_variation", 0))
+        
+    # 3. Breaking Point
+    bp = stress_results.get("breaking_point", {})
+    if bp:
+        bp_val = bp.get("breaking_point_bps", 0)
+        if isinstance(bp_val, str) and ">" in bp_val:
+            bp_val = float(bp_val.replace(">", "").strip())
+        names.append("Break Pt (bps)/100") # Scaled for plotting
+        values.append(float(bp_val) / 100.0)
+        
+    plt.bar(names, values, color=['red', 'blue', 'green'])
+    plt.axhline(0, color='black', linewidth=1)
+    plt.title("Deep Stress Test Summary")
+    plt.ylabel("Metric Value")
+    plt.grid(True, alpha=0.3)
+    
+    return plt
+
+def plot_sensitivity_heatmap(sensitivity_results: Dict[str, Any]):
+    """Plot a heatmap of parameter sensitivity."""
+    grid = sensitivity_results.get("grid")
+    if not grid or not grid.get("matrix"):
+        return None
+        
+    plt.figure(figsize=(10, 8))
+    
+    matrix = np.array(grid["matrix"])
+    p1_vals = [f"{v:.2f}" for v in grid["p1_values"]]
+    p2_vals = [f"{v:.2f}" for v in grid["p2_values"]]
+    
+    sns.heatmap(matrix, annot=True, fmt=".2%", xticklabels=p2_vals, yticklabels=p1_vals, cmap="RdYlGn")
+    plt.title(f"Sensitivity: {grid['p1_name']} vs {grid['p2_name']}")
+    plt.xlabel(grid["p2_name"])
+    plt.ylabel(grid["p1_name"])
+    
+    return plt
