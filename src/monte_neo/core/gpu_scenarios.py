@@ -73,9 +73,9 @@ def run_scenarios_backtest(
 
         for i, df in enumerate(scenarios):
             l = len(df)
-            close_matrix[i, :l] = df["close"].values
-            high_matrix[i, :l] = df["high"].values
-            low_matrix[i, :l] = df["low"].values
+            close_matrix[i, :l] = df["close"].to_numpy().astype(np.float64)
+            high_matrix[i, :l] = df["high"].to_numpy().astype(np.float64)
+            low_matrix[i, :l] = df["low"].to_numpy().astype(np.float64)
             signal_matrix[i, :l] = normalize_signal_array(raw_signals[i], l).astype(np.int32)
 
         # 3. Run Batch Calculation (Multi-scenario version)
@@ -170,10 +170,11 @@ def run_scenarios_backtest(
         signal_list.append(normalize_signal_array(sigs, max_len))
 
     # Matrix: (S, T-1)
-    signal_matrix = mx.array(np.stack(signal_list))
+    signal_matrix_np = np.stack(signal_list)
+    signal_matrix_mx: Any = mx.array(signal_matrix_np.astype(np.int32))
 
     # 3. Massive GPU calc
-    strat_returns = signal_matrix * returns_matrix
+    strat_returns = signal_matrix_mx * returns_matrix
 
     # Vectorized metrics
     equity_curves = mx.exp(

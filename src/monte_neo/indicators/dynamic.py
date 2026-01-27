@@ -5,6 +5,7 @@ Allows for creation of indicators from source code strings.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 import numpy as np
@@ -22,7 +23,7 @@ class DynamicIndicator(BaseIndicator):
     def __init__(self, config: IndicatorConfig | None = None) -> None:
         super().__init__(config)
         self._parameters.setdefault("source_code", "data['close']")
-        self._compiled_code = None
+        self._compiled_code: Callable[..., Any] | None = None
 
     def __getstate__(self) -> dict[str, Any]:
         """Prepare for pickling by removing compiled code."""
@@ -95,7 +96,10 @@ class DynamicIndicator(BaseIndicator):
         
         # Pass numpy and pandas explicitly to the compiled function
         # Using global np and pd for speed
-        indicator_values = self._compiled_code(data, np, pd)
+        if self._compiled_code is not None:
+            indicator_values = self._compiled_code(data, np, pd)
+        else:
+            indicator_values = np.nan
 
         if callable(indicator_values) and not isinstance(
             indicator_values, (pd.Series, pd.DataFrame)

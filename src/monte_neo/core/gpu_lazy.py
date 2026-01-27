@@ -141,10 +141,11 @@ def backtest_lazy_scenarios(
             padded_signals.append(s)
             padded_returns.append(r)
 
-    signal_matrix = mx.array(np.stack(padded_signals))
+    signal_matrix_np = np.stack(padded_signals)
+    signal_matrix_mx: Any = mx.array(signal_matrix_np.astype(np.int32))
     returns_matrix = mx.array(np.stack(padded_returns))
 
-    strat_returns = signal_matrix * returns_matrix
+    strat_returns = signal_matrix_mx * returns_matrix
 
     equity_curves = mx.exp(
         mx.cumsum(mx.log1p(mx.clip(strat_returns, -0.9, 10.0)), axis=1)

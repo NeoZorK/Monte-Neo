@@ -153,9 +153,9 @@ class EvolutionEngine:
             try:
                 signals = ind.generate_signals(data)
                 metrics = self.metrics_calc.calculate_all(data, signals)
-                pf = metrics.get("profit_factor", 0)
-                dd = metrics.get("max_drawdown", 1.0)
-                trades = metrics.get("trade_count", 0)
+                pf = float(metrics.get("profit_factor", 0.0))
+                dd = float(metrics.get("max_drawdown", 1.0))
+                trades = int(metrics.get("trade_count", 0))
                 score = pf * (1.0 - dd) if trades >= self.config.min_trades else 0.0
                 final_scores.append((ind, score))
             except Exception:

@@ -36,6 +36,7 @@ class SymbolSelector:
         self.cols = 4  # Initial value, will be updated based on width
         self.col_width = 18 # Symbol width + padding
         self.search_text = ""
+        self.result: str | None = None
 
         # UI components
         self.search_field = TextArea(
@@ -74,7 +75,6 @@ class SymbolSelector:
             full_screen=False,
             mouse_support=True,
         )
-        self.result = None
 
     def _get_title(self) -> str:
         """Return dynamic title with counts."""
@@ -175,4 +175,5 @@ class SymbolSelector:
 
     def ask(self) -> str | None:
         """Run the selector and return the selected symbol."""
-        return self.app.run()
+        self.app.run()
+        return self.result
