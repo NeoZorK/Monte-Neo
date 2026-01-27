@@ -80,6 +80,37 @@ struct Indicators {
         }
     }
 
+    static float get_dynamic_signal(const device Candle* data, int i, int sub_type, float p2, float p3) {
+        if (sub_type == 0) { // Price > SMA
+            float sma = calculate_sma(data, i, (int)p2);
+            return (data[i].close > sma) ? 1.0f : -1.0f;
+        } else if (sub_type == 1) { // Price > Max
+            float rolling_max = calculate_max(data, i-1, (int)p2);
+            return (data[i].close > rolling_max) ? 1.0f : 0.0f;
+        } else if (sub_type == 2) { // Price < Min
+            float rolling_min = calculate_min(data, i-1, (int)p2);
+            return (data[i].close < rolling_min) ? -1.0f : 0.0f;
+        } else if (sub_type == 3) { // Diff > 0
+            float diff = data[i].close - data[i-(int)p2].close;
+            return (diff > 0.0f) ? 1.0f : -1.0f;
+        } else if (sub_type == 4) { // Price < SMA
+            float sma = calculate_sma(data, i, (int)p2);
+            return (data[i].close < sma) ? 1.0f : -1.0f;
+        } else if (sub_type == 5) { // SMA_f < SMA_s
+            float sma_fast = calculate_sma(data, i, (int)p2);
+            float sma_slow = calculate_sma(data, i, (int)p3);
+            return (sma_fast < sma_slow) ? 1.0f : -1.0f;
+        } else if (sub_type == 6) { // Diff < 0
+            float diff = data[i].close - data[i-(int)p2].close;
+            return (diff < 0.0f) ? 1.0f : -1.0f;
+        } else if (sub_type == 7) { // SMA_f > SMA_s
+            float sma_fast = calculate_sma(data, i, (int)p2);
+            float sma_slow = calculate_sma(data, i, (int)p3);
+            return (sma_fast > sma_slow) ? 1.0f : -1.0f;
+        }
+        return 0.0f;
+    }
+
     // Rolling Max
     static float calculate_max(const device Candle* data, int index, int period) {
         if (index < period - 1) return 0.0f;
@@ -144,6 +175,20 @@ kernel void backtest_kernel(
     float sum_sq_returns = 0.0f;
     int return_count = 0;
 
+    // Logic Op state (for strategy_type 4)
+    // p1: op_type (0: AND, 1: OR)
+    // p2: sub_type1
+    // p3: p2_1
+    // p4 (atr_p): p3_1
+    // p5 (sl_m): sub_type2
+    // p6 (tp_m): p2_2
+    // p7 (ts_m): p3_2
+    // Need to use more buffers or wider param layout for complex logic? 
+    // Let's use strategy_type 4 with a fixed layout for now.
+    
+    // Actually, let's keep it simple for now and use p2-p3 for first cond, p4-p5 for second? 
+    // No, let's just use strategy_type 4 as "Logic AND/OR of two dynamic conditions"
+
     // 3. Main Loop
     for (uint i = 1; i < total_candles; i++) {
         const device Candle& c = data[i];
@@ -179,29 +224,46 @@ kernel void backtest_kernel(
             // p2: period
             // p3: offset/threshold
             if (p1 == 0.0f) {
-                float sma = Indicators::calculate_sma(data, i, (int)p2);
-                signal_val = (c.close > sma) ? 1.0f : -1.0f;
+                signal_val = Indicators::get_dynamic_signal(data, i, 0, p2, p3);
             } else if (p1 == 1.0f) {
-                float rolling_max = Indicators::calculate_max(data, i-1, (int)p2);
-                signal_val = (c.close > rolling_max) ? 1.0f : 0.0f;
+                signal_val = Indicators::get_dynamic_signal(data, i, 1, p2, p3);
             } else if (p1 == 2.0f) {
-                float rolling_min = Indicators::calculate_min(data, i-1, (int)p2);
-                signal_val = (c.close < rolling_min) ? -1.0f : 0.0f;
+                signal_val = Indicators::get_dynamic_signal(data, i, 2, p2, p3);
             } else if (p1 == 3.0f) {
-                float diff = c.close - data[i-(int)p2].close;
-                signal_val = (diff > 0.0f) ? 1.0f : -1.0f;
+                signal_val = Indicators::get_dynamic_signal(data, i, 3, p2, p3);
             } else if (p1 == 4.0f) {
-                float sma = Indicators::calculate_sma(data, i, (int)p2);
-                signal_val = (c.close < sma) ? 1.0f : -1.0f;
+                signal_val = Indicators::get_dynamic_signal(data, i, 4, p2, p3);
             } else if (p1 == 5.0f) {
-                float sma_fast = Indicators::calculate_sma(data, i, (int)p2);
-                float sma_slow = Indicators::calculate_sma(data, i, (int)p3);
-                signal_val = (sma_fast < sma_slow) ? 1.0f : -1.0f;
+                signal_val = Indicators::get_dynamic_signal(data, i, 5, p2, p3);
             } else if (p1 == 6.0f) {
-                float diff = c.close - data[i-(int)p2].close;
-                signal_val = (diff < 0.0f) ? 1.0f : -1.0f;
+                signal_val = Indicators::get_dynamic_signal(data, i, 6, p2, p3);
             }
         }
+        else if (strategy_type == 4) {
+             // Complex Logic (4)
+             // Layout for type 4: [4, op_type, sub1, p2_1, sub2, p2_2, tp_m, ts_m]
+             // Fixed: atr_p=14.0, sl_m=1.5
+             float s1 = Indicators::get_dynamic_signal(data, i, (int)p1, p2, 0.0f);
+             float s2 = Indicators::get_dynamic_signal(data, i, (int)p3, params[scenario_id * 8 + 4], 0.0f);
+             
+             // op_type is in p1? No, p1 is sub1. Let's re-read layout.
+             // Layout: [4, op_type, sub1, p2_1, sub2, p2_2, tp_m, ts_m]
+             // params:  0,   1,      2,     3,    4,     5,    6,    7
+             float s1_real = Indicators::get_dynamic_signal(data, i, (int)p2, p3, 0.0f);
+             float s2_real = Indicators::get_dynamic_signal(data, i, (int)params[scenario_id * 8 + 4], params[scenario_id * 8 + 5], 0.0f);
+             
+             if (p1 == 0.0f) { // AND
+                 signal_val = (s1_real > 0 && s2_real > 0) ? 1.0f : ((s1_real < 0 && s2_real < 0) ? -1.0f : 0.0f);
+             } else { // OR
+                 signal_val = (s1_real > 0 || s2_real > 0) ? 1.0f : ((s1_real < 0 || s2_real < 0) ? -1.0f : 0.0f);
+             }
+             
+             // Overwrite SL/TP/TS/ATR for this mode as they were hijacked
+             atr_period = 14;
+             sl_mult = 1.5f;
+             tp_mult = params[scenario_id * 8 + 6];
+             ts_mult = params[scenario_id * 8 + 7];
+         }
 
         current_atr = Indicators::update_atr(c, prev_c, current_atr, atr_period, i);
 
