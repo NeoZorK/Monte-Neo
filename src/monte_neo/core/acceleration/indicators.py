@@ -25,36 +25,20 @@ class MLXSMA(MLXIndicator):
         self.weight = mx.full((1, period, 1), 1.0 / period)
 
     def compute(self, close: mx.array) -> mx.array:
-        # Input: (N, T) -> (N, T, 1)
-        x = close.reshape(*close.shape, 1)
-        
-        # Padding to keep size same?
-        # Standard SMA usually returns NaN for first P-1.
-        # Conv1d 'valid' reduces size. 'same' keeps size.
-        # We can use padding manually.
-        # Pad left with NaNs or just zeros?
-        # For signal gen, we usually ignore the start.
-        
-        # Conv1d
-        # We need to explicitly pad if we want to match alignment
-        # Pad (P-1) on left
-        pad_width = [(0,0), (self.period-1, 0), (0,0)]
-        # MLX pad syntax might differ, let's stick to valid and then pad result
-        
-        # Using valid convolution
+        """Compute SMA using 1D convolution."""
+        if close.dtype != mx.float32 and close.dtype != mx.float16:
+            close = close.astype(mx.float32)
+        # Reshape for conv1d: [batch, length, channels]
+        # x is [scenarios, time] -> [scenarios, time, 1]
+        x = close[..., None]
         out = mx.conv1d(x, self.weight, stride=1, padding=0)
-        # out shape: (N, T - P + 1, 1)
-        
-        # We need to prepend P-1 NaNs/Zeros to match T
-        # (N, T, 1)
-        num_scenarios, time_steps = close.shape
-        result_len = out.shape[1]
-        missing = time_steps - result_len
-        
-        if missing > 0:
-            prefix = mx.zeros((num_scenarios, missing, 1)) # Use 0 for now
-            out = mx.concatenate([prefix, out], axis=1)
-            
+        # Pad beginning with zeros or NaNs to keep same length
+        pad_size = self.period - 1
+        # In MLX we can't easily pad with NaNs for convolution, 
+        # but we can pad with the first value or zeros.
+        # Let's pad with first value to avoid signal spikes at start
+        padding = mx.repeat(x[:, :1, :], pad_size, axis=1)
+        out = mx.concatenate([padding, out], axis=1)
         return out.squeeze(-1)
 
 class MLXCrossStrategy:
@@ -96,6 +80,16 @@ class MLXSMACrossStrategy:
         fast = self.fast_sma.compute(close)
         slow = self.slow_sma.compute(close)
         
-        # Vectorized logic
-        signals = mx.where(fast > slow, 1, -1)
+        # State: 1 if fast > slow, else -1
+        state = mx.where(fast > slow, 1, -1)
+        
+        # Transitions: state[i] - state[i-1]
+        # But we want 1 or -1 at the point of change.
+        
+        # Shift state by 1
+        prev_state = mx.concatenate([state[:, :1], state[:, :-1]], axis=1)
+        
+        # Signal is non-zero only where state changed
+        signals = mx.where(state != prev_state, state, 0)
+        
         return signals

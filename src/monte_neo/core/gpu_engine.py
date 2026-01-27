@@ -47,8 +47,12 @@ class MLXBacktestEngine:
         use_sl_tp: bool = False,
         sl_pct: float = 0.0,
         tp_pct: float = 0.0,
+        **kwargs: Any,
     ) -> list[dict[str, Any]]:
         """Run full simulation (Data -> Scenarios -> Signals -> Backtest) on GPU."""
+        
+        # Extract kwargs
+        std_dev = kwargs.get("std_dev", 0.01)
         
         # 1. Get MLX Strategy
         mlx_strategy = indicator.to_mlx_representation()
@@ -56,13 +60,61 @@ class MLXBacktestEngine:
             raise ValueError("Indicator does not support Pure GPU execution")
             
         if use_sl_tp:
-            # Current Pure GPU engine doesn't support SL/TP path dependency efficiently yet
-            # Fallback or raise?
-            # For now, let's assume we don't support SL/TP in this ultra-fast mode
-            # OR we implement a vectorized approximation.
-            # But the user asked for speed. SL/TP is slow.
-            pass
+            # Pure GPU engine doesn't support SL/TP path dependency yet.
+            # We must use Numba batch calculation.
             
+            # 1. Generate Scenarios on GPU
+            from monte_neo.core.acceleration.tensor_ops import to_tensor
+            tensors = to_tensor(data)
+            close = tensors["close"]
+            
+            # Note: For now we only support shuffling/noise in this path
+            if method == "shuffling":
+                from monte_neo.core.acceleration.tensor_ops import TensorOps
+                scenarios = TensorOps.generate_shuffle_scenarios(close, n_scenarios, seed=seed)
+            else:
+                from monte_neo.core.acceleration.tensor_ops import TensorOps
+                scenarios = TensorOps.generate_noise_scenarios(close, n_scenarios, std_dev=std_dev, seed=seed)
+                
+            # 2. Generate Signals on GPU
+            signals = mlx_strategy.generate_signals(scenarios)
+            
+            # 3. Move to CPU for SL/TP Numba calc
+            # We need high/low for SL/TP, but scenarios only have close.
+            # This is a limitation: Pure GPU scenarios currently only simulate 'close'.
+            # To support SL/TP correctly in scenarios, we'd need to simulate OHLC.
+            # For now, we'll use close as high/low proxy or warn.
+            
+            scenarios_np = np.array(scenarios).astype(np.float64)
+            signals_np = np.array(signals).astype(np.int32)
+            
+            # Use scenarios_np as high/low proxy if they are not available
+            # (In shuffling/noise scenarios, we typically only have 'close')
+            batch_metrics = MetricsCalculator.calculate_batch_multi_price_fast(
+                scenarios_np, # prices
+                scenarios_np, # highs
+                scenarios_np, # lows
+                signals_np,
+                use_sl_tp,
+                sl_pct,
+                tp_pct
+            )
+            
+            results = []
+            for i in range(n_scenarios):
+                results.append({
+                    "total_return": float(batch_metrics[i, 0]),
+                    "max_drawdown": float(batch_metrics[i, 1]),
+                    "profit_factor": float(batch_metrics[i, 2]),
+                    "metrics": {
+                        "total_return": float(batch_metrics[i, 0]),
+                        "max_drawdown": float(batch_metrics[i, 1]),
+                        "profit_factor": float(batch_metrics[i, 2]),
+                        "trade_count": int(batch_metrics[i, 3]),
+                    }
+                })
+            return results
+
         # 2. Run Simulation
         # Note: GpuAccelerationEngine handles batching
         results = self.pure_gpu_engine.run_simulation(
