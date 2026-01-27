@@ -97,11 +97,11 @@ class BinanceDownloader:
                 klines.extend(batch)
                 last_close = int(batch[-1][6])
                 next_start = last_close + 1
-                
+
                 # Compliance with Binance rate limits (small delay between batches)
                 if len(batch) >= 1000:
                     time.sleep(0.1) # 100ms delay between 1000-candle batches
-                
+
                 if next_start <= current_start:
                     break
                 current_start = next_start

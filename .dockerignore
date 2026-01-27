@@ -1,0 +1,20 @@
+# Docker ignore
+.git
+.pytest_cache
+.coverage
+htmlcov
+coverage_html
+.mypy_cache
+.ruff_cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv
+env
+venv
+profile_stats.txt
+data/*.parquet
+data/*.csv
+!data/sample.parquet

@@ -48,39 +48,39 @@ def backtest_lazy_scenarios(
     if use_sl_tp:
         # Optimization: Use parallelized batch Numba for SL/TP on multiple scenarios
         # This is much faster than the previous Python loop
-        
+
         # 1. Extract valid results (sigs, rets, ohlc)
         valid_data = [res for res in raw_results if res is not None]
         if not valid_data:
             return []
-            
+
         # 2. Prepare Data and Signal Matrix
         max_len = max(len(res[2]) for res in valid_data)
-        
+
         close_matrix = np.zeros((len(valid_data), max_len), dtype=np.float64)
         high_matrix = np.zeros((len(valid_data), max_len), dtype=np.float64)
         low_matrix = np.zeros((len(valid_data), max_len), dtype=np.float64)
         signal_matrix = np.zeros((len(valid_data), max_len), dtype=np.int32)
-        
+
         for i, (sigs, _, ohlc) in enumerate(valid_data):
             l = len(ohlc)
             # ohlc is [open, high, low, close]
             high_matrix[i, :l] = ohlc[:, 1]
             low_matrix[i, :l] = ohlc[:, 2]
             close_matrix[i, :l] = ohlc[:, 3]
-            
+
             # Normalize signals
             if hasattr(sigs, "to_numpy"):
                 s_arr = sigs["signal"].to_numpy() if "signal" in sigs.columns else sigs.to_numpy().reshape(-1)
             else:
                 s_arr = np.asarray(sigs).reshape(-1)
-            
+
             s_arr = s_arr.astype(np.int32, copy=False)
             if s_arr.size >= l:
                 signal_matrix[i, :l] = s_arr[:l]
             else:
                 signal_matrix[i, :s_arr.size] = s_arr
-            
+
         # 3. Run Batch Calculation
         batch_metrics = MetricsCalculator.calculate_batch_multi_price_fast(
             close_matrix,
@@ -91,14 +91,14 @@ def backtest_lazy_scenarios(
             sl_pct,
             tp_pct
         )
-        
+
         results = []
         for i in range(len(valid_data)):
             total_return = float(batch_metrics[i, 0])
             max_dd = float(batch_metrics[i, 1])
             pf = float(batch_metrics[i, 2])
             trade_count = int(batch_metrics[i, 3])
-            
+
             results.append({
                 "total_return": total_return,
                 "max_drawdown": max_dd,

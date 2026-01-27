@@ -5,13 +5,11 @@ from __future__ import annotations
 import time
 from typing import TYPE_CHECKING
 
-import numpy as np
 import pandas as pd
-
 from rich.console import Console
 from rich.table import Table
 
-from monte_neo.monte_carlo.types import MCStepResult, MCResult
+from monte_neo.monte_carlo.types import MCResult, MCStepResult
 
 if TYPE_CHECKING:
     from monte_neo.indicators.base import BaseIndicator
@@ -54,7 +52,7 @@ class SequentialMCRunner:
         start_time = time.time()
         step_results = []
         all_passed = True
-        
+
         # Define methods in requested order
         methods = [
             ("Walk-Forward Analysis", "walk_forward"),
@@ -66,7 +64,7 @@ class SequentialMCRunner:
 
         # Use rich table for sequential output if it's the main display
         console.print(f"\n[bold yellow]🔍 Sequential MC Validation for: {indicator.name}[/]")
-        
+
         table = Table(title="Monte Carlo Steps", show_header=True, header_style="bold magenta")
         table.add_column("Method", style="cyan")
         table.add_column("Pass Rate", justify="right")
@@ -87,7 +85,7 @@ class SequentialMCRunner:
             # Update output
             status = "[green]PASSED[/]" if step_result.passed else "[red]FAILED[/]"
             table.add_row(display_name, f"{step_result.pass_rate:.1%}", status)
-            
+
             # Print current state
             console.clear()
             console.print(f"\n[bold yellow]🔍 Sequential MC Validation for: {indicator.name}[/]")
@@ -143,7 +141,7 @@ class SequentialMCRunner:
             sl_pct=self.engine.config.sl_pct,
             tp_pct=self.engine.config.tp_pct,
         )
-        
+
         passed_count = sum(1 for r in results if r["passed"])
         pass_rate = passed_count / len(results) if results else 0.0
         passed = pass_rate >= self.engine.config.pass_threshold
@@ -175,13 +173,13 @@ class SequentialMCRunner:
 
         pass_rate = report["average_stability"]
         passed = report["overall_stable"]
-        
+
         summary = {
             "stability_score": {"mean": pass_rate},
             "stable_params": {"mean": report["stable_parameters"]},
             "total_params": {"mean": report["total_parameters"]},
         }
-        
+
         advice = self._generate_advice("Sensitivity Analysis", pass_rate, summary)
 
         return MCStepResult(
@@ -206,10 +204,10 @@ class SequentialMCRunner:
             if method_name == "Sensitivity Analysis":
                 return "Parameters are well-tuned and stable. Not over-optimized for specific values."
             return "Strategy passed this stage with high confidence."
-        
+
         if pass_rate >= 0.80:
             return f"Strategy is mostly stable but shows some weakness in {method_name}. Consider slight adjustments."
-        
+
         if method_name == "Walk-Forward Analysis":
             return "Strategy fails to maintain performance across different time periods. Risk of over-fitting to specific dates."
         if method_name == "Block Bootstrap":
@@ -220,5 +218,5 @@ class SequentialMCRunner:
             return "Strategy is very sensitive to price noise. Might fail in real-market execution with slippage."
         if method_name == "Sensitivity Analysis":
             return "High sensitivity to parameter changes. Likely over-optimized (curve-fitted)."
-            
+
         return "Strategy failed to meet robustness criteria for this method."

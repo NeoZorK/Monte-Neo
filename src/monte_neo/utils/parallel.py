@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Callable, Iterable
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from typing import Any
 
 from monte_neo.utils.logger import get_logger
@@ -61,7 +61,7 @@ class ParallelExecutor:
                         future.cancel()
                 except Exception:
                     pass
-            
+
             # Use wait=False to avoid hanging on exit
             # cancel_futures=True is supported in Python 3.9+
             try:
@@ -69,7 +69,7 @@ class ParallelExecutor:
             except TypeError:
                 # Fallback for older Python versions
                 self._pool.shutdown(wait=False)
-            
+
             self._pool = None
 
     def map(
@@ -120,7 +120,7 @@ class ParallelExecutor:
 
                 # Wait for some futures to complete with a small timeout to allow checking _shutdown_requested
                 done, pending = as_completed_with_timeout(pending, timeout=0.1)
-                
+
                 for future in done:
                     idx = futures_map[future]
                     try:

@@ -1,11 +1,14 @@
 
 import time
+
 import numpy as np
 import pandas as pd
-from monte_neo.indicators.technical import SMAIndicator, RSIIndicator, MACDIndicator
+
 from monte_neo.indicators.dynamic import DynamicIndicator
-from monte_neo.utils.parallel import ParallelExecutor
+from monte_neo.indicators.technical import MACDIndicator, RSIIndicator, SMAIndicator
 from monte_neo.monte_carlo.workers import run_indicator_batch
+from monte_neo.utils.parallel import ParallelExecutor
+
 
 def generate_data(n=1000):
     dates = pd.date_range(start="2023-01-01", periods=n, freq="h")
@@ -20,7 +23,7 @@ def generate_data(n=1000):
 
 def benchmark_indicator(name, indicator_class, data, n_iterations=2000, **kwargs):
     print(f"Benchmarking {name}...")
-    
+
     # create instances
     indicators = [indicator_class() for _ in range(n_iterations)]
     for ind in indicators:
@@ -32,14 +35,14 @@ def benchmark_indicator(name, indicator_class, data, n_iterations=2000, **kwargs
     for ind in indicators:
         ind.generate_signals_fast(data)
     end_time = time.time()
-    
+
     duration = end_time - start_time
     ops_sec = n_iterations / duration
     print(f"  Sequential Mode: {ops_sec:.2f} ops/sec")
-    
+
     if ops_sec < 2000:
         print(f"  WARNING: Sequential mode for {name} is below 2000 ops/sec!")
-    
+
     # 2. Parallel Mode (Executor)
     # We use run_indicator_batch to simulate what GPU engine does
     start_time = time.time()
@@ -49,33 +52,33 @@ def benchmark_indicator(name, indicator_class, data, n_iterations=2000, **kwargs
         chunk_size = max(1, n_iterations // 4)
         chunks = [indicators[i:i+chunk_size] for i in range(0, n_iterations, chunk_size)]
         tasks = [(chunk, data) for chunk in chunks]
-        
+
         results = executor.map(run_indicator_batch, tasks)
     end_time = time.time()
-    
+
     duration = end_time - start_time
     ops_sec_par = n_iterations / duration
     print(f"  Parallel Mode: {ops_sec_par:.2f} ops/sec")
-    
+
     return ops_sec, ops_sec_par
 
 def main():
     data = generate_data(1000)
-    
+
     results = {}
-    
+
     # SMA
     sma_ops, sma_par_ops = benchmark_indicator("SMA", SMAIndicator, data)
     results["SMA"] = sma_ops
-    
+
     # RSI
     rsi_ops, rsi_par_ops = benchmark_indicator("RSI", RSIIndicator, data)
     results["RSI"] = rsi_ops
-    
+
     # MACD
     macd_ops, macd_par_ops = benchmark_indicator("MACD", MACDIndicator, data)
     results["MACD"] = macd_ops
-    
+
     # Dynamic
     # For dynamic, we need to set source code
     # We create a factory/lambda because we need to set param after init
@@ -85,7 +88,7 @@ def main():
         ind = DynamicIndicator()
         ind._parameters["source_code"] = "data['close'] > data['close'].shift(1)"
         indicators.append(ind)
-        
+
     # Serial Dynamic
     start_time = time.time()
     for ind in indicators:
@@ -94,10 +97,10 @@ def main():
     duration = end_time - start_time
     dyn_ops = 2000 / duration
     print(f"  Sequential Mode: {dyn_ops:.2f} ops/sec")
-    
+
     if dyn_ops < 2000:
-        print(f"  WARNING: Sequential mode for Dynamic is below 2000 ops/sec!")
-        
+        print("  WARNING: Sequential mode for Dynamic is below 2000 ops/sec!")
+
     results["Dynamic"] = dyn_ops
 
     # Parallel Dynamic
@@ -108,7 +111,7 @@ def main():
         tasks = [(chunk, data) for chunk in chunks]
         results_par = executor.map(run_indicator_batch, tasks)
     end_time = time.time()
-    
+
     duration = end_time - start_time
     dyn_par_ops = 2000 / duration
     print(f"  Parallel Mode: {dyn_par_ops:.2f} ops/sec")
@@ -118,7 +121,7 @@ def main():
     for name, ops in results.items():
         if ops < 2000:
             failures.append(f"{name} ({ops:.2f} ops/sec)")
-            
+
     if failures:
         print("\nFAILED: The following indicators did not meet the 2000 ops/sec target in Sequential mode:")
         for f in failures:

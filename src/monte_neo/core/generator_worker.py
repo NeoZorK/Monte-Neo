@@ -2,12 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pandas as pd
-
 from monte_neo.indicators.base import BaseIndicator
 
 if TYPE_CHECKING:
-    from monte_neo.metrics.calculator import MetricsCalculator
+    pass
 
 
 def _search_worker(args: tuple) -> tuple[BaseIndicator | None, float]:

@@ -31,12 +31,12 @@ def download_data_workflow(menu: InteractiveMenu) -> None:
             menu.progress.start(100, "Fetching available symbols from Binance...")
             downloader = BinanceDownloader()
             symbols = downloader.get_available_symbols()
-            
+
             # Prioritize USDT pairs
             usdt_pairs = [s for s in symbols if s.endswith("USDT")]
             other_pairs = [s for s in symbols if not s.endswith("USDT")]
             menu._cached_symbols = sorted(usdt_pairs) + sorted(other_pairs)
-            
+
             menu.progress.update(100, 100, "Done")
             menu.progress.stop()
         except Exception as e:
@@ -71,15 +71,15 @@ def _process_download(menu: InteractiveMenu, symbol: str, timeframe: str) -> Non
     info = menu.storage.get_info(symbol, timeframe)
     if info:
         console.print(f"\n[yellow]⚠ Data for {symbol} {timeframe} already exists.[/]")
-        
+
         start = info.get('start_date')
         end = info.get('end_date')
-        
+
         # Format dates if they exist
         start_str = str(start).split(".")[0] if start else "Unknown"
         end_str = str(end).split(".")[0] if end else "Unknown"
         range_str = f"{start_str} ➜ {end_str}"
-        
+
         console.print(Panel(
             f"Rows:  {info.get('rows', 0):,}\n"
             f"Range: {range_str}\n"
@@ -105,7 +105,7 @@ def _process_download(menu: InteractiveMenu, symbol: str, timeframe: str) -> Non
         {"name": "3650 days (10 years)", "value": 3650},
         {"name": "Custom days...", "value": "custom"},
     ]
-    
+
     days_val = questionary.select(
         "Historical period:",
         choices=choices,
@@ -139,7 +139,7 @@ def _process_download(menu: InteractiveMenu, symbol: str, timeframe: str) -> Non
         )
         menu.progress.update(100, 100, "Done")
         menu.progress.stop()
-        
+
         menu.storage.save(data, symbol, timeframe)
 
         console.print(f"[green]✓ Downloaded {len(data)} candles[/]")

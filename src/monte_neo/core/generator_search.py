@@ -1,20 +1,19 @@
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from monte_neo.core.config import GeneratorResult
-from monte_neo.core.gpu_scenarios import normalize_signal_array
 from monte_neo.indicators.dynamic import DynamicIndicator
-from monte_neo.metrics.calculator import MetricsCalculator
 from monte_neo.monte_carlo.engine import MCConfig, MonteCarloEngine
 from monte_neo.monte_carlo.workers import init_worker_data
 from monte_neo.utils.logger import get_logger
 from monte_neo.utils.parallel import ParallelExecutor
 
 if TYPE_CHECKING:
-    from monte_neo.core.generator import IndicatorGenerator
     import pandas as pd
+
+    from monte_neo.core.generator import IndicatorGenerator
 
 logger = get_logger(__name__)
 
@@ -27,7 +26,7 @@ def run_search(generator: IndicatorGenerator, data: pd.DataFrame) -> GeneratorRe
     best_mc_details = {}
     iterations_tried = 0
     final_metrics = {}
-    
+
     mc_cache: dict[str, float] = {}
     fallback_indicator = None
     fallback_metrics = {}
@@ -84,7 +83,7 @@ def run_search(generator: IndicatorGenerator, data: pd.DataFrame) -> GeneratorRe
                 iterations_tried += 1
                 indicator = batch_indicators[i]
                 metrics = result["metrics"]
-                
+
                 # Fallback logic
                 perf_score = (metrics.get("total_return", 0) * metrics.get("profit_factor", 1)) / (metrics.get("max_drawdown", 0) + 0.01)
                 if perf_score > best_performance_score:
@@ -193,7 +192,7 @@ def _pre_generate_scenarios(generator: IndicatorGenerator, data: pd.DataFrame, t
             )
             if generator._progress_callback:
                 generator._progress_callback(0, total_iterations, "Generating shared MC scenarios...")
-            
+
             temp_engine = MonteCarloEngine(temp_mc_config)
             return temp_engine.scenario_builder.generate(data)
         except Exception as e:
@@ -220,10 +219,10 @@ def _run_evolution_phase(generator: IndicatorGenerator, data: pd.DataFrame, best
                 if evolved_best:
                     mc_result = generator._run_mc_validation(data, evolved_best)
                     mc_rate = mc_result.pass_rate
-                    
+
                     if mc_rate > 0:
                         generator._candidates.append((evolved_best, mc_rate))
-                        
+
                     if mc_rate > best_rate:
                         best_rate = mc_rate
                         best_ind = evolved_best
