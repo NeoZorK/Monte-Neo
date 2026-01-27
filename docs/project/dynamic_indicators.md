@@ -92,7 +92,7 @@ This process runs for multiple generations, constantly refining the population t
 
 ## Performance & High-Speed Execution
 
-To support the v0.0.3 goal of >300,000 operations per second, the `DynamicIndicator` implementation includes several performance-critical optimizations:
+To support the v0.0.4 goal of extreme performance (float8/Metal), the `DynamicIndicator` implementation includes several performance-critical optimizations:
 
 1. **Lightweight Data Injection**: Instead of passing full DataFrames to the evaluation engine, we use a dictionary of Pandas Series. This avoids the significant overhead of DataFrame creation and slicing during each search iteration.
 2. **Fast Signal Generation**: The `generate_signals_fast` method bypasses standard Pandas indexing where possible and uses direct NumPy boolean masks for signal generation.
