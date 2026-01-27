@@ -8,6 +8,7 @@ from monte_neo.monte_carlo.walk_forward import WalkForwardAnalyzer
 from monte_neo.metrics.calculator import MetricsCalculator
 from monte_neo.core.optimization.production_gate import ProductionGate
 from monte_neo.core.optimization.production_exporter import ProductionExporter
+from monte_neo.core.optimization.stress_tester import DeepStressTester
 from monte_neo.indicators.base import IndicatorConfig
 from monte_neo.indicators.dynamic import DynamicIndicator
 
@@ -49,10 +50,22 @@ def run_production_pipeline():
     print(f"  WFA Pass Rate: {wfo_result.pass_rate:.1%}")
     print(f"  WFA Efficiency (WFE): {wfo_result.efficiency_ratio:.2f}")
 
-    # 5. Production Gate (Robustness Check)
+    # 5. Deep Stress Testing
+    print("  --- Running Deep Stress Tests ---")
+    stress_tester = DeepStressTester(engine)
+    stress_results = {
+        "black_swan": stress_tester.black_swan_test(data, indicator),
+        "sensitivity": stress_tester.parameter_sensitivity_analysis(data, indicator),
+        "breaking_point": stress_tester.breaking_point_analysis(data, indicator)
+    }
+    print(f"  Breaking Point: {stress_results['breaking_point']['breaking_point_bps']} bps")
+    if "std_return_variation" in stress_results['sensitivity']:
+        print(f"  Parameter Sensitivity (std): {stress_results['sensitivity']['std_return_variation']:.4f}")
+
+    # 6. Production Gate (Robustness Check)
     print("  --- Evaluating Production Gate ---")
     gate = ProductionGate(min_wfe=0.6)
-    production_status = gate.evaluate(wfo_result, results)
+    production_status = gate.evaluate(wfo_result, results, stress_results)
     
     print(f"  Robustness Score: {production_status['robustness_score']}/100")
     print(f"  Production Ready: {production_status['is_production_ready']}")

@@ -99,6 +99,51 @@ class DynamicIndicator(BaseIndicator):
         """Get the source code string used for calculation."""
         return f"Dynamic: {self.source_code}"
 
+    def to_mlx_representation(self) -> Any | None:
+        """Convert to MLX representation for GPU execution.
+        
+        Tries to map common patterns to native MLX indicators for speed,
+        otherwise falls back to MLXDynamicStrategy.
+        """
+        import re
+        from monte_neo.core.acceleration.indicators import (
+            MLXSMA, MLXRSI, MLXRollingMax, MLXCrossStrategy, 
+            MLXSMACrossStrategy, MLXDynamicStrategy
+        )
+        
+        code = self.source_code.replace(" ", "")
+        
+        # 1. Price > SMA(P)
+        sma_pattern = r"data\['close'\]>data\['close'\]\.rolling\((\d+)\)\.mean\(\)"
+        match = re.search(sma_pattern, code)
+        if match:
+            return MLXCrossStrategy(MLXSMA(int(match.group(1))), mode="greater")
+            
+        # 2. Price < SMA(P)
+        sma_pattern_lt = r"data\['close'\]<data\['close'\]\.rolling\((\d+)\)\.mean\(\)"
+        match = re.search(sma_pattern_lt, code)
+        if match:
+            return MLXCrossStrategy(MLXSMA(int(match.group(1))), mode="less")
+            
+        # 3. SMA(F) > SMA(S)
+        sma_cross_pattern = r"data\['close'\]\.rolling\((\d+)\)\.mean\(\)>data\['close'\]\.rolling\((\d+)\)\.mean\(\)"
+        match = re.search(sma_cross_pattern, code)
+        if match:
+            return MLXSMACrossStrategy(int(match.group(1)), int(match.group(2)))
+            
+        # 4. RSI < Threshold
+        rsi_pattern_lt = r"rsi\(.*?,?(\d+)\)<([\d\.]+)"
+        match = re.search(rsi_pattern_lt, code)
+        if match:
+            # Re-use MLXCrossStrategy but with RSI as indicator
+            # Wait, MLXCrossStrategy compares close vs indicator.
+            # For RSI < 30, we need a different strategy or a constant indicator.
+            # For now, let's just use the fallback for RSI to be safe.
+            pass
+
+        # Fallback to general strategy
+        return MLXDynamicStrategy(self)
+
     def calculate(self, data: pd.DataFrame) -> pd.DataFrame:
         """Calculate indicator values using the generated code.
 
