@@ -42,7 +42,7 @@ struct Indicators {
 
     // Relative Strength Index (RSI)
     // Returns a value between 0 and 100
-    static float update_rsi(float current_close, float prev_close, float &avg_gain, float &avg_loss, int period, int step) {
+    static float update_rsi(float current_close, float prev_close, thread float &avg_gain, thread float &avg_loss, int period, int step) {
         float change = current_close - prev_close;
         float gain = max(0.0f, change);
         float loss = max(0.0f, -change);
@@ -86,7 +86,7 @@ kernel void backtest_kernel(
     device BacktestResult* results [[buffer(1)]],
     const device float* params [[buffer(2)]],
     uint scenario_id [[thread_position_in_grid]],
-    uint total_candles [[constant(0)]]
+    device uint& total_candles [[buffer(3)]]
 ) {
     // 1. Setup parameters
     float p1 = params[scenario_id * 5 + 0]; // RSI Period

@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# Compilation script for Monte-Neo Metal Engine
+# Requires: clang++, pybind11, macOS with Metal support
+
+OUTPUT_DIR="src/monte_neo/core/acceleration/cpp_metal"
+EXTENSION_NAME="metal_engine"
+PYTHON_INCLUDES=$(python3 -m pybind11 --includes)
+PYTHON_SUFFIX=$(python3-config --extension-suffix)
+
+echo "🚀 Compiling Metal Engine extension..."
+
+clang++ -O3 -shared -std=c++17 -undefined dynamic_lookup \
+    $PYTHON_INCLUDES \
+    -I$OUTPUT_DIR/include \
+    $OUTPUT_DIR/metal_bridge.mm \
+    $OUTPUT_DIR/bindings.mm \
+    -o $OUTPUT_DIR/$EXTENSION_NAME$PYTHON_SUFFIX \
+    -framework Metal -framework Foundation -framework QuartzCore
+
+if [ $? -eq 0 ]; then
+    echo "✅ Successfully compiled $EXTENSION_NAME$PYTHON_SUFFIX"
+else
+    echo "❌ Compilation failed"
+    exit 1
+fi
