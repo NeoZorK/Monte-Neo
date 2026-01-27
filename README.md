@@ -7,7 +7,8 @@ A professional Python framework for generating robust and profitable trading ind
 ## Features
 
 - 🎯 **Target-Based Generation**: Define metrics (Profit Factor, Sharpe, Max DD) and generate matching indicators
-- 🚀 **GPU Acceleration**: High-performance Metal shaders via MLX (>780k ops/sec)
+- 🚀 **Extreme GPU Acceleration**: Direct Metal Shaders (C++) and MLX support (>780k ops/sec on Apple Silicon)
+- 💎 **Low-Precision Computing**: Support for Float8 (E4M3/E5M2) for 4x memory bandwidth savings
 - 🧙 **Sequential "Wizard" Mode**: Step-by-step validation with detailed feedback and advice
 - 🧪 **Custom Strategy Lab**: Test your own formulas against professional stress tests
 - 📜 **Robustness Certificate**: Production-ready verification proof
@@ -29,8 +30,8 @@ uv run monte-neo
 # 3. Run Tests
 uv run pytest tests -n auto -W ignore
 
-# Alternatively, run full verification suite
-./scripts/run_full_test_suite.sh
+# 4. Verify Hardware Acceleration (Metal/Float8)
+python verify_hardware.py
 ```
 
 ## Running with Docker

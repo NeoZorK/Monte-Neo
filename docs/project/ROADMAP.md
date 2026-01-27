@@ -13,6 +13,7 @@
 - [x] **Float8 Precision Support**: Implement float8 (E4M3/E5M2) support for massive memory bandwidth savings and increased throughput during Monte Carlo simulations.
 - [x] **Direct Metal Shaders (C++)**: Move core simulation kernels from MLX to custom Metal Shaders (C++) for maximum control over Apple Silicon hardware.
 - [x] **Optimized Memory Access**: Implement tiling and memory coalescing in C++/Metal kernels.
+- [x] **Hardware Verification Suite**: Dedicated `verify_hardware.py` script to validate Float8 and Metal integration.
 
 ### 2. Production Readiness & Logic
 - [x] **Advanced Sequential Logic**: Fix and improve Sequential MC flow to ensure all tests are passed sequentially with hard gates.

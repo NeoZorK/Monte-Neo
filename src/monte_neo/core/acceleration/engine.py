@@ -47,6 +47,18 @@ class GpuAccelerationEngine:
                 format_type = "e4m3" if "e4m3" in precision else "e5m2"
                 self.float8_encoder = Float8Encoder(format_type)
         
+    def _reconstruct_strategy(self, mlx_strategy: Any) -> Any:
+        """Reconstruct MLX strategy from dictionary if needed."""
+        if not isinstance(mlx_strategy, dict):
+            return mlx_strategy
+            
+        strat_type = mlx_strategy.get("type")
+        if strat_type == "sma_crossover":
+            period = mlx_strategy.get("period", 20)
+            return MLXCrossStrategy(MLXSMA(period))
+        # Add more types as needed
+        return mlx_strategy
+
     def run_simulation(
         self,
         data: pd.DataFrame,
@@ -60,10 +72,13 @@ class GpuAccelerationEngine:
         
         Args:
             data: OHLCV DataFrame.
-            mlx_strategy: Strategy object with generate_signals(close) method.
+            mlx_strategy: Strategy object or dict representation.
             n_scenarios: Number of scenarios.
             method: 'shuffling' or 'noise'.
         """
+        # 0. Reconstruct strategy if needed
+        strategy = self._reconstruct_strategy(mlx_strategy)
+        
         # 1. To Tensor (Done once)
         tensors = to_tensor(data)
         close = tensors["close"]
@@ -81,8 +96,6 @@ class GpuAccelerationEngine:
                 close_np = np.array(close).astype(np.float32)
                 if self.precision == "float8_e4m3":
                     close_f8 = self.metal_engine.encode_float32_to_e4m3(close_np)
-                    # Note: For now we'll just use the metal engine to generate scenarios
-                    # In a full implementation, we'd have a specialized generate_shuffle_scenarios_metal
                     scenarios_f8 = self.metal_engine.generate_scenarios_e4m3(close_f8, current_batch, seed=seed+processed)
                     scenarios_np = self.metal_engine.decode_e4m3_to_float32(scenarios_f8)
                     scenarios = mx.array(scenarios_np)
@@ -98,7 +111,7 @@ class GpuAccelerationEngine:
                 scenarios = generate_shuffle_scenarios(close, current_batch, seed=seed+processed)
             
             # 3. Signals
-            signals = mlx_strategy.generate_signals(scenarios)
+            signals = strategy.generate_signals(scenarios)
             
             # 4. Backtest
             returns = (scenarios[:, 1:] / scenarios[:, :-1]) - 1.0
