@@ -137,6 +137,11 @@ def run_search(generator: IndicatorGenerator, data: pd.DataFrame) -> GeneratorRe
                 logger.info(f"Early stopping: found solution at iteration {batch_start + actual_batch_size}")
                 break
 
+            # Check for shutdown requested
+            if generator.executor and getattr(generator.executor, "_shutdown_requested", False):
+                logger.info("Shutdown requested. Stopping search.")
+                break
+
     except KeyboardInterrupt:
         logger.info("KeyboardInterrupt caught in generator. Cleaning up...")
         if generator._progress_callback:
@@ -161,7 +166,7 @@ def run_search(generator: IndicatorGenerator, data: pd.DataFrame) -> GeneratorRe
         generator.executor = None
 
     return _create_result(
-        generator, best_indicator, fallback_indicator, best_mc_rate, 
+        generator, best_indicator, fallback_indicator, best_mc_rate,
         best_mc_details, final_metrics, fallback_metrics, iterations_tried, start_time, data
     )
 

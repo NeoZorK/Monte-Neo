@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from monte_neo.indicators.base import BaseIndicator, IndicatorConfig
-from monte_neo.indicators.numba_funcs import ema_numba, macd_signals_numba
+from monte_neo.indicators.numba_funcs import macd_signals_numba
 from monte_neo.indicators.technical_lib import TechnicalIndicators
 
 

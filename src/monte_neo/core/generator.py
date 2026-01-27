@@ -151,7 +151,7 @@ class IndicatorGenerator:
             metrics_calc=self.metrics_calc,
             progress_callback=self._progress_callback
         )
-        return evolution.run(data, population)
+        return evolution.run(data, population, executor=self.executor)
 
     def estimate_time(self, data: pd.DataFrame) -> float:
         """Estimate generation time in minutes."""

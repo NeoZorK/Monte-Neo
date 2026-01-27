@@ -40,12 +40,13 @@ def benchmark():
 
     # Config similar to user
     config = GeneratorConfig(
-        max_iterations=100,  # Short run
+        max_iterations=1000,  # More iterations
         indicator_types=["dynamic"],
-        mc_iterations=1000,
-        use_mc_block_bootstrap=True,  # The slow part
-        target_metrics={"profit_factor": 0.5},  # Low target to ensure pass
-        population_size=10
+        mc_iterations=500,
+        use_mc_block_bootstrap=True,
+        target_metrics={"profit_factor": 0.1},  # Very low target to ensure it hits MC validation
+        population_size=10,
+        early_stopping=False # Force it to run more
     )
 
     data = generate_synthetic_data(2000)

@@ -17,6 +17,7 @@ from monte_neo.utils.ast_utils import crossover_trees
 
 if TYPE_CHECKING:
     from monte_neo.core.config import GeneratorConfig
+    from monte_neo.utils.parallel import ParallelExecutor
 
 
 class EvolutionEngine:
@@ -44,13 +45,15 @@ class EvolutionEngine:
     def run(
         self,
         data: pd.DataFrame,
-        initial_population: list[BaseIndicator]
+        initial_population: list[BaseIndicator],
+        executor: ParallelExecutor | None = None
     ) -> BaseIndicator | None:
         """Run evolutionary optimization.
 
         Args:
             data: OHLCV data.
             initial_population: Initial population.
+            executor: Optional parallel executor for signal generation.
 
         Returns:
             Best indicator found.
@@ -69,11 +72,19 @@ class EvolutionEngine:
 
             # Use parallel execution for fitness evaluation to reach >2000 ops/s
             # Note: Evolution handles batches of DynamicIndicators
-            tasks = [(ind, data) for ind in population]
-
-            # We assume the caller might have passed an executor, or we create a temp one
-            # For now, use single-threaded if no executor, but we should pass it
-            raw_signals = [ind.generate_signals(data) for ind in population]
+            if executor:
+                from monte_neo.monte_carlo.workers import run_indicator_batch
+                n_workers = executor.n_workers
+                chunk_size = max(1, len(population) // n_workers)
+                chunks = [population[i : i + chunk_size] for i in range(0, len(population), chunk_size)]
+                # Using None for data since initializer already set it in SHARED_DATA
+                tasks = [(chunk, None) for chunk in chunks]
+                batch_results = executor.map(run_indicator_batch, tasks)
+                raw_signals = []
+                for batch in batch_results:
+                    raw_signals.extend(batch)
+            else:
+                raw_signals = [ind.generate_signals_fast(data) for ind in population]
 
             # Prepare for Numba batch calculation
             signal_matrix = np.zeros((len(population), len(data)), dtype=np.int32)
