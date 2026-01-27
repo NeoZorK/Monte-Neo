@@ -93,9 +93,10 @@ def settings_workflow(menu: InteractiveMenu) -> None:
         if val: menu._gpu_precision = val
     elif choice == "metal_driver":
         driver_choices = [
-            {"name": "Clang C++ (Default, Optimized)", "value": "cpp"},
-            {"name": "Objective-C++ (Native, Fast)", "value": "objc"},
-            {"name": "Apple Swift (Modern, Safe)", "value": "swift"},
+            {"name": "Auto-Select (Recommended, Micro-Benchmark)", "value": "auto"},
+            {"name": "Clang C++ (Optimized)", "value": "cpp"},
+            {"name": "Objective-C++ (Native)", "value": "objc"},
+            {"name": "Apple Swift (Modern)", "value": "swift"},
         ]
         val = questionary.select("Select Metal Driver:", choices=driver_choices, style=CUSTOM_STYLE).ask()
         if val: menu._metal_driver = val
