@@ -6,6 +6,7 @@ from monte_neo.monte_carlo.sensitivity import SensitivityAnalyzer
 from monte_neo.monte_carlo.shuffler import DataShuffler
 from monte_neo.monte_carlo.types import MCConfig, MCResult, MCStepResult
 from monte_neo.monte_carlo.walk_forward import WalkForwardAnalyzer
+from monte_neo.monte_carlo.cscv import CSCVAnalyzer
 
 __all__ = [
     "MonteCarloEngine",
@@ -16,4 +17,5 @@ __all__ = [
     "NoiseInjector",
     "SensitivityAnalyzer",
     "WalkForwardAnalyzer",
+    "CSCVAnalyzer",
 ]

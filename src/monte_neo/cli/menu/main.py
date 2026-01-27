@@ -80,6 +80,7 @@ class InteractiveMenu:
             {"name": "🚀 Generate Indicator", "value": "generate"},
             {"name": "🔄 Sequential Generate Indicator", "value": "generate_sequential"},
             {"name": "🧪 Test Custom Formula", "value": "test_custom"},
+            {"name": "💼 Smart Portfolio", "value": "portfolio"},
             {"name": "📈 View Results", "value": "results"},
             {"name": "⚙️  Settings", "value": "settings"},
             {"name": "🔧 Hardware Configuration", "value": "hardware"},
@@ -107,6 +108,10 @@ class InteractiveMenu:
         elif choice == "test_custom":
             from monte_neo.cli.menu.custom_test import test_custom_indicator_workflow
             test_custom_indicator_workflow(self)
+            return
+        elif choice == "portfolio":
+            from monte_neo.cli.menu.portfolio import portfolio_workflow
+            portfolio_workflow(self)
             return
 
         handlers = {
