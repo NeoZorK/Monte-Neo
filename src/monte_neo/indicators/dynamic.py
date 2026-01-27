@@ -90,10 +90,10 @@ class DynamicIndicator(BaseIndicator):
                 logger.debug(f"Runtime error in safe dynamic indicator: {safe_error}")
                 return np.nan
 
-    def get_metal_params(self) -> list[float] | None:
+    def get_metal_params(self, commission_bps: float = 5.0, slippage_bps: float = 5.0) -> list[float] | None:
         """Return parameters for native Metal kernel if formula is supported."""
         from monte_neo.indicators.metal_parser import parse_metal_params
-        return parse_metal_params(self.source_code)
+        return parse_metal_params(self.source_code, commission_bps=commission_bps, slippage_bps=slippage_bps)
 
     def get_formula(self) -> str:
         """Get the source code string used for calculation."""

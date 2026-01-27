@@ -132,7 +132,9 @@ class MLXBacktestEngine:
         mlx_strategy = indicator.to_mlx_representation()
         
         if self.native_bridge and method == "shuffling" and hasattr(indicator, "get_metal_params"):
-            metal_params = indicator.get_metal_params()
+            comm = kwargs.get("commission_bps", 5.0)
+            slip = kwargs.get("slippage_bps", 5.0)
+            metal_params = indicator.get_metal_params(commission_bps=comm, slippage_bps=slip)
             if metal_params is not None:
                 try:
                     t_prep_start = time.perf_counter()

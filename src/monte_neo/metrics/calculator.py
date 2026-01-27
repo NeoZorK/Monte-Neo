@@ -54,6 +54,8 @@ class MetricsCalculator:
         use_sl_tp: bool = False,
         sl_pct: float = 0.0,
         tp_pct: float = 0.0,
+        commission_pct: float = 0.0,
+        slippage_pct: float = 0.0,
     ) -> dict[str, float]:
         """Calculate metrics.
 
@@ -64,12 +66,14 @@ class MetricsCalculator:
             use_sl_tp: Whether to apply Stop Loss and Take Profit.
             sl_pct: Stop Loss percentage (e.g., 1.0 for 1%).
             tp_pct: Take Profit percentage (e.g., 2.0 for 2%).
+            commission_pct: Commission percentage per trade (e.g., 0.05 for 0.05%).
+            slippage_pct: Slippage percentage per trade (e.g., 0.05 for 0.05%).
 
         Returns:
             Dictionary of metrics.
         """
         # Extract trades from signals
-        trades = self._extract_trades(data, signals, use_sl_tp, sl_pct, tp_pct)
+        trades = self._extract_trades(data, signals, use_sl_tp, sl_pct, tp_pct, commission_pct, slippage_pct)
 
         if not trades:
             return metric_utils.get_empty_metrics()
@@ -167,6 +171,8 @@ class MetricsCalculator:
         use_sl_tp: bool = False,
         sl_pct: float = 0.0,
         tp_pct: float = 0.0,
+        commission_pct: float = 0.0,
+        slippage_pct: float = 0.0,
     ) -> list[TradeResult]:
         """Extract trades from signals. Use C++ if available."""
         # Convert data to numpy arrays if it's a DataFrame
@@ -217,6 +223,8 @@ class MetricsCalculator:
             use_sl_tp,
             sl_pct,
             tp_pct,
+            commission_pct,
+            slippage_pct,
         )
 
         return [TradeResult(*t) for t in raw_trades]
@@ -230,10 +238,12 @@ class MetricsCalculator:
         use_sl_tp: bool,
         sl_pct: float,
         tp_pct: float,
+        commission_pct: float = 0.0,
+        slippage_pct: float = 0.0,
     ) -> np.ndarray:
         """Calculate basic metrics for a batch of signal sets in parallel."""
         return numba_funcs.calculate_batch_fast(
-            prices, highs, lows, signal_matrix, use_sl_tp, sl_pct, tp_pct
+            prices, highs, lows, signal_matrix, use_sl_tp, sl_pct, tp_pct, commission_pct, slippage_pct
         )
 
     @staticmethod
@@ -245,6 +255,8 @@ class MetricsCalculator:
         use_sl_tp: bool,
         sl_pct: float,
         tp_pct: float,
+        commission_pct: float = 0.0,
+        slippage_pct: float = 0.0,
     ) -> np.ndarray:
         """Calculate basic metrics for a batch where each row has its own prices."""
         return numba_funcs.calculate_batch_multi_price_fast(
@@ -255,6 +267,8 @@ class MetricsCalculator:
             use_sl_tp,
             sl_pct,
             tp_pct,
+            commission_pct,
+            slippage_pct,
         )
 
     def _calculate_equity(self, trades: list[TradeResult]) -> np.ndarray:
