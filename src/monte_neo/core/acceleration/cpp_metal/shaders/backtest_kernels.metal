@@ -103,10 +103,20 @@ struct Indicators {
         } else if (sub_type == 6) { // Diff < 0
             float diff = data[i].close - data[i-(int)p2].close;
             return (diff < 0.0f) ? 1.0f : -1.0f;
-        } else if (sub_type == 7) { // SMA_f > SMA_s
-            float sma_fast = calculate_sma(data, i, (int)p2);
-            float sma_slow = calculate_sma(data, i, (int)p3);
-            return (sma_fast > sma_slow) ? 1.0f : -1.0f;
+        } else if (sub_type == 10) { // Price < BB Lower
+            float sma = calculate_sma(data, i, (int)p2);
+            float stddev = calculate_stddev(data, i, (int)p2, sma);
+            return (data[i].close < (sma - stddev * p3)) ? 1.0f : 0.0f;
+        } else if (sub_type == 11) { // Price > BB Upper
+            float sma = calculate_sma(data, i, (int)p2);
+            float stddev = calculate_stddev(data, i, (int)p2, sma);
+            return (data[i].close > (sma + stddev * p3)) ? -1.0f : 0.0f;
+        } else if (sub_type == 12) { // RSI < Threshold
+            float rsi = calculate_rsi_window(data, i, (int)p2);
+            return (rsi < p3) ? 1.0f : 0.0f;
+        } else if (sub_type == 13) { // RSI > Threshold
+            float rsi = calculate_rsi_window(data, i, (int)p2);
+            return (rsi > p3) ? -1.0f : 0.0f;
         }
         return 0.0f;
     }
@@ -140,6 +150,21 @@ struct Indicators {
             sum_sq_diff += diff * diff;
         }
         return sqrt(sum_sq_diff / (float)period);
+    }
+
+    // Window-based RSI (Simple)
+    static float calculate_rsi_window(const device Candle* data, int index, int period) {
+        if (index <= period) return 50.0f;
+        float gains = 0.0f;
+        float losses = 0.0f;
+        for (int i = 0; i < period; i++) {
+            float diff = data[index - i].close - data[index - i - 1].close;
+            if (diff > 0) gains += diff;
+            else losses -= diff;
+        }
+        if (losses == 0) return 100.0f;
+        float rs = (gains / (float)period) / (losses / (float)period);
+        return 100.0f - (100.0f / (1.0f + rs));
     }
 };
 
@@ -252,16 +277,9 @@ kernel void backtest_kernel(
         }
         else if (strategy_type == 4) {
              // Complex Logic (4)
-             // Layout for type 4: [4, op_type, sub1, p2_1, sub2, p2_2, tp_m, ts_m]
-             // Fixed: atr_p=14.0, sl_m=1.5
-             float s1 = Indicators::get_dynamic_signal(data, i, (int)p1, p2, 0.0f);
-             float s2 = Indicators::get_dynamic_signal(data, i, (int)p3, params[scenario_id * 8 + 4], 0.0f);
-             
-             // op_type is in p1? No, p1 is sub1. Let's re-read layout.
-             // Layout: [4, op_type, sub1, p2_1, sub2, p2_2, tp_m, ts_m]
-             // params:  0,   1,      2,     3,    4,     5,    6,    7
-             float s1_real = Indicators::get_dynamic_signal(data, i, (int)p2, p3, 0.0f);
-             float s2_real = Indicators::get_dynamic_signal(data, i, (int)params[scenario_id * 8 + 4], params[scenario_id * 8 + 5], 0.0f);
+             // Layout for type 4: [4, op_type, sub1, p2_1, p3_1, sub2, p2_2, p3_2]
+             float s1_real = Indicators::get_dynamic_signal(data, i, (int)p2, p3, params[scenario_id * 8 + 4]);
+             float s2_real = Indicators::get_dynamic_signal(data, i, (int)params[scenario_id * 8 + 5], params[scenario_id * 8 + 6], params[scenario_id * 8 + 7]);
              
              if (p1 == 0.0f) { // AND
                  signal_val = (s1_real > 0 && s2_real > 0) ? 1.0f : ((s1_real < 0 && s2_real < 0) ? -1.0f : 0.0f);
@@ -269,11 +287,11 @@ kernel void backtest_kernel(
                  signal_val = (s1_real > 0 || s2_real > 0) ? 1.0f : ((s1_real < 0 || s2_real < 0) ? -1.0f : 0.0f);
              }
              
-             // Overwrite SL/TP/TS/ATR for this mode as they were hijacked
+             // Fixed SL/TP for complex logic to free up param slots
              atr_period = 14;
              sl_mult = 1.5f;
-             tp_mult = params[scenario_id * 8 + 6];
-             ts_mult = params[scenario_id * 8 + 7];
+             tp_mult = 3.0f;
+             ts_mult = 2.0f;
          }
         else if (strategy_type == 5) { // Bollinger Bands
             float sma = Indicators::calculate_sma(data, i, (int)p1);

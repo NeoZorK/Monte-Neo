@@ -9,6 +9,24 @@ from monte_neo.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+def rsi(data, period=14):
+    if isinstance(data, dict):
+        close = pd.Series(data['close'])
+    else:
+        close = data['close'] if hasattr(data, 'close') else data
+    delta = close.diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+    rs = gain / loss
+    return 100 - (100 / (1 + rs))
+
+def sma(data, period=20):
+    if isinstance(data, dict):
+        close = pd.Series(data['close'])
+    else:
+        close = data['close'] if hasattr(data, 'close') else data
+    return close.rolling(window=period).mean()
+
 def compile_source(source_code: str) -> Callable[..., Any]:
     """Compile source code into a function."""
     try:
@@ -17,6 +35,8 @@ def compile_source(source_code: str) -> Callable[..., Any]:
             "pd": pd,
             "_np": np,
             "_pd": pd,
+            "rsi": rsi,
+            "sma": sma,
             "__builtins__": __builtins__,
         }
 
