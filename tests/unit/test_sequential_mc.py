@@ -85,7 +85,9 @@ class TestSequentialRunner:
             iterations_run=100
         )
         # Mock backtest to return failing results
-        self.engine.gpu_engine.backtest_scenarios = MagicMock(return_value=[{"passed": False}])
+        self.engine.gpu_engine.backtest_scenarios = MagicMock(
+            return_value=[{"metrics": {"profit_factor": 0.0}}]
+        )
         
         # User chooses "Yes" to start method, then "No" to continue after failure
         mock_questionary.confirm.return_value.ask.side_effect = [True, False]
