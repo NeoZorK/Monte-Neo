@@ -38,10 +38,24 @@ public func swift_run_backtest(
     
     // Load shader
     let shaderPath = "src/monte_neo/core/acceleration/cpp_metal/shaders/backtest_kernels.metal"
-    guard let shaderSource = try? String(contentsOfFile: shaderPath, encoding: .utf8) else { return false }
+    let libraryPath = "src/monte_neo/core/acceleration/cpp_metal/shaders/backtest_kernels.metallib"
     
-    guard let library = try? device.makeLibrary(source: shaderSource, options: nil) else { return false }
-    guard let function = library.makeFunction(name: "backtest_kernel") else { return false }
+    var library: MTLLibrary?
+    
+    // Try loading pre-compiled library first
+    if FileManager.default.fileExists(atPath: libraryPath) {
+        let libraryURL = URL(fileURLWithPath: libraryPath)
+        library = try? device.makeLibrary(URL: libraryURL)
+    }
+    
+    // Fallback to source compilation
+    if library == nil {
+        guard let shaderSource = try? String(contentsOfFile: shaderPath, encoding: .utf8) else { return false }
+        library = try? device.makeLibrary(source: shaderSource, options: nil)
+    }
+    
+    guard let lib = library else { return false }
+    guard let function = lib.makeFunction(name: "backtest_kernel") else { return false }
     guard let pipelineState = try? device.makeComputePipelineState(function: function) else { return false }
     
     let dataBuffer = device.makeBuffer(bytes: dataPtr, length: dataCount * MemoryLayout<Candle>.size, options: .storageModeShared)

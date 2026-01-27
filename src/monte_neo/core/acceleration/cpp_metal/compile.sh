@@ -8,6 +8,11 @@ EXTENSION_NAME="metal_engine"
 PYTHON_INCLUDES=$(python3 -m pybind11 --includes)
 PYTHON_SUFFIX=$(python3-config --extension-suffix)
 
+echo "🚀 Compiling Metal Shader library..."
+xcrun -sdk macosx metal -c $OUTPUT_DIR/shaders/backtest_kernels.metal -o $OUTPUT_DIR/shaders/backtest_kernels.air
+xcrun -sdk macosx metallib $OUTPUT_DIR/shaders/backtest_kernels.air -o $OUTPUT_DIR/shaders/backtest_kernels.metallib
+rm $OUTPUT_DIR/shaders/backtest_kernels.air
+
 echo "🚀 Compiling Swift Bridge..."
 swiftc -c $OUTPUT_DIR/MetalBridgeSwift.swift -o $OUTPUT_DIR/MetalBridgeSwift.o -parse-as-library
 
