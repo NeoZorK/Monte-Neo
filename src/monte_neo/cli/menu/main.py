@@ -91,11 +91,11 @@ class InteractiveMenu:
     def _handle_choice(self, choice: str) -> None:
         from monte_neo.cli.menu.data import download_data_workflow
         from monte_neo.cli.menu.generator import generate_indicator_workflow
+        from monte_neo.cli.menu.hardware import hardware_workflow
         from monte_neo.cli.menu.mc_config import configure_mc_workflow
         from monte_neo.cli.menu.metrics import set_metrics_workflow
         from monte_neo.cli.menu.results import view_results_workflow
         from monte_neo.cli.menu.settings import settings_workflow
-        from monte_neo.cli.menu.hardware import hardware_workflow
 
         if choice == "generate":
             generate_indicator_workflow(self, sequential=False)
