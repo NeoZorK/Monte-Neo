@@ -7,6 +7,10 @@ A professional Python framework for generating robust and profitable trading ind
 ## Features
 
 - 🎯 **Target-Based Generation**: Define metrics (Profit Factor, Sharpe, Max DD) and generate matching indicators
+- 🚀 **GPU Acceleration**: High-performance Metal shaders via MLX (>780k ops/sec)
+- 🧙 **Sequential "Wizard" Mode**: Step-by-step validation with detailed feedback and advice
+- 🧪 **Custom Strategy Lab**: Test your own formulas against professional stress tests
+- 📜 **Robustness Certificate**: Production-ready verification proof
 - 🔀 **Monte Carlo Methods**: Shuffling, noise injection, sensitivity analysis (±10%), walk-forward
 - 📊 **Binance Integration**: Download OHLCV data in fast Parquet format
 - 🖥️ **Interactive CLI**: Arrow-key navigation, progress bars, color output
