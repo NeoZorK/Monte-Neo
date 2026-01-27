@@ -53,6 +53,20 @@ def parse_metal_params(source_code: str) -> list[float] | None:
             elif "data['close']<" in cond_code:
                 return [6.0, float(shift_matches[0]), 0.0] # sub_type 6
         
+        # 4. RSI Pattern
+        rsi_pattern = r"rsi\(.*?,?(\d+)\)"
+        rsi_matches = re.findall(rsi_pattern, cond_code)
+        if rsi_matches:
+            period = float(rsi_matches[0])
+            if "<" in cond_code:
+                thresh_match = re.findall(r"<([\d\.]+)", cond_code)
+                if thresh_match:
+                    return [12.0, period, float(thresh_match[0])]
+            elif ">" in cond_code:
+                thresh_match = re.findall(r">([\d\.]+)", cond_code)
+                if thresh_match:
+                    return [13.0, period, float(thresh_match[0])]
+
         return None
 
     # Check for complex logic AND/OR
@@ -63,8 +77,8 @@ def parse_metal_params(source_code: str) -> list[float] | None:
             p1_params = parse_simple_cond(parts[0])
             p2_params = parse_simple_cond(parts[1])
             if p1_params and p2_params:
-                # Layout for type 4: [4, op_type, sub1, p2_1, sub2, p2_2, tp_m, ts_m]
-                return [4.0, op_type, p1_params[0], p1_params[1], p2_params[0], p2_params[1], 3.0, 2.0]
+                # New Layout for type 4: [4, op_type, sub1, p2_1, p3_1, sub2, p2_2, p3_2]
+                return [4.0, op_type, p1_params[0], p1_params[1], p1_params[2], p2_params[0], p2_params[1], p2_params[2]]
 
     # Fallback to single condition parsing
     res = parse_simple_cond(code)
