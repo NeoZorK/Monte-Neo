@@ -13,15 +13,35 @@
 - [x] Unit and integration test suite (uv + pytest)
 - [x] Dockerization and docker-compose
 
-## Version 0.0.3 - Current (Visualization & Performance)
+## Version 0.0.3 - Current (Performance, Workflows & Trust)
 
-- [x] Interactive terminal candlestick charts
-- [x] Trade list visualization (Rich tables)
-- [x] User-defined custom indicator templates
-- [ ] Multi-thread optimization for UI
-- [ ] **GPU Acceleration Core**: Implement MLX and Metal Shaders for Monte Carlo methods and general computations
-- [ ] **Performance Benchmark**: Achieve > 300,000 operations per second across the engine
-- [ ] **High-Speed Sequential Mode**: Optimized sequential execution reaching 300k+ ops/sec or higher
+### 1. High-Performance Core (>300k ops/sec)
+- [ ] **GPU/Metal Acceleration**: Implement `gpu_core` using MLX (Apple Silicon) or Metal Shaders for massive parallelization of Monte Carlo simulations.
+- [ ] **C++ Integration**: Optional C++ bindings for critical bottlenecks if Python/Numba is insufficient.
+- [ ] **Benchmark Suite**: Achieve and verify >300,000 operations/sec throughput.
+
+### 2. Sequential "Wizard" Mode
+- [ ] **Interactive Step-by-Step**: "Sequential Indicator Generator" mode where MC methods run one by one.
+- [ ] **Detailed Feedback Loop**: After each MC step (e.g., Shuffling), pause and show:
+    - Exact pass rate (e.g., "Survived 950/1000 shuffles").
+    - Interpretation (e.g., "Strategy is robust against trend removal").
+    - Actionable advice for the next step.
+
+### 3. "Trust the System" Visualization
+- [ ] **Discovery Proof**: Explicitly demonstrate the *search* and *validation* process. Show that the final indicator is a "survivor" of rigorous stress testing.
+- [ ] **Robustness Certificate**: Final report explaining *why* the indicator is production-ready (e.g., "Profitability maintained across 5 market regimes").
+
+### 4. Custom Strategy Lab ("Bring Your Own Formula")
+- [ ] **Custom Formula Menu**: New menu option "🧪 Test Custom Formula".
+- [ ] **Template System**: Provide `user_indicators/template.py` with working examples for users to plug in their logic.
+- [ ] **Full Diagnostic Suite**:
+    - Run user's formula against all enabled Monte Carlo methods.
+    - Check for Overfitting (Training vs Test divergence).
+    - Check for Robustness (Noise/Parameter sensitivity).
+- [ ] **Educational Report**: Generate a detailed "Health Check" for the user's formula:
+    - "Good": Stable parameters, high win rate.
+    - "Needs Work": Fails walk-forward, high drawdown in noise tests.
+    - Explanation of each MC method used on *their* specific formula.
 
 ## Version 0.0.4 - Advanced Analytics
 
@@ -31,7 +51,6 @@
 
 ## Version 0.0.5 - High Performance & Cloud
 
-- [ ] C++ accelerated core for 1M+ iterations
 - [ ] Real-time data streaming (WebSockets)
 - [ ] Cloud deployment templates (AWS/GCP)
 
@@ -43,6 +62,6 @@
 |---------|--------|--------|
 | v0.0.1 | Initial Alpha Setup | ✅ |
 | v0.0.2 | Robustness Core & Tests | ✅ |
-| v0.0.3 | Visualization & Performance | 🔄 |
+| v0.0.3 | Performance & Workflows | 🔄 |
 | v0.0.4 | Advanced Analytics | 📅 |
 | v0.0.5 | High Performance & Cloud | 📅 |
