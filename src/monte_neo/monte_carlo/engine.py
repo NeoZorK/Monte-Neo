@@ -108,6 +108,8 @@ class MonteCarloEngine:
         # Only for Shuffling method currently, and if indicator supports it.
         # This bypasses CPU scenario generation and data transfer overhead.
         has_mlx = indicator.to_mlx_representation() is not None
+        has_metal = indicator.get_metal_params() is not None
+        
         only_shuffling = (
             (self.config.use_shuffling or not any([
                 self.config.use_noise,
@@ -121,9 +123,10 @@ class MonteCarloEngine:
             and not self.config.use_block_bootstrap
         )
 
-        if has_mlx and only_shuffling and existing_scenarios is None and self.config.iterations > 100:
+        if (has_mlx or has_metal) and only_shuffling and existing_scenarios is None and self.config.iterations > 100:
             try:
-                logger.info(f"🚀 Using High-Performance Pure GPU Engine for {self.config.iterations} iterations")
+                engine_type = "Native Metal" if has_metal else "MLX"
+                logger.info(f"🚀 Using High-Performance {engine_type} Engine for {self.config.iterations} iterations")
                 results = self.gpu_engine.run_full_simulation(
                     data=data,
                     indicator=indicator,
