@@ -184,6 +184,32 @@ class DynamicIndicator(BaseIndicator):
 
         return signals
 
+    def generate_signals_fast(self, data: pd.DataFrame | np.ndarray) -> np.ndarray:
+        """Fast version of signal generation for dynamic indicators."""
+        if not isinstance(data, pd.DataFrame):
+            # Dynamic indicator currently requires DataFrame for its evaluation logic
+            # (e.g. data['close'] in source_code). Convert back if needed.
+            # This is a bit slow but better than the default implementation.
+            import pandas as pd
+            df = pd.DataFrame(data, columns=["open", "high", "low", "close", "volume"])
+        else:
+            df = data
+
+        vals = self._evaluate_with_fallback(df)
+        
+        # Fast conversion to float32 array
+        if isinstance(vals, (pd.Series, np.ndarray)):
+            vals_arr = np.asarray(vals, dtype=np.float32)
+        else:
+            vals_arr = np.full(len(df), vals, dtype=np.float32)
+            
+        # Standardize signals: >0 is 1, <0 is -1, 0 is 0
+        sig_vals = np.zeros_like(vals_arr)
+        sig_vals[vals_arr > 0] = 1.0
+        sig_vals[vals_arr < 0] = -1.0
+        
+        return sig_vals
+
     def get_min_periods(self) -> int:
         # Difficult to know statically. Default to something safe or 0.
         return 50

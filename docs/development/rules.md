@@ -1,4 +1,4 @@
-# Rules and Conventions
+# 📜 Monte-Neo Rules (v0.0.2)
 
 ## Coding Standards
 

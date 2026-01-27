@@ -122,3 +122,52 @@ def sma_crossover_signals_numba(data: np.ndarray, fast_period: int, slow_period:
             prev_state = current_state
 
     return res
+
+
+@njit
+def rsi_signals_numba(data: np.ndarray, period: int, oversold: float, overbought: float) -> np.ndarray:
+    """Fast RSI signal generation in a single Numba pass."""
+    n = len(data)
+    res = np.zeros(n, dtype=np.float32)
+    if n <= period:
+        return res
+
+    # Use existing rsi_numba
+    rsi_vals = rsi_numba(data, period)
+
+    for i in range(period, n):
+        if rsi_vals[i] < oversold:
+            res[i] = 1.0
+        elif rsi_vals[i] > overbought:
+            res[i] = -1.0
+
+    return res
+
+
+@njit
+def macd_signals_numba(data: np.ndarray, fast_p: int, slow_p: int, sig_p: int) -> np.ndarray:
+    """Fast MACD signal generation in a single Numba pass."""
+    n = len(data)
+    res = np.zeros(n, dtype=np.float32)
+    if n < slow_p + sig_p:
+        return res
+
+    fast_ema = ema_numba(data, fast_p)
+    slow_ema = ema_numba(data, slow_p)
+    macd_line = fast_ema - slow_ema
+    signal_line = ema_numba(macd_line, sig_p)
+    hist_vals = macd_line - signal_line
+
+    prev_sig = 0.0
+    for i in range(slow_p + sig_p, n):
+        curr_sig = 0.0
+        if hist_vals[i] > 0:
+            curr_sig = 1.0
+        elif hist_vals[i] < 0:
+            curr_sig = -1.0
+
+        if curr_sig != prev_sig:
+            res[i] = curr_sig
+            prev_sig = curr_sig
+
+    return res

@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from monte_neo.indicators.base import BaseIndicator, IndicatorConfig
-from monte_neo.indicators.numba_funcs import ema_numba
+from monte_neo.indicators.numba_funcs import ema_numba, macd_signals_numba
 from monte_neo.indicators.technical_lib import TechnicalIndicators
 
 
@@ -42,29 +42,8 @@ class MACDIndicator(BaseIndicator):
         slow_p = max(fast_p + 1, slow_p)
         sig_p = max(2, sig_p)
 
-        fast_ema = ema_numba(close, fast_p)
-        slow_ema = ema_numba(close, slow_p)
-        macd_line = fast_ema - slow_ema
-        signal_line = ema_numba(macd_line, sig_p)
-        hist_vals = macd_line - signal_line
-
-        sig_vals = np.zeros(len(data), dtype=np.float32)
-
-        # Histogram crossover
-        sig_vals[hist_vals > 0] = 1.0
-        sig_vals[hist_vals < 0] = -1.0
-
-        # Only signal on crossover
-        sig_prev = np.zeros_like(sig_vals)
-        sig_prev[1:] = sig_vals[:-1]
-
-        diff = sig_vals - sig_prev
-
-        final_signals = np.zeros_like(sig_vals)
-        final_signals[diff > 0] = 1.0
-        final_signals[diff < 0] = -1.0
-
-        return pd.DataFrame({"signal": final_signals}, index=data.index)
+        sig_vals = macd_signals_numba(close, fast_p, slow_p, sig_p)
+        return pd.DataFrame({"signal": sig_vals}, index=data.index)
 
     def generate_signals_fast(self, data: pd.DataFrame | np.ndarray) -> np.ndarray:
         if isinstance(data, pd.DataFrame):
@@ -81,24 +60,7 @@ class MACDIndicator(BaseIndicator):
         slow_p = max(fast_p + 1, slow_p)
         sig_p = max(2, sig_p)
 
-        fast_ema = ema_numba(close, fast_p)
-        slow_ema = ema_numba(close, slow_p)
-        macd_line = fast_ema - slow_ema
-        signal_line = ema_numba(macd_line, sig_p)
-        hist_vals = macd_line - signal_line
-
-        sig_vals = np.zeros(len(close), dtype=np.float32)
-        sig_vals[hist_vals > 0] = 1.0
-        sig_vals[hist_vals < 0] = -1.0
-
-        sig_prev = np.zeros_like(sig_vals)
-        sig_prev[1:] = sig_vals[:-1]
-        diff = sig_vals - sig_prev
-
-        final_signals = np.zeros_like(sig_vals)
-        final_signals[diff > 0] = 1.0
-        final_signals[diff < 0] = -1.0
-        return final_signals
+        return macd_signals_numba(close, fast_p, slow_p, sig_p)
 
     def get_formula(self) -> str:
         f = self._parameters["fast"]

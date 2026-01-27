@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from monte_neo.indicators.base import BaseIndicator, IndicatorConfig
-from monte_neo.indicators.numba_funcs import rsi_numba
+from monte_neo.indicators.numba_funcs import rsi_numba, rsi_signals_numba
 from monte_neo.indicators.technical_lib import TechnicalIndicators
 
 
@@ -28,19 +28,13 @@ class RSIIndicator(BaseIndicator):
         # High-performance Numba-based RSI signals
         close = data["close"].to_numpy()
         period = int(round(self._parameters["period"]))
-        oversold = self._parameters["oversold"]
-        overbought = self._parameters["overbought"]
+        oversold = float(self._parameters["oversold"])
+        overbought = float(self._parameters["overbought"])
 
         # Minimum period is 2
         period = max(2, period)
 
-        rsi_vals = rsi_numba(close, period)
-
-        sig_vals = np.zeros(len(data), dtype=np.float32)
-
-        sig_vals[rsi_vals < oversold] = 1.0
-        sig_vals[rsi_vals > overbought] = -1.0
-
+        sig_vals = rsi_signals_numba(close, period, oversold, overbought)
         return pd.DataFrame({"signal": sig_vals}, index=data.index)
 
     def generate_signals_fast(self, data: pd.DataFrame | np.ndarray) -> np.ndarray:
@@ -51,12 +45,10 @@ class RSIIndicator(BaseIndicator):
 
         period = int(round(self._parameters["period"]))
         period = max(2, period)
+        oversold = float(self._parameters["oversold"])
+        overbought = float(self._parameters["overbought"])
 
-        rsi_vals = rsi_numba(close, period)
-        sig_vals = np.zeros(len(close), dtype=np.float32)
-        sig_vals[rsi_vals < self._parameters["oversold"]] = 1.0
-        sig_vals[rsi_vals > self._parameters["overbought"]] = -1.0
-        return sig_vals
+        return rsi_signals_numba(close, period, oversold, overbought)
 
     def get_formula(self) -> str:
         p = self._parameters["period"]
