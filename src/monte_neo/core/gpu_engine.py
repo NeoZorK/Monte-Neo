@@ -131,7 +131,13 @@ class MLXBacktestEngine:
                 try:
                     # Timing for data prep
                     t_prep_start = time.perf_counter()
-                    candles = [Candle(r.open, r.high, r.low, r.close, r.volume) for r in data.itertuples()]
+                    # Optimized candle conversion using zip instead of itertuples
+                    candles = [
+                        Candle(float(o), float(h), float(l), float(c), float(v)) 
+                        for o, h, l, c, v in zip(
+                            data['open'], data['high'], data['low'], data['close'], data['volume']
+                        )
+                    ]
                     full_params = metal_params * n_scenarios
                     timing_stats["data_prep"] = time.perf_counter() - t_prep_start
                     

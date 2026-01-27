@@ -73,11 +73,15 @@ class MACDIndicator(BaseIndicator):
 
     def get_metal_params(self) -> list[float] | None:
         """Return parameters for native Metal kernel."""
-        # Metal kernel expects: [Fast_Period, Slow_Period, Signal_Period, SL_Mult, TP_Mult]
+        # Layout: [type, p1, p2, p3, atr_period, sl_mult, tp_mult, ts_mult]
+        # type 2: MACD
         return [
+            2.0,  # type
             float(self._parameters.get("fast", 12)),
             float(self._parameters.get("slow", 26)),
             float(self._parameters.get("signal", 9)),
-            1.5,   # Default SL ATR mult
-            3.0    # Default TP ATR mult
+            14.0, # ATR
+            1.5,  # SL
+            3.0,  # TP
+            2.0   # TS
         ]
