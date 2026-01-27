@@ -5,39 +5,27 @@ Calculates all trading metrics from signals and data.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 import numpy as np
 import pandas as pd
-from numba import njit, prange
 
+from monte_neo.core import native_metrics  # type: ignore
+from monte_neo.metrics import numba_funcs
+from monte_neo.metrics import utils as metric_utils
 from monte_neo.metrics.drawdown import DrawdownMetric
 from monte_neo.metrics.profit_factor import ProfitFactorMetric
 from monte_neo.metrics.sharpe import SharpeRatioMetric, SortinoRatioMetric
+from monte_neo.metrics.types import TradeResult
 from monte_neo.metrics.winrate import WinrateMetric
 from monte_neo.utils.logger import get_logger
 
 try:
-    from monte_neo.core import native_metrics  # type: ignore
-
+    # Check if native module is available and working
+    native_metrics.extract_trades
     HAS_NATIVE = True
-except ImportError:
+except (ImportError, AttributeError):
     HAS_NATIVE = False
 
 logger = get_logger(__name__)
-
-
-@dataclass
-class TradeResult:
-    """Single trade result."""
-
-    entry_idx: int
-    exit_idx: int
-    entry_price: float
-    exit_price: float
-    direction: int  # 1 = long, -1 = short
-    pnl: float
-    pnl_pct: float
 
 
 class MetricsCalculator:
@@ -84,7 +72,7 @@ class MetricsCalculator:
         trades = self._extract_trades(data, signals, use_sl_tp, sl_pct, tp_pct)
 
         if not trades:
-            return self._empty_metrics()
+            return metric_utils.get_empty_metrics()
 
         # Basic PnLs are needed for almost everything
         pnls = [t.pnl for t in trades]
@@ -93,16 +81,11 @@ class MetricsCalculator:
         metrics = {}
 
         # If required_metrics is provided, check what we need
-        # Some intermediate values (equity, returns) are expensive, so calculate only if needed
-
         need_all = required_metrics is None
         reqs = set(required_metrics) if required_metrics else set()
 
         def needs(name: str) -> bool:
             return need_all or name in reqs
-
-        # Always calculate profit factor if any profit metric is needed?
-        # Actually, let's just follow the requests.
 
         # Profit metrics
         if needs("profit_factor"):
@@ -110,7 +93,7 @@ class MetricsCalculator:
         if needs("total_return"):
             metrics["total_return"] = float(np.sum(pnl_pcts))
         if needs("avg_return"):
-            metrics["avg_return"] = float(np.mean(pnl_pcts)) if pnl_pcts else 0
+            metrics["avg_return"] = float(np.mean(pnl_pcts)) if pnl_pcts else 0.0
         if needs("winrate"):
             metrics["winrate"] = self.winrate.calculate(pnls)
         if needs("expectancy"):
@@ -124,30 +107,47 @@ class MetricsCalculator:
         if needs("trade_count"):
             metrics["trade_count"] = len(trades)
         if needs("consecutive_wins"):
-            metrics["consecutive_wins"] = self._max_consecutive(pnls, True)
+            metrics["consecutive_wins"] = metric_utils.max_consecutive(pnls, True)
         if needs("consecutive_losses"):
-            metrics["consecutive_losses"] = self._max_consecutive(pnls, False)
+            metrics["consecutive_losses"] = metric_utils.max_consecutive(pnls, False)
 
         # Complex metrics requiring Equity Curve
         equity_metrics = {
-            "sharpe_ratio", "sortino_ratio", "max_drawdown", "avg_drawdown",
-            "recovery_factor", "calmar_ratio"
+            "sharpe_ratio",
+            "sortino_ratio",
+            "max_drawdown",
+            "avg_drawdown",
+            "recovery_factor",
+            "calmar_ratio",
         }
 
         if need_all or not reqs.isdisjoint(equity_metrics):
             equity = self._calculate_equity(trades)
+            max_dd_val = 0.0
 
-            if needs("max_drawdown") or needs("recovery_factor") or needs("calmar_ratio"):
-                metrics["max_drawdown"] = self.drawdown.calculate_max(equity)
+            if (
+                needs("max_drawdown")
+                or needs("recovery_factor")
+                or needs("calmar_ratio")
+            ):
+                max_dd_val = self.drawdown.calculate_max(equity)
+                if needs("max_drawdown"):
+                    metrics["max_drawdown"] = max_dd_val
 
             if needs("avg_drawdown"):
                 metrics["avg_drawdown"] = self.drawdown.calculate_avg(equity)
 
             if needs("recovery_factor"):
-                metrics["recovery_factor"] = self._recovery_factor(pnl_pcts, equity)
+                total_ret = float(np.sum(pnl_pcts))
+                metrics["recovery_factor"] = metric_utils.calculate_recovery_factor(
+                    total_ret, max_dd_val
+                )
 
             if needs("calmar_ratio"):
-                metrics["calmar_ratio"] = self._calmar_ratio(pnl_pcts, equity)
+                avg_ret = float(np.mean(pnl_pcts)) if pnl_pcts else 0.0
+                metrics["calmar_ratio"] = metric_utils.calculate_calmar_ratio(
+                    avg_ret, max_dd_val
+                )
 
             # Returns based metrics
             if needs("sharpe_ratio") or needs("sortino_ratio"):
@@ -176,9 +176,7 @@ class MetricsCalculator:
             low_prices = data["low"].to_numpy()
         else:
             # Assume data is a numpy array (OHLCV)
-            # col 2=high, 3=low, 4=close (standard)
-            # Wait, let's check what our common format is. 
-            # Usually OHLCV: 0=O, 1=H, 2=L, 3=C, 4=V
+            # col 1=high, 2=low, 3=close
             high_prices = data[:, 1]
             low_prices = data[:, 2]
             close_prices = data[:, 3]
@@ -194,7 +192,7 @@ class MetricsCalculator:
         if HAS_NATIVE and not use_sl_tp:
             # Use high-performance C++ extension (native doesn't support SL/TP yet)
             raw_trades = native_metrics.extract_trades(
-                close_prices.tolist(),  # pybind11 might need list if not using numpy bindings
+                close_prices.tolist(),
                 signal_array.tolist(),
             )
             return [
@@ -211,95 +209,19 @@ class MetricsCalculator:
             ]
 
         # Fallback to JIT-compiled Python
-        raw_trades = self._extract_trades_fast(
-            close_prices, high_prices, low_prices, signal_array, use_sl_tp, sl_pct, tp_pct
+        raw_trades = numba_funcs.extract_trades_fast(
+            close_prices,
+            high_prices,
+            low_prices,
+            signal_array,
+            use_sl_tp,
+            sl_pct,
+            tp_pct,
         )
 
         return [TradeResult(*t) for t in raw_trades]
 
     @staticmethod
-    @njit
-    def _extract_trades_fast(
-        prices: np.ndarray,
-        highs: np.ndarray,
-        lows: np.ndarray,
-        signals: np.ndarray,
-        use_sl_tp: bool = False,
-        sl_pct: float = 0.0,
-        tp_pct: float = 0.0,
-    ) -> list[tuple[int, int, float, float, int, float, float]]:
-        """Fast trade extraction using Numba JIT."""
-        results = []
-
-        position = 0
-        entry_idx = 0
-        entry_price = 0.0
-        
-        sl_price = 0.0
-        tp_price = 0.0
-
-        for i in range(len(signals)):
-            signal = signals[i]
-            price = prices[i]
-            high = highs[i]
-            low = lows[i]
-
-            if position == 0:
-                if signal != 0:
-                    # Open position
-                    position = int(signal)
-                    entry_idx = i
-                    entry_price = price
-                    
-                    if use_sl_tp:
-                        if position == 1: # Long
-                            sl_price = entry_price * (1.0 - sl_pct / 100.0)
-                            tp_price = entry_price * (1.0 + tp_pct / 100.0)
-                        else: # Short
-                            sl_price = entry_price * (1.0 + sl_pct / 100.0)
-                            tp_price = entry_price * (1.0 - tp_pct / 100.0)
-            else:
-                # Check for SL/TP first
-                hit_exit = False
-                exit_price = price
-                
-                if use_sl_tp:
-                    if position == 1: # Long
-                        if low <= sl_price:
-                            exit_price = sl_price
-                            hit_exit = True
-                        elif high >= tp_price:
-                            exit_price = tp_price
-                            hit_exit = True
-                    else: # Short
-                        if high >= sl_price:
-                            exit_price = sl_price
-                            hit_exit = True
-                        elif low <= tp_price:
-                            exit_price = tp_price
-                            hit_exit = True
-                
-                # Check for signal exit if SL/TP not hit
-                if not hit_exit and signal == -position:
-                    exit_price = price
-                    hit_exit = True
-                
-                if hit_exit:
-                    # Close position
-                    pnl = (exit_price - entry_price) * position
-                    pnl_pct = pnl / entry_price
-
-                    results.append(
-                        (entry_idx, i, entry_price, exit_price, position, pnl, pnl_pct)
-                    )
-
-                    # Reset position
-                    position = 0
-
-        return results
-
-    @staticmethod
-    @njit(parallel=True)
     def calculate_batch_fast(
         prices: np.ndarray,
         highs: np.ndarray,
@@ -310,96 +232,11 @@ class MetricsCalculator:
         tp_pct: float,
     ) -> np.ndarray:
         """Calculate basic metrics for a batch of signal sets in parallel."""
-        n_indicators = signal_matrix.shape[0]
-        results = np.zeros((n_indicators, 4), dtype=np.float64)  # total_return, max_dd, pf, n_trades
-
-        for i in prange(n_indicators):
-            signals = signal_matrix[i]
-            
-            # Simplified extraction for speed
-            position = 0
-            entry_price = 0.0
-            sl_price = 0.0
-            tp_price = 0.0
-            
-            total_pnl_pct = 0.0
-            gross_profit = 0.0
-            gross_loss = 0.0
-            n_trades = 0
-            
-            # Equity curve for drawdown
-            equity = 1.0
-            max_equity = 1.0
-            max_dd = 0.0
-            
-            for j in range(len(signals)):
-                signal = signals[j]
-                price = prices[j]
-                high = highs[j]
-                low = lows[j]
-                
-                if position == 0:
-                    if signal != 0:
-                        position = int(signal)
-                        entry_price = price
-                        if use_sl_tp:
-                            if position == 1:
-                                sl_price = entry_price * (1.0 - sl_pct / 100.0)
-                                tp_price = entry_price * (1.0 + tp_pct / 100.0)
-                            else:
-                                sl_price = entry_price * (1.0 + sl_pct / 100.0)
-                                tp_price = entry_price * (1.0 - tp_pct / 100.0)
-                else:
-                    hit_exit = False
-                    exit_price = price
-                    
-                    if use_sl_tp:
-                        if position == 1:
-                            if low <= sl_price:
-                                exit_price = sl_price
-                                hit_exit = True
-                            elif high >= tp_price:
-                                exit_price = tp_price
-                                hit_exit = True
-                        else:
-                            if high >= sl_price:
-                                exit_price = sl_price
-                                hit_exit = True
-                            elif low <= tp_price:
-                                exit_price = tp_price
-                                hit_exit = True
-                    
-                    if not hit_exit and signal == -position:
-                        exit_price = price
-                        hit_exit = True
-                        
-                    if hit_exit:
-                        pnl = (exit_price - entry_price) * position
-                        pnl_pct = pnl / entry_price
-                        total_pnl_pct += pnl_pct
-                        
-                        if pnl > 0: gross_profit += pnl
-                        else: gross_loss += abs(pnl)
-                        
-                        # Update equity and drawdown
-                        equity *= (1.0 + pnl_pct)
-                        if equity > max_equity: max_equity = equity
-                        dd = (max_equity - equity) / max_equity
-                        if dd > max_dd: max_dd = dd
-                        
-                        position = 0
-                        n_trades += 1
-            
-            pf = gross_profit / gross_loss if gross_loss > 0 else 100.0
-            results[i, 0] = total_pnl_pct
-            results[i, 1] = max_dd
-            results[i, 2] = pf
-            results[i, 3] = n_trades
-            
-        return results
+        return numba_funcs.calculate_batch_fast(
+            prices, highs, lows, signal_matrix, use_sl_tp, sl_pct, tp_pct
+        )
 
     @staticmethod
-    @njit(parallel=True)
     def calculate_batch_multi_price_fast(
         price_matrix: np.ndarray,
         high_matrix: np.ndarray,
@@ -410,102 +247,15 @@ class MetricsCalculator:
         tp_pct: float,
     ) -> np.ndarray:
         """Calculate basic metrics for a batch where each row has its own prices."""
-        n_rows = signal_matrix.shape[0]
-        results = np.zeros((n_rows, 4), dtype=np.float64)  # total_return, max_dd, pf, n_trades
-
-        for i in prange(n_rows):
-            signals = signal_matrix[i]
-            prices = price_matrix[i]
-            highs = high_matrix[i]
-            lows = low_matrix[i]
-            
-            # Simplified extraction for speed
-            position = 0
-            entry_price = 0.0
-            sl_price = 0.0
-            tp_price = 0.0
-            
-            total_pnl_pct = 0.0
-            gross_profit = 0.0
-            gross_loss = 0.0
-            n_trades = 0
-            
-            # Equity curve for drawdown
-            equity = 1.0
-            max_equity = 1.0
-            max_dd = 0.0
-            
-            # We need to know the actual length of this row (ignoring padding)
-            # We assume non-zero prices mean actual data
-            row_len = len(signals)
-            while row_len > 0 and prices[row_len-1] == 0:
-                row_len -= 1
-            
-            for j in range(row_len):
-                signal = signals[j]
-                price = prices[j]
-                high = highs[j]
-                low = lows[j]
-                
-                if position == 0:
-                    if signal != 0:
-                        position = int(signal)
-                        entry_price = price
-                        if use_sl_tp:
-                            if position == 1:
-                                sl_price = entry_price * (1.0 - sl_pct / 100.0)
-                                tp_price = entry_price * (1.0 + tp_pct / 100.0)
-                            else:
-                                sl_price = entry_price * (1.0 + sl_pct / 100.0)
-                                tp_price = entry_price * (1.0 - tp_pct / 100.0)
-                else:
-                    hit_exit = False
-                    exit_price = price
-                    
-                    if use_sl_tp:
-                        if position == 1:
-                            if low <= sl_price:
-                                exit_price = sl_price
-                                hit_exit = True
-                            elif high >= tp_price:
-                                exit_price = tp_price
-                                hit_exit = True
-                        else:
-                            if high >= sl_price:
-                                exit_price = sl_price
-                                hit_exit = True
-                            elif low <= tp_price:
-                                exit_price = tp_price
-                                hit_exit = True
-                    
-                    if not hit_exit and signal == -position:
-                        exit_price = price
-                        hit_exit = True
-                        
-                    if hit_exit:
-                        pnl = (exit_price - entry_price) * position
-                        pnl_pct = pnl / entry_price
-                        total_pnl_pct += pnl_pct
-                        
-                        if pnl > 0: gross_profit += pnl
-                        else: gross_loss += abs(pnl)
-                        
-                        # Update equity and drawdown
-                        equity *= (1.0 + pnl_pct)
-                        if equity > max_equity: max_equity = equity
-                        dd = (max_equity - equity) / max_equity
-                        if dd > max_dd: max_dd = dd
-                        
-                        position = 0
-                        n_trades += 1
-            
-            pf = gross_profit / gross_loss if gross_loss > 0 else 100.0
-            results[i, 0] = total_pnl_pct
-            results[i, 1] = max_dd
-            results[i, 2] = pf
-            results[i, 3] = n_trades
-            
-        return results
+        return numba_funcs.calculate_batch_multi_price_fast(
+            price_matrix,
+            high_matrix,
+            low_matrix,
+            signal_matrix,
+            use_sl_tp,
+            sl_pct,
+            tp_pct,
+        )
 
     def _calculate_equity(self, trades: list[TradeResult]) -> np.ndarray:
         """Calculate equity curve from trades using vectorized cumprod."""
@@ -518,97 +268,3 @@ class MetricsCalculator:
         equity[1:] = np.cumprod(1 + pnl_pcts)
 
         return equity
-
-    def _recovery_factor(
-        self,
-        pnl_pcts: list[float],
-        equity: np.ndarray,
-    ) -> float:
-        """Calculate recovery factor.
-
-        Args:
-            pnl_pcts: List of P&L percentages.
-            equity: Equity curve.
-
-        Returns:
-            Recovery factor (total_return / max_drawdown).
-        """
-        total_return = np.sum(pnl_pcts)
-        max_dd = self.drawdown.calculate_max(equity)
-
-        if max_dd == 0:
-            return 0.0
-
-        return float(total_return / max_dd)
-
-    def _calmar_ratio(
-        self,
-        pnl_pcts: list[float],
-        equity: np.ndarray,
-        periods_per_year: int = 252,
-    ) -> float:
-        """Calculate Calmar ratio.
-
-        Args:
-            pnl_pcts: List of P&L percentages.
-            equity: Equity curve.
-            periods_per_year: Trading periods per year.
-
-        Returns:
-            Calmar ratio (annual_return / max_drawdown).
-        """
-        max_dd = self.drawdown.calculate_max(equity)
-
-        if max_dd == 0 or not pnl_pcts:
-            return 0.0
-
-        # Annualize returns (simplified)
-        avg_return = np.mean(pnl_pcts)
-        annual_return = avg_return * periods_per_year
-
-        return float(annual_return / max_dd)
-
-    def _max_consecutive(self, pnls: list[float], wins: bool) -> int:
-        """Calculate max consecutive wins or losses.
-
-        Args:
-            pnls: List of P&L values.
-            wins: If True, count wins; else count losses.
-
-        Returns:
-            Maximum consecutive count.
-        """
-        max_count = 0
-        current = 0
-
-        for pnl in pnls:
-            is_win = pnl > 0
-            if is_win == wins:
-                current += 1
-                max_count = max(max_count, current)
-            else:
-                current = 0
-
-        return max_count
-
-    def _empty_metrics(self) -> dict[str, float]:
-        """Return empty metrics when no trades."""
-        return {
-            "profit_factor": 0,
-            "total_return": 0,
-            "avg_return": 0,
-            "sharpe_ratio": 0,
-            "sortino_ratio": 0,
-            "max_drawdown": 0,
-            "avg_drawdown": 0,
-            "recovery_factor": 0,
-            "calmar_ratio": 0,
-            "winrate": 0,
-            "expectancy": 0,
-            "avg_win": 0,
-            "avg_loss": 0,
-            "win_loss_ratio": 0,
-            "trade_count": 0,
-            "consecutive_wins": 0,
-            "consecutive_losses": 0,
-        }
