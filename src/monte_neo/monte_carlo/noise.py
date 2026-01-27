@@ -204,7 +204,39 @@ class NoiseInjector:
         logger.debug(f"Generated {n_samples} volume noise samples")
         return samples
 
-    def _fix_ohlc(self, data: pd.DataFrame) -> pd.DataFrame:
+    def add_latency_shift(
+        self,
+        data: pd.DataFrame,
+        n_samples: int = 100,
+        max_shift: int = 2,
+    ) -> list[pd.DataFrame]:
+        """Simulate execution latency by shifting data relative to itself.
+        
+        Args:
+            data: OHLCV DataFrame.
+            n_samples: Number of samples.
+            max_shift: Maximum number of candles to shift.
+            
+        Returns:
+            List of DataFrames with latency shifts.
+        """
+        samples = []
+        
+        for _ in range(n_samples):
+            shift = self.rng.integers(1, max_shift + 1)
+            sample = data.copy()
+            
+            # Shift prices forward (making signals appear late)
+            # Actually, shifting prices backward has same effect as delaying signals
+            sample = sample.shift(shift)
+            sample = sample.fillna(method="bfill")
+            
+            samples.append(sample)
+            
+        logger.debug(f"Generated {n_samples} latency shift samples (max {max_shift} candles)")
+        return samples
+
+    def _fix_ohlc(self, df: pd.DataFrame) -> pd.DataFrame:
         """Ensure OHLC consistency.
 
         Args:

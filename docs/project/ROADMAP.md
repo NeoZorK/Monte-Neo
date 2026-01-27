@@ -31,17 +31,15 @@
 - [x] **Walk-Forward Optimization**: Hardware-accelerated validation.
 - [x] **Production Gate**: Robustness scoring and certification.
 
-### 🚀 Upcoming: v0.0.6 - Multi-Asset & AI Brainstorming
+### 🚀 Phase 6: v0.0.6 - Global Leadership & Production Mastery (Current)
+- [x] **Smart Portfolio Engine**: Multi-indicator management with Kelly Criterion.
+- [x] **Non-Repainting Validator**: Hard enforcement of signal causality.
+- [x] **Advanced Noise Suite**: Latency shifts, variable spreads, and slippage.
+- [x] **Combinatorial WFO (CSCV)**: Advanced overfitting detection (PBO).
+- [ ] **One-Click Production Export**: C++/Metal binary standalone generation.
+- [ ] **AI-Driven Evolution**: Self-correcting indicator formulas.
 
----
+### 📅 Phase 7: v0.0.7 - Cloud & Scale
+- [ ] **Distributed GPU Cloud**: Running simulations across multiple nodes.
+- [ ] **Real-time Monitoring**: Dashboard for production performance tracking.
 
-## Milestones
-
-| Version | Target | Status |
-|---------|--------|--------|
-| v0.0.1 | Initial Alpha Setup | ✅ |
-| v0.0.2 | Robustness Core & Tests | ✅ |
-| v0.0.3 | Performance & Workflows | ✅ |
-| v0.0.4 | Extreme Performance & Metal | ✅ |
-| v0.0.5 | Advanced Analytics | 🏗️ |
-| v0.0.6 | Cloud & Scale | 📅 |
