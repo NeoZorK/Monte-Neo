@@ -190,7 +190,6 @@ class DynamicIndicator(BaseIndicator):
             # Dynamic indicator currently requires DataFrame for its evaluation logic
             # (e.g. data['close'] in source_code). Convert back if needed.
             # This is a bit slow but better than the default implementation.
-            import pandas as pd
             df = pd.DataFrame(data, columns=["open", "high", "low", "close", "volume"])
         else:
             df = data
