@@ -12,9 +12,9 @@ Rules:
 """
 
 import pandas as pd
-import talib
 
 from monte_neo.indicators.base import BaseIndicator, IndicatorConfig
+from monte_neo.indicators.technical_lib import TechnicalIndicators
 
 
 class MyIndicator(BaseIndicator):
@@ -41,8 +41,8 @@ class MyIndicator(BaseIndicator):
         df = data.copy()
         
         # Example Logic: RSI Reversal
-        # 1. Calculate RSI
-        df['rsi'] = talib.RSI(df['close'].values, timeperiod=self.rsi_period)
+        # 1. Calculate RSI using built-in TechnicalIndicators
+        df['rsi'] = TechnicalIndicators.rsi(df['close'], period=self.rsi_period)
         
         return df
 

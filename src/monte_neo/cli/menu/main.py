@@ -81,6 +81,7 @@ class InteractiveMenu:
             {"name": "🧪 Test Custom Formula", "value": "test_custom"},
             {"name": "📈 View Results", "value": "results"},
             {"name": "⚙️  Settings", "value": "settings"},
+            {"name": "🔧 Hardware Configuration", "value": "hardware"},
             {"name": "❌ Exit", "value": "exit"},
         ]
         return questionary.select(
@@ -112,6 +113,7 @@ class InteractiveMenu:
             "mc_config": configure_mc_workflow,
             "results": view_results_workflow,
             "settings": settings_workflow,
+            "hardware": hardware_workflow,
         }
         handler = handlers.get(choice)
         if handler:

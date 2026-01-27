@@ -16,8 +16,23 @@ from monte_neo.core.acceleration.tensor_ops import generate_noise_scenarios, gen
 class GpuAccelerationEngine:
     """High-performance GPU engine."""
     
-    def __init__(self, batch_size: int = 50000):
+    def __init__(self, batch_size: int = 50000, precision: str = "float32"):
+        """
+        Initialize GPU engine.
+        
+        Args:
+            batch_size: Number of scenarios to process in each batch
+            precision: 'float32', 'float16', 'float8_e4m3', or 'float8_e5m2'
+        """
         self.batch_size = batch_size
+        self.precision = precision
+        
+        # Initialize float8 encoder if needed
+        self.float8_encoder = None
+        if precision.startswith("float8"):
+            from monte_neo.core.acceleration.float8 import Float8Encoder
+            format_type = "e4m3" if "e4m3" in precision else "e5m2"
+            self.float8_encoder = Float8Encoder(format_type)
         
     def run_simulation(
         self,

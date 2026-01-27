@@ -122,14 +122,11 @@ def test_custom_indicator_workflow(menu: InteractiveMenu) -> None:
     # Instantiate Indicator
     indicator = indicator_class()
     
-    # Run Sequential Runner directly
-    runner = SequentialMCRunner(engine)
-    
     console.print(f"\n[bold]🚀 Running Validation for {indicator.name}...[/]")
     
     # Create a result object structure similar to generation result
     try:
-        mc_result = runner.run(data, indicator, metrics_calc, menu._target_metrics)
+        mc_result = engine.run(data, indicator, metrics_calc, menu._target_metrics, interactive=True)
         
         # Display Final Certificate if passed
         

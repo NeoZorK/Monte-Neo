@@ -84,6 +84,9 @@ class SequentialMCRunner:
 
         # Use rich table for sequential output if it's the main display
         console.print(f"\n[bold yellow]🔍 Sequential MC Validation for: {indicator.name}[/]")
+        
+        if not interactive:
+            console.print(f"[dim]Running in automated mode. All {len(enabled_methods)} steps will be executed.[/]")
 
         table = Table(title="Monte Carlo Steps", show_header=True, header_style="bold magenta")
         table.add_column("Step", justify="right")
@@ -137,8 +140,7 @@ class SequentialMCRunner:
                 if interactive:
                     if not questionary.confirm("Continue to next stage anyway (not recommended)?", default=False, style=CUSTOM_STYLE).ask():
                         break
-                else:
-                    break
+                # В неинтерактивном режиме продолжаем выполнение всех шагов для полного анализа
             else:
                 console.print(f"\n[bold green]✅ STAGE PASSED: {display_name}[/]")
                 if interactive and idx < total_steps:
