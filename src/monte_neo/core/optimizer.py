@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from monte_neo.utils.logger import get_logger
+from monte_neo.utils.cache import load_calibration, save_calibration
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -74,20 +75,41 @@ class ParameterOptimizer:
         Returns:
             OptimizationResult with best parameters.
         """
+        # Try to load from cache
+        indicator_name = indicator.__class__.__name__
+        if hasattr(indicator, "source_code"):
+            # For dynamic indicators, use source code as part of the key
+            indicator_name += f"_{hash(indicator.source_code)}"
+
+        cached_params = load_calibration(indicator_name, data)
+        if cached_params:
+            logger.info(f"🚀 Using cached calibration for {indicator_name}")
+            # We don't have the history/iterations, so we return a simplified result
+            return OptimizationResult(
+                best_params=cached_params,
+                best_score=0.0,  # Unknown but presumably good
+                iterations=0,
+                history=[],
+            )
+
         if self.method == "random":
-            return self._random_search(
+            result = self._random_search(
                 indicator, param_ranges, data, metrics_calc, objective, objective_func
             )
         elif self.method == "grid":
-            return self._grid_search(
+            result = self._grid_search(
                 indicator, param_ranges, data, metrics_calc, objective, objective_func
             )
         elif self.method == "genetic":
-            return self._genetic_search(
+            result = self._genetic_search(
                 indicator, param_ranges, data, metrics_calc, objective, objective_func
             )
         else:
             raise ValueError(f"Unknown method: {self.method}")
+
+        # Save to cache
+        save_calibration(indicator_name, data, result.best_params)
+        return result
 
     def _random_search(
         self,

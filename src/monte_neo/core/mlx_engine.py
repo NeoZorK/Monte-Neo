@@ -14,6 +14,8 @@ from monte_neo.metrics.calculator import MetricsCalculator
 from monte_neo.monte_carlo.workers import run_indicator_batch
 from monte_neo.utils.parallel import ParallelExecutor
 from monte_neo.core.acceleration.engine import GpuAccelerationEngine
+import os
+import subprocess
 from monte_neo.utils.cache import load_cache, save_cache
 
 logger = logging.getLogger(__name__)
@@ -21,11 +23,29 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from monte_neo.indicators.base import BaseIndicator
 
+# Try to import the Metal bridge extension
 try:
     from monte_neo.core.acceleration.cpp_metal.metal_engine import MetalBacktestBridge, Candle, Driver
     METAL_EXTENSION_AVAILABLE = True
 except ImportError:
-    METAL_EXTENSION_AVAILABLE = False
+    # Try to auto-compile if extension is missing
+    logger.info("🛠️ Metal extension not found. Attempting auto-compilation...")
+    try:
+        script_path = os.path.join(os.path.dirname(__file__), "acceleration/cpp_metal/compile.sh")
+        if os.path.exists(script_path):
+            result = subprocess.run(["bash", script_path], capture_output=True, text=True)
+            if result.returncode == 0:
+                from monte_neo.core.acceleration.cpp_metal.metal_engine import MetalBacktestBridge, Candle, Driver
+                METAL_EXTENSION_AVAILABLE = True
+                logger.info("✅ Metal extension compiled and loaded successfully.")
+            else:
+                logger.warning(f"❌ Auto-compilation failed: {result.stderr}")
+                METAL_EXTENSION_AVAILABLE = False
+        else:
+            METAL_EXTENSION_AVAILABLE = False
+    except Exception as e:
+        logger.warning(f"⚠️ Failed to auto-compile Metal extension: {e}")
+        METAL_EXTENSION_AVAILABLE = False
 
 
 class MLXBacktestEngine:
