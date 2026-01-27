@@ -92,11 +92,11 @@ def main():
     # Serial Dynamic
     start_time = time.time()
     for ind in indicators:
-        ind.generate_signals(data) # Dynamic might not have generate_signals_fast optimized yet
+        ind.generate_signals_fast(data)
     end_time = time.time()
     duration = end_time - start_time
     dyn_ops = 2000 / duration
-    print(f"  Sequential Mode: {dyn_ops:.2f} ops/sec")
+    print(f"  Sequential Mode (Fast): {dyn_ops:.2f} ops/sec")
 
     if dyn_ops < 2000:
         print("  WARNING: Sequential mode for Dynamic is below 2000 ops/sec!")

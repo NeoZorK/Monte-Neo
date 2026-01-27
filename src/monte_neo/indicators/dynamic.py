@@ -44,22 +44,16 @@ class DynamicIndicator(BaseIndicator):
         """Compile the source code if not already compiled."""
         if self._compiled_code is None:
             try:
-                # Import inside to make them available in the scope of exec
-                import numpy as _np
-                import pandas as _pd
-
-                # We want to support 'np', 'pd', '_np', '_pd' in the source code
-                # The easiest way is to provide them in the globals of the exec
+                # We want to support 'np', 'pd' in the source code
                 exec_globals = {
-                    "np": _np,
-                    "pd": _pd,
-                    "_np": _np,
-                    "_pd": _pd,
+                    "np": np,
+                    "pd": pd,
+                    "_np": np,
+                    "_pd": pd,
                     "__builtins__": __builtins__,
                 }
 
                 # Define the function that takes data and the libraries as arguments
-                # even though they are also in globals, for extra safety and clarity
                 func_code = (
                     f"def _dynamic_calc(data, np, pd):\n    return {self.source_code}"
                 )
@@ -71,13 +65,11 @@ class DynamicIndicator(BaseIndicator):
                 logger.debug(f"Failed to compile dynamic indicator: {e}")
                 self._reset_to_safe_source()
                 try:
-                    import numpy as _np
-                    import pandas as _pd
                     exec_globals = {
-                        "np": _np,
-                        "pd": _pd,
-                        "_np": _np,
-                        "_pd": _pd,
+                        "np": np,
+                        "pd": pd,
+                        "_np": np,
+                        "_pd": pd,
                         "__builtins__": __builtins__,
                     }
                     func_code = (
@@ -97,14 +89,13 @@ class DynamicIndicator(BaseIndicator):
             self._parameters["source_code"] = "data['close']"
             self._compiled_code = None
 
-    def _evaluate(self, data: pd.DataFrame) -> Any:
-        self._compile_if_needed()
-        assert self._compiled_code is not None
-
+    def _evaluate(self, data: pd.DataFrame | dict[str, Any]) -> Any:
+        if self._compiled_code is None:
+            self._compile_if_needed()
+        
         # Pass numpy and pandas explicitly to the compiled function
-        import numpy as _np
-        import pandas as _pd
-        indicator_values = self._compiled_code(data, _np, _pd)
+        # Using global np and pd for speed
+        indicator_values = self._compiled_code(data, np, pd)
 
         if callable(indicator_values) and not isinstance(
             indicator_values, (pd.Series, pd.DataFrame)
@@ -121,13 +112,15 @@ class DynamicIndicator(BaseIndicator):
 
         return indicator_values
 
-    def _evaluate_with_fallback(self, data: pd.DataFrame) -> Any:
+    def _evaluate_with_fallback(self, data: pd.DataFrame | dict[str, Any]) -> Any:
         try:
             return self._evaluate(data)
         except Exception as e:
             logger.debug(f"Runtime error in dynamic indicator: {e}")
             self._reset_to_safe_source()
             try:
+                # If data is a dict, we might need to convert it back to DataFrame for fallback
+                # but 'data['close']' works for both.
                 return self._evaluate(data)
             except Exception as safe_error:
                 logger.debug(f"Runtime error in safe dynamic indicator: {safe_error}")
@@ -186,27 +179,55 @@ class DynamicIndicator(BaseIndicator):
 
     def generate_signals_fast(self, data: pd.DataFrame | np.ndarray) -> np.ndarray:
         """Fast version of signal generation for dynamic indicators."""
-        if not isinstance(data, pd.DataFrame):
-            # Dynamic indicator currently requires DataFrame for its evaluation logic
-            # (e.g. data['close'] in source_code). Convert back if needed.
-            # This is a bit slow but better than the default implementation.
-            df = pd.DataFrame(data, columns=["open", "high", "low", "close", "volume"])
+        # Use a lightweight data structure if possible
+        if isinstance(data, pd.DataFrame):
+            # We can pass a dictionary of Series to avoid DataFrame overhead
+            # but still support .rolling(), .diff(), etc.
+            # This is significantly faster than data.copy() or new DataFrame creation.
+            fast_data = {
+                "open": data["open"],
+                "high": data["high"],
+                "low": data["low"],
+                "close": data["close"],
+                "volume": data["volume"],
+            }
+            n_rows = len(data)
         else:
-            df = data
+            # data is already np.ndarray (OHLCV)
+            # We must convert to Series to support pandas operations in source code
+            # unless we implement a custom fast rolling library.
+            # For now, we create Series from columns.
+            fast_data = {
+                "open": pd.Series(data[:, 0]),
+                "high": pd.Series(data[:, 1]),
+                "low": pd.Series(data[:, 2]),
+                "close": pd.Series(data[:, 3]),
+                "volume": pd.Series(data[:, 4]),
+            }
+            n_rows = len(data)
 
-        vals = self._evaluate_with_fallback(df)
+        vals = self._evaluate_with_fallback(fast_data)
         
-        # Fast conversion to float32 array
-        if isinstance(vals, (pd.Series, np.ndarray)):
-            vals_arr = np.asarray(vals, dtype=np.float32)
-        else:
-            vals_arr = np.full(len(df), vals, dtype=np.float32)
-            
+        # Ensure vals is numeric and handle potential conversion issues
+        if isinstance(vals, pd.Series):
+            vals = vals.values
+        
+        # If it's still not a numpy array (e.g. single value), broadcast it
+        if not isinstance(vals, np.ndarray):
+            vals = np.full(n_rows, vals)
+
         # Standardize signals: >0 is 1, <0 is -1, 0 is 0
-        sig_vals = np.zeros_like(vals_arr)
-        sig_vals[vals_arr > 0] = 1.0
-        sig_vals[vals_arr < 0] = -1.0
+        sig_vals = np.zeros(n_rows, dtype=np.float32)
         
+        try:
+            # Robust check for positive/negative values
+            # Handles inf/-inf correctly, and doesn't warn on float32 overflow
+            # because we haven't casted to float32 yet.
+            sig_vals[np.greater(vals, 0)] = 1.0
+            sig_vals[np.less(vals, 0)] = -1.0
+        except Exception as e:
+            logger.debug(f"Error generating fast signals for dynamic indicator: {e}")
+            
         return sig_vals
 
     def get_min_periods(self) -> int:
