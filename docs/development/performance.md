@@ -20,5 +20,5 @@ Monte-Neo is optimized for high-throughput Monte Carlo simulations.
 - **MC Iteration**: 100k simulations on 5k bars in < 60s (M1 Pro GPU).
 - **Metrics**: Native C++ metrics calculation in < 0.5ms.
 - **SL/TP Performance**: Parallelized Numba implementation processes 300k+ operations per second.
-- **Sequential Dynamic Execution**: Optimized path for Dynamic Indicators currently achieving ~8,000 ops/sec (Sequential Mode Fast), with v0.0.3 targeting 300,000+ ops/sec.
+- **Sequential Dynamic Execution**: Optimized path for Dynamic Indicators currently achieving ~8,000 ops/sec (Sequential Mode Fast), with v0.0.4 targeting extreme performance via float8 and Metal shaders.
 - **Batch Search**: 1,000 indicator search iterations in < 15s.

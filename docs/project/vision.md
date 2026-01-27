@@ -44,7 +44,7 @@
 12) **Git Integration**: Maintain a private repository on `github.com/neozork/Monte-Neo`.
 
 13) **Version Control & Organization**:
-    - Initialize git and set version to `v0.0.3`.
+    - Initialize git and set version to `v0.0.4`.
     - Organize files properly (e.g., `docker/` for Docker files, `docs/` for documentation).
     - Only essential files in the root directory.
     - Version number should be manageable from a single location.

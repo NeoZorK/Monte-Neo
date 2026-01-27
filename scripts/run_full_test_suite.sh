@@ -1,6 +1,6 @@
 #!/bin/bash
 # Comprehensive Test Suite Runner for Monte-Neo
-# Version: v0.0.3
+# Version: v0.0.4
 
 set -e
 
