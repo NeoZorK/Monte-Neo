@@ -1,6 +1,6 @@
-# ROADMAP.md - Development Roadmap
+# 🗺️ Monte-Neo Roadmap (v0.0.2)
 
-## Version 0.0.1 - Initial Alpha (Current)
+## Version 0.0.2 - Current
 
 - [x] Project architecture and folder structure
 - [x] Basic OHLCV downloader for Binance

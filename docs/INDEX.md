@@ -1,4 +1,4 @@
-# Project Index
+# 🎲 Monte-Neo v0.0.2
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -46,7 +46,7 @@ A simplified guide to the Monte-Neo file structure.
 - docker/docker-compose.yml - Docker Compose service definitions
 
 ### Source Code (src/monte_neo/)
-- src/monte_neo/_version.py - Central version management (v0.0.1)
+- src/monte_neo/_version.py - Central version management (v0.0.2)
 - src/monte_neo/__init__.py - Main package entry point
 
 #### Core Engine (core/)

@@ -49,7 +49,8 @@ def run_search(generator: IndicatorGenerator, data: pd.DataFrame) -> GeneratorRe
 
     logger.info(f"Starting indicator generation (max {generator.config.max_iterations} iterations)")
 
-    batch_size = max(10, generator.config.population_size)
+    # Optimization: Use larger batch size to reduce IPC and parallel overhead
+    batch_size = max(500, generator.config.population_size * 5)
     total_iterations = generator.config.max_iterations
 
     # Pre-generate MC scenarios
@@ -72,7 +73,8 @@ def run_search(generator: IndicatorGenerator, data: pd.DataFrame) -> GeneratorRe
                     use_shared_data=True,
                     use_sl_tp=generator.config.use_sl_tp,
                     sl_pct=generator.config.stop_loss_pct,
-                    tp_pct=generator.config.take_profit_pct
+                    tp_pct=generator.config.take_profit_pct,
+                    force_parallel=True  # Force parallel for large batches
                 )
             except Exception as e:
                 logger.warning(f"Backtest failed: {e}. Skipping batch.")
@@ -128,7 +130,7 @@ def run_search(generator: IndicatorGenerator, data: pd.DataFrame) -> GeneratorRe
                     continue
 
             # Progress callback
-            _update_progress(generator, start_time, batch_start, batch_size, total_iterations, best_mc_rate)
+            _update_progress(generator, start_time, batch_start, actual_batch_size, total_iterations, best_mc_rate)
 
             # Early stopping
             if generator.config.early_stopping and best_mc_rate >= 0.95:
@@ -137,10 +139,13 @@ def run_search(generator: IndicatorGenerator, data: pd.DataFrame) -> GeneratorRe
 
     except KeyboardInterrupt:
         logger.info("KeyboardInterrupt caught in generator. Cleaning up...")
+        if generator._progress_callback:
+            generator._progress_callback(iterations_tried, total_iterations, "Interrupted by user")
         if generator.executor:
             generator.executor.__exit__(None, None, None)
             generator.executor = None
-        raise
+        # Return what we found so far instead of crashing
+        return _create_result(generator, best_indicator, fallback_indicator, best_mc_rate, best_mc_details, final_metrics, fallback_metrics, iterations_tried, start_time)
 
     # Evolution Phase
     best_indicator, best_mc_rate, best_mc_details = _run_evolution_phase(
@@ -155,17 +160,38 @@ def run_search(generator: IndicatorGenerator, data: pd.DataFrame) -> GeneratorRe
         generator.executor.__exit__(None, None, None)
         generator.executor = None
 
+    return _create_result(
+        generator, best_indicator, fallback_indicator, best_mc_rate, 
+        best_mc_details, final_metrics, fallback_metrics, iterations_tried, start_time, data
+    )
+
+
+def _create_result(
+    generator: IndicatorGenerator,
+    best_indicator,
+    fallback_indicator,
+    best_mc_rate: float,
+    best_mc_details: dict,
+    final_metrics: dict,
+    fallback_metrics: dict,
+    iterations_tried: int,
+    start_time: float,
+    data: pd.DataFrame
+) -> GeneratorResult:
+    """Helper to create GeneratorResult."""
     if not best_indicator and fallback_indicator:
         best_indicator = fallback_indicator
         final_metrics = fallback_metrics
 
-    if best_indicator:
+    if best_indicator and not final_metrics:
         signals = best_indicator.generate_signals(data)
         final_metrics = generator.metrics_calc.calculate_all(
             data, signals, use_sl_tp=generator.config.use_sl_tp,
             sl_pct=generator.config.stop_loss_pct, tp_pct=generator.config.take_profit_pct
         )
 
+    elapsed = time.time() - start_time
+    
     return GeneratorResult(
         success=best_mc_rate >= generator.config.mc_pass_threshold,
         indicator=best_indicator,

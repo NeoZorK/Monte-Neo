@@ -1,4 +1,4 @@
-# CLAUDE.md - assistant guide
+# 🤖 Monte-Neo Development (v0.0.2)
 
 ## Project Overview
 Monte-Neo is a Monte Carlo indicator generator framework.
