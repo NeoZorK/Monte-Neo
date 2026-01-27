@@ -24,11 +24,24 @@
 - [x] **Hardware Toggle Menu**: Add CLI settings to toggle between CPU (Numba), GPU (MLX), and Extreme GPU (Metal C++).
 - [x] **Precision Selection**: Menu option to choose between float32, float16, and float8 execution modes.
 
-## Version 0.0.5 - Advanced Analytics & Intelligence (Current)
+## Version 0.0.5 - Ultra-High-Performance C++/Metal Engine & Production Readiness (Current)
 
-- [ ] **Correlation Analysis**: Detect and eliminate redundant indicator signals.
-- [ ] **Regime Detection**: Automatic detection of Trend vs Range markets.
-- [ ] **ML Candidate Selection**: Use light gradient boosting or simple neural nets to pre-screen indicator candidates before MC testing.
+### 1. Lightning-Fast C++ Metal Core
+- [ ] **Pure C++/Metal Backtest Engine**: Complete migration of core execution logic to custom Metal Shaders (MSL) and C++ for sub-millisecond backtests on millions of bars.
+- [ ] **Unified Kernel Architecture**: Indicators, Signal Generation, and SL/TP/Trailing-Stop logic all running in a single GPU pass to minimize memory bandwidth usage.
+- [ ] **Swift/Clang C++ Infrastructure**: Use modern Swift or Clang C++ for Metal shader orchestration (strictly avoid Objective-C).
+- [ ] **Walk-Forward GPU Optimization**: Hardware-accelerated Walk-Forward Optimization (WFO) to detect parameter drift instantly.
+- [ ] **Massive Monte Carlo**: Parallel execution of 10,000+ MC scenarios per second using SIMD-level optimizations.
+
+### 2. "Confidence for Production" (Production-Ready Gates)
+- [ ] **Robustness Scoring System**: Advanced multi-factor scoring (MC Survival, WFO Efficiency, Profit Factor Stability, Tail Risk).
+- [ ] **Anti-Overfitting Protection**: Integrated "P-Value" testing and noise injection at the hardware level.
+- [ ] **Automated Brainstorming**: AI-assisted indicator logic suggestions based on regime detection and backtest failures.
+- [ ] **Production Certificate**: Generate a "Ready for Production" recommendation report only when an indicator passes all rigorous stress tests.
+
+### 3. Advanced Strategy Logic
+- [ ] **Regime-Adaptive Backtesting**: Automatically segment backtest results by market regimes (Trend, Range, Volatile).
+- [ ] **Complex Order Logic**: Support for Trailing Stops, Breakeven, and Multi-Level TP directly in C++ kernels.
 
 ## Version 0.0.6 - Cloud & Scale
 
