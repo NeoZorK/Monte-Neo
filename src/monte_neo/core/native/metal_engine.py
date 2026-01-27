@@ -55,12 +55,12 @@ class MetalFloat8Engine:
             shader_source = f.read()
         
         # Compile shader
-        library = self.device.newLibraryWithSource_options_error_(
+        library, error = self.device.newLibraryWithSource_options_error_(
             shader_source, None, None
         )
         
         if library is None:
-            raise RuntimeError("Failed to compile Metal shaders")
+            raise RuntimeError(f"Failed to compile Metal shaders: {error}")
         
         self.library = library
         
@@ -99,12 +99,12 @@ class MetalFloat8Engine:
         }
         """
         
-        library = self.device.newLibraryWithSource_options_error_(
+        library, error = self.device.newLibraryWithSource_options_error_(
             shader_source, None, None
         )
         
         if library is None:
-            raise RuntimeError("Failed to create default Metal shaders")
+            raise RuntimeError(f"Failed to create default Metal shaders: {error}")
         
         self.library = library
         self.float32_to_e4m3_func = library.newFunctionWithName_("float32_to_float8_e4m3")
@@ -124,14 +124,17 @@ class MetalFloat8Engine:
         
         # Create Metal buffers
         input_buffer = self.device.newBufferWithBytes_length_options_(
-            flat_input.ctypes.data, n_elements * 4, 0
+            flat_input, n_elements * 4, Metal.MTLResourceStorageModeShared
         )
-        output_buffer = self.device.newBufferWithLength_options_(n_elements, 0)
+        output_buffer = self.device.newBufferWithLength_options_(n_elements, Metal.MTLResourceStorageModeShared)
         
         # Create compute pipeline
-        pipeline = self.device.newComputePipelineStateWithFunction_error_(
+        pipeline, error = self.device.newComputePipelineStateWithFunction_error_(
             self.float32_to_e4m3_func, None
         )
+
+        if pipeline is None:
+            raise RuntimeError(f"Failed to create pipeline: {error}")
         
         # Create command encoder
         command_buffer = self.command_queue.commandBuffer()
@@ -155,11 +158,9 @@ class MetalFloat8Engine:
         command_buffer.waitUntilCompleted()
         
         # Copy result back
-        output_data = output_buffer.contents()
-        ctypes.memmove(
-            output_array.ctypes.data,
-            output_data,
-            n_elements
+        output_array[:] = np.frombuffer(
+            output_buffer.contents().as_buffer(n_elements),
+            dtype=np.uint8
         )
         
         return output_array.reshape(input_array.shape)
@@ -167,7 +168,7 @@ class MetalFloat8Engine:
     def decode_e4m3_to_float32(self, input_array: np.ndarray) -> np.ndarray:
         """Decode float8 E4M3 array to float32."""
         if self.e4m3_to_float32_func is None:
-            raise RuntimeError("E4M3 to float32 conversion function not available")
+            raise RuntimeError("E4M3 decoding function not available")
         
         # Flatten array for processing
         flat_input = input_array.flatten().astype(np.uint8)
@@ -178,14 +179,17 @@ class MetalFloat8Engine:
         
         # Create Metal buffers
         input_buffer = self.device.newBufferWithBytes_length_options_(
-            flat_input.ctypes.data, n_elements, 0
+            flat_input, n_elements, Metal.MTLResourceStorageModeShared
         )
-        output_buffer = self.device.newBufferWithLength_options_(n_elements * 4, 0)
+        output_buffer = self.device.newBufferWithLength_options_(n_elements * 4, Metal.MTLResourceStorageModeShared)
         
         # Create compute pipeline
-        pipeline = self.device.newComputePipelineStateWithFunction_error_(
+        pipeline, error = self.device.newComputePipelineStateWithFunction_error_(
             self.e4m3_to_float32_func, None
         )
+
+        if pipeline is None:
+            raise RuntimeError(f"Failed to create pipeline: {error}")
         
         # Create command encoder
         command_buffer = self.command_queue.commandBuffer()
@@ -209,17 +213,15 @@ class MetalFloat8Engine:
         command_buffer.waitUntilCompleted()
         
         # Copy result back
-        output_data = output_buffer.contents()
-        ctypes.memmove(
-            output_array.ctypes.data,
-            output_data,
-            n_elements * 4
+        output_array[:] = np.frombuffer(
+            output_buffer.contents().as_buffer(n_elements * 4),
+            dtype=np.float32
         )
         
         return output_array.reshape(input_array.shape)
     
     def generate_scenarios_e4m3(self, base_prices: np.ndarray, n_scenarios: int, seed: int = 42) -> np.ndarray:
-        """Generate scenarios using Metal C++ shader."""
+        """Generate scenarios using Metal."""
         if self.generate_scenarios_func is None:
             raise RuntimeError("Scenario generation function not available")
         
@@ -235,17 +237,20 @@ class MetalFloat8Engine:
         
         # Create Metal buffers
         base_prices_buffer = self.device.newBufferWithBytes_length_options_(
-            base_prices.ctypes.data, time_steps, 0
+            base_prices, time_steps, Metal.MTLResourceStorageModeShared
         )
-        scenarios_buffer = self.device.newBufferWithLength_options_(n_elements, 0)
+        scenarios_buffer = self.device.newBufferWithLength_options_(n_elements, Metal.MTLResourceStorageModeShared)
         indices_buffer = self.device.newBufferWithBytes_length_options_(
-            random_indices.ctypes.data, random_indices.nbytes, 0
+            random_indices, random_indices.nbytes, Metal.MTLResourceStorageModeShared
         )
         
         # Create compute pipeline
-        pipeline = self.device.newComputePipelineStateWithFunction_error_(
+        pipeline, error = self.device.newComputePipelineStateWithFunction_error_(
             self.generate_scenarios_func, None
         )
+
+        if pipeline is None:
+            raise RuntimeError(f"Failed to create pipeline: {error}")
         
         # Create command encoder
         command_buffer = self.command_queue.commandBuffer()
@@ -278,25 +283,15 @@ class MetalFloat8Engine:
         command_buffer.waitUntilCompleted()
         
         # Copy result back
-        output_data = scenarios_buffer.contents()
-        ctypes.memmove(
-            output_array.ctypes.data,
-            output_data,
-            n_elements
+        output_array[:] = np.frombuffer(
+            scenarios_buffer.contents().as_buffer(n_elements),
+            dtype=np.uint8
         )
         
         return output_array.reshape((n_scenarios, time_steps))
 
     def get_memory_bandwidth_improvement(self) -> float:
-        """Calculate theoretical memory bandwidth improvement."""
-        # Float32: 32 bits per element
-        # Float8: 8 bits per element
-        # Improvement: 32/8 = 4x
         return 4.0
     
     def get_precision_loss_estimate(self) -> float:
-        """Estimate precision loss compared to float32."""
-        # E4M3 has ~3 decimal digits of precision
-        # Float32 has ~7 decimal digits of precision
-        # Loss: ~4 decimal digits
         return 4.0

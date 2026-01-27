@@ -210,8 +210,8 @@ kernel void generate_shuffle_scenarios_float8(
     const device uchar* base_prices [[buffer(0)]],
     device uchar* scenarios [[buffer(1)]],
     const device uint* random_indices [[buffer(2)]],
-    uint num_scenarios [[buffer(3)]],
-    uint time_steps [[buffer(4)]],
+    constant uint& num_scenarios [[buffer(3)]],
+    constant uint& time_steps [[buffer(4)]],
     uint id [[thread_position_in_grid]])
 {
     uint scenario_idx = id / time_steps;
@@ -238,8 +238,8 @@ kernel void generate_shuffle_scenarios_coalesced(
     const device uchar* base_prices [[buffer(0)]],
     device uchar* scenarios [[buffer(1)]],
     const device uint* random_indices [[buffer(2)]],
-    uint num_scenarios [[buffer(3)]],
-    uint time_steps [[buffer(4)]],
+    constant uint& num_scenarios [[buffer(3)]],
+    constant uint& time_steps [[buffer(4)]],
     uint id [[thread_position_in_grid]])
 {
     // Coalesced memory access pattern: adjacent threads access adjacent time steps
@@ -268,8 +268,8 @@ kernel void generate_shuffle_scenarios_tiled(
     const device uchar* base_prices [[buffer(0)]],
     device uchar* scenarios [[buffer(1)]],
     const device uint* random_indices [[buffer(2)]],
-    uint num_scenarios [[buffer(3)]],
-    uint time_steps [[buffer(4)]],
+    constant uint& num_scenarios [[buffer(3)]],
+    constant uint& time_steps [[buffer(4)]],
     uint3 gid [[thread_position_in_grid]],
     uint3 tid [[thread_position_in_threadgroup]],
     uint3 tpg [[threads_per_threadgroup]])
