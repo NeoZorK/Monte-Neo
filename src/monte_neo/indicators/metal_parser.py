@@ -10,6 +10,13 @@ def parse_metal_params(source_code: str) -> list[float] | None:
     common_tail = [14.0, 1.5, 3.0, 2.0]
 
     def parse_simple_cond(cond_code: str) -> list[float] | None:
+        # 0. Bollinger Bands (check first to avoid SMA collision)
+        # Example: data['close']<(data['close'].rolling(20).mean()-2.0*data['close'].rolling(20).std())
+        bb_pattern = r"rolling\((\d+)\)\.mean\(\)[\-\+]([\d\.]+)\*.*rolling\(\1\)\.std\(\)"
+        bb_matches = re.findall(bb_pattern, cond_code)
+        if bb_matches:
+            return [5.0, float(bb_matches[0][0]), float(bb_matches[0][1])]
+
         # 1. SMA Crossover Pattern: SMA(f) > SMA(s) or Price > SMA(s)
         sma_pattern = r"rolling\((\d+)\)\.mean\(\)"
         matches = re.findall(sma_pattern, cond_code)
@@ -65,6 +72,8 @@ def parse_metal_params(source_code: str) -> list[float] | None:
         sub_type, p2_val, p3_val = res
         if sub_type == 7.0:
             return [0.0, p2_val, p3_val, 0.0] + common_tail
+        if sub_type == 5.0:
+            return [5.0, p2_val, p3_val, 0.0] + common_tail
         return [3.0, sub_type, p2_val, p3_val] + common_tail
 
     return None

@@ -130,6 +130,17 @@ struct Indicators {
         }
         return val;
     }
+
+    // Standard Deviation
+    static float calculate_stddev(const device Candle* data, int index, int period, float mean) {
+        if (index < period - 1) return 0.0f;
+        float sum_sq_diff = 0.0f;
+        for (int i = 0; i < period; i++) {
+            float diff = data[index - i].close - mean;
+            sum_sq_diff += diff * diff;
+        }
+        return sqrt(sum_sq_diff / (float)period);
+    }
 };
 
 // --- Unified Backtest Kernel ---
@@ -264,6 +275,16 @@ kernel void backtest_kernel(
              tp_mult = params[scenario_id * 8 + 6];
              ts_mult = params[scenario_id * 8 + 7];
          }
+        else if (strategy_type == 5) { // Bollinger Bands
+            float sma = Indicators::calculate_sma(data, i, (int)p1);
+            float stddev = Indicators::calculate_stddev(data, i, (int)p1, sma);
+            float upper = sma + (stddev * p2);
+            float lower = sma - (stddev * p2);
+            
+            if (c.close < lower) signal_val = 1.0f;      // Oversold / Mean reversion buy
+            else if (c.close > upper) signal_val = -1.0f; // Overbought / Mean reversion sell
+            else signal_val = (float)pos;
+        }
 
         current_atr = Indicators::update_atr(c, prev_c, current_atr, atr_period, i);
 
