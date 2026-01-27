@@ -78,6 +78,26 @@ struct Indicators {
             return (prev_atr * (float)(period - 1) + tr) / (float)period;
         }
     }
+
+    // Rolling Max
+    static float calculate_max(const device Candle* data, int index, int period) {
+        if (index < period - 1) return 0.0f;
+        float val = data[index].high;
+        for (int i = 1; i < period; i++) {
+            if (data[index - i].high > val) val = data[index - i].high;
+        }
+        return val;
+    }
+
+    // Rolling Min
+    static float calculate_min(const device Candle* data, int index, int period) {
+        if (index < period - 1) return 0.0f;
+        float val = data[index].low;
+        for (int i = 1; i < period; i++) {
+            if (data[index - i].low < val) val = data[index - i].low;
+        }
+        return val;
+    }
 };
 
 // --- Unified Backtest Kernel ---
@@ -148,6 +168,25 @@ kernel void backtest_kernel(
             float hist = macd - signal_ema;
             if (hist > 0) signal_val = 1.0f;
             else if (hist < 0) signal_val = -1.0f;
+        }
+        else if (strategy_type == 3) {
+            // Dynamic Generic (3)
+            // p1: sub_type (0: Price > SMA, 1: Price > Max, 2: Price < Min, 3: Diff > 0)
+            // p2: period
+            // p3: offset/threshold
+            if (p1 == 0.0f) {
+                float sma = Indicators::calculate_sma(data, i, (int)p2);
+                signal_val = (c.close > sma) ? 1.0f : -1.0f;
+            } else if (p1 == 1.0f) {
+                float rolling_max = Indicators::calculate_max(data, i-1, (int)p2);
+                signal_val = (c.close > rolling_max) ? 1.0f : 0.0f;
+            } else if (p1 == 2.0f) {
+                float rolling_min = Indicators::calculate_min(data, i-1, (int)p2);
+                signal_val = (c.close < rolling_min) ? -1.0f : 0.0f;
+            } else if (p1 == 3.0f) {
+                float diff = c.close - data[i-(int)p2].close;
+                signal_val = (diff > 0.0f) ? 1.0f : -1.0f;
+            }
         }
 
         current_atr = Indicators::update_atr(c, prev_c, current_atr, atr_period, i);

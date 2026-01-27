@@ -130,6 +130,64 @@ class DynamicIndicator(BaseIndicator):
                 logger.debug(f"Runtime error in safe dynamic indicator: {safe_error}")
                 return np.nan
 
+    def get_metal_params(self) -> list[float] | None:
+        """Return parameters for native Metal kernel if formula is supported."""
+        import re
+        code = self.source_code.replace(" ", "")
+
+        # Layout: [type, p1, p2, p3, atr_period, sl_mult, tp_mult, ts_mult]
+        # Default SL/TP/TS params
+        common_tail = [14.0, 1.5, 3.0, 2.0]
+
+        # 1. SMA Crossover Pattern: SMA(f) > SMA(s) or Price > SMA(s)
+        # Matches: data['close'].rolling(14).mean()>data['close'].rolling(50).mean()
+        # or: data['close']>data['close'].rolling(50).mean()
+        sma_pattern = r"rolling\((\d+)\)\.mean\(\)"
+        matches = re.findall(sma_pattern, code)
+        
+        if len(matches) == 2:
+            # SMA(f) > SMA(s)
+            return [0.0, float(matches[0]), float(matches[1]), 0.0] + common_tail
+        elif len(matches) == 1:
+            # Price vs SMA(s)
+            if "data['close']>" in code:
+                # strategy_type 3, sub_type 0 (Price > SMA)
+                return [3.0, 0.0, float(matches[0]), 0.0] + common_tail
+            elif ">data['close']" in code:
+                # strategy_type 0, p1=SMA, p2=1.0 (SMA > Price)
+                return [0.0, float(matches[0]), 1.0, 0.0] + common_tail
+
+        # 2. Rolling Max/Min Pattern (Donchian-like)
+        # Matches: data['close']>data['high'].rolling(20).max()
+        max_pattern = r"data\['high'\]\.rolling\((\d+)\)\.max\(\)"
+        max_matches = re.findall(max_pattern, code)
+        if max_matches and "data['close']>" in code:
+            # strategy_type 3, sub_type 1 (Price > Max)
+            return [3.0, 1.0, float(max_matches[0]), 0.0] + common_tail
+
+        min_pattern = r"data\['low'\]\.rolling\((\d+)\)\.min\(\)"
+        min_matches = re.findall(min_pattern, code)
+        if min_matches and "data['close']<" in code:
+            # strategy_type 3, sub_type 2 (Price < Min)
+            return [3.0, 2.0, float(min_matches[0]), 0.0] + common_tail
+
+        # 3. Momentum Pattern (Shift/Diff)
+        # Matches: data['close']>data['close'].shift(10)
+        shift_pattern = r"data\['close'\]\.shift\((\d+)\)"
+        shift_matches = re.findall(shift_pattern, code)
+        if shift_matches and "data['close']>" in code:
+            # strategy_type 3, sub_type 3 (Diff > 0)
+            return [3.0, 3.0, float(shift_matches[0]), 0.0] + common_tail
+
+        # 2. RSI Pattern: RSI(p) < 30 or RSI(p) > 70
+        # Actually RSI is harder to detect in arbitrary dynamic code unless it's explicitly called.
+        # But CodeGenerator doesn't produce RSI yet. It produces rolling(p).mean() etc.
+        
+        # 3. MACD Pattern: MACD is also complex for CodeGenerator.
+
+        # If no simple pattern matched, return None to fallback to MLX/CPU
+        return None
+
     def get_formula(self) -> str:
         """Get the source code string used for calculation."""
         return f"Dynamic: {self.source_code}"
