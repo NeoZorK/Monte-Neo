@@ -96,9 +96,9 @@ class MonteCarloEngine:
                 self.config.use_sensitivity,
                 self.config.use_walk_forward,
                 self.config.use_block_bootstrap
-            ])) 
+            ]))
             and not self.config.use_noise
-            and not self.config.use_sensitivity 
+            and not self.config.use_sensitivity
             and not self.config.use_walk_forward
             and not self.config.use_block_bootstrap
         )

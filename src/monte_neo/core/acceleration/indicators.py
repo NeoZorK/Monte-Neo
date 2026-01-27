@@ -3,7 +3,7 @@ MLX-accelerated indicators.
 """
 
 import mlx.core as mx
-import mlx.nn as nn
+
 
 class MLXIndicator:
     """Base class for MLX indicators."""

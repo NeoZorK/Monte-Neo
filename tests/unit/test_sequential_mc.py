@@ -5,12 +5,11 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
-import pytest
 
 from monte_neo.metrics.calculator import MetricsCalculator
 from monte_neo.monte_carlo.engine import MonteCarloEngine
 from monte_neo.monte_carlo.sequential import SequentialMCRunner
-from monte_neo.monte_carlo.types import MCConfig, MCResult, MCStepResult
+from monte_neo.monte_carlo.types import MCConfig, MCResult
 
 
 class TestSequentialRunner:
@@ -43,10 +42,10 @@ class TestSequentialRunner:
         """Test the sequential flow logic."""
         # Mock engine run to return passed result
         step_res = MCResult(
-            passed=True, 
-            pass_rate=0.9, 
-            metrics_summary={}, 
-            elapsed_time=0.1, 
+            passed=True,
+            pass_rate=0.9,
+            metrics_summary={},
+            elapsed_time=0.1,
             detailed_results=[],
             iterations_run=100
         )
@@ -78,10 +77,10 @@ class TestSequentialRunner:
     def test_stop_on_fail(self, mock_questionary):
         """Test stopping when user chooses to abort after failure."""
         step_res = MCResult(
-            passed=False, 
-            pass_rate=0.1, 
-            metrics_summary={}, 
-            elapsed_time=0.1, 
+            passed=False,
+            pass_rate=0.1,
+            metrics_summary={},
+            elapsed_time=0.1,
             detailed_results=[],
             iterations_run=100
         )

@@ -8,6 +8,7 @@ import pytest
 
 try:
     import mlx.core as mx
+
     from monte_neo.core.acceleration.engine import GpuAccelerationEngine
     from monte_neo.core.acceleration.tensor_ops import TensorOps
     HAS_MLX = True

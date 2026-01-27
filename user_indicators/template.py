@@ -13,7 +13,9 @@ Rules:
 
 import pandas as pd
 import talib
+
 from monte_neo.indicators.base import BaseIndicator, IndicatorConfig
+
 
 class MyIndicator(BaseIndicator):
     """User-defined custom indicator."""
