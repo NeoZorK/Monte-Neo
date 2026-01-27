@@ -27,8 +27,16 @@ public:
     id<MTLCommandQueue> commandQueue;
     id<MTLComputePipelineState> pipelineState;
     Driver driver;
+    
+    // Buffer cache for C++ driver optimization
+    id<MTLBuffer> cachedDataBuffer;
+    id<MTLBuffer> cachedParamsBuffer;
+    id<MTLBuffer> cachedResultsBuffer;
+    int cachedScenarios = 0;
+    int cachedDataCount = 0;
 
-    Impl(Driver d) : device(nil), commandQueue(nil), pipelineState(nil), driver(d) {}
+    Impl(Driver d) : device(nil), commandQueue(nil), pipelineState(nil), driver(d), 
+                    cachedDataBuffer(nil), cachedParamsBuffer(nil), cachedResultsBuffer(nil) {}
     
     bool init() {
         if (driver == Driver::SWIFT) {
@@ -96,9 +104,12 @@ std::vector<BacktestResult> MetalBacktestBridge::run_backtest(
     const std::vector<float>& params,
     int n_scenarios
 ) {
-    auto start = std::chrono::high_resolution_clock::now();
+    auto start_total = std::chrono::high_resolution_clock::now();
     std::vector<BacktestResult> results(n_scenarios);
     
+    double transfer_time = 0;
+    double kernel_time = 0;
+
     if (driver_ == Driver::SWIFT) {
         bool success = swift_run_backtest(
             (__bridge void*)pimpl->device,
@@ -115,59 +126,93 @@ std::vector<BacktestResult> MetalBacktestBridge::run_backtest(
         }
     } else {
         @autoreleasepool {
-            // Both CPP and OBJC currently use the same Obj-C++ host logic
-            // In a real comparison, CPP would use metal-cpp headers.
+            auto start_transfer = std::chrono::high_resolution_clock::now();
             
-            id<MTLBuffer> dataBuffer = [pimpl->device newBufferWithBytes:data.data() 
-                                                                length:data.size() * sizeof(Candle) 
-                                                               options:MTLResourceStorageModeShared];
-        
-        id<MTLBuffer> resultsBuffer = [pimpl->device newBufferWithLength:n_scenarios * sizeof(BacktestResult) 
-                                                               options:MTLResourceStorageModeShared];
-        
-        id<MTLBuffer> paramsBuffer = [pimpl->device newBufferWithBytes:params.data() 
-                                                              length:params.size() * sizeof(float) 
-                                                             options:MTLResourceStorageModeShared];
-        
-        uint32_t total_candles_val = (uint32_t)data.size();
-        id<MTLBuffer> countBuffer = [pimpl->device newBufferWithBytes:&total_candles_val 
-                                                              length:sizeof(uint32_t) 
-                                                             options:MTLResourceStorageModeShared];
+            id<MTLBuffer> dataBuffer;
+            id<MTLBuffer> resultsBuffer;
+            id<MTLBuffer> paramsBuffer;
+            
+            // Optimization for C++ driver: Reuse buffers if size matches
+            if (driver_ == Driver::CPP && pimpl->cachedScenarios == n_scenarios && pimpl->cachedDataCount == (int)data.size()) {
+                dataBuffer = pimpl->cachedDataBuffer;
+                resultsBuffer = pimpl->cachedResultsBuffer;
+                paramsBuffer = pimpl->cachedParamsBuffer;
+                
+                std::memcpy([dataBuffer contents], data.data(), data.size() * sizeof(Candle));
+                std::memcpy([paramsBuffer contents], params.data(), params.size() * sizeof(float));
+            } else {
+                dataBuffer = [pimpl->device newBufferWithBytes:data.data() 
+                                                       length:data.size() * sizeof(Candle) 
+                                                      options:MTLResourceStorageModeShared];
+                
+                resultsBuffer = [pimpl->device newBufferWithLength:n_scenarios * sizeof(BacktestResult) 
+                                                       options:MTLResourceStorageModeShared];
+                
+                paramsBuffer = [pimpl->device newBufferWithBytes:params.data() 
+                                                      length:params.size() * sizeof(float) 
+                                                     options:MTLResourceStorageModeShared];
+                
+                if (driver_ == Driver::CPP) {
+                    pimpl->cachedDataBuffer = dataBuffer;
+                    pimpl->cachedResultsBuffer = resultsBuffer;
+                    pimpl->cachedParamsBuffer = paramsBuffer;
+                    pimpl->cachedScenarios = n_scenarios;
+                    pimpl->cachedDataCount = (int)data.size();
+                }
+            }
+            
+            uint32_t total_candles_val = (uint32_t)data.size();
+            id<MTLBuffer> countBuffer = [pimpl->device newBufferWithBytes:&total_candles_val 
+                                                                  length:sizeof(uint32_t) 
+                                                                 options:MTLResourceStorageModeShared];
 
-        id<MTLCommandBuffer> commandBuffer = [pimpl->commandQueue commandBuffer];
-        id<MTLComputeCommandEncoder> encoder = [commandBuffer computeCommandEncoder];
-        
-        [encoder setComputePipelineState:pimpl->pipelineState];
-        [encoder setBuffer:dataBuffer offset:0 atIndex:0];
-        [encoder setBuffer:resultsBuffer offset:0 atIndex:1];
-        [encoder setBuffer:paramsBuffer offset:0 atIndex:2];
-        [encoder setBuffer:countBuffer offset:0 atIndex:3];
+            auto end_transfer = std::chrono::high_resolution_clock::now();
+            transfer_time = std::chrono::duration<double>(end_transfer - start_transfer).count();
 
-        MTLSize gridSize = MTLSizeMake(n_scenarios, 1, 1);
-        NSUInteger threadGroupSizeVal = pimpl->pipelineState.maxTotalThreadsPerThreadgroup;
-        if (threadGroupSizeVal > (NSUInteger)n_scenarios) {
-            threadGroupSizeVal = (NSUInteger)n_scenarios;
-        }
-        MTLSize threadGroupSize = MTLSizeMake(threadGroupSizeVal, 1, 1);
+            auto start_kernel = std::chrono::high_resolution_clock::now();
+            
+            id<MTLCommandBuffer> commandBuffer = [pimpl->commandQueue commandBuffer];
+            id<MTLComputeCommandEncoder> encoder = [commandBuffer computeCommandEncoder];
+            
+            [encoder setComputePipelineState:pimpl->pipelineState];
+            [encoder setBuffer:dataBuffer offset:0 atIndex:0];
+            [encoder setBuffer:resultsBuffer offset:0 atIndex:1];
+            [encoder setBuffer:paramsBuffer offset:0 atIndex:2];
+            [encoder setBuffer:countBuffer offset:0 atIndex:3];
 
-        [encoder dispatchThreads:gridSize threadsPerThreadgroup:threadGroupSize];
-        [encoder endEncoding];
+            MTLSize gridSize = MTLSizeMake(n_scenarios, 1, 1);
+            NSUInteger threadGroupSizeVal = pimpl->pipelineState.maxTotalThreadsPerThreadgroup;
+            if (threadGroupSizeVal > (NSUInteger)n_scenarios) {
+                threadGroupSizeVal = (NSUInteger)n_scenarios;
+            }
+            MTLSize threadGroupSize = MTLSizeMake(threadGroupSizeVal, 1, 1);
 
-        [commandBuffer commit];
-        [commandBuffer waitUntilCompleted];
+            [encoder dispatchThreads:gridSize threadsPerThreadgroup:threadGroupSize];
+            [encoder endEncoding];
 
-        std::memcpy(results.data(), [resultsBuffer contents], n_scenarios * sizeof(BacktestResult));
+            [commandBuffer commit];
+            [commandBuffer waitUntilCompleted];
+            
+            auto end_kernel = std::chrono::high_resolution_clock::now();
+            kernel_time = std::chrono::duration<double>(end_kernel - start_kernel).count();
+
+            std::memcpy(results.data(), [resultsBuffer contents], n_scenarios * sizeof(BacktestResult));
         }
     }
     
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> diff = end - start;
+    auto end_total = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff_total = end_total - start_total;
     
     std::string driver_name = (driver_ == Driver::CPP) ? "Clang C++" : 
                              (driver_ == Driver::OBJC) ? "Objective-C++" : "Apple Swift";
                              
-    std::cout << "MetalBridge: " << driver_name << " execution time: " << diff.count() << "s (" 
-              << n_scenarios / (diff.count() + 1e-9) << " scenarios/sec)" << std::endl;
+    std::cout << "MetalBridge [" << driver_name << "]:" << std::endl;
+    if (driver_ != Driver::SWIFT) {
+        std::cout << "  Transfer: " << transfer_time << "s" << std::endl;
+        std::cout << "  Kernel:   " << kernel_time << "s" << std::endl;
+    }
+    std::cout << "  Total:    " << diff_total.count() << "s (" 
+              << n_scenarios / (diff_total.count() + 1e-9) << " scenarios/sec)" << std::endl;
               
     return results;
 }
