@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
 from monte_neo.core.acceleration.engine import GpuAccelerationEngine
 
+
 class MLXBacktestEngine:
     """GPU-accelerated backtesting engine using MLX."""
 

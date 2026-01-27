@@ -6,6 +6,7 @@ import mlx.core as mx
 import numpy as np
 import pandas as pd
 
+
 def to_tensor(data: pd.DataFrame) -> dict[str, mx.array]:
     """Convert DataFrame to dictionary of MLX arrays."""
     return {
@@ -36,8 +37,8 @@ def generate_shuffle_scenarios(
     # Generate random indices for returns
     # We want to shuffle returns: effectively sampling from returns with replacement or permutation
     # For Monte Carlo "Shuffling", we usually mean Permutation (Sampling without replacement) per scenario?
-    # Or Bootstrap (Sampling with replacement)? 
-    # Usually "Shuffling" implies permutation. 
+    # Or Bootstrap (Sampling with replacement)?
+    # Usually "Shuffling" implies permutation.
     # But generating N permutations efficiently:
     
     key = mx.random.key(seed)

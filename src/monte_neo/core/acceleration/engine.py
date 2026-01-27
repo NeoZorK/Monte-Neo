@@ -3,12 +3,14 @@ GPU Acceleration Engine (MLX).
 """
 
 import time
+
 import mlx.core as mx
 import numpy as np
 import pandas as pd
 
-from monte_neo.core.acceleration.tensor_ops import generate_shuffle_scenarios, to_tensor, generate_noise_scenarios
 from monte_neo.core.acceleration.indicators import MLXSMA, MLXCrossStrategy
+from monte_neo.core.acceleration.tensor_ops import generate_noise_scenarios, generate_shuffle_scenarios, to_tensor
+
 
 class GpuAccelerationEngine:
     """High-performance GPU engine."""
@@ -17,9 +19,9 @@ class GpuAccelerationEngine:
         self.batch_size = batch_size
         
     def run_simulation(
-        self, 
-        data: pd.DataFrame, 
-        mlx_strategy: Any, 
+        self,
+        data: pd.DataFrame,
+        mlx_strategy: Any,
         n_scenarios: int,
         method: str = "shuffling",
         seed: int = 42
@@ -78,7 +80,7 @@ class GpuAccelerationEngine:
             mx.eval(final_returns, max_dds, profit_factor)
             
             # Convert to numpy/list for result
-            # We can't keep all results in GPU memory if N is huge? 
+            # We can't keep all results in GPU memory if N is huge?
             # Actually we just keep scalars.
             
             fr_np = np.array(final_returns)

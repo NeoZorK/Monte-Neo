@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING
 
 import questionary
 from rich.console import Console
-from rich.panel import Panel
 
 from monte_neo.cli.styles import CUSTOM_STYLE
 from monte_neo.core.generator import GeneratorConfig
@@ -133,7 +132,6 @@ def test_custom_indicator_workflow(menu: InteractiveMenu) -> None:
         mc_result = runner.run(data, indicator, metrics_calc, menu._target_metrics)
         
         # Display Final Certificate if passed
-        from monte_neo.cli.menu.results import show_generation_result
         
         # We need to construct a "GenerationResult" like object or just reuse the display logic
         # For simplicity, let's create a simple object to pass to show_generation_result logic

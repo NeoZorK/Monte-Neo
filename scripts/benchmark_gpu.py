@@ -1,13 +1,15 @@
 
-import sys
 import os
-import pandas as pd
+import sys
+
 import numpy as np
+import pandas as pd
 
 # Ensure src is in path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
 from monte_neo.core.acceleration.engine import GpuAccelerationEngine
+
 
 def generate_data(n=1000):
     dates = pd.date_range("2023-01-01", periods=n, freq="h")
