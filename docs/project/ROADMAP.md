@@ -16,12 +16,15 @@
 - [x] Unit and integration test suite (uv + pytest)
 - [x] Dockerization and docker-compose
 
-## Version 0.0.3 - Visualization & UX
+## Version 0.0.3 - Visualization & Performance
 
 - [x] Interactive terminal candlestick charts
 - [x] Trade list visualization (Rich tables)
 - [x] User-defined custom indicator templates
 - [ ] Multi-thread optimization for UI
+- [ ] **GPU Acceleration Core**: Implement MLX and Metal Shaders for Monte Carlo methods and general computations
+- [ ] **Performance Benchmark**: Achieve > 300,000 operations per second across the engine
+- [ ] **High-Speed Sequential Mode**: Optimized sequential execution reaching 300k+ ops/sec or higher
 
 ## Version 0.0.4 - Advanced Analytics
 
@@ -43,6 +46,6 @@
 |---------|--------|--------|
 | v0.0.1 | Initial Alpha Setup | ✅ |
 | v0.0.2 | Robustness Core & Tests | ✅ |
-| v0.0.3 | Visualization & UX | 🔄 |
+| v0.0.3 | Visualization & Performance | 🔄 |
 | v0.0.4 | Advanced Analytics | 📅 |
 | v0.0.5 | High Performance & Cloud | 📅 |
