@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pandas as pd
 import questionary
 from rich.console import Console
 
@@ -47,6 +48,7 @@ class InteractiveMenu:
 
         # Validation Settings
         self._mc_pass_threshold: float = 0.80
+        self._last_data: pd.DataFrame | None = None
 
     def run(self) -> int:
         """Run the interactive menu loop."""

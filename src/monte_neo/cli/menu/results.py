@@ -168,7 +168,14 @@ def _save_result(menu: InteractiveMenu, result) -> None:
 
 def _plot_result(menu: InteractiveMenu, result) -> None:
     from monte_neo.visualization.charts import ChartGenerator
-    if hasattr(menu, "_last_data"):
-        signals = result.indicator.generate_signals(menu._last_data)
+    if hasattr(menu, "_last_data") and menu._last_data is not None:
+        # Use generate_signals_fast for better performance if available
+        if hasattr(result.indicator, "generate_signals_fast"):
+            signals = result.indicator.generate_signals_fast(menu._last_data)
+        else:
+            signals = result.indicator.generate_signals(menu._last_data)
+        
         chart_gen = ChartGenerator()
         chart_gen.plot_with_signals(menu._last_data, signals, title=f"Best: {result.indicator.name}")
+    else:
+        console.print("[yellow]⚠ No data available to plot chart. Please run generation first.[/]")
