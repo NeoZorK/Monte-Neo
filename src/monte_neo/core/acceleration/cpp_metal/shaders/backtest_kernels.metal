@@ -178,14 +178,19 @@ kernel void backtest_kernel(
     device uint& total_candles [[buffer(3)]]
 ) {
     // 1. Setup parameters
-    int strategy_type = (int)params[scenario_id * 8 + 0];
-    float p1 = params[scenario_id * 8 + 1]; // Param A
-    float p2 = params[scenario_id * 8 + 2]; // Param B
-    float p3 = params[scenario_id * 8 + 3]; // Param C
-    int atr_period = (int)params[scenario_id * 8 + 4];
-    float sl_mult = params[scenario_id * 8 + 5];
-    float tp_mult = params[scenario_id * 8 + 6];
-    float ts_mult = params[scenario_id * 8 + 7];
+    int strategy_type = (int)params[scenario_id * 10 + 0];
+    float p1 = params[scenario_id * 10 + 1]; // Param A
+    float p2 = params[scenario_id * 10 + 2]; // Param B
+    float p3 = params[scenario_id * 10 + 3]; // Param C
+    int atr_period = (int)params[scenario_id * 10 + 4];
+    float sl_mult = params[scenario_id * 10 + 5];
+    float tp_mult = params[scenario_id * 10 + 6];
+    float ts_mult = params[scenario_id * 10 + 7];
+    float commission_bps = params[scenario_id * 10 + 8];
+    float slippage_bps = params[scenario_id * 10 + 9];
+
+    float commission_pct = commission_bps / 10000.0f;
+    float slippage_pct = slippage_bps / 10000.0f;
 
     // 2. State Management
     float equity = 1.0f;
@@ -276,10 +281,9 @@ kernel void backtest_kernel(
             }
         }
         else if (strategy_type == 4) {
-             // Complex Logic (4)
-             // Layout for type 4: [4, op_type, sub1, p2_1, p3_1, sub2, p2_2, p3_2]
-             float s1_real = Indicators::get_dynamic_signal(data, i, (int)p2, p3, params[scenario_id * 8 + 4]);
-             float s2_real = Indicators::get_dynamic_signal(data, i, (int)params[scenario_id * 8 + 5], params[scenario_id * 8 + 6], params[scenario_id * 8 + 7]);
+             // Layout for type 4: [4, op_type, sub1, p2_1, p3_1, sub2, p2_2, p3_2, comm, slip]
+             float s1_real = Indicators::get_dynamic_signal(data, i, (int)p2, p3, params[scenario_id * 10 + 4]);
+             float s2_real = Indicators::get_dynamic_signal(data, i, (int)params[scenario_id * 10 + 5], params[scenario_id * 10 + 6], params[scenario_id * 10 + 7]);
              
              if (p1 == 0.0f) { // AND
                  signal_val = (s1_real > 0 && s2_real > 0) ? 1.0f : ((s1_real < 0 && s2_real < 0) ? -1.0f : 0.0f);
@@ -308,17 +312,12 @@ kernel void backtest_kernel(
 
         // Strategy Execution
         if (pos == 0) {
-            if (signal_val == 1.0f) {
-                pos = 1;
-                entry_price = c.close;
-                sl_price = entry_price - (current_atr * sl_mult);
-                tp_price = entry_price + (current_atr * tp_mult);
-                trades++;
-            } else if (signal_val == -1.0f) {
-                pos = -1;
-                entry_price = c.close;
-                sl_price = entry_price + (current_atr * sl_mult);
-                tp_price = entry_price - (current_atr * tp_mult);
+            if (signal_val == 1.0f || signal_val == -1.0f) {
+                pos = (signal_val == 1.0f) ? 1 : -1;
+                entry_price = c.close * (1.0f + (float)pos * slippage_pct);
+                equity *= (1.0f - commission_pct); // Commission on entry
+                sl_price = entry_price - (float)pos * (current_atr * sl_mult);
+                tp_price = entry_price + (float)pos * (current_atr * tp_mult);
                 trades++;
             }
         } else {
@@ -338,17 +337,18 @@ kernel void backtest_kernel(
             float pnl_pct = 0.0f;
 
             if (pos == 1) {
-                if (c.low <= sl_price) { exit = true; pnl_pct = (sl_price / entry_price) - 1.0f; }
-                else if (c.high >= tp_price) { exit = true; pnl_pct = (tp_price / entry_price) - 1.0f; }
-                else if (signal_val <= 0.0f) { exit = true; pnl_pct = (c.close / entry_price) - 1.0f; }
+                if (c.low <= sl_price) { exit = true; pnl_pct = (sl_price * (1.0f - slippage_pct) / entry_price) - 1.0f; }
+                else if (c.high >= tp_price) { exit = true; pnl_pct = (tp_price * (1.0f - slippage_pct) / entry_price) - 1.0f; }
+                else if (signal_val <= 0.0f) { exit = true; pnl_pct = (c.close * (1.0f - slippage_pct) / entry_price) - 1.0f; }
             } else {
-                if (c.high >= sl_price) { exit = true; pnl_pct = (entry_price / sl_price) - 1.0f; }
-                else if (c.low <= tp_price) { exit = true; pnl_pct = (entry_price / tp_price) - 1.0f; }
-                else if (signal_val >= 0.0f) { exit = true; pnl_pct = (entry_price / c.close) - 1.0f; }
+                if (c.high >= sl_price) { exit = true; pnl_pct = (entry_price / (sl_price * (1.0f + slippage_pct))) - 1.0f; }
+                else if (c.low <= tp_price) { exit = true; pnl_pct = (entry_price / (tp_price * (1.0f + slippage_pct))) - 1.0f; }
+                else if (signal_val >= 0.0f) { exit = true; pnl_pct = (entry_price / (c.close * (1.0f + slippage_pct))) - 1.0f; }
             }
 
             if (exit) {
                 equity *= (1.0f + pnl_pct);
+                equity *= (1.0f - commission_pct); // Apply commission on exit
                 sum_returns += pnl_pct;
                 sum_sq_returns += pnl_pct * pnl_pct;
                 return_count++;

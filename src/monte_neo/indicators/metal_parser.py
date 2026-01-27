@@ -1,13 +1,13 @@
 
 import re
 
-def parse_metal_params(source_code: str) -> list[float] | None:
+def parse_metal_params(source_code: str, commission_bps: float = 5.0, slippage_bps: float = 5.0) -> list[float] | None:
     """Parse dynamic indicator source code into Metal kernel parameters."""
     code = source_code.replace(" ", "")
     
-    # Layout: [type, p1, p2, p3, atr_period, sl_mult, tp_mult, ts_mult]
+    # Layout: [type, p1, p2, p3, atr_period, sl_mult, tp_mult, ts_mult, commission_bps, slippage_bps]
     # Default SL/TP/TS params
-    common_tail = [14.0, 1.5, 3.0, 2.0]
+    common_tail = [14.0, 1.5, 3.0, 2.0, commission_bps, slippage_bps]
 
     def parse_simple_cond(cond_code: str) -> list[float] | None:
         # 0. Bollinger Bands (check first to avoid SMA collision)
@@ -77,8 +77,8 @@ def parse_metal_params(source_code: str) -> list[float] | None:
             p1_params = parse_simple_cond(parts[0])
             p2_params = parse_simple_cond(parts[1])
             if p1_params and p2_params:
-                # New Layout for type 4: [4, op_type, sub1, p2_1, p3_1, sub2, p2_2, p3_2]
-                return [4.0, op_type, p1_params[0], p1_params[1], p1_params[2], p2_params[0], p2_params[1], p2_params[2]]
+                # New Layout for type 4: [4, op_type, sub1, p2_1, p3_1, sub2, p2_2, p3_2, comm, slip]
+                return [4.0, op_type, p1_params[0], p1_params[1], p1_params[2], p2_params[0], p2_params[1], p2_params[2], commission_bps, slippage_bps]
 
     # Fallback to single condition parsing
     res = parse_simple_cond(code)

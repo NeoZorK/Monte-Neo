@@ -13,6 +13,8 @@ def extract_trades_fast(
     use_sl_tp: bool = False,
     sl_pct: float = 0.0,
     tp_pct: float = 0.0,
+    commission_pct: float = 0.0,
+    slippage_pct: float = 0.0,
 ) -> list[tuple[int, int, float, float, int, float, float]]:
     """Fast trade extraction using Numba JIT."""
     results = []
@@ -39,7 +41,7 @@ def extract_trades_fast(
                 # Open position
                 position = signal
                 entry_idx = i
-                entry_price = price
+                entry_price = price * (1.0 + float(position) * slippage_pct)
 
                 if use_sl_tp:
                     if position == 1: # Long
@@ -76,8 +78,9 @@ def extract_trades_fast(
 
             if hit_exit:
                 # Close position
-                pnl = (exit_price - entry_price) * position
-                pnl_pct = pnl / entry_price
+                exit_price_adj = exit_price * (1.0 - float(position) * slippage_pct)
+                pnl = (exit_price_adj - entry_price) * position
+                pnl_pct = (pnl / entry_price) - commission_pct * 2.0 # Round trip commission
 
                 results.append(
                     (entry_idx, i, entry_price, exit_price, position, pnl, pnl_pct)
@@ -99,6 +102,8 @@ def calculate_batch_fast(
     use_sl_tp: bool,
     sl_pct: float,
     tp_pct: float,
+    commission_pct: float = 0.0,
+    slippage_pct: float = 0.0,
 ) -> np.ndarray:
     """Calculate basic metrics for a batch of signal sets in parallel."""
     n_indicators = signal_matrix.shape[0]
@@ -203,6 +208,8 @@ def calculate_batch_multi_price_fast(
     use_sl_tp: bool,
     sl_pct: float,
     tp_pct: float,
+    commission_pct: float = 0.0,
+    slippage_pct: float = 0.0,
 ) -> np.ndarray:
     """Calculate basic metrics for a batch where each row has its own prices."""
     n_rows = signal_matrix.shape[0]
