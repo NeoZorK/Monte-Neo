@@ -27,7 +27,7 @@ def hardware_workflow(menu: InteractiveMenu) -> None:
     choices = [
         {"name": f"🚀 Use GPU ({'✅' if menu._use_gpu else '❌'})", "value": "toggle_gpu"},
         {"name": f"💎 GPU Precision ({menu._gpu_precision})", "value": "gpu_precision"},
-        {"name": f"⚡ Metal Shaders C++ ({'✅' if menu._use_metal_cpp else '❌'})", "value": "toggle_metal"},
+        {"name": f"⚡ Metal Driver ({menu._metal_driver.upper()})", "value": "metal_driver"},
         {"name": f"🎯 MC Pass Threshold ({menu._mc_pass_threshold:.0%})", "value": "mc_threshold"},
         {"name": "📊 Benchmark Hardware", "value": "benchmark"},
         {"name": "🔙 Back", "value": "back"},
@@ -52,13 +52,24 @@ def hardware_workflow(menu: InteractiveMenu) -> None:
             menu._gpu_precision = val
             console.print(f"[green]GPU precision set to {val}[/]")
             
-    elif choice == "toggle_metal":
+    elif choice == "metal_driver":
         if not menu._use_gpu:
-            console.print("[yellow]⚠️  Enable GPU first to use Metal shaders[/]")
+            console.print("[yellow]⚠️  Enable GPU first to use Metal drivers[/]")
         else:
-            menu._use_metal_cpp = not menu._use_metal_cpp
-            status = "enabled" if menu._use_metal_cpp else "disabled"
-            console.print(f"[green]Metal C++ shaders {status}[/]")
+            driver_choices = [
+                {"name": "Auto-Select (Recommended)", "value": "auto"},
+                {"name": "Clang C++ (Optimized)", "value": "cpp"},
+                {"name": "Objective-C++ (Native)", "value": "objc"},
+                {"name": "Apple Swift (Modern)", "value": "swift"},
+            ]
+            val = questionary.select("Select Metal driver:", choices=driver_choices, style=CUSTOM_STYLE).ask()
+            if val:
+                menu._metal_driver = val
+                # Update config object and save
+                menu.config.metal_driver = val
+                from monte_neo.utils.config import save_config
+                save_config(menu.config, "config.yaml")
+                console.print(f"[green]Metal driver set to {val.upper()} and saved to config.yaml[/]")
             
     elif choice == "mc_threshold":
         val = questionary.text("MC Pass Threshold (0.0-1.0):", default=str(menu._mc_pass_threshold)).ask()
@@ -104,7 +115,7 @@ def _show_hardware_info(menu: InteractiveMenu) -> None:
                  f"MLX: {'Available' if mlx_available else 'Not available'}")
     table.add_row("GPU Precision", menu._gpu_precision,
                  "Memory bandwidth: 4x with float8" if menu._gpu_precision.startswith("float8") else "Standard")
-    table.add_row("Metal C++ Shaders", "✅ Enabled" if menu._use_metal_cpp else "❌ Disabled",
+    table.add_row("Metal Driver", menu._metal_driver.upper(),
                  metal_info if metal_available else "Metal not available")
     table.add_row("MC Pass Threshold", f"{menu._mc_pass_threshold:.0%}",
                  "Production readiness threshold")

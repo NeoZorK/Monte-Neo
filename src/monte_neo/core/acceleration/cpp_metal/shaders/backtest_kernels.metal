@@ -16,6 +16,7 @@ struct BacktestResult {
     int trade_count;
     float win_rate;
     float max_drawdown;
+    float profit_factor;
 };
 
 // --- Indicator Library (Inline for maximum performance) ---
@@ -111,6 +112,8 @@ kernel void backtest_kernel(
     float current_atr = 0.0f;
     float max_dd = 0.0f;
     float peak_equity = 1.0f;
+    float total_wins_val = 0.0f;
+    float total_losses_val = 0.0f;
 
     // 3. Main Loop
     for (uint i = 1; i < total_candles; i++) {
@@ -164,7 +167,12 @@ kernel void backtest_kernel(
 
             if (exit) {
                 equity *= (1.0f + pnl_pct);
-                if (pnl_pct > 0) wins++;
+                if (pnl_pct > 0) {
+                    wins++;
+                    total_wins_val += pnl_pct;
+                } else {
+                    total_losses_val += abs(pnl_pct);
+                }
                 pos = 0;
                 
                 // Drawdown tracking
@@ -180,4 +188,5 @@ kernel void backtest_kernel(
     results[scenario_id].trade_count = trades;
     results[scenario_id].win_rate = (trades > 0) ? (float)wins / trades : 0.0f;
     results[scenario_id].max_drawdown = max_dd;
+    results[scenario_id].profit_factor = (total_losses_val > 0) ? (total_wins_val / total_losses_val) : (total_wins_val > 0 ? 100.0f : 1.0f);
 }

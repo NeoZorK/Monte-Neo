@@ -34,6 +34,9 @@ class Config:
     # Performance settings
     n_workers: int | None = None
     log_level: str = "INFO"
+    use_gpu: bool = True
+    gpu_precision: str = "float32"
+    metal_driver: str = "cpp"
 
 
 def load_config(config_path: str | Path | None = None) -> Config:
@@ -100,6 +103,16 @@ def _merge_yaml_config(config: Config, path: Path) -> Config:
         if "iterations" in mc:
             config.mc_iterations = mc["iterations"]
 
+    # Hardware settings
+    if "hardware" in yaml_config:
+        hw = yaml_config["hardware"]
+        if "use_gpu" in hw:
+            config.use_gpu = hw["use_gpu"]
+        if "gpu_precision" in hw:
+            config.gpu_precision = hw["gpu_precision"]
+        if "metal_driver" in hw:
+            config.metal_driver = hw["metal_driver"]
+
     return config
 
 
@@ -120,6 +133,11 @@ def save_config(config: Config, path: str | Path) -> None:
         "monte_carlo": {
             "iterations": config.mc_iterations,
             "max_iterations": config.max_iterations,
+        },
+        "hardware": {
+            "use_gpu": config.use_gpu,
+            "gpu_precision": config.gpu_precision,
+            "metal_driver": config.metal_driver,
         },
     }
 

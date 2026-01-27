@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pandas as pd
@@ -35,7 +36,7 @@ class InteractiveMenu:
             "max_drawdown": 0.20
         }
         self._selected_symbol: str = config.default_symbol
-        self._selected_timeframe: str = "1d"
+        self._selected_timeframe: str = config.default_timeframe
         self._mc_methods: list[str] = ["shuffling", "noise", "sensitivity", "walk_forward", "block_bootstrap"]
         self._pop_size, self._generations = 50, 20
         self._mutation_rate, self._crossover_rate = 0.3, 0.7
@@ -50,9 +51,9 @@ class InteractiveMenu:
         self._mc_pass_threshold: float = 0.80
 
         # Hardware Settings
-        self._use_gpu: bool = True
-        self._gpu_precision: str = "float32"
-        self._metal_driver: str = "auto" # auto, cpp, objc, swift
+        self._use_gpu: bool = config.use_gpu
+        self._gpu_precision: str = config.gpu_precision
+        self._metal_driver: str = config.metal_driver
 
         self._last_data: pd.DataFrame | None = None
 
@@ -119,3 +120,22 @@ class InteractiveMenu:
         handler = handlers.get(choice)
         if handler:
             handler(self)
+            self._sync_to_config()
+            self._save_config()
+
+    def _sync_to_config(self) -> None:
+        """Sync internal state to config object."""
+        self.config.default_symbol = self._selected_symbol
+        self.config.default_timeframe = self._selected_timeframe
+        self.config.target_profit_factor = self._target_metrics["profit_factor"]
+        self.config.target_sharpe_ratio = self._target_metrics["sharpe_ratio"]
+        self.config.target_max_drawdown = self._target_metrics["max_drawdown"]
+        self.config.use_gpu = self._use_gpu
+        self.config.gpu_precision = self._gpu_precision
+        self.config.metal_driver = self._metal_driver
+
+    def _save_config(self) -> None:
+        """Save config to default path."""
+        from monte_neo.utils.config import save_config
+        config_path = Path("config.yaml")
+        save_config(self.config, config_path)

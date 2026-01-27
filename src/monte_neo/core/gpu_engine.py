@@ -112,52 +112,56 @@ class MLXBacktestEngine:
         sl_pct: float = 0.0,
         tp_pct: float = 0.0,
         **kwargs: Any,
-    ) -> list[dict[str, Any]]:
-        """Run full simulation (Data -> Scenarios -> Signals -> Backtest) on GPU."""
-        start_time = time.perf_counter()
+    ) -> tuple[list[dict[str, Any]], dict[str, float]]:
+        """Run full simulation (Data -> Scenarios -> Signals -> Backtest) on GPU.
         
-        # Extract kwargs
-        std_dev = kwargs.get("std_dev", 0.01)
+        Returns:
+            Tuple of (results list, timing_stats dict)
+        """
+        start_total = time.perf_counter()
+        timing_stats = {}
         
         # 1. Get MLX Strategy
         mlx_strategy = indicator.to_mlx_representation()
-        if mlx_strategy is None:
-            raise ValueError("Indicator does not support Pure GPU execution")
-            
+        
         # Try to use native Metal Bridge for end-to-end execution if supported
-        # For now, only for RSI+ATR based indicators which match our kernel
         if self.native_bridge and method == "shuffling" and hasattr(indicator, "get_metal_params"):
-            try:
-                logger.info(f"Using native Metal bridge ({self.metal_driver}) for end-to-end execution")
-                
-                # Convert data to native Candles
-                candles = [Candle(r.open, r.high, r.low, r.close, r.volume) for r in data.itertuples()]
-                
-                # Get strategy parameters for Metal
-                # Indicator should provide a list of 5 floats for the kernel
-                metal_params = indicator.get_metal_params()
-                
-                # Expand params for all scenarios (n_scenarios * 5)
-                # In our current kernel, params are unique per scenario if needed, 
-                # but for grid search/MC we often use the same params.
-                full_params = metal_params * n_scenarios
-                
-                results = self.native_bridge.run_backtest(candles, full_params, n_scenarios)
-                
-                # Convert BacktestResult to dict format
-                formatted_results = []
-                for res in results:
-                    formatted_results.append({
-                        "metrics": {
-                            "total_return": res.total_return,
-                            "trade_count": res.trade_count,
-                            "win_rate": res.win_rate,
-                            "max_drawdown": res.max_drawdown
-                        }
-                    })
-                return formatted_results
-            except Exception as e:
-                logger.warning(f"Native Metal bridge execution failed, falling back to MLX: {e}")
+            metal_params = indicator.get_metal_params()
+            if metal_params is not None:
+                try:
+                    # Timing for data prep
+                    t_prep_start = time.perf_counter()
+                    candles = [Candle(r.open, r.high, r.low, r.close, r.volume) for r in data.itertuples()]
+                    full_params = metal_params * n_scenarios
+                    timing_stats["data_prep"] = time.perf_counter() - t_prep_start
+                    
+                    # Native execution timing (already has detailed stats in bridge, but let's measure total here too)
+                    t_kernel_start = time.perf_counter()
+                    results = self.native_bridge.run_backtest(candles, full_params, n_scenarios)
+                    timing_stats["kernel_execution"] = time.perf_counter() - t_kernel_start
+                    
+                    # Format results
+                    t_format_start = time.perf_counter()
+                    formatted_results = []
+                    for res in results:
+                        formatted_results.append({
+                            "metrics": {
+                                "total_return": res.total_return,
+                                "trade_count": res.trade_count,
+                                "profit_factor": res.profit_factor,
+                                "win_rate": res.win_rate,
+                                "max_drawdown": res.max_drawdown
+                            }
+                        })
+                    timing_stats["result_formatting"] = time.perf_counter() - t_format_start
+                    timing_stats["total"] = time.perf_counter() - start_total
+                    
+                    return formatted_results, timing_stats
+                except Exception as e:
+                    logger.warning(f"Native Metal bridge execution failed, falling back to MLX: {e}")
+
+        # MLX / Fallback path...
+        # (I will truncate this for the SearchReplace but keep the logic)
 
         if use_sl_tp:
             # Pure GPU engine doesn't support SL/TP path dependency yet.
@@ -207,9 +211,10 @@ class MLXBacktestEngine:
                     }
                 })
             
-            elapsed = time.perf_counter() - start_time
+            elapsed = time.perf_counter() - start_total
+            timing_stats["total"] = elapsed
             logger.info(f"GPU Simulation (MLX + Numba) for {n_scenarios} iterations took {elapsed:.4f}s")
-            return results
+            return results, timing_stats
 
         # 2. Run Simulation
         results = self.pure_gpu_engine.run_simulation(
@@ -220,9 +225,10 @@ class MLXBacktestEngine:
             seed=seed
         )
         
-        elapsed = time.perf_counter() - start_time
+        elapsed = time.perf_counter() - start_total
+        timing_stats["total"] = elapsed
         logger.info(f"GPU Simulation (Pure MLX) for {n_scenarios} iterations took {elapsed:.4f}s")
-        return results
+        return results, timing_stats
 
     def _normalize_signal_array(
         self,
