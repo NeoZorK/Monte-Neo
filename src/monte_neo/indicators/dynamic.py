@@ -146,13 +146,20 @@ class DynamicIndicator(BaseIndicator):
         matches = re.findall(sma_pattern, code)
         
         if len(matches) == 2:
-            # SMA(f) > SMA(s)
-            return [0.0, float(matches[0]), float(matches[1]), 0.0] + common_tail
+            if "<" in code:
+                # strategy_type 3, sub_type 5 (SMA < SMA)
+                return [3.0, 5.0, float(matches[0]), float(matches[1])] + common_tail
+            else:
+                # SMA(f) > SMA(s)
+                return [0.0, float(matches[0]), float(matches[1]), 0.0] + common_tail
         elif len(matches) == 1:
             # Price vs SMA(s)
             if "data['close']>" in code:
                 # strategy_type 3, sub_type 0 (Price > SMA)
                 return [3.0, 0.0, float(matches[0]), 0.0] + common_tail
+            elif "data['close']<" in code:
+                # strategy_type 3, sub_type 4 (Price < SMA)
+                return [3.0, 4.0, float(matches[0]), 0.0] + common_tail
             elif ">data['close']" in code:
                 # strategy_type 0, p1=SMA, p2=1.0 (SMA > Price)
                 return [0.0, float(matches[0]), 1.0, 0.0] + common_tail
@@ -175,9 +182,13 @@ class DynamicIndicator(BaseIndicator):
         # Matches: data['close']>data['close'].shift(10)
         shift_pattern = r"data\['close'\]\.shift\((\d+)\)"
         shift_matches = re.findall(shift_pattern, code)
-        if shift_matches and "data['close']>" in code:
-            # strategy_type 3, sub_type 3 (Diff > 0)
-            return [3.0, 3.0, float(shift_matches[0]), 0.0] + common_tail
+        if shift_matches:
+            if "data['close']>" in code:
+                # strategy_type 3, sub_type 3 (Diff > 0)
+                return [3.0, 3.0, float(shift_matches[0]), 0.0] + common_tail
+            elif "data['close']<" in code:
+                # strategy_type 3, sub_type 6 (Diff < 0)
+                return [3.0, 6.0, float(shift_matches[0]), 0.0] + common_tail
 
         # 2. RSI Pattern: RSI(p) < 30 or RSI(p) > 70
         # Actually RSI is harder to detect in arbitrary dynamic code unless it's explicitly called.

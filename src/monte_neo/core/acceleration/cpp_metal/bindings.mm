@@ -21,7 +21,8 @@ PYBIND11_MODULE(metal_engine, m) {
         .def_readonly("trade_count", &monte_neo::BacktestResult::trade_count)
         .def_readonly("win_rate", &monte_neo::BacktestResult::win_rate)
         .def_readonly("max_drawdown", &monte_neo::BacktestResult::max_drawdown)
-        .def_readonly("profit_factor", &monte_neo::BacktestResult::profit_factor);
+        .def_readonly("profit_factor", &monte_neo::BacktestResult::profit_factor)
+        .def_readonly("sharpe_ratio", &monte_neo::BacktestResult::sharpe_ratio);
 
     py::enum_<monte_neo::MetalBacktestBridge::Driver>(m, "Driver")
         .value("CPP", monte_neo::MetalBacktestBridge::Driver::CPP)

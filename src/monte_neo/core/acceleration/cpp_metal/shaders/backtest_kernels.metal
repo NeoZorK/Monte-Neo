@@ -17,6 +17,7 @@ struct BacktestResult {
     float win_rate;
     float max_drawdown;
     float profit_factor;
+    float sharpe_ratio;
 };
 
 // --- Indicator Library (Inline for maximum performance) ---
@@ -139,6 +140,9 @@ kernel void backtest_kernel(
     float peak_equity = 1.0f;
     float total_wins_val = 0.0f;
     float total_losses_val = 0.0f;
+    float sum_returns = 0.0f;
+    float sum_sq_returns = 0.0f;
+    int return_count = 0;
 
     // 3. Main Loop
     for (uint i = 1; i < total_candles; i++) {
@@ -186,6 +190,16 @@ kernel void backtest_kernel(
             } else if (p1 == 3.0f) {
                 float diff = c.close - data[i-(int)p2].close;
                 signal_val = (diff > 0.0f) ? 1.0f : -1.0f;
+            } else if (p1 == 4.0f) {
+                float sma = Indicators::calculate_sma(data, i, (int)p2);
+                signal_val = (c.close < sma) ? 1.0f : -1.0f;
+            } else if (p1 == 5.0f) {
+                float sma_fast = Indicators::calculate_sma(data, i, (int)p2);
+                float sma_slow = Indicators::calculate_sma(data, i, (int)p3);
+                signal_val = (sma_fast < sma_slow) ? 1.0f : -1.0f;
+            } else if (p1 == 6.0f) {
+                float diff = c.close - data[i-(int)p2].close;
+                signal_val = (diff < 0.0f) ? 1.0f : -1.0f;
             }
         }
 
@@ -234,6 +248,10 @@ kernel void backtest_kernel(
 
             if (exit) {
                 equity *= (1.0f + pnl_pct);
+                sum_returns += pnl_pct;
+                sum_sq_returns += pnl_pct * pnl_pct;
+                return_count++;
+                
                 if (pnl_pct > 0) {
                     wins++;
                     total_wins_val += pnl_pct;
@@ -249,9 +267,19 @@ kernel void backtest_kernel(
     }
 
     // 4. Finalize Results
+    float sharpe = 0.0f;
+    if (return_count > 1) {
+        float mean = sum_returns / (float)return_count;
+        float variance = (sum_sq_returns / (float)return_count) - (mean * mean);
+        if (variance > 1e-9f) {
+            sharpe = (mean / sqrt(variance)) * sqrt(252.0f); // Annualized (assuming daily-like frequency)
+        }
+    }
+
     results[scenario_id].total_return = equity - 1.0f;
     results[scenario_id].trade_count = trades;
     results[scenario_id].win_rate = (trades > 0) ? (float)wins / trades : 0.0f;
     results[scenario_id].max_drawdown = max_dd;
     results[scenario_id].profit_factor = (total_losses_val > 0) ? (total_wins_val / total_losses_val) : (total_wins_val > 0 ? 100.0f : 1.0f);
+    results[scenario_id].sharpe_ratio = sharpe;
 }
