@@ -1,4 +1,4 @@
-# 🤖 Monte-Neo Development (v0.0.2)
+# 🤖 Monte-Neo Development (v0.0.3)
 
 ## Project Overview
 Monte-Neo is a Monte Carlo indicator generator framework.
