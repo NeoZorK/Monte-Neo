@@ -88,7 +88,8 @@ class IndicatorGenerator:
             indicator,
             self.metrics_calc,
             self.config.target_metrics,
-            existing_scenarios=scenarios
+            existing_scenarios=scenarios,
+            interactive=False
         )
 
     def generate(self, data: pd.DataFrame) -> GeneratorResult:

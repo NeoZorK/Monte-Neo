@@ -86,7 +86,8 @@ def settings_workflow(menu: InteractiveMenu) -> None:
         prec_choices = [
             {"name": "float32 (Standard)", "value": "float32"},
             {"name": "float16 (Faster)", "value": "float16"},
-            {"name": "float8 (Extreme - v0.0.4)", "value": "float8"},
+            {"name": "float8_e4m3 (Extreme - 4x memory)", "value": "float8_e4m3"},
+            {"name": "float8_e5m2 (Extreme - 4x memory)", "value": "float8_e5m2"},
         ]
         val = questionary.select("Select GPU Precision:", choices=prec_choices, style=CUSTOM_STYLE).ask()
         if val: menu._gpu_precision = val
