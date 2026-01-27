@@ -127,7 +127,7 @@ class MonteCarloEngine:
             try:
                 engine_type = "Native Metal" if has_metal else "MLX"
                 logger.info(f"🚀 Using High-Performance {engine_type} Engine for {self.config.iterations} iterations")
-                results = self.gpu_engine.run_full_simulation(
+                results, timing_stats = self.gpu_engine.run_full_simulation(
                     data=data,
                     indicator=indicator,
                     n_scenarios=self.config.iterations,
@@ -155,7 +155,9 @@ class MonteCarloEngine:
                 if self._progress_callback:
                     self._progress_callback(total, total)
 
-                return self._finalize_results(passed_count, total, all_results, start_time)
+                finalize_res = self._finalize_results(passed_count, total, all_results, start_time)
+                finalize_res.timing_stats = timing_stats
+                return finalize_res
             
             except Exception as e:
                 logger.warning(f"Pure GPU execution failed, falling back: {e}")

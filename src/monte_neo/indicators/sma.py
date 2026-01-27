@@ -68,6 +68,17 @@ class SMAIndicator(BaseIndicator):
     def get_min_periods(self) -> int:
         return self._parameters["slow_period"]
 
+    def get_metal_params(self) -> list[float] | None:
+        """Return parameters for native Metal kernel."""
+        # Metal kernel expects: [Fast_Period, Slow_Period, SL_Mult, TP_Mult, TS_Mult]
+        return [
+            float(self._parameters.get("fast_period", 10)),
+            float(self._parameters.get("slow_period", 20)),
+            1.5,   # Default SL ATR mult
+            3.0,   # Default TP ATR mult
+            2.0    # Default TS ATR mult
+        ]
+
     def to_mlx_representation(self):
         try:
             from monte_neo.core.acceleration.indicators import MLXSMACrossStrategy

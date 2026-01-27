@@ -82,6 +82,19 @@ def _display_result_file(file_path):
         console.print(f"[red]Error loading result: {e}[/]")
 
 
+def _format_time(seconds: float) -> str:
+    """Format seconds into M:SS or S.SSSs."""
+    if seconds < 0.001:
+        return f"{seconds*1000:.3f}ms"
+    if seconds < 1.0:
+        return f"{seconds:.4f}s"
+    if seconds < 60:
+        return f"{seconds:.2f}s"
+    minutes = int(seconds // 60)
+    remaining_seconds = seconds % 60
+    return f"{minutes}m {remaining_seconds:.1f}s"
+
+
 def show_generation_result(menu: InteractiveMenu, result) -> None:
     """Display generation results and optionally save/plot."""
     console.print()
@@ -103,9 +116,22 @@ def show_generation_result(menu: InteractiveMenu, result) -> None:
     table = Table(title="Generation Results")
     table.add_column("Metric", style="cyan")
     table.add_column("Value", style="green")
-    table.add_row("Time", f"{result.elapsed_time:.1f}s")
+    table.add_row("Total Time", _format_time(result.elapsed_time))
     table.add_row("Iterations", f"{result.iterations_tried:,}")
     table.add_row("MC Pass Rate", f"{result.mc_pass_rate:.1%}")
+    
+    # Add Hardware Timing Stats if available
+    if hasattr(result, "mc_details") and "timing_stats" in result.mc_details:
+        stats = result.mc_details["timing_stats"]
+        if "kernel_execution" in stats:
+            table.add_row("GPU Kernel", _format_time(stats['kernel_execution']))
+        if "data_prep" in stats:
+            table.add_row("GPU Data Prep", _format_time(stats['data_prep']))
+        if "result_formatting" in stats:
+            table.add_row("GPU Post-Process", _format_time(stats['result_formatting']))
+        if "total" in stats:
+            table.add_row("GPU Total", _format_time(stats['total']))
+            
     console.print(table)
 
     if hasattr(result, "mc_details") and result.mc_details.get("step_results"):

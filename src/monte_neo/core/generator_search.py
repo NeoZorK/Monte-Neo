@@ -110,20 +110,20 @@ def run_search(generator: IndicatorGenerator, data: pd.DataFrame) -> GeneratorRe
                         mc_cache[ind_id] = mc_pass_rate
 
                         if mc_pass_rate > best_mc_rate:
+                            best_mc_rate = mc_pass_rate
+                            best_indicator = indicator
+                            final_metrics = metrics
                             best_mc_details = {
                                 "step_results": [
                                     {"method": r.method_name, "passed": r.passed, "rate": r.pass_rate, "advice": r.advice}
                                     for r in mc_result.step_results
-                                ]
+                                ],
+                                "timing_stats": getattr(mc_result, "timing_stats", {})
                             }
+                            logger.info(f"New best: {indicator.name} MC rate={mc_pass_rate:.2%}")
 
-                    if mc_pass_rate > 0.0:
-                        generator._candidates.append((indicator, mc_pass_rate))
-
-                    if mc_pass_rate > best_mc_rate:
-                        best_mc_rate = mc_pass_rate
-                        best_indicator = indicator
-                        logger.info(f"New best: {indicator.name} MC rate={mc_pass_rate:.2%}")
+                        if mc_pass_rate > 0.0:
+                            generator._candidates.append((indicator, mc_pass_rate))
 
                 except Exception as e:
                     logger.warning(f"Error validating indicator: {e}")
@@ -211,6 +211,16 @@ def _create_result(
 
 
 def _pre_generate_scenarios(generator: IndicatorGenerator, data: pd.DataFrame, total_iterations: int) -> list[pd.DataFrame] | None:
+    # If GPU is enabled and we are using shuffling, skip pre-generation to use end-to-end GPU path
+    if generator.config.use_gpu and generator.config.use_mc_shuffling and not any([
+        generator.config.use_mc_noise,
+        generator.config.use_mc_sensitivity,
+        generator.config.use_mc_walk_forward,
+        generator.config.use_mc_block_bootstrap
+    ]):
+        logger.info("Skipping pre-generation to use end-to-end GPU path")
+        return None
+
     if not generator.config.use_mc_block_bootstrap:
         try:
             temp_mc_config = MCConfig(
@@ -261,7 +271,8 @@ def _run_evolution_phase(generator: IndicatorGenerator, data: pd.DataFrame, best
                             "step_results": [
                                 {"method": r.method_name, "passed": r.passed, "rate": r.pass_rate, "advice": r.advice}
                                 for r in mc_result.step_results
-                            ]
+                            ],
+                            "timing_stats": getattr(mc_result, "timing_stats", {})
                         }
                         logger.info(f"Evolution found better indicator: {evolved_best.name} MC rate={mc_rate:.2%}")
         except Exception as e:

@@ -62,3 +62,4 @@ class MCResult:
     metrics_summary: dict = field(default_factory=dict)
     detailed_results: list = field(default_factory=list)
     step_results: list[MCStepResult] = field(default_factory=list)
+    timing_stats: dict[str, float] = field(default_factory=dict)

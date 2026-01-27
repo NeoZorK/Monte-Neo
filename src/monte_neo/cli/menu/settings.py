@@ -99,4 +99,9 @@ def settings_workflow(menu: InteractiveMenu) -> None:
             {"name": "Apple Swift (Modern)", "value": "swift"},
         ]
         val = questionary.select("Select Metal Driver:", choices=driver_choices, style=CUSTOM_STYLE).ask()
-        if val: menu._metal_driver = val
+        if val:
+            menu._metal_driver = val
+            menu.config.metal_driver = val
+            from monte_neo.utils.config import save_config
+            save_config(menu.config, "config.yaml")
+            console.print(f"[green]Metal driver set to {val.upper()} and saved to config.yaml[/]")

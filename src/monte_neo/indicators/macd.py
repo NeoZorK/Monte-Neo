@@ -70,3 +70,14 @@ class MACDIndicator(BaseIndicator):
 
     def get_min_periods(self) -> int:
         return self._parameters["slow"] + self._parameters["signal"]
+
+    def get_metal_params(self) -> list[float] | None:
+        """Return parameters for native Metal kernel."""
+        # Metal kernel expects: [Fast_Period, Slow_Period, Signal_Period, SL_Mult, TP_Mult]
+        return [
+            float(self._parameters.get("fast", 12)),
+            float(self._parameters.get("slow", 26)),
+            float(self._parameters.get("signal", 9)),
+            1.5,   # Default SL ATR mult
+            3.0    # Default TP ATR mult
+        ]
