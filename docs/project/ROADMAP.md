@@ -1,22 +1,19 @@
-# 🗺️ Monte-Neo Roadmap (v0.0.2)
+# 🗺️ Monte-Neo Roadmap (v0.0.3)
 
-## Version 0.0.2 - Current
+## Version 0.0.2 - Completed
 
 - [x] Project architecture and folder structure
 - [x] Basic OHLCV downloader for Binance
 - [x] Initial Monte Carlo Engine (Shuffling, Noise)
 - [x] Basic Metrics (Profit Factor, Winrate)
 - [x] Interactive CLI Menu
-
-## Version 0.0.2 - Robustness Core
-
 - [x] Sensitivity analysis (Parameter ±10%)
 - [x] Walk-forward analysis
 - [x] Numba & C++ accelerated metrics
 - [x] Unit and integration test suite (uv + pytest)
 - [x] Dockerization and docker-compose
 
-## Version 0.0.3 - Visualization & Performance
+## Version 0.0.3 - Current (Visualization & Performance)
 
 - [x] Interactive terminal candlestick charts
 - [x] Trade list visualization (Rich tables)
