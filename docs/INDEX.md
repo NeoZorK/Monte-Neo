@@ -51,7 +51,10 @@ A simplified guide to the Monte-Neo file structure.
 
 #### Core Engine (core/)
 - src/monte_neo/core/__init__.py - Core exports
-- src/monte_neo/core/generator.py - Main indicator generation logic
+- src/monte_neo/core/generator.py - Main indicator generation logic (entry point)
+- src/monte_neo/core/generator_search.py - Generator search and filtering logic
+- src/monte_neo/core/generator_utils.py - Generator constants and helpers
+- src/monte_neo/core/generator_worker.py - Generator parallel worker functions
 - src/monte_neo/core/gpu_engine.py - MLX GPU backtesting engine
 - src/monte_neo/core/gpu_lazy.py - Lazy GPU backtesting helpers
 - src/monte_neo/core/gpu_scenarios.py - GPU scenario backtesting helper
@@ -75,7 +78,10 @@ A simplified guide to the Monte-Neo file structure.
 
 #### Metrics (metrics/)
 - src/monte_neo/metrics/__init__.py - Metrics module exports
-- src/monte_neo/metrics/calculator.py - Unified trading metrics calculator
+- src/monte_neo/metrics/calculator.py - Unified trading metrics calculator (entry point)
+- src/monte_neo/metrics/numba_funcs.py - Numba-optimized calculation functions
+- src/monte_neo/metrics/types.py - Metric data types and dataclasses
+- src/monte_neo/metrics/utils.py - Helper functions for metric calculations
 - src/monte_neo/metrics/profit_factor.py - Profit Factor calculation
 - src/monte_neo/metrics/sharpe.py - Sharpe and Sortino ratio metrics
 - src/monte_neo/metrics/drawdown.py - Max and average drawdown metrics
@@ -84,7 +90,12 @@ A simplified guide to the Monte-Neo file structure.
 #### Trading Logic (indicators/)
 - src/monte_neo/indicators/__init__.py - Indicator exports
 - src/monte_neo/indicators/base.py - Abstract base indicator class
-- src/monte_neo/indicators/technical.py - Portfolio of technical indicators
+- src/monte_neo/indicators/technical.py - Portfolio of technical indicators (entry point)
+- src/monte_neo/indicators/technical_lib.py - Core library of technical indicators
+- src/monte_neo/indicators/numba_funcs.py - Numba-optimized indicator functions
+- src/monte_neo/indicators/sma.py - Simple Moving Average implementation
+- src/monte_neo/indicators/rsi.py - Relative Strength Index implementation
+- src/monte_neo/indicators/macd.py - MACD implementation
 - src/monte_neo/indicators/custom.py - Build-your-own indicator builder
 - src/monte_neo/indicators/dynamic.py - Dynamic indicator with evolutionary generation
 
