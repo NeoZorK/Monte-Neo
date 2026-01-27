@@ -33,9 +33,14 @@ class MACDIndicator(BaseIndicator):
     def generate_signals(self, data: pd.DataFrame) -> pd.DataFrame:
         # High-performance Numba-based MACD signals
         close = data["close"].to_numpy()
-        fast_p = self._parameters["fast"]
-        slow_p = self._parameters["slow"]
-        sig_p = self._parameters["signal"]
+        fast_p = int(round(self._parameters["fast"]))
+        slow_p = int(round(self._parameters["slow"]))
+        sig_p = int(round(self._parameters["signal"]))
+        
+        # Minimum period is 2
+        fast_p = max(2, fast_p)
+        slow_p = max(fast_p + 1, slow_p)
+        sig_p = max(2, sig_p)
         
         fast_ema = ema_numba(close, fast_p)
         slow_ema = ema_numba(close, slow_p)
@@ -67,10 +72,19 @@ class MACDIndicator(BaseIndicator):
         else:
             close = data[:, 3] if data.ndim > 1 else data
             
-        fast_ema = ema_numba(close, self._parameters["fast"])
-        slow_ema = ema_numba(close, self._parameters["slow"])
+        fast_p = int(round(self._parameters["fast"]))
+        slow_p = int(round(self._parameters["slow"]))
+        sig_p = int(round(self._parameters["signal"]))
+        
+        # Minimum period is 2
+        fast_p = max(2, fast_p)
+        slow_p = max(fast_p + 1, slow_p)
+        sig_p = max(2, sig_p)
+        
+        fast_ema = ema_numba(close, fast_p)
+        slow_ema = ema_numba(close, slow_p)
         macd_line = fast_ema - slow_ema
-        signal_line = ema_numba(macd_line, self._parameters["signal"])
+        signal_line = ema_numba(macd_line, sig_p)
         hist_vals = macd_line - signal_line
         
         sig_vals = np.zeros(len(close), dtype=np.float32)

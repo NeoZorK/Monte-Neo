@@ -33,8 +33,13 @@ class SMAIndicator(BaseIndicator):
         slow_period = self._parameters["slow_period"]
         
         # Ensure fast < slow for crossover logic
-        p1 = min(fast_period, slow_period)
-        p2 = max(fast_period, slow_period)
+        # Cast to int for Numba compatibility
+        p1 = int(round(min(fast_period, slow_period)))
+        p2 = int(round(max(fast_period, slow_period)))
+        
+        # Minimum period is 2
+        p1 = max(2, p1)
+        p2 = max(p1 + 1, p2)
         
         final_signals = sma_crossover_signals_numba(close, p1, p2)
         return pd.DataFrame({"signal": final_signals}, index=data.index)
@@ -46,8 +51,13 @@ class SMAIndicator(BaseIndicator):
             # Assume 1D close prices or OHLC matrix (close is col 3)
             close = data[:, 3] if data.ndim > 1 else data
             
-        p1 = min(self._parameters["fast_period"], self._parameters["slow_period"])
-        p2 = max(self._parameters["fast_period"], self._parameters["slow_period"])
+        p1 = int(round(min(self._parameters["fast_period"], self._parameters["slow_period"])))
+        p2 = int(round(max(self._parameters["fast_period"], self._parameters["slow_period"])))
+        
+        # Minimum period is 2
+        p1 = max(2, p1)
+        p2 = max(p1 + 1, p2)
+        
         return sma_crossover_signals_numba(close, p1, p2)
 
     def get_formula(self) -> str:
