@@ -75,11 +75,11 @@ class SequentialMCRunner:
 
         # Educational descriptions for each method
         descriptions = {
-            "walk_forward": "Проверяет работоспособность стратегии на 'будущих' данных, которые не использовались при обучении. Это помогает обнаружить переобучение (overfitting).",
-            "block_bootstrap": "Создает новые рыночные сценарии, перемешивая блоки исторических данных. Проверяет устойчивость стратегии к изменению рыночных режимов.",
-            "shuffling": "Перемешивает последовательность доходностей, разрушая временную структуру. Если стратегия полагается на реальные паттерны, её результаты должны ухудшиться (или измениться) на перемешанных данных.",
-            "noise": "Добавляет случайный шум к ценам (Open, High, Low, Close). Проверяет, насколько стратегия чувствительна к мелким изменениям цены и волатильности.",
-            "sensitivity": "Варьирует параметры индикатора в небольшом диапазоне (например, ±10%). Устойчивая стратегия не должна ломаться при небольшом изменении настроек."
+            "walk_forward": "Validates strategy performance on 'future' data not used during training. Helps detect overfitting.",
+            "block_bootstrap": "Creates new market scenarios by shuffling historical data blocks. Tests strategy resilience to market regime changes.",
+            "shuffling": "Shuffles the sequence of returns, destroying temporal structure. If a strategy relies on real patterns, performance should degrade on shuffled data.",
+            "noise": "Adds random noise to OHLC prices. Tests strategy sensitivity to minor price changes and volatility.",
+            "sensitivity": "Varies indicator parameters within a small range (e.g., ±10%). A robust strategy should not break with small setting changes."
         }
 
         # Use rich table for sequential output if it's the main display
@@ -93,7 +93,7 @@ class SequentialMCRunner:
 
         total_steps = len(enabled_methods)
         for idx, (display_name, method_key) in enumerate(enabled_methods, start=1):
-            console.print(f"\n[bold magenta]👉 Этап {idx}/{total_steps}: {display_name}[/]")
+            console.print(f"\n[bold magenta]👉 Stage {idx}/{total_steps}: {display_name}[/]")
             console.print(Panel(descriptions.get(method_key, ""), title="Educational Info", border_style="blue"))
             
             if interactive:
