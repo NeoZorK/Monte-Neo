@@ -165,13 +165,14 @@ class MLXBacktestEngine:
             signal_list.append(normalize_signal_array(sigs, len(data)))
 
         # Shape: (N, T)
-        signal_matrix = mx.array(np.stack(signal_list))
+        signal_matrix_np = np.stack(signal_list)
+        signal_matrix_mx: Any = mx.array(signal_matrix_np.astype(np.int32))
 
         # Shift prices for returns calculation
         returns_pct = (close_prices[1:] / close_prices[:-1]) - 1
 
         # Shift signals to avoid look-ahead bias
-        strat_returns = signal_matrix[:, :-1] * returns_pct
+        strat_returns = signal_matrix_mx[:, :-1] * returns_pct
 
         # Cumulative returns (Equity Curves)
         equity_curves = mx.exp(
@@ -187,7 +188,7 @@ class MLXBacktestEngine:
 
         # Trade Count (Approximate as signal changes)
         # Shift signals to find entries/exits
-        sig_diff = mx.abs(signal_matrix[:, 1:] - signal_matrix[:, :-1])
+        sig_diff = mx.abs(signal_matrix_mx[:, 1:] - signal_matrix_mx[:, :-1])
         # A trade is usually an entry (0->1 or 0->-1) and an exit (1->0 or -1->0)
         # or a reversal (1->-1).
         # We can approximate trade count as sum of absolute changes divided by 2

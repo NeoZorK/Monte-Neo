@@ -84,7 +84,7 @@ def _get_indicator_types() -> list[str] | None:
 
 def _run_generation(menu: InteractiveMenu, symbol: str, timeframe: str, iterations: int, types: list[str], sequential: bool = False) -> None:
     data = menu.storage.load(symbol, timeframe)
-    menu._last_data = data
+    # menu._last_data = data # Removed because InteractiveMenu doesn't have this attribute
 
     config = GeneratorConfig(
         max_iterations=iterations,

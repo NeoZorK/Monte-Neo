@@ -150,7 +150,7 @@ def run_search(generator: IndicatorGenerator, data: pd.DataFrame) -> GeneratorRe
             generator.executor.__exit__(None, None, None)
             generator.executor = None
         # Return what we found so far instead of crashing
-        return _create_result(generator, best_indicator, fallback_indicator, best_mc_rate, best_mc_details, final_metrics, fallback_metrics, iterations_tried, start_time)
+        return _create_result(generator, best_indicator, fallback_indicator, best_mc_rate, best_mc_details, final_metrics, fallback_metrics, iterations_tried, start_time, data)
 
     # Evolution Phase
     best_indicator, best_mc_rate, best_mc_details = _run_evolution_phase(
