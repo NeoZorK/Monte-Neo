@@ -6,20 +6,17 @@ Provides direct Metal shader access for maximum performance.
 
 from __future__ import annotations
 
-import ctypes
-import math
 import os
 from typing import TYPE_CHECKING
 
 import numpy as np
 
 if TYPE_CHECKING:
-    import pandas as pd
+    pass
 
 # Try to import Metal framework
 try:
     import Metal
-    import objc
     METAL_AVAILABLE = True
 except ImportError:
     METAL_AVAILABLE = False
@@ -51,7 +48,7 @@ class MetalFloat8Engine:
             self._create_default_shaders()
             return
         
-        with open(shader_path, 'r') as f:
+        with open(shader_path) as f:
             shader_source = f.read()
         
         # Compile shader

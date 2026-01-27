@@ -33,7 +33,7 @@ class MLXBacktestEngine:
         self.precision = precision
         self.use_metal_cpp = use_metal_cpp
         self.pure_gpu_engine = GpuAccelerationEngine(
-            precision=precision, 
+            precision=precision,
             use_metal_cpp=use_metal_cpp
         )
 

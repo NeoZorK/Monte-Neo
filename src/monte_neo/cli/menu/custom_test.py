@@ -16,7 +16,6 @@ from monte_neo.core.generator import GeneratorConfig
 from monte_neo.indicators.base import BaseIndicator
 from monte_neo.metrics.calculator import MetricsCalculator
 from monte_neo.monte_carlo.engine import MonteCarloEngine
-from monte_neo.monte_carlo.sequential import SequentialMCRunner
 from monte_neo.utils.logger import get_logger
 
 if TYPE_CHECKING:

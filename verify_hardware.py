@@ -1,8 +1,10 @@
 
+
 import numpy as np
-import time
-from monte_neo.core.acceleration.float8 import Float8Encoder
+
 from monte_neo.core.acceleration.engine import GpuAccelerationEngine
+from monte_neo.core.acceleration.float8 import Float8Encoder
+
 
 def test_float8_scalar():
     print("🧪 Testing Float8 Scalar Conversion...")

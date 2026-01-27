@@ -100,13 +100,13 @@ def _show_hardware_info(menu: InteractiveMenu) -> None:
     table.add_column("Status", style="green")
     table.add_column("Details", style="dim")
     
-    table.add_row("GPU Acceleration", "✅ Enabled" if menu._use_gpu else "❌ Disabled", 
+    table.add_row("GPU Acceleration", "✅ Enabled" if menu._use_gpu else "❌ Disabled",
                  f"MLX: {'Available' if mlx_available else 'Not available'}")
-    table.add_row("GPU Precision", menu._gpu_precision, 
+    table.add_row("GPU Precision", menu._gpu_precision,
                  "Memory bandwidth: 4x with float8" if menu._gpu_precision.startswith("float8") else "Standard")
-    table.add_row("Metal C++ Shaders", "✅ Enabled" if menu._use_metal_cpp else "❌ Disabled", 
+    table.add_row("Metal C++ Shaders", "✅ Enabled" if menu._use_metal_cpp else "❌ Disabled",
                  metal_info if metal_available else "Metal not available")
-    table.add_row("MC Pass Threshold", f"{menu._mc_pass_threshold:.0%}", 
+    table.add_row("MC Pass Threshold", f"{menu._mc_pass_threshold:.0%}",
                  "Production readiness threshold")
     
     console.print(Panel(table, title="Current Configuration", border_style="blue"))
@@ -130,6 +130,7 @@ def _run_hardware_benchmark(menu: InteractiveMenu) -> None:
         table.add_column("Memory Saved", justify="right")
         
         import time
+
         import numpy as np
         
         for size in test_sizes:
