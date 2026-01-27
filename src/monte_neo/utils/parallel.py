@@ -153,12 +153,6 @@ class ParallelExecutor:
         results.sort(key=lambda x: x[0])
         return [r[1] for r in results]
 
-def as_completed_with_timeout(fs, timeout=None):
-    """Wait for some futures to complete with a timeout."""
-    from concurrent.futures import wait, FIRST_COMPLETED
-    done_set = wait(fs, timeout=timeout, return_when=FIRST_COMPLETED).done
-    return done_set, fs - done_set
-
     def starmap(
         self,
         func: Callable,
@@ -208,3 +202,11 @@ def as_completed_with_timeout(fs, timeout=None):
                     result = reduce_func(result, item)
 
         return result
+
+
+def as_completed_with_timeout(fs, timeout=None):
+    """Wait for some futures to complete with a timeout."""
+    from concurrent.futures import FIRST_COMPLETED, wait
+
+    done_set = wait(fs, timeout=timeout, return_when=FIRST_COMPLETED).done
+    return done_set, fs - done_set

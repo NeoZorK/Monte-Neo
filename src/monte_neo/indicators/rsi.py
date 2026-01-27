@@ -27,9 +27,12 @@ class RSIIndicator(BaseIndicator):
     def generate_signals(self, data: pd.DataFrame) -> pd.DataFrame:
         # High-performance Numba-based RSI signals
         close = data["close"].to_numpy()
-        period = self._parameters["period"]
+        period = int(round(self._parameters["period"]))
         oversold = self._parameters["oversold"]
         overbought = self._parameters["overbought"]
+
+        # Minimum period is 2
+        period = max(2, period)
 
         rsi_vals = rsi_numba(close, period)
 
@@ -46,7 +49,10 @@ class RSIIndicator(BaseIndicator):
         else:
             close = data[:, 3] if data.ndim > 1 else data
             
-        rsi_vals = rsi_numba(close, self._parameters["period"])
+        period = int(round(self._parameters["period"]))
+        period = max(2, period)
+        
+        rsi_vals = rsi_numba(close, period)
         sig_vals = np.zeros(len(close), dtype=np.float32)
         sig_vals[rsi_vals < self._parameters["oversold"]] = 1.0
         sig_vals[rsi_vals > self._parameters["overbought"]] = -1.0
