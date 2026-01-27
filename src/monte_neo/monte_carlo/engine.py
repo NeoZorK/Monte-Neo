@@ -86,6 +86,58 @@ class MonteCarloEngine:
         if self.config.use_sequential:
             return self.run_sequential(data, indicator, metrics_calc, target_metrics)
 
+        # Check for Pure GPU Acceleration (End-to-End on GPU)
+        # Only for Shuffling method currently, and if indicator supports it.
+        # This bypasses CPU scenario generation and data transfer overhead.
+        has_mlx = indicator.to_mlx_representation() is not None
+        only_shuffling = (
+            (self.config.use_shuffling or not any([
+                self.config.use_noise,
+                self.config.use_sensitivity,
+                self.config.use_walk_forward,
+                self.config.use_block_bootstrap
+            ])) 
+            and not self.config.use_noise
+            and not self.config.use_sensitivity 
+            and not self.config.use_walk_forward
+            and not self.config.use_block_bootstrap
+        )
+
+        if has_mlx and only_shuffling and existing_scenarios is None and self.config.iterations > 100:
+            try:
+                logger.info(f"🚀 Using High-Performance Pure GPU Engine for {self.config.iterations} iterations")
+                results = self.gpu_engine.run_full_simulation(
+                    data=data,
+                    indicator=indicator,
+                    n_scenarios=self.config.iterations,
+                    method="shuffling",
+                    seed=self.config.random_seed or 42,
+                    use_sl_tp=self.config.use_sl_tp,
+                    sl_pct=self.config.sl_pct,
+                    tp_pct=self.config.tp_pct,
+                )
+                
+                # Transform results to match MCResult format
+                passed_count = sum(1 for r in results if r.get("passed", False))
+                total = len(results)
+                
+                all_results = []
+                for i, res in enumerate(results):
+                     all_results.append({
+                        "scenario_idx": i,
+                        "passed": res.get("passed", False),
+                        "metrics": res.get("metrics", {})
+                    })
+
+                if self._progress_callback:
+                    self._progress_callback(total, total)
+
+                return self._finalize_results(passed_count, total, all_results, start_time)
+            
+            except Exception as e:
+                logger.warning(f"Pure GPU execution failed, falling back: {e}")
+                # Fall through to standard methods
+        
         # Generate test scenarios
         other_methods_enabled = (
             self.config.use_shuffling

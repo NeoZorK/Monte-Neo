@@ -101,6 +101,14 @@ class BaseIndicator(ABC):
         """
         pass
 
+    def to_mlx_representation(self) -> Any | None:
+        """Convert to MLX representation for GPU execution.
+        
+        Returns:
+            MLX Strategy object or None if not supported.
+        """
+        return None
+
     def generate_signals_fast(self, data: pd.DataFrame | np.ndarray) -> np.ndarray:
         """Fast version of signal generation returning numpy array.
         
