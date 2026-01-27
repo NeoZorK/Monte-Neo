@@ -23,17 +23,21 @@ def extract_trades_fast(
 
     sl_price = 0.0
     tp_price = 0.0
+    
+    blocked_signal = 0
 
     for i in range(len(signals)):
-        signal = signals[i]
+        signal = int(signals[i])
         price = prices[i]
         high = highs[i]
         low = lows[i]
 
         if position == 0:
-            if signal != 0:
+            if signal == 0:
+                blocked_signal = 0
+            elif signal != blocked_signal:
                 # Open position
-                position = int(signal)
+                position = signal
                 entry_idx = i
                 entry_price = price
 
@@ -79,7 +83,8 @@ def extract_trades_fast(
                     (entry_idx, i, entry_price, exit_price, position, pnl, pnl_pct)
                 )
 
-                # Reset position
+                # Reset position and block current signal
+                blocked_signal = signal
                 position = 0
 
     return results
@@ -103,10 +108,11 @@ def calculate_batch_fast(
         signals = signal_matrix[i]
 
         # Simplified extraction for speed
-        position = 0
-        entry_price = 0.0
-        sl_price = 0.0
-        tp_price = 0.0
+        position: int = 0
+        entry_price: float = 0.0
+        sl_price: float = 0.0
+        tp_price: float = 0.0
+        blocked_signal: int = 0
 
         total_pnl_pct = 0.0
         gross_profit = 0.0
@@ -119,14 +125,16 @@ def calculate_batch_fast(
         max_dd = 0.0
 
         for j in range(len(signals)):
-            signal = signals[j]
+            signal = int(signals[j])
             price = prices[j]
             high = highs[j]
             low = lows[j]
 
             if position == 0:
-                if signal != 0:
-                    position = int(signal)
+                if signal == 0:
+                    blocked_signal = 0
+                elif signal != blocked_signal:
+                    position = signal
                     entry_price = price
                     if use_sl_tp:
                         if position == 1:
@@ -173,6 +181,7 @@ def calculate_batch_fast(
                     dd = (max_equity - equity) / max_equity
                     if dd > max_dd: max_dd = dd
 
+                    blocked_signal = signal
                     position = 0
                     n_trades += 1
 
@@ -206,10 +215,11 @@ def calculate_batch_multi_price_fast(
         lows = low_matrix[i]
 
         # Simplified extraction for speed
-        position = 0
-        entry_price = 0.0
-        sl_price = 0.0
-        tp_price = 0.0
+        position: int = 0
+        entry_price: float = 0.0
+        sl_price: float = 0.0
+        tp_price: float = 0.0
+        blocked_signal: int = 0
 
         total_pnl_pct = 0.0
         gross_profit = 0.0
@@ -228,14 +238,16 @@ def calculate_batch_multi_price_fast(
             row_len -= 1
 
         for j in range(row_len):
-            signal = signals[j]
+            signal = int(signals[j])
             price = prices[j]
             high = highs[j]
             low = lows[j]
 
             if position == 0:
-                if signal != 0:
-                    position = int(signal)
+                if signal == 0:
+                    blocked_signal = 0
+                elif signal != blocked_signal:
+                    position = signal
                     entry_price = price
                     if use_sl_tp:
                         if position == 1:
@@ -282,6 +294,7 @@ def calculate_batch_multi_price_fast(
                     dd = (max_equity - equity) / max_equity
                     if dd > max_dd: max_dd = dd
 
+                    blocked_signal = signal
                     position = 0
                     n_trades += 1
 
