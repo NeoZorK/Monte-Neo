@@ -131,20 +131,23 @@ class ChartGenerator:
         plt.plot(close, label="Price")
 
         # Entry signals
-        if "signal" in signals.columns:
-            entries = signals["signal"] == 1
-            exits = signals["signal"] == -1
+        if signals is not None:
+            # Normalize signals to Series if it's a dict or DataFrame
+            if isinstance(signals, dict):
+                sig_series = pd.Series(signals.get("signal", 0), index=data.index)
+            elif isinstance(signals, pd.DataFrame):
+                sig_series = signals["signal"] if "signal" in signals.columns else signals.iloc[:, 0]
+            else:
+                sig_series = pd.Series(signals, index=data.index)
 
-            entries[entries].index.tolist()
-            exits[exits].index.tolist()
+            entries = sig_series == 1
+            exits = sig_series == -1
 
             # Mark entries and exits
-            for i, (idx, is_entry) in enumerate(entries.items()):
-                if is_entry:
+            for i in range(len(sig_series)):
+                if entries.iloc[i]:
                     plt.scatter([i], [close[i]], marker="▲", color="green")
-
-            for i, (idx, is_exit) in enumerate(exits.items()):
-                if is_exit:
+                elif exits.iloc[i]:
                     plt.scatter([i], [close[i]], marker="▼", color="red")
 
         plt.show()
