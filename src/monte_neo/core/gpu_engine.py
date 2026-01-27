@@ -50,14 +50,56 @@ class MLXBacktestEngine:
         # Initialize native Metal bridge if available
         self.native_bridge = None
         if METAL_EXTENSION_AVAILABLE:
+            if metal_driver == "auto":
+                self.metal_driver = self._select_best_driver()
+            else:
+                self.metal_driver = metal_driver
+                
             driver_enum = Driver.CPP
-            if metal_driver == "objc": driver_enum = Driver.OBJC
-            elif metal_driver == "swift": driver_enum = Driver.SWIFT
+            if self.metal_driver == "objc": driver_enum = Driver.OBJC
+            elif self.metal_driver == "swift": driver_enum = Driver.SWIFT
             
             self.native_bridge = MetalBacktestBridge(driver_enum)
             if not self.native_bridge.init():
-                logger.warning(f"Failed to initialize native Metal bridge with driver {metal_driver}")
+                logger.warning(f"Failed to initialize native Metal bridge with driver {self.metal_driver}")
                 self.native_bridge = None
+
+    def _select_best_driver(self) -> str:
+        """Run a micro-benchmark to select the best Metal driver."""
+        if not METAL_EXTENSION_AVAILABLE:
+            return "cpp"
+            
+        logger.info("🔍 Running micro-benchmark to select best Metal driver...")
+        
+        # Small test data
+        candles = [Candle(100.0, 101.0, 99.0, 100.0, 1000.0) for _ in range(1000)]
+        params = [14.0, 14.0, 1.5, 3.0, 2.0] * 10000
+        n_scenarios = 10000
+        
+        best_driver = "cpp"
+        min_time = float('inf')
+        
+        for d_name, d_enum in [("cpp", Driver.CPP), ("objc", Driver.OBJC), ("swift", Driver.SWIFT)]:
+            try:
+                bridge = MetalBacktestBridge(d_enum)
+                if bridge.init():
+                    # Warmup
+                    bridge.run_backtest(candles, params, 1000)
+                    
+                    # Benchmark
+                    start = time.perf_counter()
+                    bridge.run_backtest(candles, params, n_scenarios)
+                    duration = time.perf_counter() - start
+                    
+                    logger.debug(f"  Driver {d_name}: {duration:.6f}s")
+                    if duration < min_time:
+                        min_time = duration
+                        best_driver = d_name
+            except Exception as e:
+                logger.debug(f"  Driver {d_name} failed benchmark: {e}")
+                
+        logger.info(f"✅ Selected best Metal driver: {best_driver} ({1.0/min_time*n_scenarios:.0f} scenarios/sec)")
+        return best_driver
 
     def run_full_simulation(
         self,
