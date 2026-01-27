@@ -47,12 +47,12 @@ class MLXSMA(MLXIndicator):
         
         # We need to prepend P-1 NaNs/Zeros to match T
         # (N, T, 1)
-        N, T = close.shape
+        num_scenarios, time_steps = close.shape
         result_len = out.shape[1]
-        missing = T - result_len
+        missing = time_steps - result_len
         
         if missing > 0:
-            prefix = mx.zeros((N, missing, 1)) # Use 0 for now
+            prefix = mx.zeros((num_scenarios, missing, 1)) # Use 0 for now
             out = mx.concatenate([prefix, out], axis=1)
             
         return out.squeeze(-1)

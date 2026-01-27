@@ -30,7 +30,7 @@ def generate_shuffle_scenarios(
     Returns:
         Matrix of close prices (N, T)
     """
-    T = close.shape[0]
+    time_steps = close.shape[0]
     # Calculate returns
     returns = (close[1:] / close[:-1]) - 1.0
     
@@ -44,7 +44,7 @@ def generate_shuffle_scenarios(
     key = mx.random.key(seed)
     # We use uniform sampling to pick indices for now (Bootstrap) as it's faster vectorized
     # Shape (N, T-1)
-    indices = mx.random.randint(0, T-1, (n_scenarios, T-1), key=key)
+    indices = mx.random.randint(0, time_steps-1, (n_scenarios, time_steps-1), key=key)
     
     # Gather returns
     shuffled_returns = returns[indices]
@@ -75,15 +75,15 @@ def generate_noise_scenarios(
     """
     Generate scenarios with Gaussian noise injected into returns.
     """
-    T = close.shape[0]
+    time_steps = close.shape[0]
     returns = (close[1:] / close[:-1]) - 1.0
     
     # Repeat returns for N scenarios: (N, T-1)
-    base_returns = mx.broadcast_to(returns, (n_scenarios, T-1))
+    base_returns = mx.broadcast_to(returns, (n_scenarios, time_steps-1))
     
     # Generate Noise
     key = mx.random.key(seed)
-    noise = mx.random.normal((n_scenarios, T-1), scale=std_dev, key=key)
+    noise = mx.random.normal((n_scenarios, time_steps-1), scale=std_dev, key=key)
     
     # Add noise
     noisy_returns = base_returns + noise

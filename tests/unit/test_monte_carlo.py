@@ -26,7 +26,7 @@ def test_mc_run_sequential(sample_ohlcv):
     metrics_calc = MetricsCalculator()
     target_metrics = {"profit_factor": 0.1}
 
-    result = engine.run(sample_ohlcv, indicator, metrics_calc, target_metrics)
+    result = engine.run(sample_ohlcv, indicator, metrics_calc, target_metrics, interactive=False)
 
     assert result.passed is True
     assert len(result.step_results) > 0

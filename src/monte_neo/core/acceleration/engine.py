@@ -3,6 +3,7 @@ GPU Acceleration Engine (MLX).
 """
 
 import time
+from typing import Any
 
 import mlx.core as mx
 import numpy as np

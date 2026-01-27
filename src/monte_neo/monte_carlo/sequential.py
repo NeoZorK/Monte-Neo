@@ -41,6 +41,7 @@ class SequentialMCRunner:
         indicator: BaseIndicator,
         metrics_calc: MetricsCalculator,
         target_metrics: dict[str, float],
+        interactive: bool = True,
     ) -> MCResult:
         """Run MC methods sequentially.
 
@@ -49,6 +50,7 @@ class SequentialMCRunner:
             indicator: Indicator to test.
             metrics_calc: Metrics calculator.
             target_metrics: Target metrics.
+            interactive: Whether to ask for confirmation before each step.
 
         Returns:
             MCResult with sequential results.
@@ -93,8 +95,9 @@ class SequentialMCRunner:
             console.print(f"\n[bold magenta]👉 Next Step: {display_name}[/]")
             console.print(Panel(descriptions.get(method_key, ""), title="Educational Info", border_style="blue"))
             
-            if not questionary.confirm(f"Ready to run {display_name}?", default=True, style=CUSTOM_STYLE).ask():
-                 continue
+            if interactive:
+                if not questionary.confirm(f"Ready to run {display_name}?", default=True, style=CUSTOM_STYLE).ask():
+                     continue
 
             # Run method
             step_result = self._run_step(
@@ -122,14 +125,20 @@ class SequentialMCRunner:
                 dd = step_result.metrics_summary.get("max_drawdown", {}).get("mean", 0.0)
                 console.print(f"[dim]Stats: PF={pf:.2f}, Sharpe={sr:.2f}, DD={dd:.1%}[/]")
 
-            if not step_result.passed:
-                all_passed = False
-                console.print(f"\n[bold red]❌ Aborted: {display_name} failed.[/]")
-                console.print("[red]Review the advice above and adjust your strategy parameters or logic.[/]")
-                if not questionary.confirm("Continue anyway (not recommended)?", default=False, style=CUSTOM_STYLE).ask():
-                    break
+            if interactive:
+                if not step_result.passed:
+                    all_passed = False
+                    console.print(f"\n[bold red]❌ Aborted: {display_name} failed.[/]")
+                    console.print("[red]Review the advice above and adjust your strategy parameters or logic.[/]")
+                    if not questionary.confirm("Continue anyway (not recommended)?", default=False, style=CUSTOM_STYLE).ask():
+                        break
+                else:
+                     questionary.press_any_key_to_continue("Press any key to proceed to next step...", style=CUSTOM_STYLE).ask()
             else:
-                 questionary.press_any_key_to_continue("Press any key to proceed to next step...", style=CUSTOM_STYLE).ask()
+                if not step_result.passed:
+                    all_passed = False
+                    console.print(f"\n[bold red]❌ Aborted: {display_name} failed.[/]")
+                    break
 
         elapsed = time.time() - start_time
         pass_rate = 1.0 if all_passed else (len([r for r in step_results if r.passed]) / len(methods))

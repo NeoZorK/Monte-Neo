@@ -66,6 +66,7 @@ class MonteCarloEngine:
         metrics_calc: MetricsCalculator,
         target_metrics: dict[str, float],
         existing_scenarios: list[pd.DataFrame] | None = None,
+        interactive: bool = True,
     ) -> MCResult:
         """Run Monte Carlo simulation.
 
@@ -75,6 +76,7 @@ class MonteCarloEngine:
             metrics_calc: Metrics calculator.
             target_metrics: Target metrics to achieve.
             existing_scenarios: Optional list of pre-generated scenarios.
+            interactive: Whether to ask for confirmation in sequential mode.
 
         Returns:
             MCResult with simulation results.
@@ -84,7 +86,7 @@ class MonteCarloEngine:
         all_results = []
 
         if self.config.use_sequential:
-            return self.run_sequential(data, indicator, metrics_calc, target_metrics)
+            return self.run_sequential(data, indicator, metrics_calc, target_metrics, interactive=interactive)
 
         # Check for Pure GPU Acceleration (End-to-End on GPU)
         # Only for Shuffling method currently, and if indicator supports it.
@@ -334,6 +336,7 @@ class MonteCarloEngine:
         indicator: BaseIndicator,
         metrics_calc: MetricsCalculator,
         target_metrics: dict[str, float],
+        interactive: bool = True,
     ) -> MCResult:
         """Run Monte Carlo simulation sequentially.
 
@@ -342,10 +345,11 @@ class MonteCarloEngine:
             indicator: Indicator to test.
             metrics_calc: Metrics calculator.
             target_metrics: Target metrics.
+            interactive: Whether to ask for confirmation before each step.
 
         Returns:
             MCResult with sequential simulation results.
         """
         from monte_neo.monte_carlo.sequential import SequentialMCRunner
         runner = SequentialMCRunner(self)
-        return runner.run(data, indicator, metrics_calc, target_metrics)
+        return runner.run(data, indicator, metrics_calc, target_metrics, interactive=interactive)
