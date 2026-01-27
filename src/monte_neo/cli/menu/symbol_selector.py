@@ -8,11 +8,11 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.application import Application
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.layout.containers import HSplit, Window, ScrollOffsets
+from prompt_toolkit.layout.containers import HSplit, ScrollOffsets, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.layout import Layout
-from prompt_toolkit.widgets import Frame, TextArea
 from prompt_toolkit.styles import Style as PTStyle
+from prompt_toolkit.widgets import Frame, TextArea
 
 if TYPE_CHECKING:
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
@@ -36,7 +36,7 @@ class SymbolSelector:
         self.cols = 4  # Initial value, will be updated based on width
         self.col_width = 18 # Symbol width + padding
         self.search_text = ""
-        
+
         # UI components
         self.search_field = TextArea(
             prompt="Search: ",
@@ -44,7 +44,7 @@ class SymbolSelector:
         )
         # Add handler to buffer
         self.search_field.buffer.on_text_changed += self._on_search_change
-        
+
         self.grid_control = FormattedTextControl(
             text=self._get_grid_text,
             focusable=True,
@@ -52,15 +52,15 @@ class SymbolSelector:
             get_cursor_position=self._get_cursor_position,
         )
         self.grid_window = Window(
-            self.grid_control, 
+            self.grid_control,
             height=15,
             # Enable scrolling when cursor goes out of view
             scroll_offsets=ScrollOffsets(top=1, bottom=1),
         )
-        
+
         self.kb = KeyBindings()
         self._setup_keybindings()
-        
+
         self.app = Application(
             layout=Layout(
                 HSplit([
@@ -86,16 +86,16 @@ class SymbolSelector:
         """Return the (x, y) position of the currently selected symbol for scrolling."""
         if not self.filtered_symbols:
             return None
-        
+
         # Calculate row and column based on current index
         row = self.index // self.cols
         col = self.index % self.cols
-        
+
         # x is the character position in the line
         x = col * self.col_width
         # y is the line number
         y = row
-        
+
         from prompt_toolkit.data_structures import Point
         return Point(x=x, y=y)
 
@@ -118,10 +118,10 @@ class SymbolSelector:
     def _get_grid_text(self):
         if not self.filtered_symbols:
             return [("class:disabled", " No matches found")]
-        
+
         # Update columns based on current window size
         self._update_cols()
-        
+
         rows = math.ceil(len(self.filtered_symbols) / self.cols)
         result = []
         for r in range(rows):

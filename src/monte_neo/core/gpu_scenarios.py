@@ -52,7 +52,7 @@ def run_scenarios_backtest(
     if use_sl_tp:
         # Optimization: Use parallelized batch Numba for SL/TP on multiple scenarios
         # This is much faster than the previous Python loop
-        
+
         # 1. Get Signals (CPU parallelized)
         tasks = [(indicator, df) for df in scenarios]
         if executor is None:
@@ -60,24 +60,24 @@ def run_scenarios_backtest(
             raw_signals = local_executor.map(_generate_signals_wrapper, tasks)
         else:
             raw_signals = executor.map(_generate_signals_wrapper, tasks)
-            
+
         # 2. Prepare Data and Signal Matrix
         max_len = max(len(df) for df in scenarios)
-        
+
         # We need a unified price matrix for Numba batch
         # Since scenarios can have different prices, we pad them
         close_matrix = np.zeros((len(scenarios), max_len), dtype=np.float64)
         high_matrix = np.zeros((len(scenarios), max_len), dtype=np.float64)
         low_matrix = np.zeros((len(scenarios), max_len), dtype=np.float64)
         signal_matrix = np.zeros((len(scenarios), max_len), dtype=np.int32)
-        
+
         for i, df in enumerate(scenarios):
             l = len(df)
             close_matrix[i, :l] = df["close"].values
             high_matrix[i, :l] = df["high"].values
             low_matrix[i, :l] = df["low"].values
             signal_matrix[i, :l] = normalize_signal_array(raw_signals[i], l).astype(np.int32)
-            
+
         # 3. Run Batch Calculation (Multi-scenario version)
         # We use calculate_batch_multi_price_fast because each scenario has its own prices
         batch_metrics = MetricsCalculator.calculate_batch_multi_price_fast(
@@ -89,14 +89,14 @@ def run_scenarios_backtest(
             sl_pct,
             tp_pct
         )
-        
+
         results = []
         for i in range(len(scenarios)):
             total_return = float(batch_metrics[i, 0])
             max_dd = float(batch_metrics[i, 1])
             pf = float(batch_metrics[i, 2])
             trade_count = int(batch_metrics[i, 3])
-            
+
             results.append({
                 "total_return": total_return,
                 "max_drawdown": max_dd,

@@ -7,16 +7,15 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 
 from monte_neo.monte_carlo.scenarios import ScenarioBuilder
-from monte_neo.monte_carlo.workers import init_worker_data, run_scenario_batch, run_single_scenario
+from monte_neo.monte_carlo.types import MCConfig, MCResult
 from monte_neo.monte_carlo.utils import summarize_metrics
-from monte_neo.monte_carlo.types import MCConfig, MCResult, MCStepResult
+from monte_neo.monte_carlo.workers import init_worker_data, run_scenario_batch, run_single_scenario
 from monte_neo.utils.logger import get_logger
 from monte_neo.utils.parallel import ParallelExecutor
 

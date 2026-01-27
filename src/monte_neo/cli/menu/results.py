@@ -44,9 +44,9 @@ def _display_result_file(file_path):
     try:
         with open(file_path) as f:
             data = json.load(f)
-        
+
         console.print(f"\n[bold cyan]📄 Results for {file_path.stem}[/]")
-        
+
         if "metrics" in data:
             table = Table(title="Metrics")
             table.add_column("Metric", style="cyan")
@@ -62,7 +62,7 @@ def _display_result_file(file_path):
             steps_table.add_column("Status", style="bold")
             steps_table.add_column("Pass Rate", style="green")
             steps_table.add_column("Advice", style="yellow")
-            
+
             for step in data["mc_details"]["step_results"]:
                 status = "[green]PASS[/]" if step["passed"] else "[red]FAIL[/]"
                 steps_table.add_row(
@@ -72,12 +72,12 @@ def _display_result_file(file_path):
                     step["advice"]
                 )
             console.print(steps_table)
-            
+
         if "config" in data:
             config = data['config']
             content = config.get("source_code", "\n".join([f"{k}: {v}" for k, v in config.items()]))
             console.print(Panel(content, title="Configuration", border_style="blue"))
-            
+
     except Exception as e:
         console.print(f"[red]Error loading result: {e}[/]")
 
@@ -85,10 +85,10 @@ def _display_result_file(file_path):
 def show_generation_result(menu: InteractiveMenu, result) -> None:
     """Display generation results and optionally save/plot."""
     console.print()
-    
+
     # Success depends on mc_pass_rate >= mc_pass_threshold
     threshold = getattr(menu, "_mc_pass_threshold", 0.80)
-    
+
     if result.success:
         console.print(f"[bold green]✓ Indicator generated successfully! (MC Pass Rate {result.mc_pass_rate:.1%} >= {threshold:.0%})[/]\n")
     elif result.indicator:
@@ -111,7 +111,7 @@ def show_generation_result(menu: InteractiveMenu, result) -> None:
         steps_table.add_column("Status", style="bold")
         steps_table.add_column("Pass Rate", style="green")
         steps_table.add_column("Advice", style="yellow")
-        
+
         for step in result.mc_details["step_results"]:
             status = "[green]PASS[/]" if step["passed"] else "[red]FAIL[/]"
             steps_table.add_row(
@@ -125,11 +125,11 @@ def show_generation_result(menu: InteractiveMenu, result) -> None:
     if result.indicator:
         # Get formula using the new method
         formula = result.indicator.get_formula()
-        
+
         # Color based on success
         border_color = "green" if result.success else "yellow"
         header_text = "Best Indicator Found" if result.success else "Best Indicator Found (Below Criteria)"
-        
+
         console.print(Panel(
             f"[bold cyan]Indicator:[/] {result.indicator.name}\n"
             f"[bold cyan]Formula:[/] {formula}\n"
@@ -147,11 +147,11 @@ def show_generation_result(menu: InteractiveMenu, result) -> None:
 def _save_result(menu: InteractiveMenu, result) -> None:
     results_dir = menu.config.data_dir / "results"
     results_dir.mkdir(parents=True, exist_ok=True)
-    
+
     timestamp = int(time.time())
     name = result.indicator.name if result.indicator else "unknown"
     file_path = results_dir / f"result_{timestamp}_{name}.json"
-    
+
     data = {
         "timestamp": timestamp,
         "type": name,
@@ -160,7 +160,7 @@ def _save_result(menu: InteractiveMenu, result) -> None:
         "mc_pass_rate": result.mc_pass_rate,
         "mc_details": getattr(result, "mc_details", {}),
     }
-    
+
     with open(file_path, "w") as f:
         json.dump(data, f, indent=4)
     console.print(f"[dim]Result saved to: results/{file_path.name}[/]")

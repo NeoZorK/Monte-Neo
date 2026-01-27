@@ -48,10 +48,10 @@ class RSIIndicator(BaseIndicator):
             close = data["close"].to_numpy()
         else:
             close = data[:, 3] if data.ndim > 1 else data
-            
+
         period = int(round(self._parameters["period"]))
         period = max(2, period)
-        
+
         rsi_vals = rsi_numba(close, period)
         sig_vals = np.zeros(len(close), dtype=np.float32)
         sig_vals[rsi_vals < self._parameters["oversold"]] = 1.0

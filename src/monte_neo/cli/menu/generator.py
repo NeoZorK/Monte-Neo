@@ -7,8 +7,6 @@ from typing import TYPE_CHECKING
 
 import questionary
 from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
 
 from monte_neo.cli.styles import CUSTOM_STYLE
 from monte_neo.core.generator import GeneratorConfig, IndicatorGenerator
@@ -40,11 +38,11 @@ def generate_indicator_workflow(menu: InteractiveMenu, sequential: bool = False)
         return
 
     symbol, timeframe = selected.split("_")
-    
+
     # Get iterations and types
     iterations = _get_iterations()
     if not iterations: return
-    
+
     indicator_types = _get_indicator_types()
     if not indicator_types: return
 

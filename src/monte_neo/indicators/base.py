@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from monte_neo.utils.logger import get_logger
@@ -111,7 +112,7 @@ class BaseIndicator(ABC):
             if isinstance(sigs, pd.DataFrame):
                 return sigs["signal"].to_numpy(dtype=np.float32)
             return np.asarray(sigs, dtype=np.float32)
-        
+
         # If it's already a numpy array, we might need a dummy DataFrame
         # but this is exactly what we want to avoid.
         # Subclasses MUST override this if they want to support pure numpy paths.

@@ -1,7 +1,6 @@
 """Unit tests for modular metrics components."""
 
 import numpy as np
-import pytest
 
 from monte_neo.metrics import numba_funcs, utils
 from monte_neo.metrics.types import TradeResult
@@ -68,18 +67,18 @@ def test_numba_calculate_batch_fast():
     prices = np.array([100.0, 105.0, 100.0])
     highs = prices
     lows = prices
-    
+
     # 2 signals: one trades, one doesn't
     signal_matrix = np.zeros((2, 3), dtype=np.int32)
     signal_matrix[0] = [1, 0, -1] # Long at 0, exit at 2. Entry 100, Exit 100 -> PnL 0
     # Actually wait: index 0 (100), index 1 (105), index 2 (100).
     # Signal: 0=Buy, 1=Hold, 2=Sell.
     # Entry at 0 (100). Exit at 2 (100). PnL = 0.
-    
+
     results = numba_funcs.calculate_batch_fast(
         prices, highs, lows, signal_matrix, use_sl_tp=False, sl_pct=0.0, tp_pct=0.0
     )
-    
+
     # results shape (2, 4): total_return, max_dd, pf, n_trades
     assert results.shape == (2, 4)
     assert results[0, 3] == 1 # 1 trade

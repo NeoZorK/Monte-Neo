@@ -66,22 +66,21 @@ class EvolutionEngine:
         for gen in range(self.config.generations):
             # Evaluate fitness
             fitness_scores: list[tuple[BaseIndicator, float]] = []
-            
+
             # Use parallel execution for fitness evaluation to reach >2000 ops/s
             # Note: Evolution handles batches of DynamicIndicators
             tasks = [(ind, data) for ind in population]
-            from monte_neo.monte_carlo.workers import _generate_signals_wrapper
-            
+
             # We assume the caller might have passed an executor, or we create a temp one
             # For now, use single-threaded if no executor, but we should pass it
             raw_signals = [ind.generate_signals(data) for ind in population]
-            
+
             # Prepare for Numba batch calculation
             signal_matrix = np.zeros((len(population), len(data)), dtype=np.int32)
             from monte_neo.core.gpu_scenarios import normalize_signal_array
             for i, sig in enumerate(raw_signals):
                 signal_matrix[i] = normalize_signal_array(sig, len(data)).astype(np.int32)
-                
+
             batch_metrics_arr = self.metrics_calc.calculate_batch_fast(
                 data["close"].values,
                 data["high"].values,
@@ -91,7 +90,7 @@ class EvolutionEngine:
                 sl_pct=self.config.stop_loss_pct,
                 tp_pct=self.config.take_profit_pct,
             )
-            
+
             for i, ind in enumerate(population):
                 # Fitness function: Profit Factor * (1 - Max Drawdown)
                 pf = batch_metrics_arr[i, 2]

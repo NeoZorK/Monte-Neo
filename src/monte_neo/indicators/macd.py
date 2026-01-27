@@ -36,12 +36,12 @@ class MACDIndicator(BaseIndicator):
         fast_p = int(round(self._parameters["fast"]))
         slow_p = int(round(self._parameters["slow"]))
         sig_p = int(round(self._parameters["signal"]))
-        
+
         # Minimum period is 2
         fast_p = max(2, fast_p)
         slow_p = max(fast_p + 1, slow_p)
         sig_p = max(2, sig_p)
-        
+
         fast_ema = ema_numba(close, fast_p)
         slow_ema = ema_numba(close, slow_p)
         macd_line = fast_ema - slow_ema
@@ -71,30 +71,30 @@ class MACDIndicator(BaseIndicator):
             close = data["close"].to_numpy()
         else:
             close = data[:, 3] if data.ndim > 1 else data
-            
+
         fast_p = int(round(self._parameters["fast"]))
         slow_p = int(round(self._parameters["slow"]))
         sig_p = int(round(self._parameters["signal"]))
-        
+
         # Minimum period is 2
         fast_p = max(2, fast_p)
         slow_p = max(fast_p + 1, slow_p)
         sig_p = max(2, sig_p)
-        
+
         fast_ema = ema_numba(close, fast_p)
         slow_ema = ema_numba(close, slow_p)
         macd_line = fast_ema - slow_ema
         signal_line = ema_numba(macd_line, sig_p)
         hist_vals = macd_line - signal_line
-        
+
         sig_vals = np.zeros(len(close), dtype=np.float32)
         sig_vals[hist_vals > 0] = 1.0
         sig_vals[hist_vals < 0] = -1.0
-        
+
         sig_prev = np.zeros_like(sig_vals)
         sig_prev[1:] = sig_vals[:-1]
         diff = sig_vals - sig_prev
-        
+
         final_signals = np.zeros_like(sig_vals)
         final_signals[diff > 0] = 1.0
         final_signals[diff < 0] = -1.0

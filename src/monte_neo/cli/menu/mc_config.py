@@ -35,7 +35,7 @@ def configure_mc_workflow(menu: InteractiveMenu) -> None:
 
     if selected is not None:
         menu._mc_methods = selected
-        
+
         console.print("\n[green]✓ Monte Carlo methods configured:[/]")
         for method in menu._mc_methods:
             console.print(f"  • {method}")

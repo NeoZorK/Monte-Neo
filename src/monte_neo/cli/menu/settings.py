@@ -47,10 +47,10 @@ def settings_workflow(menu: InteractiveMenu) -> None:
         if val: menu._crossover_rate = float(val)
     elif choice == "sl":
         rr_choices = [
-            {"name": f"Custom (%)", "value": "custom"},
-            {"name": f"Conservative (0.5%)", "value": 0.5},
-            {"name": f"Standard (1.0%)", "value": 1.0},
-            {"name": f"Aggressive (2.0%)", "value": 2.0},
+            {"name": "Custom (%)", "value": "custom"},
+            {"name": "Conservative (0.5%)", "value": 0.5},
+            {"name": "Standard (1.0%)", "value": 1.0},
+            {"name": "Aggressive (2.0%)", "value": 2.0},
         ]
         val = questionary.select("Select Stop Loss:", choices=rr_choices, style=CUSTOM_STYLE).ask()
         if val == "custom":
@@ -60,7 +60,7 @@ def settings_workflow(menu: InteractiveMenu) -> None:
             menu._stop_loss_pct = val
     elif choice == "tp":
         rr_choices = [
-            {"name": f"Custom (%)", "value": "custom"},
+            {"name": "Custom (%)", "value": "custom"},
             {"name": f"Risk Ratio 1:1 ({menu._stop_loss_pct * 1.0:.1f}%)", "value": menu._stop_loss_pct * 1.0},
             {"name": f"Risk Ratio 1.5:1 ({menu._stop_loss_pct * 1.5:.1f}%)", "value": menu._stop_loss_pct * 1.5},
             {"name": f"Risk Ratio 2:1 ({menu._stop_loss_pct * 2.0:.1f}%)", "value": menu._stop_loss_pct * 2.0},

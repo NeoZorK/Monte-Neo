@@ -10,7 +10,7 @@ from monte_neo.utils.logger import get_logger, setup_logging
 
 
 def generate_synthetic_data(length=1000):
-    dates = pd.date_range(start="2020-01-01", periods=length, freq="1d")
+    dates = pd.date_range(start="2020-01-01", periods=length, freq="1D")
     close = np.random.lognormal(0, 0.02, length).cumprod() * 100
     high = close * (1 + np.random.random(length) * 0.02)
     low = close * (1 - np.random.random(length) * 0.02)

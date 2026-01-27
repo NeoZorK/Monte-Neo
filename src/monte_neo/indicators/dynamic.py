@@ -44,21 +44,47 @@ class DynamicIndicator(BaseIndicator):
         """Compile the source code if not already compiled."""
         if self._compiled_code is None:
             try:
+                # Import inside to make them available in the scope of exec
+                import numpy as _np
+                import pandas as _pd
+
+                # We want to support 'np', 'pd', '_np', '_pd' in the source code
+                # The easiest way is to provide them in the globals of the exec
+                exec_globals = {
+                    "np": _np,
+                    "pd": _pd,
+                    "_np": _np,
+                    "_pd": _pd,
+                    "__builtins__": __builtins__,
+                }
+
+                # Define the function that takes data and the libraries as arguments
+                # even though they are also in globals, for extra safety and clarity
                 func_code = (
                     f"def _dynamic_calc(data, np, pd):\n    return {self.source_code}"
                 )
+
                 local_scope: dict[str, Any] = {}
-                exec(func_code, {}, local_scope)
+                exec(func_code, exec_globals, local_scope)
                 self._compiled_code = local_scope["_dynamic_calc"]
             except Exception as e:
                 logger.debug(f"Failed to compile dynamic indicator: {e}")
                 self._reset_to_safe_source()
                 try:
+                    import numpy as _np
+                    import pandas as _pd
+                    exec_globals = {
+                        "np": _np,
+                        "pd": _pd,
+                        "_np": _np,
+                        "_pd": _pd,
+                        "__builtins__": __builtins__,
+                    }
                     func_code = (
                         f"def _dynamic_calc(data, np, pd):\n    return {self.source_code}"
                     )
                     safe_scope: dict[str, Any] = {}
-                    exec(func_code, {}, safe_scope)
+                    exec(func_code, exec_globals, safe_scope)
                     self._compiled_code = safe_scope["_dynamic_calc"]
                 except Exception as safe_error:
                     logger.error(f"Failed to compile safe dynamic indicator: {safe_error}")
@@ -75,7 +101,10 @@ class DynamicIndicator(BaseIndicator):
         self._compile_if_needed()
         assert self._compiled_code is not None
 
-        indicator_values = self._compiled_code(data, np, pd)
+        # Pass numpy and pandas explicitly to the compiled function
+        import numpy as _np
+        import pandas as _pd
+        indicator_values = self._compiled_code(data, _np, _pd)
 
         if callable(indicator_values) and not isinstance(
             indicator_values, (pd.Series, pd.DataFrame)

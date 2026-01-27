@@ -36,7 +36,7 @@ class GeneratorConfig:
     stop_loss_pct: float = 1.0  # Default 1%
     take_profit_pct: float = 2.0  # Default 2% (2:1 RR)
     use_sl_tp: bool = True
-    
+
     # Validation
     mc_pass_threshold: float = 0.80  # Default 80% for production
 

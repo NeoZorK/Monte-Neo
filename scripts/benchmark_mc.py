@@ -16,6 +16,8 @@ def benchmark_mc():
     # Setup data
     n_rows = 730  # Like in user logs
     dates = pd.date_range("2024-01-01", periods=n_rows, freq="D")
+    # Set seed for reproducibility
+    np.random.seed(42)
     data = pd.DataFrame({
         "open": np.random.uniform(100, 200, n_rows),
         "high": np.random.uniform(100, 200, n_rows),
@@ -26,7 +28,9 @@ def benchmark_mc():
 
     # Setup Indicator
     indicator = DynamicIndicator()
-    indicator._parameters["source_code"] = "data['close'].rolling(20).mean()"
+    indicator._parameters["source_code"] = "data['close'].rolling(50).mean() + np.random.normal(0, 0.001, len(data))"
+    # Pre-compile on main process to check
+    indicator._compile_if_needed()
 
     # Setup MC
     iterations = 500  # Smaller per run, but we run multiple times
@@ -50,8 +54,12 @@ def benchmark_mc():
 
     print("\n--- Benchmarking Persistent Executor ---")
 
-    # Initialize persistent executor
-    executor = ParallelExecutor()
+    # Initialize persistent executor with workers
+    from monte_neo.monte_carlo.workers import init_worker_data
+    executor = ParallelExecutor(
+        initializer=init_worker_data,
+        initargs=(data,)
+    )
     executor.__enter__()
 
     try:

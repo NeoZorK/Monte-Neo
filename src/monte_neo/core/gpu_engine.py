@@ -116,18 +116,18 @@ class MLXBacktestEngine:
         if use_sl_tp:
             # SL/TP requires path-dependent calculation
             # Use parallelized batch Numba for maximum speed on CPU
-            
+
             # Prepare data arrays
             close_prices_np = data["close"].to_numpy().astype(np.float64)
             high_prices_np = data["high"].to_numpy().astype(np.float64)
             low_prices_np = data["low"].to_numpy().astype(np.float64)
-            
+
             # Prepare signal matrix
             signal_list = []
             for sigs in raw_signals:
                 signal_list.append(normalize_signal_array(sigs, len(data)).astype(np.int32))
             signal_matrix = np.stack(signal_list)
-            
+
             # Run batch calculation
             batch_metrics = MetricsCalculator.calculate_batch_fast(
                 close_prices_np,
@@ -138,14 +138,14 @@ class MLXBacktestEngine:
                 sl_pct,
                 tp_pct
             )
-            
+
             results = []
             for i in range(len(indicators)):
                 total_return = float(batch_metrics[i, 0])
                 max_dd = float(batch_metrics[i, 1])
                 pf = float(batch_metrics[i, 2])
                 trade_count = int(batch_metrics[i, 3])
-                
+
                 results.append({
                     "total_return": total_return,
                     "max_drawdown": max_dd,
@@ -233,8 +233,8 @@ class MLXBacktestEngine:
     ) -> list[dict[str, Any]]:
         """Run one indicator across many data scenarios on GPU."""
         return run_scenarios_backtest(
-            indicator, 
-            scenarios, 
+            indicator,
+            scenarios,
             executor,
             use_sl_tp=use_sl_tp,
             sl_pct=sl_pct,

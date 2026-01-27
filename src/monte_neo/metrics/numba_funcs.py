@@ -20,7 +20,7 @@ def extract_trades_fast(
     position = 0
     entry_idx = 0
     entry_price = 0.0
-    
+
     sl_price = 0.0
     tp_price = 0.0
 
@@ -36,7 +36,7 @@ def extract_trades_fast(
                 position = int(signal)
                 entry_idx = i
                 entry_price = price
-                
+
                 if use_sl_tp:
                     if position == 1: # Long
                         sl_price = entry_price * (1.0 - sl_pct / 100.0)
@@ -48,7 +48,7 @@ def extract_trades_fast(
             # Check for SL/TP first
             hit_exit = False
             exit_price = price
-            
+
             if use_sl_tp:
                 if position == 1: # Long
                     if low <= sl_price:
@@ -64,12 +64,12 @@ def extract_trades_fast(
                     elif low <= tp_price:
                         exit_price = tp_price
                         hit_exit = True
-            
+
             # Check for signal exit if SL/TP not hit
             if not hit_exit and signal == -position:
                 exit_price = price
                 hit_exit = True
-            
+
             if hit_exit:
                 # Close position
                 pnl = (exit_price - entry_price) * position
@@ -101,29 +101,29 @@ def calculate_batch_fast(
 
     for i in prange(n_indicators):
         signals = signal_matrix[i]
-        
+
         # Simplified extraction for speed
         position = 0
         entry_price = 0.0
         sl_price = 0.0
         tp_price = 0.0
-        
+
         total_pnl_pct = 0.0
         gross_profit = 0.0
         gross_loss = 0.0
         n_trades = 0
-        
+
         # Equity curve for drawdown
         equity = 1.0
         max_equity = 1.0
         max_dd = 0.0
-        
+
         for j in range(len(signals)):
             signal = signals[j]
             price = prices[j]
             high = highs[j]
             low = lows[j]
-            
+
             if position == 0:
                 if signal != 0:
                     position = int(signal)
@@ -138,7 +138,7 @@ def calculate_batch_fast(
             else:
                 hit_exit = False
                 exit_price = price
-                
+
                 if use_sl_tp:
                     if position == 1:
                         if low <= sl_price:
@@ -154,34 +154,34 @@ def calculate_batch_fast(
                         elif low <= tp_price:
                             exit_price = tp_price
                             hit_exit = True
-                
+
                 if not hit_exit and signal == -position:
                     exit_price = price
                     hit_exit = True
-                    
+
                 if hit_exit:
                     pnl = (exit_price - entry_price) * position
                     pnl_pct = pnl / entry_price
                     total_pnl_pct += pnl_pct
-                    
+
                     if pnl > 0: gross_profit += pnl
                     else: gross_loss += abs(pnl)
-                    
+
                     # Update equity and drawdown
                     equity *= (1.0 + pnl_pct)
                     if equity > max_equity: max_equity = equity
                     dd = (max_equity - equity) / max_equity
                     if dd > max_dd: max_dd = dd
-                    
+
                     position = 0
                     n_trades += 1
-        
+
         pf = gross_profit / gross_loss if gross_loss > 0 else 100.0
         results[i, 0] = total_pnl_pct
         results[i, 1] = max_dd
         results[i, 2] = pf
         results[i, 3] = n_trades
-        
+
     return results
 
 
@@ -204,35 +204,35 @@ def calculate_batch_multi_price_fast(
         prices = price_matrix[i]
         highs = high_matrix[i]
         lows = low_matrix[i]
-        
+
         # Simplified extraction for speed
         position = 0
         entry_price = 0.0
         sl_price = 0.0
         tp_price = 0.0
-        
+
         total_pnl_pct = 0.0
         gross_profit = 0.0
         gross_loss = 0.0
         n_trades = 0
-        
+
         # Equity curve for drawdown
         equity = 1.0
         max_equity = 1.0
         max_dd = 0.0
-        
+
         # We need to know the actual length of this row (ignoring padding)
         # We assume non-zero prices mean actual data
         row_len = len(signals)
         while row_len > 0 and prices[row_len-1] == 0:
             row_len -= 1
-        
+
         for j in range(row_len):
             signal = signals[j]
             price = prices[j]
             high = highs[j]
             low = lows[j]
-            
+
             if position == 0:
                 if signal != 0:
                     position = int(signal)
@@ -247,7 +247,7 @@ def calculate_batch_multi_price_fast(
             else:
                 hit_exit = False
                 exit_price = price
-                
+
                 if use_sl_tp:
                     if position == 1:
                         if low <= sl_price:
@@ -263,32 +263,32 @@ def calculate_batch_multi_price_fast(
                         elif low <= tp_price:
                             exit_price = tp_price
                             hit_exit = True
-                
+
                 if not hit_exit and signal == -position:
                     exit_price = price
                     hit_exit = True
-                    
+
                 if hit_exit:
                     pnl = (exit_price - entry_price) * position
                     pnl_pct = pnl / entry_price
                     total_pnl_pct += pnl_pct
-                    
+
                     if pnl > 0: gross_profit += pnl
                     else: gross_loss += abs(pnl)
-                    
+
                     # Update equity and drawdown
                     equity *= (1.0 + pnl_pct)
                     if equity > max_equity: max_equity = equity
                     dd = (max_equity - equity) / max_equity
                     if dd > max_dd: max_dd = dd
-                    
+
                     position = 0
                     n_trades += 1
-        
+
         pf = gross_profit / gross_loss if gross_loss > 0 else 100.0
         results[i, 0] = total_pnl_pct
         results[i, 1] = max_dd
         results[i, 2] = pf
         results[i, 3] = n_trades
-        
+
     return results

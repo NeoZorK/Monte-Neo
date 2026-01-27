@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import time
-import pandas as pd
 from typing import TYPE_CHECKING, Any
 
+import pandas as pd
+
 if TYPE_CHECKING:
-    from monte_neo.core.generator import IndicatorGenerator
+    pass
 
 # Parameter search spaces for each indicator type
 PARAM_SPACES = {
