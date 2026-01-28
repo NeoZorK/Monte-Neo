@@ -5,10 +5,11 @@ Handles multiple indicators, risk allocation, and correlation analysis.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, field
 
 from monte_neo.utils.logger import get_logger
 
@@ -22,30 +23,30 @@ class PortfolioAsset:
     symbol: str
     weight: float = 1.0
     active: bool = True
-    equity_curve: Optional[np.ndarray] = None
+    equity_curve: np.ndarray | None = None
 
 class PortfolioManager:
     """Manages a collection of indicators as a single trading portfolio."""
 
     def __init__(self, initial_capital: float = 10000.0):
-        self.assets: List[PortfolioAsset] = []
+        self.assets: list[PortfolioAsset] = []
         self.initial_capital = initial_capital
-        self.correlation_matrix: Optional[pd.DataFrame] = None
+        self.correlation_matrix: pd.DataFrame | None = None
 
     def add_asset(self, asset: PortfolioAsset):
         """Add an asset to the portfolio."""
         self.assets.append(asset)
         logger.info(f"Added asset {asset.id} for {asset.symbol} to portfolio")
 
-    def calculate_correlations(self, returns_dict: Dict[str, pd.Series]) -> pd.DataFrame:
+    def calculate_correlations(self, returns_dict: dict[str, pd.Series]) -> pd.DataFrame:
         """Calculate correlation matrix between assets based on their returns."""
         df = pd.DataFrame(returns_dict)
         self.correlation_matrix = df.corr()
         return self.correlation_matrix
 
-    def cluster_assets(self, returns_dict: Dict[str, pd.Series]) -> Dict[int, List[str]]:
+    def cluster_assets(self, returns_dict: dict[str, pd.Series]) -> dict[int, list[str]]:
         """Cluster assets based on correlation to find redundant strategies."""
-        from scipy.cluster.hierarchy import linkage, fcluster
+        from scipy.cluster.hierarchy import fcluster, linkage
         from scipy.spatial.distance import squareform
         
         if len(returns_dict) < 2:
@@ -75,7 +76,7 @@ class PortfolioManager:
             logger.error(f"Clustering failed: {e}")
             return {0: list(returns_dict.keys())}
 
-    def optimize_weights(self, method: str = "risk_parity", volatilities: Optional[List[float]] = None) -> Dict[str, float]:
+    def optimize_weights(self, method: str = "risk_parity", volatilities: list[float] | None = None) -> dict[str, float]:
         """Optimize asset weights based on selected method."""
         if not self.assets:
             return {}
@@ -103,7 +104,7 @@ class PortfolioManager:
         
         return {a.id: a.weight for a in self.assets}
 
-    def run_portfolio_monte_carlo(self, iterations: int = 1000) -> Dict[str, Any]:
+    def run_portfolio_monte_carlo(self, iterations: int = 1000) -> dict[str, Any]:
         """Runs Monte Carlo simulation on the combined portfolio equity."""
         combined_equity = self.get_combined_equity()
         if len(combined_equity) == 0:
@@ -154,7 +155,7 @@ class PortfolioManager:
             
         return combined
 
-    def get_portfolio_summary(self) -> Dict[str, Any]:
+    def get_portfolio_summary(self) -> dict[str, Any]:
         """Get high-level portfolio statistics."""
         summary = {
             "total_assets": len(self.assets),
@@ -166,14 +167,14 @@ class PortfolioManager:
         
         # Add clustering info if we have enough assets
         if len(self.assets) >= 2:
-            returns = {a.id: pd.Series(a.equity_curve).pct_change().dropna() 
+            returns = {a.id: pd.Series(a.equity_curve).pct_change().dropna()
                        for a in self.assets if a.equity_curve is not None}
             if returns:
                 summary["clusters"] = self.cluster_assets(returns)
                 
         return summary
 
-    def auto_rebalance(self, method: str = "risk_parity") -> Dict[str, float]:
+    def auto_rebalance(self, method: str = "risk_parity") -> dict[str, float]:
         """Automatically rebalance the portfolio based on latest metrics."""
         volatilities = []
         for asset in self.assets:

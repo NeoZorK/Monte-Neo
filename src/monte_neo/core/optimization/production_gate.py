@@ -6,12 +6,12 @@ Final validation and certification before deployment.
 from __future__ import annotations
 
 import os
-from typing import Dict, Any, Optional
+from typing import Any
 
-from monte_neo.indicators.base import BaseIndicator
 from monte_neo.core.optimization.certification import RobustnessCertifier
 from monte_neo.core.optimization.production_exporter import ProductionExporter
 from monte_neo.core.optimization.stress_tester import StressTester
+from monte_neo.indicators.base import BaseIndicator
 from monte_neo.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -24,7 +24,7 @@ class ProductionGate:
         self.exporter = ProductionExporter(os.path.join(export_dir, "production"))
         self.stress_tester = StressTester()
 
-    def process(self, indicator: BaseIndicator, data: Dict[str, Any], validation_results: Dict[str, Any]) -> Dict[str, Any]:
+    def process(self, indicator: BaseIndicator, data: dict[str, Any], validation_results: dict[str, Any]) -> dict[str, Any]:
         """
         Runs final stress tests, generates a certificate, and exports if passed.
         """

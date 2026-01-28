@@ -1,20 +1,22 @@
 
+import logging
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, List, Tuple, Optional
-import logging
-from monte_neo.indicators.base import BaseIndicator, IndicatorConfig
+
 from monte_neo.core.mlx_engine import MLXBacktestEngine
+from monte_neo.indicators.base import BaseIndicator, IndicatorConfig
 
 logger = logging.getLogger(__name__)
 
 class StressTester:
     """Advanced stress testing for trading strategies."""
     
-    def __init__(self, engine: Optional[MLXBacktestEngine] = None):
+    def __init__(self, engine: MLXBacktestEngine | None = None):
         self.engine = engine or MLXBacktestEngine()
 
-    def run_all(self, indicator: BaseIndicator, data: pd.DataFrame) -> Dict[str, Any]:
+    def run_all(self, indicator: BaseIndicator, data: pd.DataFrame) -> dict[str, Any]:
         """Runs all stress tests and returns an overall robustness score."""
         logger.info(f"Running full stress test suite for {indicator.__class__.__name__}")
         
@@ -48,8 +50,8 @@ class StressTester:
             "breaking_point": breaking_point
         }
 
-    def black_swan_test(self, data: pd.DataFrame, indicator: BaseIndicator, 
-                        n_events: int = 5, magnitude_std: float = 5.0) -> Dict[str, Any]:
+    def black_swan_test(self, data: pd.DataFrame, indicator: BaseIndicator,
+                        n_events: int = 5, magnitude_std: float = 5.0) -> dict[str, Any]:
         """
         Injects extreme price movements (Black Swans) into the data and checks strategy stability.
         
@@ -73,8 +75,8 @@ class StressTester:
         results, _ = self.engine.run_full_simulation(stressed_data, indicator, n_scenarios=1)
         return results[0]['metrics'] if results else {}
 
-    def parameter_sensitivity_analysis(self, data: pd.DataFrame, indicator: BaseIndicator, 
-                                      perturbation: float = 0.1, n_steps: int = 5) -> Dict[str, Any]:
+    def parameter_sensitivity_analysis(self, data: pd.DataFrame, indicator: BaseIndicator,
+                                      perturbation: float = 0.1, n_steps: int = 5) -> dict[str, Any]:
         """
         Tests how sensitive the strategy is to small changes in its parameters.
         Creates a 2D sensitivity grid if at least two parameters are found.
@@ -158,15 +160,15 @@ class StressTester:
             "grid": grid_data
         }
 
-    def breaking_point_analysis(self, data: pd.DataFrame, indicator: BaseIndicator, 
-                               max_comm: float = 100.0, step: float = 5.0) -> Dict[str, Any]:
+    def breaking_point_analysis(self, data: pd.DataFrame, indicator: BaseIndicator,
+                               max_comm: float = 100.0, step: float = 5.0) -> dict[str, Any]:
         """
         Finds the level of commission/slippage where the strategy stops being profitable.
         """
         current_cost = 0.0
         while current_cost <= max_comm:
             res, _ = self.engine.run_full_simulation(
-                data, indicator, n_scenarios=1, 
+                data, indicator, n_scenarios=1,
                 commission_bps=current_cost, slippage_bps=current_cost
             )
             

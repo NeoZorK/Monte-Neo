@@ -1,8 +1,9 @@
 import json
 import os
-import shutil
-from typing import Dict, Any, List, Optional
+from typing import Any
+
 from monte_neo.indicators.base import BaseIndicator
+
 
 class ProductionExporter:
     """Exports validated indicators for production use (JSON and C++)."""
@@ -11,7 +12,7 @@ class ProductionExporter:
         self.export_dir = export_dir
         os.makedirs(self.export_dir, exist_ok=True)
         
-    def export(self, indicator: BaseIndicator, validation_results: Dict[str, Any], metadata: Dict[str, Any] = None) -> str:
+    def export(self, indicator: BaseIndicator, validation_results: dict[str, Any], metadata: dict[str, Any] = None) -> str:
         """
         Exports indicator config, validation certificate, and C++ source.
         
@@ -93,7 +94,7 @@ class ProductionExporter:
             
         return metal_path
 
-    def _generate_cpp_source(self, name: str, params: Dict[str, Any], formula: str) -> str:
+    def _generate_cpp_source(self, name: str, params: dict[str, Any], formula: str) -> str:
         """Template for C++ production source."""
         param_init = "\n    ".join([f"float {k} = {v};" for k, v in params.items()])
         
@@ -158,7 +159,7 @@ int main() {{
 }}
 """
 
-    def _generate_metal_source(self, name: str, params: Dict[str, Any], formula: str) -> str:
+    def _generate_metal_source(self, name: str, params: dict[str, Any], formula: str) -> str:
         """Template for Metal shader production source."""
         return f"""
 #include <metal_stdlib>

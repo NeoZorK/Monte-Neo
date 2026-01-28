@@ -1,15 +1,18 @@
-import pandas as pd
-import numpy as np
 import os
 import sys
+
+import numpy as np
+import pandas as pd
 
 # Add src to path
 sys.path.append(os.path.join(os.getcwd(), "src"))
 
-from monte_neo.indicators.dynamic import DynamicIndicator
-from monte_neo.core.mlx_engine import MLXBacktestEngine
-from monte_neo.utils.visualization import plot_metrics_summary, plot_equity_curves
 import matplotlib.pyplot as plt
+
+from monte_neo.core.mlx_engine import MLXBacktestEngine
+from monte_neo.indicators.dynamic import DynamicIndicator
+from monte_neo.utils.visualization import plot_equity_curves, plot_metrics_summary
+
 
 def test_advanced_metal():
     # 1. Prepare data

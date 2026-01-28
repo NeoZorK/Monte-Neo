@@ -6,8 +6,8 @@ Generates professional certificates for validated indicators.
 from __future__ import annotations
 
 import os
-from typing import Dict, Any, Optional
 from datetime import datetime
+from typing import Any
 
 from monte_neo.utils.logger import get_logger
 
@@ -20,7 +20,7 @@ class RobustnessCertifier:
         self.output_dir = output_dir
         os.makedirs(self.output_dir, exist_ok=True)
 
-    def generate_certificate(self, indicator_name: str, validation_status: Dict[str, Any]) -> str:
+    def generate_certificate(self, indicator_name: str, validation_status: dict[str, Any]) -> str:
         """
         Generates a markdown certificate summarizing robustness metrics.
         

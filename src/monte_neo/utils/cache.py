@@ -5,6 +5,7 @@ Handles caching of compiled Metal libraries, calibration results, and other expe
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import pickle
@@ -48,13 +49,12 @@ def load_cache(name: str, use_pickle: bool = False) -> Any | None:
             with open(path, "rb") as f:
                 return pickle.load(f)
         else:
-            with open(path, "r") as f:
+            with open(path) as f:
                 return json.load(f)
     except Exception as e:
         logger.warning(f"Failed to load cache {name}: {e}")
         return None
 
-import hashlib
 
 def get_data_hash(data: Any) -> str:
     """Generate a hash for data to use as cache key."""

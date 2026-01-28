@@ -5,14 +5,14 @@ Advanced evolutionary optimization with symbolic regression and heuristic-based 
 
 from __future__ import annotations
 
-import numpy as np
-import pandas as pd
-from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 
+import numpy as np
+import pandas as pd
+
 from monte_neo.indicators.base import BaseIndicator
-from monte_neo.indicators.dynamic import DynamicIndicator
 from monte_neo.indicators.code_gen import CodeGenerator
+from monte_neo.indicators.dynamic import DynamicIndicator
 from monte_neo.metrics.calculator import MetricsCalculator
 from monte_neo.utils.logger import get_logger
 
@@ -33,7 +33,7 @@ class AIEvolutionEngine:
         population_size: int = 100,
         mutation_rate: float = 0.2,
         crossover_rate: float = 0.8,
-        metrics_calc: Optional[MetricsCalculator] = None
+        metrics_calc: MetricsCalculator | None = None
     ):
         self.population_size = population_size
         self.mutation_rate = mutation_rate
@@ -49,7 +49,7 @@ class AIEvolutionEngine:
             "instability": ["smoothing", "higher_timeframe_confirmation"]
         }
 
-    def evolve(self, data: pd.DataFrame, target_metrics: Dict[str, float], generations: int = 10) -> BaseIndicator:
+    def evolve(self, data: pd.DataFrame, target_metrics: dict[str, float], generations: int = 10) -> BaseIndicator:
         """Runs the AI-driven evolution process."""
         population = self._initialize_population()
         
@@ -78,7 +78,7 @@ class AIEvolutionEngine:
 
         return population[0]
 
-    def _initialize_population(self) -> List[BaseIndicator]:
+    def _initialize_population(self) -> list[BaseIndicator]:
         pop = []
         for _ in range(self.population_size):
             ind = DynamicIndicator()
@@ -86,7 +86,7 @@ class AIEvolutionEngine:
             pop.append(ind)
         return pop
 
-    def _evaluate_population(self, population: List[BaseIndicator], data: pd.DataFrame, targets: Dict[str, float]) -> List[float]:
+    def _evaluate_population(self, population: list[BaseIndicator], data: pd.DataFrame, targets: dict[str, float]) -> list[float]:
         scores = []
         for ind in population:
             try:
@@ -143,7 +143,7 @@ class AIEvolutionEngine:
         
         try:
             new_formula = crossover_trees(f1, f2)
-        except:
+        except Exception:
             new_formula = f1 # Fallback
             
         child = DynamicIndicator()
@@ -171,7 +171,7 @@ class AIEvolutionEngine:
                     val = int(target)
                     new_val = max(2, val + self.rng.integers(-5, 6))
                     new_formula = formula.replace(target, str(new_val), 1)
-                except:
+                except Exception:
                     new_formula = formula
             else:
                 new_formula = formula

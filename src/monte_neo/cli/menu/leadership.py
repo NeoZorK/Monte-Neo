@@ -5,15 +5,14 @@ End-to-end automated indicator discovery and production deployment.
 
 from __future__ import annotations
 
-import time
 from typing import TYPE_CHECKING
 
+import numpy as np
 import questionary
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from monte_neo.cli.styles import CUSTOM_STYLE
 from monte_neo.core.evolution_ai import AIEvolutionEngine
 from monte_neo.core.optimization.production_gate import ProductionGate
 from monte_neo.monte_carlo.engine import MonteCarloEngine
@@ -51,11 +50,11 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
         engine = AIEvolutionEngine(population_size=menu._pop_size)
         best_indicator = engine.evolve(data, menu._target_metrics, generations=menu._generations)
     
-    console.print(f"\n[green]✅ Best formula discovered:[/]")
+    console.print("\n[green]✅ Best formula discovered:[/]")
     console.print(Panel(f"[bold white]{best_indicator.get_formula()}[/]", border_style="green"))
 
     # 4. Robustness Validation Phase
-    console.print(f"\n[cyan]Running intensive robustness validation suite...[/]")
+    console.print("\n[cyan]Running intensive robustness validation suite...[/]")
     from monte_neo.core.validator import OverfitValidator
     from monte_neo.metrics.calculator import MetricsCalculator
     
@@ -90,7 +89,7 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
             validation_results["recommendation"] += "\nWarnings: " + "; ".join(validation_res.warnings)
 
     # 5. Production Gate Phase
-    console.print(f"\n[cyan]Finalizing through Production Gate...[/]")
+    console.print("\n[cyan]Finalizing through Production Gate...[/]")
     gate = ProductionGate()
     
     with console.status("[bold magenta]Stress testing and generating production assets..."):
@@ -116,6 +115,6 @@ def _display_pipeline_results(results: dict) -> None:
     if results["is_certified"]:
         console.print(f"\n[bold green]Indicator is ready for zero-latency deployment in {results['export_path']}![/]")
     else:
-        console.print(f"\n[bold yellow]Indicator did not meet leadership standards. Try adjusting target metrics or increasing evolution generations.[/]")
+        console.print("\n[bold yellow]Indicator did not meet leadership standards. Try adjusting target metrics or increasing evolution generations.[/]")
     
     questionary.press_any_key("Press any key to return to main menu...").ask()

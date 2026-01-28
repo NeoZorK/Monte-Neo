@@ -1,9 +1,12 @@
 
-import pandas as pd
-import numpy as np
 import time
-from monte_neo.indicators.dynamic import DynamicIndicator
+
+import numpy as np
+import pandas as pd
+
 from monte_neo.core.gpu_engine import MLXBacktestEngine
+from monte_neo.indicators.dynamic import DynamicIndicator
+
 
 def main():
     # 1. Create dummy data
@@ -50,13 +53,13 @@ def main():
         # Convert data to Candle objects
         from monte_neo.core.acceleration.cpp_metal.metal_engine import Candle
         candles = [
-            Candle(float(o), float(h), float(l), float(c), float(v)) 
+            Candle(float(o), float(h), float(l), float(c), float(v))
             for o, h, l, c, v in zip(
                 data['open'], data['high'], data['low'], data['close'], data['volume']
             )
         ]
 
-        print(f"Running 3 scenarios on GPU via Native Bridge directly...")
+        print("Running 3 scenarios on GPU via Native Bridge directly...")
         start = time.time()
         results = engine.native_bridge.run_backtest(candles, scenarios_params, 3)
         end = time.time()

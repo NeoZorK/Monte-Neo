@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import numpy as np
-from typing import List, Dict
 
 def calculate_kelly_fraction(win_rate: float, win_loss_ratio: float) -> float:
     """
@@ -20,7 +18,7 @@ def calculate_kelly_fraction(win_rate: float, win_loss_ratio: float) -> float:
     return max(0.0, kelly)
 
 def calculate_volatility_adjusted_size(
-    volatility: float, 
+    volatility: float,
     target_volatility: float = 0.15,
     equity: float = 10000.0
 ) -> float:
@@ -34,7 +32,7 @@ def calculate_volatility_adjusted_size(
     size = (target_volatility / volatility) * equity
     return size
 
-def calculate_risk_parity_weights(volatilities: List[float]) -> List[float]:
+def calculate_risk_parity_weights(volatilities: list[float]) -> list[float]:
     """
     Calculate weights such that each asset contributes equal risk (inverse of volatility).
     """

@@ -1,22 +1,23 @@
 
 from __future__ import annotations
 
-import time
 import logging
+import os
+import subprocess
+import time
+from typing import TYPE_CHECKING, Any
+
 import mlx.core as mx
 import numpy as np
 import pandas as pd
-from typing import TYPE_CHECKING, Any
 
+from monte_neo.core.acceleration.engine import GpuAccelerationEngine
 from monte_neo.core.gpu_lazy import backtest_lazy_scenarios as run_lazy_backtest
 from monte_neo.core.gpu_scenarios import normalize_signal_array, run_scenarios_backtest
 from monte_neo.metrics.calculator import MetricsCalculator
 from monte_neo.monte_carlo.workers import run_indicator_batch
-from monte_neo.utils.parallel import ParallelExecutor
-from monte_neo.core.acceleration.engine import GpuAccelerationEngine
-import os
-import subprocess
 from monte_neo.utils.cache import load_cache, save_cache
+from monte_neo.utils.parallel import ParallelExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ if TYPE_CHECKING:
 
 # Try to import the Metal bridge extension
 try:
-    from monte_neo.core.acceleration.cpp_metal.metal_engine import MetalBacktestBridge, Candle, Driver
+    from monte_neo.core.acceleration.cpp_metal.metal_engine import Candle, Driver, MetalBacktestBridge
     METAL_EXTENSION_AVAILABLE = True
 except ImportError:
     # Try to auto-compile if extension is missing
@@ -35,7 +36,7 @@ except ImportError:
         if os.path.exists(script_path):
             result = subprocess.run(["bash", script_path], capture_output=True, text=True)
             if result.returncode == 0:
-                from monte_neo.core.acceleration.cpp_metal.metal_engine import MetalBacktestBridge, Candle, Driver
+                from monte_neo.core.acceleration.cpp_metal.metal_engine import Candle, Driver, MetalBacktestBridge
                 METAL_EXTENSION_AVAILABLE = True
                 logger.info("✅ Metal extension compiled and loaded successfully.")
             else:
@@ -139,7 +140,7 @@ class MLXBacktestEngine:
                 try:
                     t_prep_start = time.perf_counter()
                     candles = [
-                        Candle(float(o), float(h), float(l), float(c), float(v)) 
+                        Candle(float(o), float(h), float(l), float(c), float(v))
                         for o, h, l, c, v in zip(data['open'], data['high'], data['low'], data['close'], data['volume'])
                     ]
                     full_params = metal_params * n_scenarios
