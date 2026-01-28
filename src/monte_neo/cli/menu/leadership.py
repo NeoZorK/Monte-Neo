@@ -32,14 +32,22 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
     ))
 
     # 1. Select Symbol
-    from monte_neo.cli.menu.symbol_selector import select_symbol
+    from monte_neo.cli.menu.symbol_selector import select_symbol, select_timeframe_for_symbol
     symbol = select_symbol(menu)
     if not symbol:
         return
 
+    timeframe = select_timeframe_for_symbol(menu, symbol)
+    if not timeframe:
+        console.print(f"[red]No data found for {symbol}. Please download it first.[/]")
+        return
+    
+    menu._selected_symbol = symbol
+    menu._selected_timeframe = timeframe
+
     # 2. Setup Evolution
-    console.print(f"\n[cyan]Initializing AI Evolution Engine for {symbol}...[/]")
-    data = menu.storage.load(symbol, timeframe=menu._selected_timeframe)
+    console.print(f"\n[cyan]Initializing AI Evolution Engine for {symbol} ({timeframe})...[/]")
+    data = menu.storage.load(symbol, timeframe=timeframe)
     if data is None or data.empty:
         console.print(f"[red]No data found for {symbol}. Please download it first.[/]")
         return

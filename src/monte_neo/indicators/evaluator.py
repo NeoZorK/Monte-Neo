@@ -99,16 +99,32 @@ def evaluate_fast_signals(compiled_code: Callable, data: pd.DataFrame | np.ndarr
         vals = compiled_code(fast_data, np, pd)
         
         if isinstance(vals, pd.Series):
-            vals = vals.values
+            vals = vals.to_numpy()
         
+        # Ensure vals is a numpy array and has dimensions
         if not isinstance(vals, np.ndarray):
+            vals = np.asarray([vals] * n_rows)
+        elif vals.ndim == 0:
             vals = np.full(n_rows, vals)
+        elif len(vals) != n_rows:
+            # Handle mismatch (e.g. from rolling)
+            new_vals = np.full(n_rows, np.nan)
+            new_vals[-len(vals):] = vals
+            vals = new_vals
 
         sig_vals = np.zeros(n_rows, dtype=np.float32)
         
         # Standardize signals: >0 is 1, <0 is -1, 0 is 0
-        sig_vals[np.greater(vals, 0)] = 1.0
-        sig_vals[np.less(vals, 0)] = -1.0
+        # Use defensive check for NaN
+        mask_pos = np.zeros(n_rows, dtype=bool)
+        mask_neg = np.zeros(n_rows, dtype=bool)
+        
+        valid_mask = ~np.isnan(vals)
+        mask_pos[valid_mask] = vals[valid_mask] > 0
+        mask_neg[valid_mask] = vals[valid_mask] < 0
+        
+        sig_vals[mask_pos] = 1.0
+        sig_vals[mask_neg] = -1.0
         return sig_vals
     except Exception as e:
         logger.debug(f"Error in fast evaluation: {e}")

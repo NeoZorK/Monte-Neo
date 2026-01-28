@@ -202,6 +202,10 @@ class DynamicIndicator(BaseIndicator):
         if self._compiled_code is None:
             return np.zeros(len(data), dtype=np.float32)
 
+        # Ensure data is at least 1D if it's a numpy array
+        if isinstance(data, np.ndarray) and data.ndim == 0:
+            data = data.reshape(1)
+
         return evaluate_fast_signals(self._compiled_code, data)
 
     def get_min_periods(self) -> int:

@@ -204,3 +204,34 @@ def select_symbol(menu: InteractiveMenu) -> str | None:
     from monte_neo.cli.styles import CUSTOM_STYLE
     selector = SymbolSelector(symbols, style=CUSTOM_STYLE)
     return selector.ask()
+
+def select_timeframe_for_symbol(menu: InteractiveMenu, symbol: str) -> str | None:
+    """Select available timeframe for a given symbol."""
+    import os
+    import questionary
+    from monte_neo.cli.styles import CUSTOM_STYLE
+    
+    data_dir = menu.config.data_dir
+    raw_dir = os.path.join(data_dir, "raw")
+    if not os.path.exists(raw_dir):
+        return None
+        
+    timeframes = []
+    for f in os.listdir(raw_dir):
+        if f.startswith(f"{symbol}_") and f.endswith(".parquet"):
+            # Format: SYMBOL_TIMEFRAME.parquet
+            parts = f.replace(".parquet", "").split("_")
+            if len(parts) >= 2:
+                timeframes.append(parts[1])
+                
+    if not timeframes:
+        return None
+        
+    if len(timeframes) == 1:
+        return timeframes[0]
+        
+    return questionary.select(
+        f"Select timeframe for {symbol}:",
+        choices=sorted(timeframes),
+        style=CUSTOM_STYLE
+    ).ask()
