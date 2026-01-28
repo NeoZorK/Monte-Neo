@@ -1,18 +1,52 @@
 
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 import logging
 from monte_neo.indicators.base import BaseIndicator, IndicatorConfig
 from monte_neo.core.mlx_engine import MLXBacktestEngine
 
 logger = logging.getLogger(__name__)
 
-class DeepStressTester:
+class StressTester:
     """Advanced stress testing for trading strategies."""
     
-    def __init__(self, engine: MLXBacktestEngine):
-        self.engine = engine
+    def __init__(self, engine: Optional[MLXBacktestEngine] = None):
+        self.engine = engine or MLXBacktestEngine()
+
+    def run_all(self, indicator: BaseIndicator, data: pd.DataFrame) -> Dict[str, Any]:
+        """Runs all stress tests and returns an overall robustness score."""
+        logger.info(f"Running full stress test suite for {indicator.__class__.__name__}")
+        
+        black_swan = self.black_swan_test(data, indicator)
+        sensitivity = self.parameter_sensitivity_analysis(data, indicator)
+        breaking_point = self.breaking_point_analysis(data, indicator)
+        
+        # Calculate a weighted score
+        score = 0.0
+        # 1. Black Swan Survival (30%)
+        if black_swan.get('total_return', 0) > 0:
+            score += 30.0
+            
+        # 2. Parameter Stability (40%)
+        # Lower variation is better
+        variation = sensitivity.get('std_return_variation', 1.0)
+        score += max(0, 40.0 * (1.0 - min(1.0, variation)))
+        
+        # 3. Cost Tolerance (30%)
+        # > 50 bps is good
+        bp = breaking_point.get('breaking_point_bps', 0)
+        if isinstance(bp, str): # "> 100"
+            score += 30.0
+        else:
+            score += min(30.0, (bp / 50.0) * 30.0)
+            
+        return {
+            "overall_score": score,
+            "black_swan": black_swan,
+            "sensitivity": sensitivity,
+            "breaking_point": breaking_point
+        }
 
     def black_swan_test(self, data: pd.DataFrame, indicator: BaseIndicator, 
                         n_events: int = 5, magnitude_std: float = 5.0) -> Dict[str, Any]:

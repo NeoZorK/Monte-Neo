@@ -49,10 +49,10 @@ class CodeGenerator:
 
         else:
             # Functions
-            # rolling_mean, diff, shift
+            # rolling_mean, diff, shift, rsi, bbands, macd
 
-            func_type = self.rng.choice(["mean", "max", "min", "std", "diff", "shift"])
-            period = self.rng.integers(3, 50)
+            func_type = self.rng.choice(["mean", "max", "min", "std", "diff", "shift", "rsi", "bbands", "macd"])
+            period = int(self.rng.integers(3, 50))
             inner = self.generate_code(depth + 1)
 
             if func_type == "mean":
@@ -64,8 +64,16 @@ class CodeGenerator:
             elif func_type == "std":
                 return f"{inner}.rolling({period}).std()"
             elif func_type == "diff":
-                return f"{inner}.diff()"  # Default diff 1
+                return f"{inner}.diff()"
             elif func_type == "shift":
                 return f"{inner}.shift({period})"
+            elif func_type == "rsi":
+                return f"rsi({inner}, {period})"
+            elif func_type == "bbands":
+                return f"({inner} - {inner}.rolling({period}).mean()) / {inner}.rolling({period}).std()"
+            elif func_type == "macd":
+                fast = period
+                slow = int(period * 2.2)
+                return f"({inner}.ewm(span={fast}).mean() - {inner}.ewm(span={slow}).mean())"
 
         return "data['close']"  # Fallback
