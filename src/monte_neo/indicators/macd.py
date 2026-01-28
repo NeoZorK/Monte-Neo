@@ -71,9 +71,9 @@ class MACDIndicator(BaseIndicator):
     def get_min_periods(self) -> int:
         return self._parameters["slow"] + self._parameters["signal"]
 
-    def get_metal_params(self) -> list[float] | None:
+    def get_metal_params(self, commission_bps: float = 0.0, slippage_bps: float = 0.0) -> list[float] | None:
         """Return parameters for native Metal kernel."""
-        # Layout: [type, p1, p2, p3, atr_period, sl_mult, tp_mult, ts_mult]
+        # Layout: [type, p1, p2, p3, atr_period, sl_mult, tp_mult, ts_mult, commission, slippage]
         # type 2: MACD
         return [
             2.0,  # type
@@ -83,5 +83,7 @@ class MACDIndicator(BaseIndicator):
             14.0, # ATR
             1.5,  # SL
             3.0,  # TP
-            2.0   # TS
+            2.0,  # TS
+            commission_bps,
+            slippage_bps
         ]

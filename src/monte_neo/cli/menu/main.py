@@ -15,6 +15,7 @@ from monte_neo.utils.console import console
 from monte_neo.utils.logger import get_logger
 
 if TYPE_CHECKING:
+    from monte_neo.core.portfolio import PortfolioManager
     from monte_neo.utils.config import Config
 
 logger = get_logger(__name__)
@@ -54,6 +55,7 @@ class InteractiveMenu:
         self._metal_driver: str = config.metal_driver
 
         self._last_data: pd.DataFrame | None = None
+        self._portfolio_manager: PortfolioManager | None = None
 
     def run(self) -> int:
         """Run the interactive menu loop."""

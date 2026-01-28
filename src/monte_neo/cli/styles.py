@@ -31,6 +31,11 @@ CUSTOM_STYLE = Style(
 )
 
 
+def press_any_key() -> None:
+    """Wait for user to press enter."""
+    import questionary
+    questionary.confirm("Press Enter to continue...", default=True, auto_enter=True, qmark="").ask()
+
 def print_banner() -> None:
     """Print the application banner."""
     banner = Text()

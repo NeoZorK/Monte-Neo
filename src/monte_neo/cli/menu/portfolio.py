@@ -8,7 +8,7 @@ import questionary
 from rich.console import Console
 from rich.table import Table
 
-from monte_neo.cli.styles import CUSTOM_STYLE
+from monte_neo.cli.styles import CUSTOM_STYLE, press_any_key
 from monte_neo.core.portfolio import PortfolioManager
 
 if TYPE_CHECKING:
@@ -19,9 +19,10 @@ console = Console()
 def portfolio_workflow(menu: InteractiveMenu) -> None:
     """Portfolio management sub-menu."""
     # Initialize manager if not exists (in a real app, we'd load it from config/storage)
-    if not hasattr(menu, "_portfolio_manager"):
+    if menu._portfolio_manager is None:
         menu._portfolio_manager = PortfolioManager()
 
+    manager = menu._portfolio_manager
     while True:
         choices = [
             {"name": "📋 View Portfolio Summary", "value": "summary"},
@@ -42,15 +43,15 @@ def portfolio_workflow(menu: InteractiveMenu) -> None:
             break
         
         if choice == "summary":
-            _show_summary(menu._portfolio_manager)
+            _show_summary(manager)
         elif choice == "add_asset":
             _add_asset_workflow(menu)
         elif choice == "portfolio_mc":
-            _portfolio_mc_workflow(menu._portfolio_manager)
+            _portfolio_mc_workflow(manager)
         elif choice == "clusters":
-            _cluster_analysis_workflow(menu._portfolio_manager)
+            _cluster_analysis_workflow(manager)
         elif choice == "optimize":
-            _optimize_workflow(menu._portfolio_manager)
+            _optimize_workflow(manager)
 
 def _portfolio_mc_workflow(manager: PortfolioManager) -> None:
     """Runs Monte Carlo on the combined portfolio."""
@@ -70,7 +71,7 @@ def _portfolio_mc_workflow(manager: PortfolioManager) -> None:
     table.add_row("VaR (95%)", f"{results['var_95']:.2%}")
     
     console.print(table)
-    questionary.press_any_key("Press any key to continue...").ask()
+    press_any_key()
 
 def _cluster_analysis_workflow(manager: PortfolioManager) -> None:
     """Displays asset clusters based on correlation."""
@@ -90,7 +91,7 @@ def _cluster_analysis_workflow(manager: PortfolioManager) -> None:
         
     console.print(table)
     console.print("[dim]Assets in the same cluster are highly correlated and might be redundant.[/]")
-    questionary.press_any_key("Press any key to continue...").ask()
+    press_any_key()
 
 def _optimize_workflow(manager: PortfolioManager) -> None:
     """Runs portfolio optimization."""
@@ -157,6 +158,10 @@ def _add_asset_workflow(menu: InteractiveMenu) -> None:
     
     if selected_idx:
         from monte_neo.core.portfolio import PortfolioAsset
+        
+        if menu._portfolio_manager is None:
+            menu._portfolio_manager = PortfolioManager()
+            
         asset_id = Path(selected_idx).stem
         asset = PortfolioAsset(
             id=asset_id,

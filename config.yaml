@@ -1,9 +1,9 @@
 data:
   dir: data
-  symbol: BTCUSDC
-  timeframe: 1d
+  symbol: BTCUSDT
+  timeframe: 1h
 hardware:
-  gpu_precision: float32
+  gpu_precision: float8_e4m3
   metal_driver: cpp
   use_gpu: true
 metrics:

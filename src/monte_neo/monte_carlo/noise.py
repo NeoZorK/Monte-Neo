@@ -229,7 +229,7 @@ class NoiseInjector:
             # Shift prices forward (making signals appear late)
             # Actually, shifting prices backward has same effect as delaying signals
             sample = sample.shift(shift)
-            sample = sample.fillna(method="bfill")
+            sample = sample.bfill()
             
             samples.append(sample)
             

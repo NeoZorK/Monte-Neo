@@ -101,7 +101,7 @@ class BaseIndicator(ABC):
         """
         pass
 
-    def get_metal_params(self) -> list[float] | None:
+    def get_metal_params(self, commission_bps: float = 0.0, slippage_bps: float = 0.0) -> list[float] | None:
         """Return parameters for native Metal kernel (5 floats)."""
         return None
 

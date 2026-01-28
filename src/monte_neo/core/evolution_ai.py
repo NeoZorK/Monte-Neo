@@ -81,7 +81,7 @@ class AIEvolutionEngine:
         return population[0]
 
     def _initialize_population(self) -> list[BaseIndicator]:
-        pop = []
+        pop: list[BaseIndicator] = []
         for _ in range(self.population_size):
             ind = DynamicIndicator()
             ind.set_parameter("source_code", self.code_gen.generate_code())

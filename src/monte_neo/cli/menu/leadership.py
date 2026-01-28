@@ -8,10 +8,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
-import questionary
 from rich.panel import Panel
 from rich.table import Table
 
+from monte_neo.cli.styles import press_any_key
 from monte_neo.core.evolution_ai import AIEvolutionEngine
 from monte_neo.core.optimization.production_gate import ProductionGate
 from monte_neo.monte_carlo.engine import MonteCarloEngine
@@ -39,7 +39,7 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
 
     # 2. Setup Evolution
     console.print(f"\n[cyan]Initializing AI Evolution Engine for {symbol}...[/]")
-    data = menu.storage.load(symbol)
+    data = menu.storage.load(symbol, timeframe=menu._selected_timeframe)
     if data is None or data.empty:
         console.print(f"[red]No data found for {symbol}. Please download it first.[/]")
         return
@@ -126,4 +126,4 @@ def _display_pipeline_results(results: dict) -> None:
     else:
         console.print("\n[bold yellow]Indicator did not meet leadership standards. Try adjusting target metrics or increasing evolution generations.[/]")
     
-    questionary.press_any_key("Press any key to return to main menu...").ask()
+    press_any_key()
