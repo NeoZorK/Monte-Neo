@@ -44,6 +44,9 @@ class ProgressTracker:
             total: Total number of items.
             description: Progress description.
         """
+        if self._progress:
+            self.stop()
+
         self._total = total
         self._start_time = time.time()
 
@@ -58,7 +61,7 @@ class ProgressTracker:
             TimeRemainingColumn(),
             TextColumn("[dim]{task.fields[status]}"),
             console=console,
-            transient=True,
+            transient=False,  # Set to False to keep the bar visible during update
         )
 
         self._progress.start()

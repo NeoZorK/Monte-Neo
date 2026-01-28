@@ -19,3 +19,12 @@ profile_stats.txt
 data/*.parquet
 data/*.csv
 !data/sample.parquet
+
+# Certs
+*.crt
+*.key
+*.pem
+*.p12
+*.pfx
+cert.pem
+key.pem

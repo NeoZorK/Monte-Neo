@@ -53,13 +53,21 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
         return
 
     # 3. Evolution Phase
-    with console.status("[bold green]Evolving high-performance indicator formulas..."):
-        engine = AIEvolutionEngine(
-            population_size=menu._pop_size,
-            initial_capital=menu.config.initial_capital,
-            leverage=menu.config.leverage
-        )
+    engine = AIEvolutionEngine(
+        population_size=menu._pop_size,
+        initial_capital=menu.config.initial_capital,
+        leverage=menu.config.leverage,
+        progress_callback=menu.progress.update
+    )
+    
+    menu.progress.start(menu._generations, "Evolving formulas...")
+    try:
         best_indicator = engine.evolve(data, menu._target_metrics, generations=menu._generations)
+    finally:
+        menu.progress.stop()
+
+    if not best_indicator:
+        return
     
     console.print("\n[green]✅ Best formula discovered:[/]")
     console.print(Panel(f"[bold white]{best_indicator.get_formula()}[/]", border_style="green"))

@@ -98,6 +98,15 @@ results/
 *.png
 *.jpg
 *.jpeg
+
+# Certs
+*.crt
+*.key
+*.pem
+*.p12
+*.pfx
+cert.pem
+key.pem
 *.gif
 
 # Profile stats

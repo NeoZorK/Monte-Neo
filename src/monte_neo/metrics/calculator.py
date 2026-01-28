@@ -205,11 +205,17 @@ class MetricsCalculator:
         else:
             signal_array = np.asarray(signals, dtype=np.int32)
 
-        # Ensure signal_array is 1D
+        # Ensure signal_array is 1D and matches data length
         if signal_array.ndim == 0:
-            signal_array = signal_array.reshape(1)
+            signal_array = np.full(len(close_prices), signal_array.item(), dtype=np.int32)
         elif signal_array.ndim > 1:
             signal_array = signal_array.flatten()
+        
+        if len(signal_array) != len(close_prices):
+            new_signals = np.zeros(len(close_prices), dtype=np.int32)
+            n = min(len(signal_array), len(close_prices))
+            new_signals[-n:] = signal_array[-n:] # Align to the end
+            signal_array = new_signals
 
         if HAS_NATIVE and not use_sl_tp:
             # Use high-performance C++ extension (native doesn't support SL/TP yet)
