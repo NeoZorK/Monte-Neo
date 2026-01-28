@@ -6,15 +6,12 @@ import time
 from typing import TYPE_CHECKING
 
 import questionary
-from rich.console import Console
-
 from monte_neo.cli.styles import CUSTOM_STYLE
 from monte_neo.core.generator import GeneratorConfig, IndicatorGenerator
+from monte_neo.utils.console import console
 
 if TYPE_CHECKING:
     from monte_neo.cli.menu.main import InteractiveMenu
-
-console = Console()
 
 
 def generate_indicator_workflow(menu: InteractiveMenu, sequential: bool = False) -> None:
@@ -107,6 +104,8 @@ def _run_generation(menu: InteractiveMenu, symbol: str, timeframe: str, iteratio
         use_gpu=getattr(menu, "_use_gpu", True),
         gpu_precision=getattr(menu, "_gpu_precision", "float32"),
         metal_driver=getattr(menu, "_metal_driver", "cpp"),
+        initial_capital=menu.config.initial_capital,
+        leverage=menu.config.leverage,
     )
 
     generator = IndicatorGenerator(config)

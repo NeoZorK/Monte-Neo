@@ -49,7 +49,9 @@ class MonteCarloEngine:
         from monte_neo.core.gpu_engine import MLXBacktestEngine
         self.gpu_engine = MLXBacktestEngine(
             precision=self.config.gpu_precision,
-            metal_driver=self.config.metal_driver
+            metal_driver=self.config.metal_driver,
+            initial_capital=self.config.initial_capital,
+            leverage=self.config.leverage
         )
 
         self._progress_callback: Callable[[int, int], None] | None = None

@@ -38,6 +38,10 @@ class MCConfig:
     gpu_precision: str = "float32"  # float32, float16, float8
     metal_driver: str = "cpp"  # cpp, objc, swift
 
+    # Capital and Leverage
+    initial_capital: float = 100000.0
+    leverage: float = 1.0
+
 
 @dataclass
 class MCStepResult:

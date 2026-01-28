@@ -42,10 +42,15 @@ class IndicatorGenerator:
         """
         self.config = config or GeneratorConfig()
         self.rng = np.random.default_rng()
-        self.metrics_calc = MetricsCalculator()
+        self.metrics_calc = MetricsCalculator(
+            initial_capital=self.config.initial_capital,
+            leverage=self.config.leverage
+        )
         self.gpu_engine = MLXBacktestEngine(
             precision=self.config.gpu_precision,
-            metal_driver=self.config.metal_driver
+            metal_driver=self.config.metal_driver,
+            initial_capital=self.config.initial_capital,
+            leverage=self.config.leverage
         )
         self.executor: ParallelExecutor | None = None
 
@@ -83,6 +88,8 @@ class IndicatorGenerator:
             use_gpu=self.config.use_gpu,
             gpu_precision=self.config.gpu_precision,
             metal_driver=self.config.metal_driver,
+            initial_capital=self.config.initial_capital,
+            leverage=self.config.leverage,
         )
         mc_engine = MonteCarloEngine(mc_config, executor=self.executor)
 

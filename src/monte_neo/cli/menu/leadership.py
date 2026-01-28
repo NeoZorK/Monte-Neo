@@ -9,20 +9,19 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import questionary
-from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
 from monte_neo.core.evolution_ai import AIEvolutionEngine
 from monte_neo.core.optimization.production_gate import ProductionGate
 from monte_neo.monte_carlo.engine import MonteCarloEngine
+from monte_neo.utils.console import console
 from monte_neo.utils.logger import get_logger
 
 if TYPE_CHECKING:
     from monte_neo.cli.menu.main import InteractiveMenu
 
 logger = get_logger(__name__)
-console = Console()
 
 def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
     """Runs the full end-to-end leadership pipeline."""
@@ -47,7 +46,11 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
 
     # 3. Evolution Phase
     with console.status("[bold green]Evolving high-performance indicator formulas..."):
-        engine = AIEvolutionEngine(population_size=menu._pop_size)
+        engine = AIEvolutionEngine(
+            population_size=menu._pop_size,
+            initial_capital=menu.config.initial_capital,
+            leverage=menu.config.leverage
+        )
         best_indicator = engine.evolve(data, menu._target_metrics, generations=menu._generations)
     
     console.print("\n[green]✅ Best formula discovered:[/]")
@@ -58,14 +61,20 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
     from monte_neo.core.validator import OverfitValidator
     from monte_neo.metrics.calculator import MetricsCalculator
     
-    metrics_calc = MetricsCalculator()
+    metrics_calc = MetricsCalculator(
+        initial_capital=menu.config.initial_capital,
+        leverage=menu.config.leverage
+    )
     validator = OverfitValidator()
     
     with console.status("[bold blue]Validating robustness across multiple folds and methods..."):
         validation_res = validator.validate(best_indicator, data, metrics_calc, menu._target_metrics)
         
         # Additional Monte Carlo validation
-        mc_engine = MonteCarloEngine()
+        mc_config = MonteCarloEngine().config
+        mc_config.initial_capital = menu.config.initial_capital
+        mc_config.leverage = menu.config.leverage
+        mc_engine = MonteCarloEngine(config=mc_config)
         mc_res = mc_engine.run(data, best_indicator, metrics_calc, menu._target_metrics)
         
         # CSCV Analysis for PBO

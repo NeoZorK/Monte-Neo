@@ -240,7 +240,7 @@ def calculate_batch_multi_price_fast(
 
         # We need to know the actual length of this row (ignoring padding)
         # We assume non-zero prices mean actual data
-        row_len = len(signals)
+        row_len = signals.shape[0]
         while row_len > 0 and prices[row_len-1] == 0:
             row_len -= 1
 

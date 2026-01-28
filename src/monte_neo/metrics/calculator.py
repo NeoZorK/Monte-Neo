@@ -31,13 +31,17 @@ logger = get_logger(__name__)
 class MetricsCalculator:
     """Calculate all trading metrics."""
 
-    def __init__(self, risk_free_rate: float = 0.0) -> None:
+    def __init__(self, risk_free_rate: float = 0.0, initial_capital: float = 100000.0, leverage: float = 1.0) -> None:
         """Initialize metrics calculator.
 
         Args:
             risk_free_rate: Annual risk-free rate for Sharpe calculation.
+            initial_capital: Initial account balance.
+            leverage: Trading leverage (default 1.0 = no leverage).
         """
         self.risk_free_rate = risk_free_rate
+        self.initial_capital = initial_capital
+        self.leverage = leverage
 
         # Initialize individual metric calculators
         self.profit_factor = ProfitFactorMetric()
@@ -96,6 +100,12 @@ class MetricsCalculator:
             metrics["profit_factor"] = self.profit_factor.calculate(pnls)
         if needs("total_return"):
             metrics["total_return"] = float(np.sum(pnl_pcts))
+        if needs("total_profit_abs"):
+            equity = self._calculate_equity(trades)
+            metrics["total_profit_abs"] = float(equity[-1] - self.initial_capital)
+        if needs("final_balance"):
+            equity = self._calculate_equity(trades)
+            metrics["final_balance"] = float(equity[-1])
         if needs("avg_return"):
             metrics["avg_return"] = float(np.mean(pnl_pcts)) if pnl_pcts else 0.0
         if needs("winrate"):
@@ -274,11 +284,14 @@ class MetricsCalculator:
     def _calculate_equity(self, trades: list[TradeResult]) -> np.ndarray:
         """Calculate equity curve from trades using vectorized cumprod."""
         if not trades:
-            return np.array([1.0])
+            return np.array([self.initial_capital])
 
         pnl_pcts = np.array([t.pnl_pct for t in trades])
-        # Equity starts at 1.0, then cumprod of (1 + pnl_pct)
-        equity = np.ones(len(trades) + 1)
-        equity[1:] = np.cumprod(1 + pnl_pcts)
+        # Apply leverage
+        effective_pnls = pnl_pcts * self.leverage
+        
+        # Equity starts at initial_capital, then cumprod of (1 + pnl_pct)
+        equity = np.ones(len(trades) + 1) * self.initial_capital
+        equity[1:] = self.initial_capital * np.cumprod(1 + effective_pnls)
 
         return equity

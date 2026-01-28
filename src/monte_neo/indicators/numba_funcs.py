@@ -98,12 +98,15 @@ def sma_crossover_signals_numba(data: np.ndarray, fast_period: int, slow_period:
     sum_slow = 0.0
 
     # Initial sums
-    for i in range(fast_period):
+    # Initial sums for the window ending at slow_period - 1
+    sum_fast = 0.0
+    sum_slow = 0.0
+    for i in range(slow_period - fast_period, slow_period):
         sum_fast += data[i]
     for i in range(slow_period):
         sum_slow += data[i]
 
-    # Initial state
+    # Initial state at slow_period - 1
     sma_fast = sum_fast / fast_period
     sma_slow = sum_slow / slow_period
     prev_state = 1 if sma_fast > sma_slow else -1

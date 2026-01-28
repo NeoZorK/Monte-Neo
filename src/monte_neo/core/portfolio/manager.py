@@ -46,9 +46,13 @@ class PortfolioManager:
 
     def cluster_assets(self, returns_dict: dict[str, pd.Series]) -> dict[int, list[str]]:
         """Cluster assets based on correlation to find redundant strategies."""
-        from scipy.cluster.hierarchy import fcluster, linkage
-        from scipy.spatial.distance import squareform
-        
+        try:
+            from scipy.cluster.hierarchy import fcluster, linkage
+            from scipy.spatial.distance import squareform
+        except ImportError:
+            logger.warning("scipy not installed, skipping clustering")
+            return {0: list(returns_dict.keys())}
+            
         if len(returns_dict) < 2:
             return {0: list(returns_dict.keys())}
             
@@ -62,6 +66,9 @@ class PortfolioManager:
         
         # Hierarchical clustering
         try:
+            from scipy.cluster.hierarchy import fcluster, linkage
+            from scipy.spatial.distance import squareform
+            
             link = linkage(squareform(dist), method='ward')
             clusters = fcluster(link, t=0.5, criterion='distance')
             
