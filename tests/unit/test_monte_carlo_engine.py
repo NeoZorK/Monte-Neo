@@ -1,9 +1,11 @@
 import unittest
-from unittest.mock import MagicMock, patch, ANY
+from unittest.mock import MagicMock, patch
+
 import pandas as pd
-import numpy as np
+
 from monte_neo.monte_carlo.engine import MonteCarloEngine
 from monte_neo.monte_carlo.types import MCConfig, MCResult
+
 
 class TestMonteCarloEngine(unittest.TestCase):
     def setUp(self):
@@ -217,13 +219,13 @@ class TestMonteCarloEngine(unittest.TestCase):
         self.target_metrics = {"max_drawdown": 0.1, "consecutive_losses": 3}
         
         # 1. MDD fail (0.2 > 0.1)
-        res = self.engine.run(self.data, self.indicator, self.metrics_calc, self.target_metrics, 
+        res = self.engine.run(self.data, self.indicator, self.metrics_calc, self.target_metrics,
                              existing_scenarios=[self.data], interactive=False)
         # We need to control the metrics returned by the internal engine
         with patch.object(self.engine.gpu_engine, "backtest_scenarios", return_value=[
             {"metrics": {"max_drawdown": 0.2, "consecutive_losses": 2}}
         ]):
-            res = self.engine.run(self.data, self.indicator, self.metrics_calc, self.target_metrics, 
+            res = self.engine.run(self.data, self.indicator, self.metrics_calc, self.target_metrics,
                                  existing_scenarios=[self.data] * 11)
             self.assertEqual(res.detailed_results[0]["passed"], False)
 
@@ -231,7 +233,7 @@ class TestMonteCarloEngine(unittest.TestCase):
         with patch.object(self.engine.gpu_engine, "backtest_scenarios", return_value=[
             {"metrics": {"max_drawdown": 0.05, "consecutive_losses": 4}}
         ]):
-            res = self.engine.run(self.data, self.indicator, self.metrics_calc, self.target_metrics, 
+            res = self.engine.run(self.data, self.indicator, self.metrics_calc, self.target_metrics,
                                  existing_scenarios=[self.data] * 11)
             self.assertEqual(res.detailed_results[0]["passed"], False)
 

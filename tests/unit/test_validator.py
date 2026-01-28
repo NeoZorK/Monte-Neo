@@ -1,10 +1,12 @@
-import pytest
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pytest
+
 from monte_neo.core.validator import OverfitValidator
-from monte_neo.indicators.sma import SMAIndicator
 from monte_neo.indicators.base import IndicatorConfig
+from monte_neo.indicators.sma import SMAIndicator
 from monte_neo.metrics.calculator import MetricsCalculator
+
 
 @pytest.fixture
 def sample_data():

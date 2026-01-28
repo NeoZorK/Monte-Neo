@@ -1,7 +1,9 @@
-import pytest
-import numpy as np
 from unittest.mock import MagicMock, patch
+
+import numpy as np
+
 from monte_neo.core.gpu_lazy import backtest_lazy_scenarios
+
 
 def test_backtest_lazy_scenarios_no_sl_tp():
     indicator = MagicMock()

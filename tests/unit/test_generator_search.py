@@ -1,10 +1,13 @@
-import pytest
-import pandas as pd
-import numpy as np
 import time
 from unittest.mock import MagicMock, patch
-from monte_neo.core.generator_search import run_search
+
+import numpy as np
+import pandas as pd
+import pytest
+
 from monte_neo.core.config import GeneratorConfig
+from monte_neo.core.generator_search import run_search
+
 
 @pytest.fixture
 def mock_generator():

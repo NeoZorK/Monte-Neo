@@ -6,6 +6,7 @@ import time
 from typing import TYPE_CHECKING
 
 import questionary
+
 from monte_neo.cli.styles import CUSTOM_STYLE
 from monte_neo.core.generator import GeneratorConfig, IndicatorGenerator
 from monte_neo.utils.console import console

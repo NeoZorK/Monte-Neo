@@ -1,10 +1,8 @@
-import pytest
 import numpy as np
-from monte_neo.metrics.numba_funcs import (
-    extract_trades_fast, 
-    calculate_batch_fast,
-    calculate_batch_multi_price_fast
-)
+import pytest
+
+from monte_neo.metrics.numba_funcs import calculate_batch_fast, calculate_batch_multi_price_fast, extract_trades_fast
+
 
 def test_extract_trades_fast_basic():
     prices = np.array([100, 101, 102, 101, 100], dtype=np.float64)
@@ -85,7 +83,7 @@ def test_calculate_batch_multi_price_fast():
     ], dtype=np.int32)
     
     results = calculate_batch_multi_price_fast(
-        price_matrix, high_matrix, low_matrix, signal_matrix, 
+        price_matrix, high_matrix, low_matrix, signal_matrix,
         False, 0.0, 0.0, 0.0, 0.0
     )
     assert results.shape == (2, 4)

@@ -1,7 +1,7 @@
-import os
 import yaml
-from pathlib import Path
-from monte_neo.utils.config import load_config, Config
+
+from monte_neo.utils.config import load_config
+
 
 def test_default_config():
     config = load_config()

@@ -1,11 +1,14 @@
-import pytest
-import pandas as pd
-import numpy as np
 from unittest.mock import MagicMock, patch
-from monte_neo.core.generator import IndicatorGenerator
+
+import numpy as np
+import pandas as pd
+import pytest
+
 from monte_neo.core.config import GeneratorConfig
-from monte_neo.indicators.technical import SMAIndicator, RSIIndicator, MACDIndicator
+from monte_neo.core.generator import IndicatorGenerator
 from monte_neo.indicators.dynamic import DynamicIndicator
+from monte_neo.indicators.technical import MACDIndicator, RSIIndicator, SMAIndicator
+
 
 @pytest.fixture
 def generator():

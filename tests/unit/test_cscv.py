@@ -1,9 +1,11 @@
-import pytest
-import pandas as pd
 import numpy as np
-from monte_neo.monte_carlo.cscv import CSCVAnalyzer
+import pandas as pd
+import pytest
+
 from monte_neo.indicators.sma import SMAIndicator
 from monte_neo.metrics.calculator import MetricsCalculator
+from monte_neo.monte_carlo.cscv import CSCVAnalyzer
+
 
 @pytest.fixture
 def sample_data():

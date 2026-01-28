@@ -1,8 +1,10 @@
-import pytest
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pytest
+
 from monte_neo.core.evolution_ai import AIEvolutionEngine
 from monte_neo.indicators.dynamic import DynamicIndicator
+
 
 @pytest.fixture
 def sample_data():

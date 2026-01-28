@@ -1,14 +1,16 @@
+import importlib
+import sys
 import unittest
-from unittest.mock import MagicMock, patch, ANY
+from unittest.mock import MagicMock, patch
+
+import mlx.core as mx
 import numpy as np
 import pandas as pd
-import mlx.core as mx
-import sys
-import importlib
 
 # First import to ensure it's in sys.modules
 import monte_neo.core.mlx_engine
 from monte_neo.core.mlx_engine import MLXBacktestEngine
+
 
 class TestMLXEngineExtra(unittest.TestCase):
     def setUp(self):
@@ -160,7 +162,6 @@ class TestMLXEngineExtra(unittest.TestCase):
         mock_exists.return_value = True
         mock_run.return_value = MagicMock(returncode=1, stderr="Error")
         
-        import monte_neo.core.mlx_engine
         with patch.dict(sys.modules, {"monte_neo.core.acceleration.cpp_metal.metal_engine": None}):
             with patch("monte_neo.core.mlx_engine.os.path.dirname", return_value="/tmp"):
                 importlib.reload(monte_neo.core.mlx_engine)
@@ -172,7 +173,6 @@ class TestMLXEngineExtra(unittest.TestCase):
         # Test the path where compilation script is missing
         mock_exists.return_value = False
         
-        import monte_neo.core.mlx_engine
         with patch.dict(sys.modules, {"monte_neo.core.acceleration.cpp_metal.metal_engine": None}):
             importlib.reload(monte_neo.core.mlx_engine)
             self.assertFalse(monte_neo.core.mlx_engine.METAL_EXTENSION_AVAILABLE)
@@ -183,7 +183,6 @@ class TestMLXEngineExtra(unittest.TestCase):
         # Test the path where compilation script raises exception
         mock_exists.side_effect = Exception("OS Error")
         
-        import monte_neo.core.mlx_engine
         with patch.dict(sys.modules, {"monte_neo.core.acceleration.cpp_metal.metal_engine": None}):
             importlib.reload(monte_neo.core.mlx_engine)
             self.assertFalse(monte_neo.core.mlx_engine.METAL_EXTENSION_AVAILABLE)
@@ -195,7 +194,6 @@ class TestMLXEngineExtra(unittest.TestCase):
         mock_exists.return_value = True
         mock_run.return_value = MagicMock(returncode=0)
         
-        import monte_neo.core.mlx_engine
         # Mock the successful import that happens inside the try block after compilation
         mock_metal = MagicMock()
         with patch.dict(sys.modules, {"monte_neo.core.acceleration.cpp_metal.metal_engine": mock_metal}):

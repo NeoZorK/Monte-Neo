@@ -1,10 +1,12 @@
-import pytest
-import pandas as pd
-import numpy as np
 from unittest.mock import MagicMock, patch
-from monte_neo.core.generator_utils import estimate_time, PARAM_SPACES
+
+import numpy as np
+import pandas as pd
+
+from monte_neo.core.generator_utils import PARAM_SPACES, estimate_time
 from monte_neo.core.generator_worker import _search_worker
 from monte_neo.indicators.base import BaseIndicator
+
 
 class MockIndicator(BaseIndicator):
     def calculate(self, data):

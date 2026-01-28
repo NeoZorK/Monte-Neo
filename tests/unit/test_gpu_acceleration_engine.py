@@ -1,10 +1,13 @@
 import unittest
-from unittest.mock import MagicMock, patch, ANY
+from unittest.mock import MagicMock, patch
+
+import mlx.core as mx
 import numpy as np
 import pandas as pd
-import mlx.core as mx
+
 from monte_neo.core.acceleration.engine import GpuAccelerationEngine
-from monte_neo.core.acceleration.indicators import MLXCrossStrategy, MLXSMA
+from monte_neo.core.acceleration.indicators import MLXSMA, MLXCrossStrategy
+
 
 class TestGpuAccelerationEngine(unittest.TestCase):
     def setUp(self):

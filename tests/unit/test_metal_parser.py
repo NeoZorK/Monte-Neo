@@ -1,5 +1,5 @@
-import pytest
 from monte_neo.indicators.metal_parser import parse_metal_params
+
 
 def test_parse_metal_params_sma():
     # Price > SMA(20)

@@ -1,14 +1,16 @@
 
-import pytest
 import numpy as np
+import pytest
+
 from monte_neo.indicators.numba_funcs import (
-    sma_numba, 
-    ema_numba, 
-    rsi_numba, 
-    sma_crossover_signals_numba,
+    ema_numba,
+    macd_signals_numba,
+    rsi_numba,
     rsi_signals_numba,
-    macd_signals_numba
+    sma_crossover_signals_numba,
+    sma_numba,
 )
+
 
 def test_sma_numba():
     data = np.array([10, 20, 30, 40, 50], dtype=np.float64)

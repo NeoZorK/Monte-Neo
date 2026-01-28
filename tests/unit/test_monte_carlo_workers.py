@@ -1,18 +1,21 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
+
 import numpy as np
 import pandas as pd
+
 from monte_neo.monte_carlo.workers import (
+    SHARED_DATA,
+    SHARED_SCENARIOS,
     _generate_signals_wrapper,
-    run_indicator_batch,
     init_worker,
     init_worker_data,
+    run_block_bootstrap_scenario,
+    run_indicator_batch,
     run_scenario_batch,
     run_single_scenario,
-    run_block_bootstrap_scenario,
-    SHARED_DATA,
-    SHARED_SCENARIOS
 )
+
 
 class TestMonteCarloWorkers(unittest.TestCase):
     def setUp(self):
@@ -38,13 +41,11 @@ class TestMonteCarloWorkers(unittest.TestCase):
 
     def test_init_worker_data(self):
         init_worker_data(self.df)
-        from monte_neo.monte_carlo.workers import SHARED_DATA
         pd.testing.assert_frame_equal(SHARED_DATA, self.df)
 
     def test_init_worker(self):
         scenarios = [self.df]
         init_worker(scenarios)
-        from monte_neo.monte_carlo.workers import SHARED_SCENARIOS
         self.assertEqual(SHARED_SCENARIOS, scenarios)
 
     def test_generate_signals_wrapper_with_df(self):

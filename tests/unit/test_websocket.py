@@ -1,6 +1,9 @@
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
+
 from monte_neo.data.websocket import BinanceWebsocketStreamer
+
 
 @pytest.fixture
 def streamer():

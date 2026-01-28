@@ -1,7 +1,8 @@
-import pytest
 import pandas as pd
-import numpy as np
+import pytest
+
 from monte_neo.indicators.technical_lib import TechnicalIndicators
+
 
 @pytest.fixture
 def sample_data():
