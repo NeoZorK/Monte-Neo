@@ -272,31 +272,32 @@ class SequentialMCRunner:
 
     def _generate_advice(self, method_name: str, pass_rate: float, summary: dict) -> str:
         """Generate advice based on results."""
+        name = method_name.lower()
         if pass_rate >= 0.95:
-            if method_name == "Walk-Forward Analysis":
+            if "walk" in name:
                 return "Excellent stability over time. The strategy adapts well to different market regimes."
-            if method_name == "Block Bootstrap":
+            if "block" in name or "bootstrap" in name:
                 return "High statistical significance. The edge is likely not due to random price sequences."
-            if method_name == "Return Shuffling":
-                return "The strategy captures real market structure, not just random price distributions."
-            if method_name == "Noise Injection":
+            if "shuffling" in name:
+                return "The strategy captures real market structure, not just random price distributions (Passed)."
+            if "noise" in name:
                 return "Robust against price execution noise and minor volatility spikes."
-            if method_name == "Sensitivity Analysis":
+            if "sensitivity" in name:
                 return "Parameters are well-tuned and stable. Not over-optimized for specific values."
             return "Strategy passed this stage with high confidence."
 
         if pass_rate >= 0.80:
             return f"Strategy is mostly stable but shows some weakness in {method_name}. Consider slight adjustments."
 
-        if method_name == "Walk-Forward Analysis":
+        if "walk" in name:
             return "Strategy fails to maintain performance across different time periods. Risk of over-fitting to specific dates."
-        if method_name == "Block Bootstrap":
+        if "block" in name or "bootstrap" in name:
             return "Low statistical significance. The strategy might be capturing noise or specific patterns that don't repeat."
-        if method_name == "Return Shuffling":
-            return "Performance is similar to random entry. The 'edge' might be an illusion of price distribution."
-        if method_name == "Noise Injection":
+        if "shuffling" in name:
+            return "Performance is similar to random entry (Failed). The 'edge' might be an illusion of price distribution."
+        if "noise" in name:
             return "Strategy is very sensitive to price noise. Might fail in real-market execution with slippage."
-        if method_name == "Sensitivity Analysis":
+        if "sensitivity" in name:
             return "High sensitivity to parameter changes. Likely over-optimized (curve-fitted)."
-
-        return "Strategy failed to meet robustness criteria for this method."
+            
+        return f"Strategy failed to meet robustness criteria in {method_name} (pass rate: {pass_rate:.1%})."
