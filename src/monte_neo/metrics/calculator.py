@@ -205,6 +205,12 @@ class MetricsCalculator:
         else:
             signal_array = np.asarray(signals, dtype=np.int32)
 
+        # Ensure signal_array is 1D
+        if signal_array.ndim == 0:
+            signal_array = signal_array.reshape(1)
+        elif signal_array.ndim > 1:
+            signal_array = signal_array.flatten()
+
         if HAS_NATIVE and not use_sl_tp:
             # Use high-performance C++ extension (native doesn't support SL/TP yet)
             raw_trades = native_metrics.extract_trades(

@@ -102,6 +102,12 @@ class AIEvolutionEngine:
                 pf = metrics.get("profit_factor", 0)
                 sharpe = metrics.get("sharpe_ratio", 0)
                 
+                # Cap infinite values
+                if np.isinf(pf) or pf > 100.0:
+                    pf = 100.0
+                if np.isinf(sharpe) or sharpe > 20.0:
+                    sharpe = 20.0
+                
                 # Weighted contribution
                 score += pf * 0.3
                 score += sharpe * 0.3
