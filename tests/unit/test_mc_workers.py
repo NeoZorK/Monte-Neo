@@ -1,12 +1,19 @@
-import pytest
-import pandas as pd
+from unittest.mock import MagicMock
+
 import numpy as np
-from unittest.mock import MagicMock, patch
+import pandas as pd
+import pytest
+
 from monte_neo.monte_carlo.workers import (
-    init_worker, init_worker_data, _generate_signals_wrapper,
-    run_indicator_batch, run_scenario_batch, run_single_scenario,
-    run_block_bootstrap_scenario, SHARED_DATA, SHARED_SCENARIOS
+    _generate_signals_wrapper,
+    init_worker,
+    init_worker_data,
+    run_block_bootstrap_scenario,
+    run_indicator_batch,
+    run_scenario_batch,
+    run_single_scenario,
 )
+
 
 @pytest.fixture(autouse=True)
 def cleanup_globals():
@@ -113,7 +120,7 @@ def test_run_single_scenario():
     assert metrics == {"max_drawdown": 0.05}
 
 def test_run_block_bootstrap_scenario():
-    data = pd.DataFrame({"close": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 
+    data = pd.DataFrame({"close": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
                          "open": [1]*10, "high": [1]*10, "low": [1]*10})
     init_worker_data(data)
     

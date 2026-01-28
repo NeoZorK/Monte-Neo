@@ -1,10 +1,8 @@
-import pytest
 import numpy as np
-from monte_neo.metrics.numba_funcs import (
-    extract_trades_fast, 
-    calculate_batch_fast,
-    calculate_batch_multi_price_fast
-)
+import pytest
+
+from monte_neo.metrics.numba_funcs import calculate_batch_fast, calculate_batch_multi_price_fast, extract_trades_fast
+
 
 @pytest.fixture
 def sample_market_data():

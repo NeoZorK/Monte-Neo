@@ -1,8 +1,11 @@
-import pytest
-import pandas as pd
-import numpy as np
 from unittest.mock import MagicMock, patch
+
+import numpy as np
+import pandas as pd
+import pytest
+
 from monte_neo.core.mlx_engine import MLXBacktestEngine
+
 
 @pytest.fixture
 def mock_mx():
@@ -80,7 +83,7 @@ def test_backtest_batch_sequential(engine, sample_data):
     mock_signals = np.ones((1, 10))
     mock_equity = np.ones((1, 9))
     # Things that should be (n_indicators,)
-    mock_stats = np.array([1.0]) 
+    mock_stats = np.array([1.0])
     
     with patch("mlx.core.array") as mock_mx_array, \
          patch("mlx.core.exp", return_value=mock_equity), \

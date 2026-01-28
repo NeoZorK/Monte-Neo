@@ -1,8 +1,11 @@
-import pytest
-import pandas as pd
+from unittest.mock import patch
+
 import numpy as np
-from unittest.mock import MagicMock, patch
+import pandas as pd
+import pytest
+
 from monte_neo.visualization.charts import ChartGenerator
+
 
 @pytest.fixture
 def sample_ohlc():

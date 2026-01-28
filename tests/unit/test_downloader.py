@@ -1,9 +1,11 @@
-import pytest
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime
 from unittest.mock import MagicMock, patch
+
+import pandas as pd
+import pytest
+
 from monte_neo.data.downloader import BinanceDownloader, download_sample_data
+
 
 @pytest.fixture
 def mock_spot():

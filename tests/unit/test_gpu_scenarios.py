@@ -1,8 +1,10 @@
-import pytest
-import pandas as pd
-import numpy as np
 from unittest.mock import MagicMock, patch
+
+import numpy as np
+import pandas as pd
+
 from monte_neo.core.gpu_scenarios import normalize_signal_array, run_scenarios_backtest
+
 
 def test_normalize_signal_array():
     # Test case 1: Empty target length

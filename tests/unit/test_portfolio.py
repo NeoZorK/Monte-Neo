@@ -1,12 +1,14 @@
-import pytest
 import numpy as np
 import pandas as pd
-from monte_neo.core.portfolio.manager import PortfolioManager, PortfolioAsset
+import pytest
+
+from monte_neo.core.portfolio.manager import PortfolioAsset, PortfolioManager
 from monte_neo.core.portfolio.risk import (
     calculate_kelly_fraction,
+    calculate_risk_parity_weights,
     calculate_volatility_adjusted_size,
-    calculate_risk_parity_weights
 )
+
 
 def test_portfolio_asset_init():
     asset = PortfolioAsset(id="test", indicator_path="path", symbol="BTC")

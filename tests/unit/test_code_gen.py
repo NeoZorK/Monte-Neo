@@ -1,7 +1,8 @@
 import unittest
-import numpy as np
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
+
 from monte_neo.indicators.code_gen import CodeGenerator
+
 
 class TestCodeGenerator(unittest.TestCase):
     def setUp(self):

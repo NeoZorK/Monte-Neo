@@ -1,13 +1,15 @@
-import pytest
-import matplotlib.pyplot as plt
-import pandas as pd
 from unittest.mock import patch
+
+import matplotlib.pyplot as plt
+import pytest
+
 from monte_neo.utils.visualization import (
-    plot_equity_curves, 
-    plot_drawdown_dist, 
+    plot_drawdown_dist,
+    plot_equity_curves,
     plot_metrics_summary,
-    plot_stress_test_summary
+    plot_stress_test_summary,
 )
+
 
 @pytest.fixture
 def mock_results():

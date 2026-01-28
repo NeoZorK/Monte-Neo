@@ -1,6 +1,7 @@
-import pytest
 import time
+
 from monte_neo.utils.parallel import ParallelExecutor
+
 
 def square(x):
     return x * x

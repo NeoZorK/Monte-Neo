@@ -1,9 +1,12 @@
-import pytest
-import pandas as pd
+from unittest.mock import patch
+
 import numpy as np
-from unittest.mock import MagicMock, patch, PropertyMock
+import pandas as pd
+import pytest
+
 from monte_neo.metrics.calculator import MetricsCalculator
 from monte_neo.metrics.types import TradeResult
+
 
 @pytest.fixture
 def calculator():

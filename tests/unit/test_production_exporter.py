@@ -1,8 +1,11 @@
 import os
 import shutil
+
 import pytest
+
 from monte_neo.core.optimization.production_exporter import ProductionExporter
 from monte_neo.indicators.sma import SMAIndicator
+
 
 @pytest.fixture
 def exporter():
@@ -38,7 +41,7 @@ def test_cpp_content(exporter):
     indicator = SMAIndicator(config=config)
     export_path = exporter.export(indicator, {"robustness_score": 90.0})
     
-    with open(os.path.join(export_path, "production_indicator.cpp"), 'r') as f:
+    with open(os.path.join(export_path, "production_indicator.cpp")) as f:
         content = f.read()
         assert "SMAIndicator" in content
         assert "period" in content
@@ -50,7 +53,7 @@ def test_metal_content(exporter):
     indicator = SMAIndicator(config=config)
     export_path = exporter.export(indicator, {})
     
-    with open(os.path.join(export_path, "production_indicator.metal"), 'r') as f:
+    with open(os.path.join(export_path, "production_indicator.metal")) as f:
         content = f.read()
         assert "SMAIndicator_kernel" in content
         assert "Candle" in content

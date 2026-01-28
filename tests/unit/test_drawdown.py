@@ -1,6 +1,7 @@
 import pytest
-import numpy as np
+
 from monte_neo.metrics.drawdown import DrawdownMetric
+
 
 @pytest.fixture
 def dd_calc():

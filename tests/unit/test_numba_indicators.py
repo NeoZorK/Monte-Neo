@@ -1,8 +1,8 @@
-import pytest
 import numpy as np
-from monte_neo.indicators.numba_funcs import (
-    sma_numba, ema_numba, rsi_numba, sma_crossover_signals_numba
-)
+import pytest
+
+from monte_neo.indicators.numba_funcs import ema_numba, rsi_numba, sma_crossover_signals_numba, sma_numba
+
 
 def test_sma_numba():
     data = np.array([10.0, 12.0, 14.0, 16.0, 18.0])

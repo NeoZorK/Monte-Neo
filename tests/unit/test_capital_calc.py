@@ -1,9 +1,11 @@
 
-import pytest
 import numpy as np
 import pandas as pd
+import pytest
+
 from monte_neo.metrics.calculator import MetricsCalculator
 from monte_neo.metrics.types import TradeResult
+
 
 def test_initial_capital_equity_curve():
     """Test that equity curve starts with initial capital and calculates correctly."""
@@ -54,7 +56,7 @@ def test_absolute_profit_metrics():
         TradeResult(entry_idx=0, exit_idx=1, entry_price=100.0, exit_price=110.0, direction=1, pnl=10.0, pnl_pct=0.1)
     ]
     
-    # We need to mock data and signals to use calculate_all, 
+    # We need to mock data and signals to use calculate_all,
     # but since we already tested _calculate_equity, let's test if calculate_all includes these metrics.
     
     data = pd.DataFrame({
