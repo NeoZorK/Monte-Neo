@@ -6,7 +6,7 @@ import pandas as pd
 from monte_neo.core.mlx_engine import MLXBacktestEngine
 from monte_neo.core.optimization.production_exporter import ProductionExporter
 from monte_neo.core.optimization.production_gate import ProductionGate
-from monte_neo.core.optimization.stress_tester import DeepStressTester
+from monte_neo.core.optimization.stress_tester import StressTester
 from monte_neo.indicators.base import IndicatorConfig
 from monte_neo.indicators.dynamic import DynamicIndicator
 from monte_neo.metrics.calculator import MetricsCalculator
@@ -53,7 +53,7 @@ def run_production_pipeline():
 
     # 5. Deep Stress Testing
     print("  --- Running Deep Stress Tests ---")
-    stress_tester = DeepStressTester(engine)
+    stress_tester = StressTester(engine)
     stress_results = {
         "black_swan": stress_tester.black_swan_test(data, indicator),
         "sensitivity": stress_tester.parameter_sensitivity_analysis(data, indicator),

@@ -92,7 +92,15 @@ celerybeat-schedule
  env.bak/
  venv.bak/
  
- # Profile stats
+ # Results and Images
+data/
+results/
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# Profile stats
  profile_stats.txt
  
  # Spyder project settings

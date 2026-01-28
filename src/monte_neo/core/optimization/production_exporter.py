@@ -12,7 +12,7 @@ class ProductionExporter:
         self.export_dir = export_dir
         os.makedirs(self.export_dir, exist_ok=True)
         
-    def export(self, indicator: BaseIndicator, validation_results: dict[str, Any], metadata: dict[str, Any] = None) -> str:
+    def export(self, indicator: BaseIndicator, validation_results: dict[str, Any], metadata: dict[str, Any] | None = None) -> str:
         """
         Exports indicator config, validation certificate, and C++ source.
         

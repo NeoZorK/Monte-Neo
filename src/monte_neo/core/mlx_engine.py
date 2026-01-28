@@ -188,6 +188,9 @@ class MLXBacktestEngine:
             else:
                 scenarios = TensorOps.generate_noise_scenarios(close, n_scenarios, std_dev=kwargs.get('std_dev', 0.01), seed=seed)
                 
+            if mlx_strategy is None:
+                raise ValueError("Could not create MLX strategy for indicator")
+                
             signals = mlx_strategy.generate_signals(scenarios)
             scenarios_np = np.array(scenarios).astype(np.float64)
             signals_np = np.array(signals).astype(np.int32)

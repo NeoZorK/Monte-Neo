@@ -76,12 +76,14 @@ class MonteNeoCLI:
     def run_evolve(self, symbol: str) -> int:
         """Run AI-driven evolution for a symbol."""
         from monte_neo.core.evolution_ai import AIEvolutionEngine
-        from monte_neo.data.storage import DataStorage
+        from monte_neo.data.storage import ParquetStorage
+        from monte_neo.utils.config import Config
         
         try:
             console.print(f"[bold cyan]Starting AI Evolution for {symbol}...[/]")
-            storage = DataStorage()
-            data = storage.get_data(symbol)
+            config = Config()
+            storage = ParquetStorage(config.data_dir)
+            data = storage.load(symbol, timeframe=config.default_timeframe)
             
             if data is None or data.empty:
                 console.print(f"[red]No data found for {symbol}[/]")

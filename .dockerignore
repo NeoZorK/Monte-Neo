@@ -15,6 +15,7 @@ __pycache__
 env
 venv
 profile_stats.txt
+*.png
 data/*.parquet
 data/*.csv
 !data/sample.parquet

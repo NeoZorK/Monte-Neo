@@ -158,7 +158,10 @@ class PortfolioManager:
         combined = np.zeros(min_len)
         
         for asset in active_assets:
-            combined += asset.equity_curve[:min_len] * asset.weight
+            # Type narrowing for Mypy
+            equity = asset.equity_curve
+            if equity is not None:
+                combined += equity[:min_len] * asset.weight
             
         return combined
 

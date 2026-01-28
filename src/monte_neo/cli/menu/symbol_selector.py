@@ -17,6 +17,8 @@ from prompt_toolkit.widgets import Frame, TextArea
 if TYPE_CHECKING:
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 
+    from monte_neo.cli.menu.main import InteractiveMenu
+
 
 class SymbolSelector:
     """A searchable grid-based symbol selector."""
@@ -177,3 +179,28 @@ class SymbolSelector:
         """Run the selector and return the selected symbol."""
         self.app.run()
         return self.result
+
+def select_symbol(menu: InteractiveMenu) -> str | None:
+    """Helper function to run the symbol selector."""
+    import os
+    
+    # Get available symbols from data directory
+    data_dir = menu.config.data_dir
+    raw_dir = os.path.join(data_dir, "raw")
+    if not os.path.exists(raw_dir):
+        return None
+        
+    symbols = []
+    for f in os.listdir(raw_dir):
+        if f.endswith(".parquet"):
+            # Format: SYMBOL_TIMEFRAME.parquet
+            symbol_part = f.split("_")[0]
+            if symbol_part not in symbols:
+                symbols.append(symbol_part)
+                
+    if not symbols:
+        return None
+        
+    from monte_neo.cli.styles import CUSTOM_STYLE
+    selector = SymbolSelector(symbols, style=CUSTOM_STYLE)
+    return selector.ask()
