@@ -31,6 +31,8 @@ class GeneratorConfig:
     generations: int = 20
     mutation_rate: float = 0.3
     crossover_rate: float = 0.7
+    initial_capital: float = 100000.0
+    leverage: float = 1.0
 
     # Risk Management
     stop_loss_pct: float = 1.0  # Default 1%

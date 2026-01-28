@@ -52,12 +52,16 @@ except ImportError:
 class MLXBacktestEngine:
     """GPU-accelerated backtesting engine using MLX."""
 
-    def __init__(self, precision: str = "float32", metal_driver: str = "cpp") -> None:
+    def __init__(self, precision: str = "float32", metal_driver: str = "cpp", initial_capital: float = 100000.0, leverage: float = 1.0) -> None:
         self.precision = precision
         self.metal_driver = metal_driver
+        self.initial_capital = initial_capital
+        self.leverage = leverage
         self.pure_gpu_engine = GpuAccelerationEngine(
             precision=precision,
-            metal_driver=metal_driver
+            metal_driver=metal_driver,
+            initial_capital=initial_capital,
+            leverage=leverage
         )
         
         self.native_bridge = None
@@ -75,6 +79,11 @@ class MLXBacktestEngine:
             if not self.native_bridge.init():
                 logger.warning(f"Failed to initialize native Metal bridge with driver {self.metal_driver}")
                 self.native_bridge = None
+        else:
+            if metal_driver == "auto":
+                self.metal_driver = "cpp"
+            else:
+                self.metal_driver = metal_driver
 
     def _select_best_driver(self) -> str:
         """Run a micro-benchmark to select the best Metal driver."""
@@ -222,7 +231,6 @@ class MLXBacktestEngine:
         sl_pct: float = 0.0,
         tp_pct: float = 0.0,
     ) -> list[dict[str, Any]]:
-        start_time = time.perf_counter()
         close_prices = mx.array(data["close"].to_numpy().astype(np.float32))
 
         use_parallel = False

@@ -7,19 +7,17 @@ from typing import TYPE_CHECKING
 
 import pandas as pd
 import questionary
-from rich.console import Console
 
 from monte_neo.cli.progress import ProgressTracker
 from monte_neo.cli.styles import CUSTOM_STYLE
 from monte_neo.data.storage import ParquetStorage
+from monte_neo.utils.console import console
 from monte_neo.utils.logger import get_logger
 
 if TYPE_CHECKING:
     from monte_neo.utils.config import Config
 
 logger = get_logger(__name__)
-console = Console()
-
 
 class InteractiveMenu:
     """Interactive CLI menu with arrow navigation."""

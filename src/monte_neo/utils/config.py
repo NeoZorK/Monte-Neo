@@ -24,6 +24,8 @@ class Config:
     default_timeframe: str = "1h"
     max_iterations: int = 1000000000
     mc_iterations: int = 1000
+    initial_capital: float = 100000.0
+    leverage: float = 1.0
 
     # Default target metrics
     target_profit_factor: float = 2.0

@@ -1,4 +1,4 @@
-# 🗺️ Monte-Neo Roadmap (v0.0.5)
+# 🗺️ Monte-Neo Roadmap (v0.0.6)
 
 ## Version 0.0.3 - Completed (Performance, Workflows & Trust)
 
@@ -31,7 +31,7 @@
 - [x] **Walk-Forward Optimization**: Hardware-accelerated validation.
 - [x] **Production Gate**: Robustness scoring and certification.
 
-### 🚀 Phase 6: v0.0.6 - Global Leadership & Production Mastery (Completed)
+### 🚀 Phase 6: v0.0.6 - Global Leadership & Production Mastery (In Progress)
 - [x] **Smart Portfolio Engine**: Multi-indicator management with Kelly Criterion.
 - [x] **Non-Repainting Validator**: Hard enforcement of signal causality.
 - [x] **Advanced Noise Suite**: Latency shifts, variable spreads, and slippage.
@@ -39,6 +39,9 @@
 - [x] **One-Click Production Export**: C++/Metal binary standalone generation.
 - [x] **AI-Driven Evolution**: Self-correcting indicator formulas.
 - [x] **Global Leadership Pipeline**: End-to-end automated discovery workflow.
+- [x] **Realistic Calculation Engine**: $100,000 initial deposit & 1.0 leverage hard-enforcement.
+- [ ] **100% Test Coverage**: Continuous improvement of test suite robustness.
+- [ ] **Unified UI/UX**: Fix terminal progress bar duplication and streamline logs.
 
 ---
 

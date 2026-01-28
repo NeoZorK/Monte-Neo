@@ -40,6 +40,7 @@ def test_mc_run(sample_ohlcv):
         use_noise=False,
         use_sensitivity=False,
         use_walk_forward=False,
+        use_sequential=True, # Use sequential to avoid pickling issues in tests
     )
     engine = MonteCarloEngine(config)
     indicator = SMAIndicator()
@@ -49,7 +50,7 @@ def test_mc_run(sample_ohlcv):
         "profit_factor": 0.5,  # Low target to ensure pass
     }
 
-    result = engine.run(sample_ohlcv, indicator, metrics_calc, target_metrics)
+    result = engine.run(sample_ohlcv, indicator, metrics_calc, target_metrics, interactive=False)
 
     assert result.iterations_run > 0
     assert "profit_factor" in result.metrics_summary

@@ -16,7 +16,7 @@ from monte_neo.core.acceleration.tensor_ops import generate_noise_scenarios, gen
 class GpuAccelerationEngine:
     """High-performance GPU engine."""
     
-    def __init__(self, batch_size: int = 50000, precision: str = "float32", metal_driver: str = "cpp"):
+    def __init__(self, batch_size: int = 50000, precision: str = "float32", metal_driver: str = "cpp", initial_capital: float = 100000.0, leverage: float = 1.0):
         """
         Initialize GPU engine.
         
@@ -24,10 +24,14 @@ class GpuAccelerationEngine:
             batch_size: Number of scenarios to process in each batch
             precision: 'float32', 'float16', 'float8_e4m3', or 'float8_e5m2'
             metal_driver: Metal driver to use ('cpp', 'objc', 'swift')
+            initial_capital: Initial account balance.
+            leverage: Trading leverage.
         """
         self.batch_size = batch_size
         self.precision = precision
         self.metal_driver = metal_driver
+        self.initial_capital = initial_capital
+        self.leverage = leverage
         
         # Initialize float8 encoder if needed
         self.float8_encoder = None
@@ -115,11 +119,11 @@ class GpuAccelerationEngine:
             
             # 4. Backtest
             returns = (scenarios[:, 1:] / scenarios[:, :-1]) - 1.0
-            strat_returns = signals[:, :-1] * returns
+            strat_returns = (signals[:, :-1] * returns) * self.leverage
             
             # Metrics
-            equity = mx.exp(mx.cumsum(mx.log1p(strat_returns), axis=1))
-            final_returns = equity[:, -1]
+            equity = self.initial_capital * mx.exp(mx.cumsum(mx.log1p(strat_returns), axis=1))
+            final_balance = equity[:, -1]
             
             # Max DD
             running_max = mx.cummax(equity, axis=1)
@@ -133,24 +137,28 @@ class GpuAccelerationEngine:
             profit_factor = mx.where(gross_loss > 0, gross_profit / gross_loss, 100.0)
             
             # Evaluate batch
-            mx.eval(final_returns, max_dds, profit_factor)
+            mx.eval(final_balance, max_dds, profit_factor)
             
             # Convert to numpy/list for result
             # We can't keep all results in GPU memory if N is huge?
             # Actually we just keep scalars.
             
-            fr_np = np.array(final_returns)
+            fb_np = np.array(final_balance)
             mdd_np = np.array(max_dds)
             pf_np = np.array(profit_factor)
             
             for i in range(current_batch):
                 all_results.append({
-                    "total_return": float(fr_np[i]) - 1.0,
+                    "total_return": (float(fb_np[i]) / self.initial_capital) - 1.0,
+                    "final_balance": float(fb_np[i]),
+                    "total_profit_abs": float(fb_np[i]) - self.initial_capital,
                     "max_drawdown": float(mdd_np[i]),
                     "profit_factor": float(pf_np[i]),
-                    "passed": bool(fr_np[i] > 1.0 and mdd_np[i] < 0.2), # Default criteria
+                    "passed": bool(fb_np[i] > self.initial_capital and mdd_np[i] < 0.2), # Default criteria
                     "metrics": {
-                        "total_return": float(fr_np[i]) - 1.0,
+                        "total_return": (float(fb_np[i]) / self.initial_capital) - 1.0,
+                        "final_balance": float(fb_np[i]),
+                        "total_profit_abs": float(fb_np[i]) - self.initial_capital,
                         "max_drawdown": float(mdd_np[i]),
                         "profit_factor": float(pf_np[i]),
                     }

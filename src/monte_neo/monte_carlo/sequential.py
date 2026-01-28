@@ -152,11 +152,19 @@ class SequentialMCRunner:
         pass_rate = (len([r for r in step_results if r.passed]) / total_executed) if total_executed else 0.0
         total_iterations = sum(r.iterations for r in step_results)
 
+        # Populate high-level metrics summary from all steps
+        metrics_summary = {}
+        if step_results:
+            # For simplicity, use metrics from the last step or combine them
+            # Here we'll just take the last step's summary as the overall summary
+            metrics_summary = step_results[-1].metrics_summary
+
         return MCResult(
             passed=all_passed and total_executed > 0,
             pass_rate=pass_rate,
             iterations_run=total_iterations,
             elapsed_time=elapsed,
+            metrics_summary=metrics_summary,
             step_results=step_results,
         )
 

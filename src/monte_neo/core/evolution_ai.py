@@ -33,12 +33,14 @@ class AIEvolutionEngine:
         population_size: int = 100,
         mutation_rate: float = 0.2,
         crossover_rate: float = 0.8,
-        metrics_calc: MetricsCalculator | None = None
+        metrics_calc: MetricsCalculator | None = None,
+        initial_capital: float = 100000.0,
+        leverage: float = 1.0
     ):
         self.population_size = population_size
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
-        self.metrics_calc = metrics_calc or MetricsCalculator()
+        self.metrics_calc = metrics_calc or MetricsCalculator(initial_capital=initial_capital, leverage=leverage)
         self.rng = np.random.default_rng()
         self.code_gen = CodeGenerator(self.rng)
         

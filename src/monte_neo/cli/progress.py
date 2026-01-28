@@ -58,6 +58,7 @@ class ProgressTracker:
             TimeRemainingColumn(),
             TextColumn("[dim]{task.fields[status]}"),
             console=console,
+            transient=True,
         )
 
         self._progress.start()
