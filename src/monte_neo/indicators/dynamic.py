@@ -177,7 +177,17 @@ class DynamicIndicator(BaseIndicator):
         signals = pd.DataFrame(index=data.index)
         signals["signal"] = 0
 
-        vals = pd.to_numeric(vals, errors="coerce")
+        # Fix: Ensure vals is not a 0-d numpy array or scalar before pd.to_numeric
+        if hasattr(vals, "ndim") and vals.ndim == 0:
+            vals = vals.item()
+        elif isinstance(vals, np.ndarray) and vals.ndim > 1:
+            vals = vals.flatten()
+
+        try:
+            vals = pd.to_numeric(vals, errors="coerce")
+        except (ValueError, TypeError):
+            # Fallback for weird objects
+            pass
 
         if isinstance(vals, pd.Series):
             aligned = vals.reindex(data.index).fillna(0)

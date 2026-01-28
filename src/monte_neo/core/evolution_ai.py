@@ -5,6 +5,7 @@ Advanced evolutionary optimization with symbolic regression and heuristic-based 
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import numpy as np
@@ -35,7 +36,8 @@ class AIEvolutionEngine:
         crossover_rate: float = 0.8,
         metrics_calc: MetricsCalculator | None = None,
         initial_capital: float = 100000.0,
-        leverage: float = 1.0
+        leverage: float = 1.0,
+        progress_callback: Callable[[int, int, str], None] | None = None
     ):
         self.population_size = population_size
         self.mutation_rate = mutation_rate
@@ -43,6 +45,7 @@ class AIEvolutionEngine:
         self.metrics_calc = metrics_calc or MetricsCalculator(initial_capital=initial_capital, leverage=leverage)
         self.rng = np.random.default_rng()
         self.code_gen = CodeGenerator(self.rng)
+        self.progress_callback = progress_callback
         
         # Heuristics: Map weaknesses to potential fixes
         self.heuristics = {
@@ -77,6 +80,9 @@ class AIEvolutionEngine:
                 new_population.append(child)
             
             population = new_population
+
+            if self.progress_callback:
+                self.progress_callback(gen + 1, generations, f"AI Evolution Gen {gen + 1}: Best Fitness {best_fitness:.4f}")
 
         return population[0]
 
