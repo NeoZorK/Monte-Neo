@@ -1,97 +1,60 @@
-import pandas as pd
-import numpy as np
-from typing import Dict, Any, List
-import logging
+"""Production Gate Module.
 
-logger = logging.getLogger(__name__)
+Final validation and certification before deployment.
+"""
+
+from __future__ import annotations
+
+import os
+from typing import Dict, Any, Optional
+
+from monte_neo.indicators.base import BaseIndicator
+from monte_neo.core.optimization.certification import RobustnessCertifier
+from monte_neo.core.optimization.production_exporter import ProductionExporter
+from monte_neo.core.optimization.stress_tester import StressTester
+from monte_neo.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 class ProductionGate:
-    """Evaluates strategy robustness and issues Production Certificates."""
-    
-    def __init__(self, min_wfe: float = 0.6, min_win_rate: float = 0.45, max_dd: float = 0.20):
-        self.min_wfe = min_wfe
-        self.min_win_rate = min_win_rate
-        self.max_dd = max_dd
+    """The final checkpoint for indicators before they go live."""
 
-    def evaluate(self, wfo_result: Any, mc_results: List[Dict[str, Any]] = None, 
-                 stress_results: Dict[str, Any] = None) -> Dict[str, Any]:
+    def __init__(self, export_dir: str = "exports"):
+        self.certifier = RobustnessCertifier(os.path.join(export_dir, "certificates"))
+        self.exporter = ProductionExporter(os.path.join(export_dir, "production"))
+        self.stress_tester = StressTester()
+
+    def process(self, indicator: BaseIndicator, data: Dict[str, Any], validation_results: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Evaluates the results of Walk-Forward Optimization, Monte Carlo and Stress Tests.
-        
-        Args:
-            wfo_result: WalkForwardResult object.
-            mc_results: Optional list of Monte Carlo simulation results.
-            stress_results: Optional dictionary with stress test results.
+        Runs final stress tests, generates a certificate, and exports if passed.
         """
-        wfe = getattr(wfo_result, 'efficiency_ratio', 0.0)
-        pass_rate = getattr(wfo_result, 'pass_rate', 0.0)
-        
-        # Calculate consistency from windows
-        test_returns = []
-        if hasattr(wfo_result, 'windows'):
-            for w in wfo_result.windows:
-                if 'total_return' in w.test_metrics:
-                    test_returns.append(w.test_metrics['total_return'])
-        
-        consistency = 0.0
-        if test_returns:
-            mean_ret = np.mean(test_returns)
-            if abs(mean_ret) > 1e-6:
-                consistency = 1.0 - (np.std(test_returns) / abs(mean_ret))
-        consistency = max(0.0, min(1.0, consistency))
+        logger.info(f"Processing production gate for {indicator.__class__.__name__}")
 
-        # Monte Carlo Robustness
-        mc_score = 1.0
-        if mc_results:
-            profitable_mc = sum(1 for r in mc_results if r['metrics']['total_return'] > 0) / len(mc_results)
-            mc_score = profitable_mc
+        # 1. Final Stress Test
+        stress_results = self.stress_tester.run_all(indicator, data)
+        validation_results["stress_test_score"] = stress_results.get("overall_score", 0.0)
 
-        # Stress Test Score
-        stress_score = 1.0
-        if stress_results:
-            # Penalize if breaking point is too low (< 10 bps)
-            bp = stress_results.get('breaking_point', {}).get('breaking_point_bps', 100)
-            if isinstance(bp, (int, float)) and bp < 15:
-                stress_score *= 0.5
-            
-            # Penalize if sensitivity is high
-            sensitivity = stress_results.get('sensitivity', {}).get('std_return_variation', 0)
-            if sensitivity > 0.05: # more than 5% variation for 10% param change
-                stress_score *= 0.7
+        # 2. Decision Logic
+        is_ready = (
+            validation_results.get("robustness_score", 0.0) > 70.0 and
+            validation_results.get("stress_test_score", 0.0) > 60.0 and
+            validation_results.get("is_production_ready", False)
+        )
 
-            # Black Swan survival
-            bs_return = stress_results.get('black_swan', {}).get('total_return', 0)
-            if bs_return < -0.3: # Strategy blows up
-                stress_score *= 0.3
-
-        # Robustness Score (0-100)
-        # 30% WFE, 20% Pass Rate, 20% Consistency, 15% MC, 15% Stress
-        score = (wfe * 30.0) + (pass_rate * 20.0) + (consistency * 20.0) + (mc_score * 15.0) + (stress_score * 15.0)
-        score = max(0.0, min(100.0, score * 100.0 if score <= 1.0 else score))
+        # 3. Generate Certificate
+        cert_path = self.certifier.generate_certificate(indicator.__class__.__name__, validation_results)
         
-        is_ready = score >= 75.0 and wfe >= self.min_wfe and pass_rate >= 0.6 and stress_score > 0.5
-        
-        status = {
-            'robustness_score': round(score, 2),
-            'wfe': round(wfe, 4),
-            'pass_rate': round(pass_rate, 4),
-            'consistency': round(consistency, 4),
-            'mc_robustness': round(mc_score, 4),
-            'stress_test_score': round(stress_score, 4),
-            'is_production_ready': is_ready,
-            'recommendation': self._get_recommendation(score, wfe, is_ready, stress_score)
-        }
-        
-        return status
-
-    def _get_recommendation(self, score: float, wfe: float, is_ready: bool, stress_score: float = 1.0) -> str:
+        # 4. Export if ready
+        export_path = None
         if is_ready:
-            return "✅ HIGHLY RECOMMENDED for Production. Robust performance and stress-resistant."
-        elif stress_score < 0.6:
-            return "❌ REJECTED. Strategy is too fragile to market conditions or trading costs."
-        elif score > 60:
-            return "⚠️ POTENTIALLY ROBUST. Needs more out-of-sample data."
-        elif wfe < 0.5:
-            return "❌ OVERFITTED. WFE is too low. In-sample performance does not translate to OOS."
+            export_path = self.exporter.export(indicator, validation_results)
+            logger.info(f"Indicator certified and exported to {export_path}")
         else:
-            return "❌ REJECTED. Strategy lacks consistency and robustness."
+            logger.warning("Indicator failed production gate requirements.")
+
+        return {
+            "is_certified": is_ready,
+            "certificate_path": cert_path,
+            "export_path": export_path,
+            "final_score": (validation_results.get("robustness_score", 0.0) + validation_results.get("stress_test_score", 0.0)) / 2
+        }

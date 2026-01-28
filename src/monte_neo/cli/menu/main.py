@@ -74,6 +74,7 @@ class InteractiveMenu:
 
     def _show_main_menu(self) -> str:
         choices = [
+            {"name": "🏆 Global Leadership Pipeline", "value": "leadership_pipeline"},
             {"name": "📊 Download Market Data", "value": "download"},
             {"name": "🎯 Set Target Metrics", "value": "metrics"},
             {"name": "🎲 Configure Monte Carlo Methods", "value": "mc_config"},
@@ -99,7 +100,11 @@ class InteractiveMenu:
         from monte_neo.cli.menu.results import view_results_workflow
         from monte_neo.cli.menu.settings import settings_workflow
 
-        if choice == "generate":
+        if choice == "leadership_pipeline":
+            from monte_neo.cli.menu.leadership import leadership_pipeline_workflow
+            leadership_pipeline_workflow(self)
+            return
+        elif choice == "generate":
             generate_indicator_workflow(self, sequential=False)
             return
         elif choice == "generate_sequential":

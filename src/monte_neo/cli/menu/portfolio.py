@@ -25,8 +25,9 @@ def portfolio_workflow(menu: InteractiveMenu) -> None:
         choices = [
             {"name": "📋 View Portfolio Summary", "value": "summary"},
             {"name": "➕ Add Indicator to Portfolio", "value": "add_asset"},
-            {"name": "📊 Analyze Correlations", "value": "correlations"},
-            {"name": "⚖️  Optimize Weights (Kelly/Risk Parity)", "value": "optimize"},
+            {"name": "🎲 Portfolio Monte Carlo", "value": "portfolio_mc"},
+            {"name": "📊 Analyze Clusters (Correlation)", "value": "clusters"},
+            {"name": "⚖️  Auto-Rebalance (Risk Parity/Kelly)", "value": "optimize"},
             {"name": "🔙 Back to Main Menu", "value": "back"},
         ]
 
@@ -43,10 +44,71 @@ def portfolio_workflow(menu: InteractiveMenu) -> None:
             _show_summary(menu._portfolio_manager)
         elif choice == "add_asset":
             _add_asset_workflow(menu)
-        elif choice == "correlations":
-            console.print("[yellow]Correlation analysis requires multiple active assets with history...[/]")
+        elif choice == "portfolio_mc":
+            _portfolio_mc_workflow(menu._portfolio_manager)
+        elif choice == "clusters":
+            _cluster_analysis_workflow(menu._portfolio_manager)
         elif choice == "optimize":
-            console.print("[yellow]Optimization logic being implemented...[/]")
+            _optimize_workflow(menu._portfolio_manager)
+
+def _portfolio_mc_workflow(manager: PortfolioManager) -> None:
+    """Runs Monte Carlo on the combined portfolio."""
+    with console.status("[bold blue]Running Portfolio Monte Carlo..."):
+        results = manager.run_portfolio_monte_carlo()
+    
+    if not results:
+        console.print("[red]Portfolio is empty or has no equity data.[/]")
+        return
+        
+    table = Table(title="Portfolio Robustness (Monte Carlo)")
+    table.add_column("Metric", style="cyan")
+    table.add_column("Value", style="magenta")
+    
+    table.add_row("Avg Expected Return", f"{results['avg_return']:.2%}")
+    table.add_row("Max Drawdown (95% CI)", f"{results['max_drawdown_95th']:.2%}")
+    table.add_row("VaR (95%)", f"{results['var_95']:.2%}")
+    
+    console.print(table)
+    questionary.press_any_key("Press any key to continue...").ask()
+
+def _cluster_analysis_workflow(manager: PortfolioManager) -> None:
+    """Displays asset clusters based on correlation."""
+    summary = manager.get_portfolio_summary()
+    clusters = summary.get("clusters", {})
+    
+    if not clusters:
+        console.print("[yellow]Not enough data for cluster analysis. Need at least 2 assets with equity curves.[/]")
+        return
+        
+    table = Table(title="Correlation Clusters (Strategy Redundancy)")
+    table.add_column("Cluster ID", style="dim")
+    table.add_column("Assets", style="cyan")
+    
+    for cid, assets in clusters.items():
+        table.add_row(str(cid), ", ".join(assets))
+        
+    console.print(table)
+    console.print("[dim]Assets in the same cluster are highly correlated and might be redundant.[/]")
+    questionary.press_any_key("Press any key to continue...").ask()
+
+def _optimize_workflow(manager: PortfolioManager) -> None:
+    """Runs portfolio optimization."""
+    method = questionary.select(
+        "Select Optimization Method:",
+        choices=[
+            {"name": "⚖️ Risk Parity (Equal Risk Contribution)", "value": "risk_parity"},
+            {"name": "💰 Kelly Criterion (Optimal Growth)", "value": "kelly"},
+            {"name": "📏 Equal Weights", "value": "equal"},
+        ],
+        style=CUSTOM_STYLE
+    ).ask()
+    
+    if method:
+        with console.status(f"[bold green]Optimizing using {method}..."):
+            weights = manager.auto_rebalance(method=method)
+            
+        console.print("[green]Portfolio rebalanced successfully![/]")
+        _show_summary(manager)
 
 def _show_summary(manager: PortfolioManager) -> None:
     summary = manager.get_portfolio_summary()

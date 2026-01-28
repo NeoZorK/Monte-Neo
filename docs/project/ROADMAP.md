@@ -31,15 +31,40 @@
 - [x] **Walk-Forward Optimization**: Hardware-accelerated validation.
 - [x] **Production Gate**: Robustness scoring and certification.
 
-### 🚀 Phase 6: v0.0.6 - Global Leadership & Production Mastery (Current)
+### 🚀 Phase 6: v0.0.6 - Global Leadership & Production Mastery (Completed)
 - [x] **Smart Portfolio Engine**: Multi-indicator management with Kelly Criterion.
 - [x] **Non-Repainting Validator**: Hard enforcement of signal causality.
 - [x] **Advanced Noise Suite**: Latency shifts, variable spreads, and slippage.
 - [x] **Combinatorial WFO (CSCV)**: Advanced overfitting detection (PBO).
-- [ ] **One-Click Production Export**: C++/Metal binary standalone generation.
-- [ ] **AI-Driven Evolution**: Self-correcting indicator formulas.
+- [x] **One-Click Production Export**: C++/Metal binary standalone generation.
+- [x] **AI-Driven Evolution**: Self-correcting indicator formulas.
+- [x] **Global Leadership Pipeline**: End-to-end automated discovery workflow.
 
-### 📅 Phase 7: v0.0.7 - Cloud & Scale
-- [ ] **Distributed GPU Cloud**: Running simulations across multiple nodes.
-- [ ] **Real-time Monitoring**: Dashboard for production performance tracking.
+---
+
+## ⏱️ 6-Hour Sprint Plan (Completed)
+
+### Hour 1-2: Production Export & C++ Core
+- [x] Implement `ProductionExporter` for zero-latency standalone execution.
+- [x] Create C++ templates for indicator logic (fast-path).
+- [x] Add `uv run monte-neo export` command.
+
+### Hour 3-4: AI-Driven Evolution (Symbolic Regression)
+- [x] Implement Genetic Programming (GP) for formula discovery.
+- [x] Add "Smart Mutation" based on performance feedback loops.
+- [x] Integrate AI-inspired heuristics for formula optimization.
+
+### Hour 5: Portfolio Intelligence & Risk
+- [x] Implement multi-asset correlation clustering.
+- [x] Automated portfolio rebalancing logic (Risk Parity/Kelly).
+- [x] Dashboard for "Portfolio Robustness" (Combined MC).
+
+### Hour 6: Certification & Final Integration
+- [x] Auto-generate "World-Class Robustness Certificate".
+- [x] Full pipeline verification (Data -> Evolution -> Validation -> Export).
+- [x] UI/UX final touch for the "Wizard" mode (Global Leadership Pipeline).
+
+---
+
+## Milestones
 
