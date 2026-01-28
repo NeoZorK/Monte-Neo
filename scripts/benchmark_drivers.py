@@ -1,7 +1,7 @@
 import time
-import numpy as np
+
 try:
-    from monte_neo.core.acceleration.cpp_metal.metal_engine import MetalBacktestBridge, Candle, Driver
+    from monte_neo.core.acceleration.cpp_metal.metal_engine import Candle, Driver, MetalBacktestBridge
 except ImportError:
     print("❌ Error: metal_engine extension not found. Run compile.sh first.")
     exit(1)

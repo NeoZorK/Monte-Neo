@@ -1,17 +1,19 @@
 """Visualization utilities for backtest results.
 """
 
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
-import numpy as np
-from typing import Any, List, Dict
+from typing import Any
 
-def plot_equity_curves(results: List[Dict[str, Any]], title: str = "Monte Carlo Equity Curves"):
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+
+
+def plot_equity_curves(results: list[dict[str, Any]], title: str = "Monte Carlo Equity Curves"):
     """Plot equity curves for all scenarios."""
     plt.figure(figsize=(12, 6))
     
-    # If results contain equity history, plot them. 
+    # If results contain equity history, plot them.
     # Currently our results only contain final metrics.
     # To plot equity curves, we need to return them from the engine.
     # For now, let's plot a distribution of final returns.
@@ -28,7 +30,7 @@ def plot_equity_curves(results: List[Dict[str, Any]], title: str = "Monte Carlo 
     plt.grid(True, alpha=0.3)
     return plt
 
-def plot_drawdown_dist(results: List[Dict[str, Any]], title: str = "Max Drawdown Distribution"):
+def plot_drawdown_dist(results: list[dict[str, Any]], title: str = "Max Drawdown Distribution"):
     """Plot distribution of maximum drawdowns."""
     plt.figure(figsize=(10, 5))
     drawdowns = [res['metrics']['max_drawdown'] for res in results]
@@ -42,7 +44,7 @@ def plot_drawdown_dist(results: List[Dict[str, Any]], title: str = "Max Drawdown
     plt.grid(True, alpha=0.3)
     return plt
 
-def plot_metrics_summary(results: List[Dict[str, Any]]):
+def plot_metrics_summary(results: list[dict[str, Any]]):
     """Plot a summary table/heatmap of key metrics."""
     metrics_df = pd.DataFrame([res['metrics'] for res in results])
     
@@ -63,7 +65,7 @@ def plot_metrics_summary(results: List[Dict[str, Any]]):
     plt.tight_layout()
     return fig
 
-def plot_stress_test_summary(stress_results: Dict[str, Any]):
+def plot_stress_test_summary(stress_results: dict[str, Any]):
     """Plot a summary of stress test results."""
     plt.figure(figsize=(10, 6))
     
@@ -99,7 +101,7 @@ def plot_stress_test_summary(stress_results: Dict[str, Any]):
     
     return plt
 
-def plot_sensitivity_heatmap(sensitivity_results: Dict[str, Any]):
+def plot_sensitivity_heatmap(sensitivity_results: dict[str, Any]):
     """Plot a heatmap of parameter sensitivity."""
     grid = sensitivity_results.get("grid")
     if not grid or not grid.get("matrix"):

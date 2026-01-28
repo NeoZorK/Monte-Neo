@@ -1,10 +1,11 @@
 
-import pandas as pd
 import numpy as np
-from monte_neo.indicators.dynamic import DynamicIndicator
-from monte_neo.indicators.base import IndicatorConfig
+import pandas as pd
+
 from monte_neo.core.mlx_engine import MLXBacktestEngine
-from monte_neo.metrics.calculator import MetricsCalculator
+from monte_neo.indicators.base import IndicatorConfig
+from monte_neo.indicators.dynamic import DynamicIndicator
+
 
 def test_bb_metal():
     # 1. Create data

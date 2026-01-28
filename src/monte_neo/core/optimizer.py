@@ -11,8 +11,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from monte_neo.utils.logger import get_logger
 from monte_neo.utils.cache import load_calibration, save_calibration
+from monte_neo.utils.logger import get_logger
 
 if TYPE_CHECKING:
     import pandas as pd

@@ -51,11 +51,12 @@ class MonteNeoCLI:
 
     def run_export(self, json_path: str) -> int:
         """Export an indicator to C++."""
-        from monte_neo.core.optimization.production_exporter import ProductionExporter
         import json
+
+        from monte_neo.core.optimization.production_exporter import ProductionExporter
         
         try:
-            with open(json_path, 'r') as f:
+            with open(json_path) as f:
                 data = json.load(f)
             
             # Mock indicator for export
@@ -89,7 +90,7 @@ class MonteNeoCLI:
             engine = AIEvolutionEngine()
             best_indicator = engine.evolve(data, {"profit_factor": 1.5, "sharpe_ratio": 1.0}, generations=5)
             
-            console.print(f"[green]Evolution complete! Best formula:[/]")
+            console.print("[green]Evolution complete! Best formula:[/]")
             console.print(f"[bold white]{best_indicator.get_formula()}[/]")
             return 0
         except Exception as e:

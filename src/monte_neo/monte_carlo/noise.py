@@ -236,7 +236,7 @@ class NoiseInjector:
         logger.debug(f"Generated {n_samples} latency shift samples (max {max_shift} candles)")
         return samples
 
-    def _fix_ohlc(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _fix_ohlc(self, data: pd.DataFrame) -> pd.DataFrame:
         """Ensure OHLC consistency.
 
         Args:

@@ -1,6 +1,7 @@
 
 import re
 
+
 def parse_metal_params(source_code: str, commission_bps: float = 5.0, slippage_bps: float = 5.0) -> list[float] | None:
     """Parse dynamic indicator source code into Metal kernel parameters."""
     code = source_code.replace(" ", "")

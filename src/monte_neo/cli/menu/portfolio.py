@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+
 import questionary
 from rich.console import Console
 from rich.table import Table
@@ -135,7 +136,6 @@ def _show_summary(manager: PortfolioManager) -> None:
 
 def _add_asset_workflow(menu: InteractiveMenu) -> None:
     # In a real app, this would list generated indicators from exports/production
-    import os
     from pathlib import Path
     
     production_dir = Path("exports/production")

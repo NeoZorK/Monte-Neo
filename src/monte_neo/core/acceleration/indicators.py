@@ -2,6 +2,8 @@
 MLX-accelerated indicators.
 """
 
+from typing import Any
+
 import mlx.core as mx
 import numpy as np
 
@@ -75,7 +77,7 @@ class MLXRollingMax(MLXIndicator):
         self.period = period
 
     def compute(self, close: mx.array) -> mx.array:
-        # MLX doesn't have a direct rolling_max with window, 
+        # MLX doesn't have a direct rolling_max with window,
         # but we can use a trick with reshape or just use a loop for small windows.
         # For large windows, we might need a more efficient implementation.
         # For now, let's use a simple implementation.

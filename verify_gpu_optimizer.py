@@ -1,7 +1,10 @@
-import pandas as pd
-import numpy as np
 import time
+
+import numpy as np
+import pandas as pd
+
 from src.monte_neo.core.optimization.gpu_optimizer import GPUOptimizer
+
 
 def generate_test_data(n_bars=10000):
     """Generate synthetic price data with a slight upward trend."""

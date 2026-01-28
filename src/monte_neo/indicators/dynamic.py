@@ -106,9 +106,12 @@ class DynamicIndicator(BaseIndicator):
         otherwise falls back to MLXDynamicStrategy.
         """
         import re
+
         from monte_neo.core.acceleration.indicators import (
-            MLXSMA, MLXRSI, MLXRollingMax, MLXCrossStrategy, 
-            MLXSMACrossStrategy, MLXDynamicStrategy
+            MLXSMA,
+            MLXCrossStrategy,
+            MLXDynamicStrategy,
+            MLXSMACrossStrategy,
         )
         
         code = self.source_code.replace(" ", "")

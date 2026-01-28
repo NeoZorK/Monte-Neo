@@ -1,7 +1,9 @@
+import logging
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from typing import List, Dict, Any
-import logging
+
 from ..acceleration.cpp_metal import metal_engine
 
 logger = logging.getLogger(__name__)
@@ -23,7 +25,7 @@ class GPUOptimizer:
             raise RuntimeError(f"Failed to initialize Metal GPU Bridge with driver: {driver}")
         logger.info(f"GPUOptimizer: Metal Bridge initialized successfully with driver: {driver}")
 
-    def run_grid_search(self, df: pd.DataFrame, param_grid: Dict[str, List[float]]) -> pd.DataFrame:
+    def run_grid_search(self, df: pd.DataFrame, param_grid: dict[str, list[float]]) -> pd.DataFrame:
         """
         Runs a grid search across all parameter combinations on the GPU.
         
@@ -81,8 +83,8 @@ class GPUOptimizer:
             
         return pd.DataFrame(processed_results)
 
-    def run_walk_forward(self, df: pd.DataFrame, param_grid: Dict[str, List[float]], 
-                         train_size: float = 0.7, n_folds: int = 5) -> Dict[str, Any]:
+    def run_walk_forward(self, df: pd.DataFrame, param_grid: dict[str, list[float]],
+                         train_size: float = 0.7, n_folds: int = 5) -> dict[str, Any]:
         """
         Runs Walk-Forward Optimization on the GPU.
         
