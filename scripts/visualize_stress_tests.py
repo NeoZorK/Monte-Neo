@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 from monte_neo.core.mlx_engine import MLXBacktestEngine
-from monte_neo.core.optimization.stress_tester import DeepStressTester
+from monte_neo.core.optimization.stress_tester import StressTester
 from monte_neo.indicators.base import IndicatorConfig
 from monte_neo.indicators.dynamic import DynamicIndicator
 from monte_neo.utils.visualization import plot_sensitivity_heatmap, plot_stress_test_summary
@@ -28,7 +28,7 @@ def main():
     
     # 3. Stress Tests
     engine = MLXBacktestEngine()
-    tester = DeepStressTester(engine)
+    tester = StressTester(engine)
     
     print("  Running Black Swan Test...")
     bs_results = tester.black_swan_test(data, indicator)

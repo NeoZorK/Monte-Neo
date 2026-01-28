@@ -42,15 +42,29 @@ class TestCodeGenerator(unittest.TestCase):
             self.rng.choice.side_effect = lambda x, f=f_type: f if isinstance(x, list) and "mean" in x else x[0]
             self.rng.integers.return_value = 1 # Force op_type=1 (Func)
             code = self.generator.generate_code()
-            if f_type == "mean": self.assertIn(".rolling", code); self.assertIn(".mean()", code)
-            elif f_type == "max": self.assertIn(".rolling", code); self.assertIn(".max()", code)
-            elif f_type == "min": self.assertIn(".rolling", code); self.assertIn(".min()", code)
-            elif f_type == "std": self.assertIn(".rolling", code); self.assertIn(".std()", code)
-            elif f_type == "diff": self.assertIn(".diff()", code)
-            elif f_type == "shift": self.assertIn(".shift", code)
-            elif f_type == "rsi": self.assertIn("rsi(", code)
-            elif f_type == "bbands": self.assertIn("rolling", code); self.assertIn("std()", code)
-            elif f_type == "macd": self.assertIn("ewm(span=", code)
+            if f_type == "mean":
+                self.assertIn(".rolling", code)
+                self.assertIn(".mean()", code)
+            elif f_type == "max":
+                self.assertIn(".rolling", code)
+                self.assertIn(".max()", code)
+            elif f_type == "min":
+                self.assertIn(".rolling", code)
+                self.assertIn(".min()", code)
+            elif f_type == "std":
+                self.assertIn(".rolling", code)
+                self.assertIn(".std()", code)
+            elif f_type == "diff":
+                self.assertIn(".diff()", code)
+            elif f_type == "shift":
+                self.assertIn(".shift", code)
+            elif f_type == "rsi":
+                self.assertIn("rsi(", code)
+            elif f_type == "bbands":
+                self.assertIn("rolling", code)
+                self.assertIn("std()", code)
+            elif f_type == "macd":
+                self.assertIn("ewm(span=", code)
 
     def test_binary_ops(self):
         # Force binary op (op_type=0)

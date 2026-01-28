@@ -4,9 +4,8 @@ from unittest.mock import MagicMock
 import numpy as np
 import pandas as pd
 
+from monte_neo.monte_carlo import workers
 from monte_neo.monte_carlo.workers import (
-    SHARED_DATA,
-    SHARED_SCENARIOS,
     _generate_signals_wrapper,
     init_worker,
     init_worker_data,
@@ -35,18 +34,17 @@ class TestMonteCarloWorkers(unittest.TestCase):
 
     def tearDown(self):
         # Reset globals
-        import monte_neo.monte_carlo.workers as workers
         workers.SHARED_DATA = None
         workers.SHARED_SCENARIOS = None
 
     def test_init_worker_data(self):
         init_worker_data(self.df)
-        pd.testing.assert_frame_equal(SHARED_DATA, self.df)
+        pd.testing.assert_frame_equal(workers.SHARED_DATA, self.df)
 
     def test_init_worker(self):
         scenarios = [self.df]
         init_worker(scenarios)
-        self.assertEqual(SHARED_SCENARIOS, scenarios)
+        self.assertEqual(workers.SHARED_SCENARIOS, scenarios)
 
     def test_generate_signals_wrapper_with_df(self):
         args = (self.indicator, self.df)
