@@ -140,8 +140,9 @@ class AIEvolutionEngine:
         """Tree-based crossover of indicator formulas."""
         from monte_neo.utils.ast_utils import crossover_trees
         
-        f1 = p1.get_formula()
-        f2 = p2.get_formula()
+        # Use raw source code for dynamic indicators to avoid "Dynamic: " prefix breaking AST
+        f1 = p1.source_code if hasattr(p1, "source_code") else p1.get_formula()
+        f2 = p2.source_code if hasattr(p2, "source_code") else p2.get_formula()
         
         try:
             new_formula = crossover_trees(f1, f2)
@@ -154,7 +155,8 @@ class AIEvolutionEngine:
 
     def _mutate(self, p: BaseIndicator) -> BaseIndicator:
         """Heuristic-based mutation with symbolic tree manipulation."""
-        formula = p.get_formula()
+        # Use raw source code for dynamic indicators to avoid "Dynamic: " prefix breaking AST
+        formula = p.source_code if hasattr(p, "source_code") else p.get_formula()
         
         # 1. Subtree Replacement
         if self.rng.random() < 0.5:
