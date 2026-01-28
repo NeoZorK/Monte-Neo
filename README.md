@@ -17,6 +17,7 @@ A professional Python framework for generating robust and profitable trading ind
 - 🖥️ **Interactive CLI**: Arrow-key navigation, progress bars, color output
 - 🐳 **Docker Support**: Headless mode for server deployment
 - ⚡ **High Performance**: Parallel processing, optimized data handling
+- 🛡️ **Reliability First**: Core modules (Backtesting, Metrics, Monte Carlo) covered by ~100% unit tests
 
 ## Quick Start
 
@@ -27,11 +28,11 @@ uv sync
 # 2. Run CLI
 uv run monte-neo
 
-# 3. Run Tests
-uv run pytest tests -n auto -W ignore
+# 3. Run All Tests (300+)
+uv run pytest tests -n auto
 
-# 4. Verify Hardware Acceleration (Metal/Float8)
-python verify_hardware.py
+# 4. Generate Coverage Report
+uv run coverage run -m pytest && uv run coverage report
 ```
 
 ## Running with Docker
