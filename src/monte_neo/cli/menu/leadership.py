@@ -38,8 +38,7 @@ class PipelineDashboard:
         self.start_time = time.time()
         self.root_layout = Layout()
         self.root_layout.split_column(
-            Layout(name="dashboard", ratio=8),
-            Layout(name="spacer", ratio=2)
+            Layout(name="dashboard", ratio=1),
         )
         self.layout = self.root_layout["dashboard"]
         self.layout.split_row(
@@ -47,9 +46,9 @@ class PipelineDashboard:
             Layout(name="side", ratio=1)
         )
         self.layout["side"].split_column(
-            Layout(name="stats"),
-            Layout(name="best_formula"),
-            Layout(name="validation")
+            Layout(name="stats", ratio=3),
+            Layout(name="best_formula", ratio=3),
+            Layout(name="validation", ratio=4)
         )
 
     def generate_layout(self) -> Layout:
@@ -173,9 +172,13 @@ class SmartPipelineOptimizer:
 
     def ensure_data(self, symbol: str, timeframe: str):
         """Checks for local data and downloads if missing and auto-download is enabled."""
-        data = self.menu.storage.load(symbol, timeframe=timeframe)
-        if data is not None and not data.empty:
-            return data
+        try:
+            data = self.menu.storage.load(symbol, timeframe=timeframe)
+            if data is not None and not data.empty:
+                return data
+        except FileNotFoundError:
+            # Data not found, will attempt download if enabled
+            pass
 
         if not self.menu.config.auto_download_data:
             return None
@@ -249,12 +252,16 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
     logs = []
 
     def log(msg: str):
+        # Prevent duplicate logs in same refresh
+        if logs and logs[-1] == msg:
+            return
         logs.append(msg)
-        if len(logs) > 12:
+        if len(logs) > 10:
             logs.pop(0)
         dashboard.layout["main"].update(Panel(
             "\n".join(logs),
-            title="[bold yellow]🔍 Active Search Logs[/]"
+            title="[bold yellow]🔍 Active Search Logs[/]",
+            border_style="yellow"
         ))
 
     try:
@@ -278,18 +285,16 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
                     mutation_rate=menu._mutation_rate,
                     crossover_rate=menu._crossover_rate,
                     initial_capital=menu.config.initial_capital,
-                    leverage=menu.config.leverage,
-                    progress_callback=menu.progress.update
+                    leverage=menu.config.leverage
                 )
                 
                 log("Evolving formulas...")
-                live.update(dashboard.generate_layout())
-                
-                menu.progress.start(menu._generations, f"Evolving ({menu._selected_timeframe})...")
+                # menu.progress.start(menu._generations, f"Evolving ({menu._selected_timeframe})...")
                 try:
                     best_indicator = engine.evolve(data, menu._target_metrics, generations=menu._generations)
                 finally:
-                    menu.progress.stop()
+                    pass
+                    # menu.progress.stop()
 
                 if not best_indicator:
                     log("[yellow]Evolution failed. Adjusting...[/]")
