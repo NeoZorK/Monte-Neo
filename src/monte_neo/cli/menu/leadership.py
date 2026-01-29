@@ -50,11 +50,6 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
     menu._selected_symbol = symbol
     menu._selected_timeframe = timeframe
 
-    # Load data once
-    optimizer = SmartPipelineOptimizer(menu)
-    dashboard = PipelineDashboard(optimizer)
-    
-    console.print("\n" * 2) # Push dashboard down for Warp/Terminals
     logs = []
 
     def log(msg: str):
@@ -62,7 +57,7 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
         if logs and logs[-1] == msg:
             return
         logs.append(msg)
-        if len(logs) > 8:
+        if len(logs) > 6: # Reduced from 8 to 6
             logs.pop(0)
         dashboard.layout["main"].update(Panel(
             "\n".join(logs),
@@ -70,6 +65,12 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
             border_style="yellow"
         ))
 
+    # Load data once
+    optimizer = SmartPipelineOptimizer(menu, log_callback=log)
+    dashboard = PipelineDashboard(optimizer)
+    
+    console.print("\n" * 2) # Push dashboard down for Warp/Terminals
+    
     try:
         with Live(dashboard.generate_layout(), refresh_per_second=4, console=console) as live:
             while True:

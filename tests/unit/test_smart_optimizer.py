@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
-from monte_neo.cli.menu.leadership import SmartPipelineOptimizer
+from monte_neo.cli.menu.leadership_optimizer import SmartPipelineOptimizer
 
 class MockValidationResult:
     def __init__(self, warnings=None):
@@ -11,6 +11,7 @@ def test_optimizer_overfitting_adjustment():
     menu = MagicMock()
     menu._mutation_rate = 0.5
     menu._crossover_rate = 0.5
+    menu._selected_timeframe = "1h"
     optimizer = SmartPipelineOptimizer(menu)
     
     # Mock validation result with overfitting warnings
@@ -55,7 +56,7 @@ def test_optimizer_ensure_data_auto_download():
     
     with MagicMock() as mock_downloader:
         from unittest.mock import patch
-        with patch("monte_neo.cli.menu.leadership.BinanceDownloader", return_value=mock_downloader):
+        with patch("monte_neo.cli.menu.leadership_optimizer.BinanceDownloader", return_value=mock_downloader):
             mock_downloader.download.return_value = MagicMock(empty=False)
             
             # Run

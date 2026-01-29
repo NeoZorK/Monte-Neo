@@ -21,19 +21,23 @@ class PipelineDashboard:
         self.optimizer = optimizer
         self.start_time = time.time()
         self.root_layout = Layout()
+        
+        # Split root into top margin, main dashboard, and bottom margin (to reduce height by ~30%)
         self.root_layout.split_column(
             Layout(name="top_margin", size=1),
-            Layout(name="dashboard", ratio=1),
+            Layout(name="dashboard", ratio=7),
+            Layout(name="bottom_margin", ratio=3),
         )
         self.layout = self.root_layout["dashboard"]
         self.layout.split_row(
             Layout(name="main", ratio=2),
             Layout(name="side", ratio=1)
         )
+        # Make panels more compact
         self.layout["side"].split_column(
-            Layout(name="stats", ratio=3),
-            Layout(name="best_formula", ratio=3),
-            Layout(name="validation", ratio=4)
+            Layout(name="stats", ratio=2),
+            Layout(name="best_formula", ratio=2),
+            Layout(name="validation", ratio=3)
         )
 
     def generate_layout(self) -> Layout:
