@@ -7,11 +7,15 @@ from __future__ import annotations
 
 import time
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import numpy as np
+from rich.align import Align
+from rich.layout import Layout
+from rich.live import Live
 from rich.panel import Panel
 from rich.table import Table
+from rich.text import Text
 
 from monte_neo.cli.styles import press_any_key
 from monte_neo.core.evolution_ai import AIEvolutionEngine
@@ -26,6 +30,70 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
+class PipelineDashboard:
+    """Beautiful TUI dashboard for real-time pipeline monitoring."""
+    
+    def __init__(self, optimizer: SmartPipelineOptimizer):
+        self.optimizer = optimizer
+        self.start_time = time.time()
+        self.layout = Layout()
+        self.layout.split_row(
+            Layout(name="main", ratio=2),
+            Layout(name="side", ratio=1)
+        )
+        self.layout["side"].split_column(
+            Layout(name="stats"),
+            Layout(name="best_formula"),
+            Layout(name="validation")
+        )
+
+    def generate_layout(self) -> Layout:
+        elapsed = time.time() - self.start_time
+        elapsed_str = str(timedelta(seconds=int(elapsed)))
+        
+        # Estimate ETA (simple linear based on iterations, but let's just show elapsed for now
+        # since iterations are variable. Maybe ETA based on generations?)
+        eta_str = "Calculating..."
+        if self.optimizer.iteration > 0:
+            avg_time_per_iter = elapsed / self.optimizer.iteration
+            # Assume we might need 5 iterations on average if not found? 
+            # Or just show "Searching..."
+            eta_str = str(timedelta(seconds=int(avg_time_per_iter * 0.5))) # Just a placeholder
+
+        # Stats Panel
+        stats_table = Table.grid(padding=(0, 1))
+        stats_table.add_column(style="bold cyan")
+        stats_table.add_column()
+        stats_table.add_row("Iteration:", f"#{self.optimizer.iteration + 1}")
+        stats_table.add_row("Elapsed:", f"[yellow]{elapsed_str}[/]")
+        stats_table.add_row("Best Score:", f"[green]{self.optimizer.best_score_ever:.2f}/100[/]")
+        stats_table.add_row("Symbol:", f"[white]{self.optimizer.menu._selected_symbol}[/]")
+        stats_table.add_row("Timeframe:", f"[magenta]{self.optimizer.menu._selected_timeframe}[/]")
+        
+        self.layout["stats"].update(Panel(stats_table, title="[bold blue]⏱ Search Stats[/]", border_style="blue"))
+
+        # Best Formula Panel
+        formula_text = Text(self.optimizer.best_formula_ever or "None", style="bold white", justify="center")
+        self.layout["best_formula"].update(Panel(formula_text, title="[bold green]🏆 Best Formula[/]", border_style="green"))
+
+        # Validation Panel (Monte Carlo etc)
+        val_table = Table.grid(padding=(0, 1))
+        val_table.add_column()
+        val_table.add_column()
+        
+        def get_check(passed: bool) -> str:
+            return "[bold green]✓[/]" if passed else "[bold red]✗[/]"
+
+        mc_status = self.optimizer.last_mc_results
+        val_table.add_row(get_check(mc_status.get("passed", False)), "Monte Carlo Robustness")
+        val_table.add_row(get_check(mc_status.get("cscv_passed", False)), "CSCV PBO Analysis")
+        val_table.add_row(get_check(mc_status.get("wfe_passed", False)), "Walk-Forward Efficiency")
+        val_table.add_row(get_check(self.optimizer.best_score_ever > 50), "Quality Threshold")
+
+        self.layout["validation"].update(Panel(val_table, title="[bold magenta]🛡 Robustness[/]", border_style="magenta"))
+
+        return self.layout
+
 class SmartPipelineOptimizer:
     """Intelligent search orchestrator for the Global Leadership Pipeline."""
     
@@ -33,8 +101,10 @@ class SmartPipelineOptimizer:
         self.menu = menu
         self.iteration = 0
         self.best_score_ever = 0.0
+        self.best_formula_ever = None
         self.last_failure_reason = "Initial search"
         self.adjustments_made = []
+        self.last_mc_results = {}
         self.available_timeframes = ["1m", "5m", "15m", "30m", "1h", "4h", "1d"]
         self.current_tf_index = self.available_timeframes.index(menu._selected_timeframe) \
             if menu._selected_timeframe in self.available_timeframes else 4
@@ -47,6 +117,7 @@ class SmartPipelineOptimizer:
         score = gate_results.get("final_score", 0.0)
         if score > self.best_score_ever:
             self.best_score_ever = score
+            # We don't have formula here directly, it's passed in the loop
 
         warnings = validation_res.warnings if hasattr(validation_res, 'warnings') else []
         
@@ -171,74 +242,100 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
 
     # Load data once
     optimizer = SmartPipelineOptimizer(menu)
+    dashboard = PipelineDashboard(optimizer)
     
+    logs = []
+
+    def log(msg: str):
+        logs.append(msg)
+        if len(logs) > 15:
+            logs.pop(0)
+        dashboard.layout["main"].update(Panel(
+            "\n".join(logs),
+            title="[bold yellow]🔍 Active Search Logs[/]"
+        ))
+
     try:
-        while True:
-            # Check/Download data for the current iteration (brain might have changed timeframe)
-            data = optimizer.ensure_data(symbol, menu._selected_timeframe)
-            if data is None or data.empty:
-                console.print(f"[red]No data available for {symbol} {menu._selected_timeframe}. Search aborted.[/]")
-                return
+        with Live(dashboard.generate_layout(), refresh_per_second=4, console=console) as live:
+            while True:
+                # Check/Download data for the current iteration (brain might have changed timeframe)
+                data = optimizer.ensure_data(symbol, menu._selected_timeframe)
+                if data is None or data.empty:
+                    log(f"[red]No data available for {symbol} {menu._selected_timeframe}.[/]")
+                    live.update(dashboard.generate_layout())
+                    time.sleep(2)
+                    return
 
-            # 2. Setup Evolution
-            if optimizer.iteration > 0:
-                optimizer.print_report()
-                console.print(f"\n[bold cyan]🔄 Starting Search Iteration #{optimizer.iteration + 1}...[/]")
-            else:
-                console.print(f"\n[cyan]Initializing AI Evolution Engine for {symbol} ({timeframe})...[/]")
+                log(f"Starting Iteration #{optimizer.iteration + 1}...")
+                log(f"Targeting {symbol} on {menu._selected_timeframe}")
+                live.update(dashboard.generate_layout())
 
-            # 3. Evolution Phase
-            engine = AIEvolutionEngine(
-                population_size=menu._pop_size,
-                mutation_rate=menu._mutation_rate,
-                crossover_rate=menu._crossover_rate,
-                initial_capital=menu.config.initial_capital,
-                leverage=menu.config.leverage,
-                progress_callback=menu.progress.update
-            )
-            
-            menu.progress.start(menu._generations, f"Evolving formulas ({menu._selected_timeframe})...")
-            try:
-                best_indicator = engine.evolve(data, menu._target_metrics, generations=menu._generations)
-            finally:
-                menu.progress.stop()
+                # 3. Evolution Phase
+                engine = AIEvolutionEngine(
+                    population_size=menu._pop_size,
+                    mutation_rate=menu._mutation_rate,
+                    crossover_rate=menu._crossover_rate,
+                    initial_capital=menu.config.initial_capital,
+                    leverage=menu.config.leverage,
+                    progress_callback=menu.progress.update
+                )
+                
+                log("Evolving formulas...")
+                live.update(dashboard.generate_layout())
+                
+                menu.progress.start(menu._generations, f"Evolving ({menu._selected_timeframe})...")
+                try:
+                    best_indicator = engine.evolve(data, menu._target_metrics, generations=menu._generations)
+                finally:
+                    menu.progress.stop()
 
-            if not best_indicator:
-                console.print("[yellow]Evolution failed to produce an indicator. Adjusting and retrying...[/]")
-                optimizer.iteration += 1
-                optimizer.last_failure_reason = "No candidates found"
-                menu._pop_size += 20
-                continue
-            
-            console.print("\n[green]✅ Best formula discovered:[/]")
-            console.print(Panel(f"[bold white]{best_indicator.get_formula()}[/]", border_style="green"))
+                if not best_indicator:
+                    log("[yellow]Evolution failed. Adjusting...[/]")
+                    optimizer.iteration += 1
+                    optimizer.last_failure_reason = "No candidates found"
+                    menu._pop_size += 20
+                    live.update(dashboard.generate_layout())
+                    continue
+                
+                formula = best_indicator.get_formula()
+                log(f"[green]Best formula found: {formula[:50]}...[/]")
+                optimizer.best_formula_ever = formula
+                live.update(dashboard.generate_layout())
 
-            # 4. Robustness Validation Phase
-            console.print("\n[cyan]Running intensive robustness validation suite...[/]")
-            from monte_neo.core.validator import OverfitValidator
-            from monte_neo.metrics.calculator import MetricsCalculator
-            
-            metrics_calc = MetricsCalculator(
-                initial_capital=menu.config.initial_capital,
-                leverage=menu.config.leverage
-            )
-            validator = OverfitValidator()
-            
-            with console.status("[bold blue]Validating robustness across multiple folds and methods..."):
+                # 4. Robustness Validation Phase
+                log("Running robustness validation...")
+                from monte_neo.core.validator import OverfitValidator
+                from monte_neo.metrics.calculator import MetricsCalculator
+                
+                metrics_calc = MetricsCalculator(
+                    initial_capital=menu.config.initial_capital,
+                    leverage=menu.config.leverage
+                )
+                validator = OverfitValidator()
+                
                 validation_res = validator.validate(best_indicator, data, metrics_calc, menu._target_metrics)
                 
-                # Additional Monte Carlo validation
+                # Monte Carlo
                 mc_config = MonteCarloEngine().config
                 mc_config.initial_capital = menu.config.initial_capital
                 mc_config.leverage = menu.config.leverage
                 mc_engine = MonteCarloEngine(config=mc_config)
                 mc_res = mc_engine.run(data, best_indicator, metrics_calc, menu._target_metrics)
                 
-                # CSCV Analysis for PBO
+                # CSCV
                 from monte_neo.monte_carlo.cscv import CSCVAnalyzer
                 cscv_analyzer = CSCVAnalyzer()
                 cscv_res = cscv_analyzer.analyze(best_indicator, data, metrics_calc)
                 
+                # Update optimizer for dashboard
+                optimizer.last_mc_results = {
+                    "passed": mc_res.passed,
+                    "cscv_passed": cscv_res.get("is_robust", False),
+                    "wfe_passed": (validation_res.out_sample_metrics.get("sharpe_ratio", 0) / 
+                                   max(0.001, validation_res.in_sample_metrics.get("sharpe_ratio", 0))) > 0.5
+                }
+                live.update(dashboard.generate_layout())
+
                 # Prepare unified results
                 validation_results = {
                     "robustness_score": validation_res.overall_score * 100,
@@ -248,31 +345,39 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
                     "pbo": cscv_res.get("pbo", 1.0),
                     "consistency": np.mean(validation_res.cross_val_scores) if validation_res.cross_val_scores else 0,
                     "recommendation": "Highly robust. Ready for production." if validation_res.passed else "Warning: Potential overfitting detected.",
-                    "stress_test_score": 0.0 # Will be filled by production gate
+                    "stress_test_score": 0.0
                 }
                 
                 if validation_res.warnings:
                     validation_results["recommendation"] += "\nWarnings: " + "; ".join(validation_res.warnings)
 
-            # 5. Production Gate Phase
-            console.print("\n[cyan]Finalizing through Production Gate...[/]")
-            gate = ProductionGate()
-            
-            with console.status("[bold magenta]Stress testing and generating production assets..."):
+                # 5. Production Gate Phase
+                log("Finalizing through Production Gate...")
+                from monte_neo.core.optimization.production_gate import ProductionGate
+                gate = ProductionGate()
                 gate_results = gate.process(best_indicator, data, validation_results)
-            
-            # 6. Check Results and Loop
-            _display_pipeline_results(gate_results)
+                
+                # Update best score
+                score = gate_results.get("final_score", 0.0)
+                if score > optimizer.best_score_ever:
+                    optimizer.best_score_ever = score
+                    optimizer.best_formula_ever = formula
+                
+                live.update(dashboard.generate_layout())
 
-            if gate_results["is_certified"]:
-                console.print(f"\n[bold green]🏆 SUCCESS! ACCEPTED indicator found after {optimizer.iteration + 1} iterations.[/]")
-                press_any_key()
-                break
-            else:
-                optimizer.brainstorm_and_adjust(validation_res, gate_results)
-                console.print("\n[bold yellow]Target not reached. Relaunching Pipeline with optimized parameters...[/]")
-                console.print("[dim]Press Ctrl+C at any time to stop the search.[/]")
-                time.sleep(2)
+                # 6. Check Results and Loop
+                if gate_results["is_certified"]:
+                    live.stop()
+                    _display_pipeline_results(gate_results)
+                    console.print(f"\n[bold green]🏆 SUCCESS! ACCEPTED indicator found after {optimizer.iteration + 1} iterations.[/]")
+                    press_any_key()
+                    break
+                else:
+                    reason = optimizer.brainstorm_and_adjust(validation_res, gate_results)
+                    log(f"[red]Rejected: {reason}[/]")
+                    log("Relaunching with optimized parameters...")
+                    live.update(dashboard.generate_layout())
+                    time.sleep(2)
 
     except KeyboardInterrupt:
         console.print("\n[yellow]Pipeline search cancelled by user. Returning to main menu...[/]")

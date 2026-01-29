@@ -2,6 +2,10 @@
 
 ## Core Features
 
+- **Global Leadership Pipeline**: 
+  - **End-to-End Automation**: Fully automated discovery -> evolution -> validation -> certification -> export.
+  - **Smart Search Brain**: Adaptive logic that learns from rejections (overfitting, low activity) and adjusts GA parameters or timeframes.
+  - **Real-time TUI Dashboard**: Advanced layout with live stats, best formula tracking, and robustness checklists.
 - **Indicator Generation**: Automatic search for profitable trading indicators.
 - **Dynamic Indicator Generation**:
   - Generates novel indicators using genetic programming concepts.
