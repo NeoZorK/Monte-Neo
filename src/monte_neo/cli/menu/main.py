@@ -67,7 +67,16 @@ class InteractiveMenu:
                     return 0
                 self._handle_choice(choice)
             except KeyboardInterrupt:
-                console.print("\n[yellow]Operation cancelled by user. Returning to menu...[/]")
+                # If interrupted during _show_main_menu, choice will be "exit" (default)
+                # If interrupted during _handle_choice, we catch it here
+                console.print("\n[yellow]Operation cancelled by user.[/]")
+                
+                # Check if we should exit entirely or just return to menu
+                if questionary.confirm("Exit Monte-Neo entirely?", default=False, style=CUSTOM_STYLE).ask():
+                    console.print("[green]Goodbye![/]")
+                    return 0
+                
+                console.print("[cyan]Returning to main menu...[/]")
             except Exception as e:
                 console.print(f"\n[red]An error occurred: {e}[/]")
                 logger.exception("Error in menu loop")

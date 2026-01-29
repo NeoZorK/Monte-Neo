@@ -48,17 +48,10 @@ class EvolutionEngine:
         initial_population: list[BaseIndicator],
         executor: ParallelExecutor | None = None
     ) -> BaseIndicator | None:
-        """Run evolutionary optimization.
-
-        Args:
-            data: OHLCV data.
-            initial_population: Initial population.
-            executor: Optional parallel executor for signal generation.
-
-        Returns:
-            Best indicator found.
-        """
+        """Run evolutionary optimization."""
         population: list[BaseIndicator] = list(initial_population)
+        best_overall: BaseIndicator | None = None
+        best_fitness_overall: float = -float("inf")
 
         # Pad population if needed
         while len(population) < self.config.population_size:
@@ -66,103 +59,80 @@ class EvolutionEngine:
             new_indicator.set_parameter("source_code", self.code_gen.generate_code())
             population.append(new_indicator)
 
-        for gen in range(self.config.generations):
-            # Evaluate fitness
-            fitness_scores: list[tuple[BaseIndicator, float]] = []
+        try:
+            for gen in range(self.config.generations):
+                # Evaluate fitness
+                fitness_scores: list[tuple[BaseIndicator, float]] = []
 
-            # Use parallel execution for fitness evaluation to reach >2000 ops/s
-            # Note: Evolution handles batches of DynamicIndicators
-            if executor:
-                from monte_neo.monte_carlo.workers import run_indicator_batch
-                n_workers = executor.n_workers
-                chunk_size = max(1, len(population) // n_workers)
-                chunks = [population[i : i + chunk_size] for i in range(0, len(population), chunk_size)]
-                # Using None for data since initializer already set it in SHARED_DATA
-                tasks = [(chunk, None) for chunk in chunks]
-                batch_results = executor.map(run_indicator_batch, tasks)
-                raw_signals = []
-                for batch in batch_results:
-                    raw_signals.extend(batch)
-            else:
-                raw_signals = [ind.generate_signals_fast(data) for ind in population]
-
-            # Prepare for Numba batch calculation
-            signal_matrix = np.zeros((len(population), len(data)), dtype=np.int32)
-            from monte_neo.core.gpu_scenarios import normalize_signal_array
-            for i, sig in enumerate(raw_signals):
-                signal_matrix[i] = normalize_signal_array(sig, len(data)).astype(np.int32)
-
-            batch_metrics_arr = self.metrics_calc.calculate_batch_fast(
-                data["close"].values,
-                data["high"].values,
-                data["low"].values,
-                signal_matrix,
-                use_sl_tp=self.config.use_sl_tp,
-                sl_pct=self.config.stop_loss_pct,
-                tp_pct=self.config.take_profit_pct,
-            )
-
-            for i, ind in enumerate(population):
-                # Fitness function: Profit Factor * (1 - Max Drawdown)
-                pf = batch_metrics_arr[i, 2]
-                dd = batch_metrics_arr[i, 1]
-                trades = int(batch_metrics_arr[i, 3])
-
-                if trades < self.config.min_trades:
-                    score = 0.0
+                # Use parallel execution for fitness evaluation to reach >2000 ops/s
+                if executor:
+                    from monte_neo.monte_carlo.workers import run_indicator_batch
+                    n_workers = executor.n_workers
+                    chunk_size = max(1, len(population) // n_workers)
+                    chunks = [population[i : i + chunk_size] for i in range(0, len(population), chunk_size)]
+                    tasks = [(chunk, None) for chunk in chunks]
+                    batch_results = executor.map(run_indicator_batch, tasks)
+                    raw_signals = []
+                    for batch in batch_results:
+                        raw_signals.extend(batch)
                 else:
-                    score = pf * (1.0 - dd)
+                    raw_signals = [ind.generate_signals_fast(data) for ind in population]
 
-                fitness_scores.append((ind, score))
+                # Prepare for Numba batch calculation
+                signal_matrix = np.zeros((len(population), len(data)), dtype=np.int32)
+                from monte_neo.core.gpu_scenarios import normalize_signal_array
+                for i, sig in enumerate(raw_signals):
+                    signal_matrix[i] = normalize_signal_array(sig, len(data)).astype(np.int32)
 
-            # Sort
-            fitness_scores.sort(key=lambda x: x[1], reverse=True)
-            best_gen_score = fitness_scores[0][1]
-
-            if self.progress_callback:
-                self.progress_callback(
-                    gen + 1,
-                    self.config.generations,
-                    f"Evolution Gen {gen + 1}: Best Score {best_gen_score:.2f}",
+                batch_metrics_arr = self.metrics_calc.calculate_batch_fast(
+                    data["close"].values,
+                    data["high"].values,
+                    data["low"].values,
+                    signal_matrix,
+                    use_sl_tp=self.config.use_sl_tp,
+                    sl_pct=self.config.stop_loss_pct,
+                    tp_pct=self.config.take_profit_pct
                 )
 
-            # Selection (Elite + Tournament)
-            elite_count = max(2, int(self.config.population_size * 0.1))
-            new_pop: list[BaseIndicator] = [x[0] for x in fitness_scores[:elite_count]]
+                for i, ind in enumerate(population):
+                    pf = batch_metrics_arr[i, 2]
+                    dd = batch_metrics_arr[i, 1]
+                    trades = int(batch_metrics_arr[i, 3])
+                    fitness = pf * (1.0 - dd) if trades >= self.config.min_trades else 0.0
+                    fitness_scores.append((ind, fitness))
+                    
+                    if fitness > best_fitness_overall:
+                        best_fitness_overall = fitness
+                        best_overall = ind
 
-            while len(new_pop) < self.config.population_size:
-                parent1 = self._tournament_select(fitness_scores)
+                # Sort population
+                fitness_scores.sort(key=lambda x: x[1], reverse=True)
+                
+                if self.progress_callback:
+                    status = f"Evolution Gen {gen + 1}/{self.config.generations} | Best Fitness: {fitness_scores[0][1]:.4f}"
+                    self.progress_callback(gen + 1, self.config.generations, status)
 
-                if self.rng.random() < self.config.crossover_rate:
-                    parent2 = self._tournament_select(fitness_scores)
-                    child = self._crossover_indicators(parent1, parent2)
-                else:
-                    child = self._mutate_indicator(parent1)
+                # Selection (Elite + Tournament)
+                elite_count = max(2, int(self.config.population_size * 0.1))
+                new_pop: list[BaseIndicator] = [x[0] for x in fitness_scores[:elite_count]]
 
-                new_pop.append(child)
+                while len(new_pop) < self.config.population_size:
+                    parent1 = self._tournament_select(fitness_scores)
+                    if self.rng.random() < self.config.crossover_rate:
+                        parent2 = self._tournament_select(fitness_scores)
+                        child = self._crossover_indicators(parent1, parent2)
+                    else:
+                        child = self._mutate_indicator(parent1)
+                    new_pop.append(child)
+                
+                population = new_pop
+        
+        except KeyboardInterrupt:
+            print("\nEvolution interrupted. Returning best found so far.")
+            if best_overall is None and population:
+                best_overall = population[0]
 
-            population = new_pop
-
-        # Return the best found
-        if not population:
-            return None
-
-        # Final evaluation
-        final_scores: list[tuple[BaseIndicator, float]] = []
-        for ind in population:
-            try:
-                signals = ind.generate_signals(data)
-                metrics = self.metrics_calc.calculate_all(data, signals)
-                pf = float(metrics.get("profit_factor", 0.0))
-                dd = float(metrics.get("max_drawdown", 1.0))
-                trades = int(metrics.get("trade_count", 0))
-                score = pf * (1.0 - dd) if trades >= self.config.min_trades else 0.0
-                final_scores.append((ind, score))
-            except Exception:
-                final_scores.append((ind, 0.0))
-
-        final_scores.sort(key=lambda x: x[1], reverse=True)
-        return final_scores[0][0] if final_scores[0][1] > 0 else None
+        return best_overall if best_overall else (population[0] if population else None)
 
     def _crossover_indicators(self, p1: BaseIndicator, p2: BaseIndicator) -> BaseIndicator:
         """Perform crossover."""
