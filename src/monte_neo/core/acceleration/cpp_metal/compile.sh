@@ -22,6 +22,7 @@ clang++ -O3 -shared -std=c++17 -undefined dynamic_lookup \
     $PYTHON_INCLUDES \
     -I$OUTPUT_DIR/include \
     $OUTPUT_DIR/metal_bridge.mm \
+    $OUTPUT_DIR/metal_metrics.mm \
     $OUTPUT_DIR/bindings.mm \
     $OUTPUT_DIR/MetalBridgeSwift.o \
     -o $OUTPUT_DIR/$EXTENSION_NAME$PYTHON_SUFFIX \

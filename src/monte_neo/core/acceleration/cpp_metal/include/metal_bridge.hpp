@@ -43,6 +43,20 @@ public:
         int n_scenarios
     );
 
+    std::vector<BacktestResult> calculate_metrics(
+        const float* close_prices,
+        const float* high_prices,
+        const float* low_prices,
+        const int* signals,
+        const float* params,
+        int n_pop,
+        int n_scenarios,
+        int n_time,
+        size_t close_size,
+        size_t signals_size,
+        size_t params_size
+    );
+
     Driver get_driver() const { return driver_; }
 
 private:

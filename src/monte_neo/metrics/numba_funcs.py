@@ -191,7 +191,7 @@ def calculate_batch_fast(
                     n_trades += 1
 
         pf = gross_profit / gross_loss if gross_loss > 0 else 100.0
-        results[i, 0] = total_pnl_pct
+        results[i, 0] = equity - 1.0
         results[i, 1] = max_dd
         results[i, 2] = pf
         results[i, 3] = n_trades
@@ -306,7 +306,7 @@ def calculate_batch_multi_price_fast(
                     n_trades += 1
 
         pf = gross_profit / gross_loss if gross_loss > 0 else 100.0
-        results[i, 0] = total_pnl_pct
+        results[i, 0] = equity - 1.0
         results[i, 1] = max_dd
         results[i, 2] = pf
         results[i, 3] = n_trades
