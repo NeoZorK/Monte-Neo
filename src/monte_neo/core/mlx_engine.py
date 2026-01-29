@@ -85,6 +85,89 @@ class MLXBacktestEngine:
             else:
                 self.metal_driver = metal_driver
 
+    def backtest_population_multi_scenario(
+        self,
+        data: pd.DataFrame,
+        population: list[BaseIndicator],
+        n_scenarios: int,
+        method: str = "shuffling",
+        seed: int = 42,
+        use_sl_tp: bool = True,
+        sl_pct: float = 0.02,
+        tp_pct: float = 0.04,
+        **kwargs: Any,
+    ) -> np.ndarray:
+        """
+        Runs backtest for the entire population across multiple scenarios simultaneously.
+        
+        This is the "End-to-End GPU" path that minimizes CPU-GPU transfers.
+        Returns a 3D result matrix: [Population x Scenarios x Metrics]
+        """
+        start_time = time.perf_counter()
+        n_pop = len(population)
+        
+        # 1. Prepare Data Tensors (Once for all)
+        from monte_neo.core.acceleration.tensor_ops import to_tensor, TensorOps
+        tensors = to_tensor(data)
+        close = tensors["close"]
+        high = tensors.get("high", close)
+        low = tensors.get("low", close)
+        
+        # 2. Generate Scenarios (Once for all)
+        if method == "shuffling":
+            scenarios = TensorOps.generate_shuffle_scenarios(close, n_scenarios, seed=seed)
+        else:
+            scenarios = TensorOps.generate_noise_scenarios(close, n_scenarios, seed=seed)
+            
+        # 3. Generate Signals for the entire population
+        # Goal: A 3D Signal Tensor [Population x Scenarios x Time]
+        # For now, we generate per-indicator but keep them as MLX arrays to avoid CPU transfer
+        all_signals = []
+        for ind in population:
+            mlx_strat = ind.to_mlx_representation()
+            if mlx_strat:
+                # This should return a 2D tensor [Scenarios x Time]
+                signals = mlx_strat.generate_signals(scenarios)
+                all_signals.append(signals)
+            else:
+                # Fallback: Generate on CPU and move to MLX
+                sig_cpu = ind.generate_signals_fast(data)
+                sig_mlx = mx.array(normalize_signal_array(sig_cpu, len(data)))
+                # Broadcast to [Scenarios x Time]
+                sig_mlx = mx.broadcast_to(sig_mlx, (n_scenarios, len(data)))
+                all_signals.append(sig_mlx)
+                
+        # Stack into 3D: [Population x Scenarios x Time]
+        signal_tensor = mx.stack(all_signals)
+        
+        # 4. Batch Backtest 3D
+        # We use MetricsCalculator.calculate_batch_multi_price_fast but adapted for 3D
+        # For now, we'll flatten the first two dimensions to use the existing 2D batcher
+        # and then reshape back. [ (Pop * Scenarios) x Time ]
+        flat_signals = signal_tensor.reshape(-1, signal_tensor.shape[-1])
+        
+        # Repeat scenarios for each member of population
+        # scenarios is [Scenarios x Time], we need [(Pop * Scenarios) x Time]
+        flat_scenarios = mx.repeat(scenarios, n_pop, axis=0) 
+        
+        # Convert to numpy for the Numba batcher (until we have a pure MLX 3D backtester)
+        # Note: This is still a bottleneck but much better than per-indicator
+        flat_scenarios_np = np.array(flat_scenarios).astype(np.float64)
+        flat_signals_np = np.array(flat_signals).astype(np.int32)
+        
+        batch_results = MetricsCalculator.calculate_batch_multi_price_fast(
+            flat_scenarios_np, flat_scenarios_np, flat_scenarios_np, 
+            flat_signals_np, use_sl_tp, sl_pct, tp_pct
+        )
+        
+        # Reshape back to [Population x Scenarios x 4]
+        results_3d = batch_results.reshape(n_pop, n_scenarios, 4)
+        
+        duration = time.perf_counter() - start_time
+        logger.info(f"🚀 3D Population Backtest: {n_pop} inds x {n_scenarios} scenarios in {duration:.4f}s")
+        
+        return results_3d
+
     def _select_best_driver(self) -> str:
         """Run a micro-benchmark to select the best Metal driver."""
         if not METAL_EXTENSION_AVAILABLE:
