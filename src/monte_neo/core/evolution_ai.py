@@ -57,34 +57,54 @@ class AIEvolutionEngine:
     def evolve(self, data: pd.DataFrame, target_metrics: dict[str, float], generations: int = 10) -> BaseIndicator:
         """Runs the AI-driven evolution process."""
         population = self._initialize_population()
+        best_overall = None
         
-        for gen in range(generations):
-            fitness_scores = self._evaluate_population(population, data, target_metrics)
-            
-            # Sort by fitness
-            population = [p for p, f in sorted(zip(population, fitness_scores), key=lambda x: x[1], reverse=True)]
-            best_fitness = fitness_scores[0]
-            
-            logger.info(f"Gen {gen}: Best Fitness = {best_fitness:.4f}")
-            
-            # Selection & Breeding
-            new_population = population[:int(self.population_size * 0.1)] # Elitism 10%
-            
-            while len(new_population) < self.population_size:
-                if self.rng.random() < self.crossover_rate:
-                    parent1, parent2 = self.rng.choice(population[:20], size=2)
-                    child = self._crossover(parent1, parent2)
-                else:
-                    parent = self.rng.choice(population[:20])
-                    child = self._mutate(parent)
-                new_population.append(child)
-            
-            population = new_population
+        try:
+            for gen in range(generations):
+                fitness_scores = self._evaluate_population(population, data, target_metrics)
+                
+                # Sort by fitness
+                combined = sorted(zip(population, fitness_scores), key=lambda x: x[1], reverse=True)
+                population = [p for p, f in combined]
+                best_fitness = combined[0][1]
+                
+                if best_overall is None or best_fitness > self._get_fitness(best_overall, data, target_metrics):
+                    best_overall = population[0]
+                
+                logger.info(f"Gen {gen}: Best Fitness = {best_fitness:.4f}")
+                
+                # Selection & Breeding
+                new_population = population[:int(self.population_size * 0.1)] # Elitism 10%
+                
+                while len(new_population) < self.population_size:
+                    if self.rng.random() < self.crossover_rate:
+                        parent1, parent2 = self.rng.choice(population[:20], size=2)
+                        child = self._crossover(parent1, parent2)
+                    else:
+                        parent = self.rng.choice(population[:20])
+                        child = self._mutate(parent)
+                    new_population.append(child)
+                
+                population = new_population
 
-            if self.progress_callback:
-                self.progress_callback(gen + 1, generations, f"AI Evolution Gen {gen + 1}: Best Fitness {best_fitness:.4f}")
+                if self.progress_callback:
+                    self.progress_callback(gen + 1, generations, f"AI Evolution Gen {gen + 1}: Best Fitness {best_fitness:.4f}")
+        
+        except KeyboardInterrupt:
+            logger.info("Evolution interrupted by user. Returning best found so far.")
+            if best_overall is None and population:
+                best_overall = population[0]
+        
+        return best_overall if best_overall else population[0]
 
-        return population[0]
+    def _get_fitness(self, indicator: BaseIndicator, data: pd.DataFrame, targets: dict[str, float]) -> float:
+        """Helper to get fitness of a single indicator."""
+        try:
+            signals = indicator.generate_signals_fast(data)
+            metrics = self.metrics_calc.calculate_all(data, signals)
+            return self._calculate_fitness(metrics, targets)
+        except Exception:
+            return 0.0
 
     def _initialize_population(self) -> list[BaseIndicator]:
         pop: list[BaseIndicator] = []

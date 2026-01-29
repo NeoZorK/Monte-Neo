@@ -72,13 +72,7 @@ class ProgressTracker:
         )
 
     def update(self, current: int, total: int, status: str = "") -> None:
-        """Update progress.
-
-        Args:
-            current: Current position.
-            total: Total items.
-            status: Status message.
-        """
+        """Update progress."""
         if self._progress and self._task_id is not None:
             # Ensure we don't exceed 100% in display
             val = min(current, total)
@@ -87,7 +81,7 @@ class ProgressTracker:
                 completed=val,
                 total=total,
                 status=status,
-                refresh=True if val >= total else False,
+                refresh=True,  # Always refresh to keep UI snappy
             )
 
     def stop(self) -> None:

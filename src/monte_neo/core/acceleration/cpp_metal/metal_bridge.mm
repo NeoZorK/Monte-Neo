@@ -87,15 +87,15 @@ MetalBacktestBridge::MetalBacktestBridge(Driver driver)
 MetalBacktestBridge::~MetalBacktestBridge() = default;
 
 bool MetalBacktestBridge::init() {
-    auto start = std::chrono::high_resolution_clock::now();
+    // auto start = std::chrono::high_resolution_clock::now();
     bool success = pimpl->init();
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> diff = end - start;
+    // auto end = std::chrono::high_resolution_clock::now();
+    // std::chrono::duration<double> diff = end - start;
     
-    std::string driver_name = (driver_ == Driver::CPP) ? "Clang C++" : 
-                             (driver_ == Driver::OBJC) ? "Objective-C++" : "Apple Swift";
+    // std::string driver_name = (driver_ == Driver::CPP) ? "Clang C++" : 
+    //                          (driver_ == Driver::OBJC) ? "Objective-C++" : "Apple Swift";
                              
-    std::cout << "MetalBridge: " << driver_name << " initialized in " << diff.count() << "s" << std::endl;
+    // std::cout << "MetalBridge: " << driver_name << " initialized in " << diff.count() << "s" << std::endl;
     return success;
 }
 
@@ -200,20 +200,20 @@ std::vector<BacktestResult> MetalBacktestBridge::run_backtest(
         }
     }
     
-    auto end_total = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> diff_total = end_total - start_total;
+    // auto end_total = std::chrono::high_resolution_clock::now();
+    // std::chrono::duration<double> diff_total = end_total - start_total;
     
-    std::string driver_name = (driver_ == Driver::CPP) ? "Clang C++" : 
-                             (driver_ == Driver::OBJC) ? "Objective-C++" : "Apple Swift";
+    // std::string driver_name = (driver_ == Driver::CPP) ? "Clang C++" : 
+    //                          (driver_ == Driver::OBJC) ? "Objective-C++" : "Apple Swift";
                              
-    std::cout << "MetalBridge [" << driver_name << "]:" << std::endl;
-    if (driver_ != Driver::SWIFT) {
-        std::cout << "  Transfer: " << transfer_time << "s" << std::endl;
-        std::cout << "  Kernel:   " << kernel_time << "s" << std::endl;
-    }
-    std::cout << "  Total:    " << diff_total.count() << "s (" 
-              << n_scenarios / (diff_total.count() + 1e-9) << " scenarios/sec)" << std::endl;
-              
+    // std::cout << "MetalBridge [" << driver_name << "]:" << std::endl;
+    // if (driver_ != Driver::SWIFT) {
+    //     std::cout << "  Transfer: " << transfer_time << "s" << std::endl;
+    //     std::cout << "  Kernel:   " << kernel_time << "s" << std::endl;
+    // }
+    // std::cout << "  Total:    " << diff_total.count() << "s (" 
+    //           << n_scenarios / (diff_total.count() + 1e-9) << " scenarios/sec)" << std::endl;
+    
     return results;
 }
 
