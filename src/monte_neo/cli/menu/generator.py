@@ -113,10 +113,20 @@ def _run_generation(menu: InteractiveMenu, symbol: str, timeframe: str, iteratio
     menu.progress.start(iterations, "Generating indicator...")
     generator.set_progress_callback(menu.progress.update)
 
-    result = generator.generate(data)
-    time.sleep(0.1)
-    menu.progress.update(iterations, iterations, "Done")
-    menu.progress.stop()
+    try:
+        result = generator.generate(data)
+        time.sleep(0.1)
+        menu.progress.update(iterations, iterations, "Done")
+    except KeyboardInterrupt:
+        menu.progress.stop()
+        console.print("\n[yellow]Generation cancelled by user.[/]")
+        return
+    except Exception as e:
+        menu.progress.stop()
+        console.print(f"\n[red]Generation error: {e}[/]")
+        return
+    finally:
+        menu.progress.stop()
 
     from monte_neo.cli.menu.results import show_generation_result
     show_generation_result(menu, result)

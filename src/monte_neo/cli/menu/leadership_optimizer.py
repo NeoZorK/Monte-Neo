@@ -40,7 +40,12 @@ class SmartPipelineOptimizer:
     def _log(self, msg: str):
         """Internal helper to log to callback or console."""
         if self.log_callback:
-            self.log_callback(msg)
+            try:
+                self.log_callback(msg)
+            except KeyboardInterrupt:
+                raise
+            except:
+                pass
         else:
             console.print(msg)
 

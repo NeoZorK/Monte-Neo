@@ -170,7 +170,15 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
         with Live(_generate_pipeline_layout(), refresh_per_second=4, console=console) as live:
             while True:
                 # Check/Download data for the current iteration (brain might have changed timeframe)
-                data = optimizer.ensure_data(symbol, menu._selected_timeframe)
+                try:
+                    data = optimizer.ensure_data(symbol, menu._selected_timeframe)
+                except KeyboardInterrupt:
+                    raise
+                except Exception as e:
+                    log(f"[red]Error ensuring data: {e}[/]")
+                    time.sleep(1)
+                    continue
+
                 if data is None or data.empty:
                     log(f"[red]No data available for {symbol} {menu._selected_timeframe}.[/]")
                     live.update(_generate_pipeline_layout())
@@ -193,8 +201,12 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
                 log("Evolving formulas...")
                 try:
                     best_indicator = engine.evolve(data, menu._target_metrics, generations=menu._generations)
-                finally:
-                    pass
+                except KeyboardInterrupt:
+                    raise
+                except Exception as e:
+                    log(f"[red]Evolution error: {e}[/]")
+                    time.sleep(1)
+                    continue
 
                 if not best_indicator:
                     log("[yellow]Evolution failed. Adjusting...[/]")
@@ -220,19 +232,26 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
                 )
                 validator = OverfitValidator()
                 
-                validation_res = validator.validate(best_indicator, data, metrics_calc, menu._target_metrics)
-                
-                # Monte Carlo
-                mc_config = MonteCarloEngine().config
-                mc_config.initial_capital = menu.config.initial_capital
-                mc_config.leverage = menu.config.leverage
-                mc_engine = MonteCarloEngine(config=mc_config)
-                mc_res = mc_engine.run(data, best_indicator, metrics_calc, menu._target_metrics)
-                
-                # CSCV
-                from monte_neo.monte_carlo.cscv import CSCVAnalyzer
-                cscv_analyzer = CSCVAnalyzer()
-                cscv_res = cscv_analyzer.analyze(best_indicator, data, metrics_calc)
+                try:
+                    validation_res = validator.validate(best_indicator, data, metrics_calc, menu._target_metrics)
+                    
+                    # Monte Carlo
+                    mc_config = MonteCarloEngine().config
+                    mc_config.initial_capital = menu.config.initial_capital
+                    mc_config.leverage = menu.config.leverage
+                    mc_engine = MonteCarloEngine(config=mc_config)
+                    mc_res = mc_engine.run(data, best_indicator, metrics_calc, menu._target_metrics)
+                    
+                    # CSCV
+                    from monte_neo.monte_carlo.cscv import CSCVAnalyzer
+                    cscv_analyzer = CSCVAnalyzer()
+                    cscv_res = cscv_analyzer.analyze(best_indicator, data, metrics_calc)
+                except KeyboardInterrupt:
+                    raise
+                except Exception as e:
+                    log(f"[red]Validation error: {e}[/]")
+                    time.sleep(1)
+                    continue
                 
                 # Update optimizer for status
                 optimizer.last_mc_results = {
@@ -264,7 +283,14 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
                 # 5. Production Gate Phase
                 log("Finalizing through Production Gate...")
                 gate = ProductionGate()
-                gate_results = gate.process(best_indicator, data, validation_results)
+                try:
+                    gate_results = gate.process(best_indicator, data, validation_results)
+                except KeyboardInterrupt:
+                    raise
+                except Exception as e:
+                    log(f"[red]Production Gate error: {e}[/]")
+                    time.sleep(1)
+                    continue
                 
                 # Update best score
                 score = gate_results.get("final_score", 0.0)
@@ -289,8 +315,10 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
                     time.sleep(2)
 
     except KeyboardInterrupt:
+        # Exit Live context immediately and re-raise or handle
         console.print("\n[yellow]Pipeline search cancelled by user. Returning to main menu...[/]")
-        time.sleep(1)
+        time.sleep(0.5)
+        return
 
 def _display_pipeline_results(results: dict) -> None:
     """Display the final outcome of the pipeline."""
