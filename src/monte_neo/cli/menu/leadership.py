@@ -6,12 +6,14 @@ End-to-end automated indicator discovery and production deployment.
 from __future__ import annotations
 
 import time
+from datetime import timedelta
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from rich.live import Live
 from rich.panel import Panel
 from rich.table import Table
+from rich.console import Group
 
 from monte_neo.cli.styles import press_any_key
 from monte_neo.core.evolution_ai import AIEvolutionEngine
@@ -20,7 +22,6 @@ from monte_neo.monte_carlo.engine import MonteCarloEngine
 from monte_neo.utils.console import console
 from monte_neo.utils.logger import get_logger
 
-from monte_neo.cli.menu.leadership_dashboard import PipelineDashboard
 from monte_neo.cli.menu.leadership_optimizer import SmartPipelineOptimizer
 
 if TYPE_CHECKING:
@@ -51,40 +52,59 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
     menu._selected_timeframe = timeframe
 
     logs = []
+    start_time = time.time()
+
+    def _generate_pipeline_layout():
+        elapsed = time.time() - start_time
+        elapsed_str = str(timedelta(seconds=int(elapsed)))
+        
+        # Status Table (Horizontal)
+        status_table = Table.grid(expand=True)
+        status_table.add_column(justify="left", ratio=1)
+        status_table.add_column(justify="center", ratio=1)
+        status_table.add_column(justify="right", ratio=1)
+        
+        status_table.add_row(
+            f"[bold cyan]Symbol:[/] {optimizer.menu._selected_symbol} | [bold magenta]TF:[/] {optimizer.menu._selected_timeframe}",
+            f"[bold yellow]Iteration:[/] #{optimizer.iteration + 1} | [bold blue]Time:[/] {elapsed_str}",
+            f"[bold green]Best Score:[/] {optimizer.best_score_ever:.2f}/100"
+        )
+        
+        header = Panel(status_table, border_style="gold1", title="[bold gold1]🏆 Global Leadership Pipeline[/]")
+        
+        # Logs Panel
+        log_content = "\n".join(logs)
+        logs_panel = Panel(log_content, title="[bold yellow]🔍 Active Search Logs[/]", border_style="yellow")
+        
+        return Group(header, logs_panel)
 
     def log(msg: str):
         # Prevent duplicate logs in same refresh
         if logs and logs[-1] == msg:
             return
         logs.append(msg)
-        if len(logs) > 6: # Reduced from 8 to 6
+        if len(logs) > 12: # Increased from 6 to 12 for better visibility
             logs.pop(0)
-        dashboard.layout["main"].update(Panel(
-            "\n".join(logs),
-            title="[bold yellow]🔍 Active Search Logs[/]",
-            border_style="yellow"
-        ))
 
     # Load data once
     optimizer = SmartPipelineOptimizer(menu, log_callback=log)
-    dashboard = PipelineDashboard(optimizer)
     
-    console.print("\n" * 2) # Push dashboard down for Warp/Terminals
+    console.print("\n" * 2) 
     
     try:
-        with Live(dashboard.generate_layout(), refresh_per_second=4, console=console) as live:
+        with Live(_generate_pipeline_layout(), refresh_per_second=4, console=console) as live:
             while True:
                 # Check/Download data for the current iteration (brain might have changed timeframe)
                 data = optimizer.ensure_data(symbol, menu._selected_timeframe)
                 if data is None or data.empty:
                     log(f"[red]No data available for {symbol} {menu._selected_timeframe}.[/]")
-                    live.update(dashboard.generate_layout())
+                    live.update(_generate_pipeline_layout())
                     time.sleep(2)
                     return
 
                 log(f"Starting Iteration #{optimizer.iteration + 1}...")
                 log(f"Targeting {symbol} on {menu._selected_timeframe}")
-                live.update(dashboard.generate_layout())
+                live.update(_generate_pipeline_layout())
 
                 # 3. Evolution Phase
                 engine = AIEvolutionEngine(
@@ -106,13 +126,13 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
                     optimizer.iteration += 1
                     optimizer.last_failure_reason = "No candidates found"
                     menu._pop_size += 20
-                    live.update(dashboard.generate_layout())
+                    live.update(_generate_pipeline_layout())
                     continue
                 
                 formula = best_indicator.get_formula()
                 log(f"[green]Best formula found: {formula[:50]}...[/]")
                 optimizer.best_formula_ever = formula
-                live.update(dashboard.generate_layout())
+                live.update(_generate_pipeline_layout())
 
                 # 4. Robustness Validation Phase
                 log("Running robustness validation...")
@@ -139,14 +159,14 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
                 cscv_analyzer = CSCVAnalyzer()
                 cscv_res = cscv_analyzer.analyze(best_indicator, data, metrics_calc)
                 
-                # Update optimizer for dashboard
+                # Update optimizer for status
                 optimizer.last_mc_results = {
                     "passed": mc_res.passed,
                     "cscv_passed": cscv_res.get("is_robust", False),
                     "wfe_passed": (validation_res.out_sample_metrics.get("sharpe_ratio", 0) / 
                                    max(0.001, validation_res.in_sample_metrics.get("sharpe_ratio", 0))) > 0.5
                 }
-                live.update(dashboard.generate_layout())
+                live.update(_generate_pipeline_layout())
 
                 # Prepare unified results
                 validation_results = {
@@ -174,7 +194,7 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
                     optimizer.best_score_ever = score
                     optimizer.best_formula_ever = formula
                 
-                live.update(dashboard.generate_layout())
+                live.update(_generate_pipeline_layout())
 
                 # 6. Check Results and Loop
                 if gate_results["is_certified"]:
@@ -187,7 +207,7 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
                     reason = optimizer.brainstorm_and_adjust(validation_res, gate_results)
                     log(f"[red]Rejected: {reason}[/]")
                     log("Relaunching with optimized parameters...")
-                    live.update(dashboard.generate_layout())
+                    live.update(_generate_pipeline_layout())
                     time.sleep(2)
 
     except KeyboardInterrupt:

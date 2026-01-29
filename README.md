@@ -8,7 +8,7 @@ A professional Python framework for generating robust and profitable trading ind
 
 - 🎯 **Target-Based Generation**: Define metrics (Profit Factor, Sharpe, Max DD) and generate matching indicators
 - 🧠 **Smart Pipeline Optimizer**: Adaptive search logic that adjusts parameters and timeframes based on failures
-- 🏆 **Global Leadership Pipeline**: Fully automated end-to-end discovery with real-time TUI dashboard
+- 🏆 **Global Leadership Pipeline**: Fully automated end-to-end discovery with real-time status monitoring
 - 🚀 **Extreme GPU Acceleration**: Direct Metal Shaders (C++) and MLX support (>780k ops/sec on Apple Silicon)
 - 💎 **Low-Precision Computing**: Support for Float8 (E4M3/E5M2) for 4x memory bandwidth savings
 - 🧙 **Sequential "Wizard" Mode**: Step-by-step validation with detailed feedback and advice
