@@ -167,7 +167,7 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
     console.print("\n" * 2) 
     
     try:
-        with Live(_generate_pipeline_layout(), refresh_per_second=4, console=console) as live:
+        with Live(_generate_pipeline_layout(), refresh_per_second=2, console=console) as live:
             while True:
                 # Check/Download data for the current iteration (brain might have changed timeframe)
                 try:
