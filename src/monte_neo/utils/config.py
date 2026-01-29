@@ -18,6 +18,7 @@ class Config:
     data_dir: Path = field(default_factory=lambda: Path("./data"))
     binance_api_key: str = ""
     binance_api_secret: str = ""
+    auto_download_data: bool = True  # Automatically download missing timeframes
 
     # Generation settings
     default_symbol: str = "BTCUSDT"
@@ -88,6 +89,8 @@ def _merge_yaml_config(config: Config, path: Path) -> Config:
             config.default_symbol = data["symbol"]
         if "timeframe" in data:
             config.default_timeframe = data["timeframe"]
+        if "auto_download" in data:
+            config.auto_download_data = data["auto_download"]
 
     # Metrics settings
     if "metrics" in yaml_config:
@@ -125,6 +128,7 @@ def save_config(config: Config, path: str | Path) -> None:
             "dir": str(config.data_dir),
             "symbol": config.default_symbol,
             "timeframe": config.default_timeframe,
+            "auto_download": config.auto_download_data,
         },
         "metrics": {
             "profit_factor": config.target_profit_factor,
