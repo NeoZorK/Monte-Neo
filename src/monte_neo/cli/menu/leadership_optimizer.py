@@ -114,7 +114,7 @@ class SmartPipelineOptimizer:
             end_date = datetime.now()
             start_date = end_date - timedelta(days=365)
             
-            # Hide the global progress bar as it messes with Live dashboard
+            # Hide the global progress bar as it messes with Live output
             # self.menu.progress.start(100, f"Downloading {symbol} {timeframe}...")
             data = downloader.download(
                 symbol, timeframe, start_date, end_date # , self.menu.progress.update
