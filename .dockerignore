@@ -21,6 +21,7 @@ data/*.csv
 !data/sample.parquet
 
 # Certs
+exports/
 *.crt
 *.key
 *.pem

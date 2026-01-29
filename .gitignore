@@ -95,6 +95,7 @@ celerybeat-schedule
  # Results and Images
 data/
 results/
+exports/
 *.png
 *.jpg
 *.jpeg
