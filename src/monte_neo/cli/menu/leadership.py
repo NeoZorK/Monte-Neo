@@ -105,7 +105,11 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
 
         robust_table.add_row("  CSCV PBO Analysis", get_status_icon(optimizer.last_mc_results.get("cscv_passed")))
         robust_table.add_row("  Walk-Forward Efficiency", get_status_icon(optimizer.last_mc_results.get("wfe_passed")))
-        
+
+        # Trade count for context
+        trades = optimizer.last_metrics.get("trade_count", 0)
+        robust_table.add_row("  Sample Size (Trades)", f"[dim]{int(trades)}[/]")
+
         # Section: Target Metrics
         if optimizer.menu._target_metrics:
             robust_table.add_row("", "")
@@ -115,16 +119,29 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
                 if actual is not None:
                     # Check if passed
                     is_passed = False
-                    if metric in ["max_drawdown", "consecutive_losses"]:
+                    is_less_than = metric in ["max_drawdown", "consecutive_losses"]
+                    
+                    if is_less_than:
                         is_passed = actual <= target
                     else:
                         is_passed = actual >= target
                     
                     metric_name = metric.replace("_", " ").title()
-                    robust_table.add_row(f"  {metric_name} (>{target})", f"{get_status_icon(is_passed)} [dim]{actual:.2f}[/]")
+                    direction = "<" if is_less_than else ">"
+                    
+                    # Format actual value
+                    if np.isinf(actual):
+                        actual_str = "MAX"
+                    elif actual == 0 and not is_passed:
+                        actual_str = "0.00"
+                    else:
+                        actual_str = f"{actual:.2f}"
+                        
+                    robust_table.add_row(f"  {metric_name} ({direction}{target})", f"{get_status_icon(is_passed)} [dim]{actual_str}[/]")
                 else:
                     metric_name = metric.replace("_", " ").title()
-                    robust_table.add_row(f"  {metric_name} (>{target})", "[dim]-[/]")
+                    direction = "<" if metric in ["max_drawdown", "consecutive_losses"] else ">"
+                    robust_table.add_row(f"  {metric_name} ({direction}{target})", "[dim]-[/]")
 
         robust_panel = Panel(robust_table, title="[bold magenta]🛡 Robustness & Metrics Check[/]", border_style="magenta")
 
