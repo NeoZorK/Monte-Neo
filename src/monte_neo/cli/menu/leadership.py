@@ -195,7 +195,8 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
                     mutation_rate=menu._mutation_rate,
                     crossover_rate=menu._crossover_rate,
                     initial_capital=menu.config.initial_capital,
-                    leverage=menu.config.leverage
+                    leverage=menu.config.leverage,
+                    use_gpu=menu._use_gpu # Pass the GPU flag from menu settings
                 )
                 
                 log("Evolving formulas...")

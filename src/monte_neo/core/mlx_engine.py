@@ -70,9 +70,9 @@ class MLXBacktestEngine:
         results = {k[len(key)+1:]: v for k, v in self._data_prefetch_cache.items() if k.startswith(f"{key}_")}
         return results if results else None
 
-    def run_full_simulation(self, **kwargs) -> tuple[Union[list[dict[str, Any]], list[list[dict[str, Any]]]], dict[str, float]]:
+    def run_full_simulation(self, data: pd.DataFrame, indicator_or_list: Union[BaseIndicator, list[BaseIndicator]], n_scenarios: int, **kwargs) -> tuple[Union[list[dict[str, Any]], list[list[dict[str, Any]]]], dict[str, float]]:
         from monte_neo.core.mlx_sim_engine import run_full_simulation_impl
-        return run_full_simulation_impl(self, **kwargs)
+        return run_full_simulation_impl(self, data, indicator_or_list, n_scenarios, **kwargs)
 
     def backtest_batch(self, **kwargs) -> list[dict[str, Any]]:
         from monte_neo.core.mlx_sim_engine import backtest_batch_impl

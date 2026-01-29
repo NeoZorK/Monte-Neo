@@ -39,7 +39,8 @@ class AIEvolutionEngine:
         metrics_calc: MetricsCalculator | None = None,
         initial_capital: float = 100000.0,
         leverage: float = 1.0,
-        progress_callback: Callable[[int, int, str], None] | None = None
+        progress_callback: Callable[[int, int, str], None] | None = None,
+        use_gpu: bool = True
     ):
         self.population_size = population_size
         self.mutation_rate = mutation_rate
@@ -48,6 +49,7 @@ class AIEvolutionEngine:
         self.rng = np.random.default_rng()
         self.code_gen = CodeGenerator(self.rng)
         self.progress_callback = progress_callback
+        self.use_gpu = use_gpu
         self.mlx_engine = MLXBacktestEngine(initial_capital=initial_capital, leverage=leverage)
         self.best_individual: BaseIndicator | None = None
         self.history: list[EvolutionStats] = []
@@ -63,6 +65,7 @@ class AIEvolutionEngine:
         """Runs the AI-driven evolution process."""
         population = self._initialize_population()
         best_overall = None
+        current_best_fitness = -float('inf')
         
         try:
             for gen in range(generations):
@@ -73,8 +76,9 @@ class AIEvolutionEngine:
                 population = [p for p, f in combined]
                 best_fitness = combined[0][1]
                 
-                if best_overall is None or best_fitness > self._get_fitness(best_overall, data, target_metrics):
+                if best_overall is None or best_fitness > current_best_fitness:
                     best_overall = population[0]
+                    current_best_fitness = best_fitness
                 
                 logger.info(f"Gen {gen}: Best Fitness = {best_fitness:.4f}")
                 
@@ -121,6 +125,10 @@ class AIEvolutionEngine:
 
     def _evaluate_population(self, population: list[BaseIndicator], data: pd.DataFrame, targets: dict[str, float]) -> list[float]:
         """Evaluates the entire population using 3D GPU acceleration (Pop x Scenarios)."""
+        if not self.use_gpu:
+            # Skip GPU and go straight to fallback if GPU is disabled
+            return self._fallback_evaluate(population, data, targets)
+            
         try:
             # Используем 3D-бэктест (10 сценариев Monte-Carlo для КАЖДОГО члена популяции прямо в процессе)
             # Это дает на порядок более устойчивые стратегии
@@ -145,16 +153,24 @@ class AIEvolutionEngine:
                 avg_pf = np.mean(scen_metrics[:, 4])
                 avg_mdd = np.mean(scen_metrics[:, 3])
                 avg_trades = np.mean(scen_metrics[:, 1])
+                avg_ret = np.mean(scen_metrics[:, 0])
                 
                 # Fitness score (используем консервативный подход)
                 pf = avg_pf
-                if np.isinf(pf) or pf > 100.0: pf = 100.0
+                if np.isnan(pf) or np.isinf(pf) or pf > 100.0: pf = 0.0
                 
-                score = pf * 0.4
-                score -= avg_mdd * 0.3
+                # Повышаем значимость прибыли и фактора прибыли
+                score = pf * 1.5
+                score += (avg_ret * 10.0) # 10% прибыли = +1.0 к скору
+                score -= avg_mdd * 2.0   # Штраф за просадку
                 
-                if avg_trades < 10: score *= 0.1
-                elif avg_trades > 100: score *= 0.8
+                # Штраф за малое кол-во сделок (минимум 15 для стабильности)
+                if avg_trades < 15:
+                    score *= (avg_trades / 15.0)
+                
+                # Логируем если нашли что-то интересное
+                if score > 1.0:
+                    logger.debug(f"Good candidate found: score={score:.2f}, pf={pf:.2f}, trades={avg_trades:.1f}, ret={avg_ret:.2f}")
                 
                 scores.append(max(0.001, score))
             
@@ -162,39 +178,55 @@ class AIEvolutionEngine:
 
         except Exception as e:
             logger.error(f"3D GPU evaluation failed, falling back to 2D Batch: {e}")
-            # Fallback to the previous 2D batch method if 3D fails
-            scores = []
-            try:
-                # 1. Generate all signals first
-                raw_signals = [ind.generate_signals_fast(data) for ind in population]
+            return self._fallback_evaluate(population, data, targets)
+
+    def _fallback_evaluate(self, population: list[BaseIndicator], data: pd.DataFrame, targets: dict[str, float]) -> list[float]:
+        """Fallback to the previous 2D batch method if 3D fails or is disabled."""
+        scores = []
+        try:
+            # 1. Generate all signals first
+            raw_signals = [ind.generate_signals_fast(data) for ind in population]
+            
+            # 2. Prepare signal matrix
+            n_pop = len(population)
+            n_data = len(data)
+            signal_matrix = np.zeros((n_pop, n_data), dtype=np.int32)
+            
+            for i, sig in enumerate(raw_signals):
+                signal_matrix[i] = normalize_signal_array(sig, n_data).astype(np.int32)
                 
-                # 2. Prepare signal matrix
-                n_pop = len(population)
-                n_data = len(data)
-                signal_matrix = np.zeros((n_pop, n_data), dtype=np.int32)
+            # 3. Perform 2D batch
+            batch_results = self.metrics_calc.calculate_batch_fast(
+                data["close"].values,
+                data["high"].values,
+                data["low"].values,
+                signal_matrix,
+                use_sl_tp=True
+            )
+            
+            for i in range(n_pop):
+                # Use the same improved fitness logic as in 3D
+                pf = batch_results[i, 2] # Profit Factor
+                avg_ret = batch_results[i, 0] # Returns
+                avg_mdd = batch_results[i, 1] # Drawdown
+                avg_trades = batch_results[i, 3] # Trades (index might differ from 3D results, check calculate_batch_fast)
                 
-                for i, sig in enumerate(raw_signals):
-                    signal_matrix[i] = normalize_signal_array(sig, n_data).astype(np.int32)
+                if np.isnan(pf) or np.isinf(pf) or pf > 100.0: pf = 0.0
+                
+                score = pf * 1.5
+                score += (avg_ret * 10.0)
+                score -= avg_mdd * 2.0
+                
+                # Penalty for low trades
+                if avg_trades < 15:
+                    score *= (avg_trades / 15.0)
                     
-                # 3. Perform 2D batch
-                batch_results = self.metrics_calc.calculate_batch_fast(
-                    data["close"].values,
-                    data["high"].values,
-                    data["low"].values,
-                    signal_matrix,
-                    use_sl_tp=True
-                )
-                
-                for i in range(n_pop):
-                    pf = batch_results[i, 2]
-                    if np.isinf(pf) or pf > 100.0: pf = 100.0
-                    score = pf * 0.4 - batch_results[i, 1] * 0.3
-                    scores.append(max(0.001, score))
-                
-                return scores
-            except Exception as e2:
-                logger.error(f"Fallback evaluation also failed: {e2}")
-                return [0.001] * len(population)
+                scores.append(max(0.001, score))
+            
+            return scores
+        except Exception as e2:
+            logger.error(f"Fallback evaluation also failed: {e2}")
+            return [0.001] * len(population)
 
     def _crossover(self, p1: BaseIndicator, p2: BaseIndicator) -> BaseIndicator:
         """Tree-based crossover of indicator formulas."""
