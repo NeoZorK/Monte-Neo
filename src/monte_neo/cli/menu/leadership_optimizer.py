@@ -36,6 +36,7 @@ class SmartPipelineOptimizer:
         self.available_timeframes = ["1m", "5m", "15m", "30m", "1h", "4h", "1d"]
         self.current_tf_index = self.available_timeframes.index(menu._selected_timeframe) \
             if menu._selected_timeframe in self.available_timeframes else 4
+        self._data_cache = {} # Cache for loaded data: (symbol, timeframe) -> pd.DataFrame
 
     def _log(self, msg: str):
         """Internal helper to log to callback or console."""
@@ -106,9 +107,14 @@ class SmartPipelineOptimizer:
 
     def ensure_data(self, symbol: str, timeframe: str):
         """Checks for local data and downloads if missing and auto-download is enabled."""
+        cache_key = (symbol, timeframe)
+        if cache_key in self._data_cache:
+            return self._data_cache[cache_key]
+
         try:
             data = self.menu.storage.load(symbol, timeframe=timeframe)
             if data is not None and not data.empty:
+                self._data_cache[cache_key] = data
                 return data
         except FileNotFoundError:
             pass
@@ -132,6 +138,7 @@ class SmartPipelineOptimizer:
             
             if data is not None and not data.empty:
                 self.menu.storage.save(data, symbol, timeframe)
+                self._data_cache[cache_key] = data
                 self._log(f"[green]✓ Successfully downloaded and saved {len(data)} candles.[/]")
                 return data
         except Exception as e:

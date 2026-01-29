@@ -16,6 +16,7 @@ from monte_neo.indicators.code_gen import CodeGenerator
 from monte_neo.indicators.dynamic import DynamicIndicator
 from monte_neo.metrics.calculator import MetricsCalculator
 from monte_neo.utils.logger import get_logger
+from monte_neo.core.gpu_scenarios import normalize_signal_array
 
 logger = get_logger(__name__)
 
@@ -115,57 +116,91 @@ class AIEvolutionEngine:
         return pop
 
     def _evaluate_population(self, population: list[BaseIndicator], data: pd.DataFrame, targets: dict[str, float]) -> list[float]:
+        """Evaluates the entire population using vectorized batch calculation."""
         scores = []
-        for ind in population:
-            try:
-                signals = ind.generate_signals(data)
-                metrics = self.metrics_calc.calculate_all(data, signals)
+        try:
+            # 1. Generate all signals first (can be parallelized further if needed)
+            raw_signals = [ind.generate_signals_fast(data) for ind in population]
+            
+            # 2. Prepare signal matrix for batch calculation
+            n_pop = len(population)
+            n_data = len(data)
+            signal_matrix = np.zeros((n_pop, n_data), dtype=np.int32)
+            
+            for i, sig in enumerate(raw_signals):
+                signal_matrix[i] = normalize_signal_array(sig, n_data).astype(np.int32)
+                
+            # 3. Perform high-performance batch metrics calculation
+            # This uses Numba/Vectorized logic internally
+            batch_results = self.metrics_calc.calculate_batch_fast(
+                data["close"].values,
+                data["high"].values,
+                data["low"].values,
+                signal_matrix,
+                use_sl_tp=True, # Always use SL/TP for evolution to find realistic strategies
+                sl_pct=0.02,    # Default 2% SL
+                tp_pct=0.04     # Default 4% TP
+            )
+            
+            # batch_results shape is (n_pop, 4) -> [return, drawdown, profit_factor, trade_count]
+            for i in range(n_pop):
+                metrics = {
+                    "total_return": batch_results[i, 0],
+                    "max_drawdown": batch_results[i, 1],
+                    "profit_factor": batch_results[i, 2],
+                    "trade_count": batch_results[i, 3]
+                }
                 
                 # Multi-objective fitness score
                 score = 0.0
                 
-                # 1. Performance (Profit Factor, Sharpe)
-                pf = metrics.get("profit_factor", 0)
-                sharpe = metrics.get("sharpe_ratio", 0)
-                
-                # Cap infinite values
+                # 1. Performance (Profit Factor)
+                pf = metrics["profit_factor"]
                 if np.isinf(pf) or pf > 100.0:
                     pf = 100.0
-                if np.isinf(sharpe) or sharpe > 20.0:
-                    sharpe = 20.0
-                
-                # Weighted contribution
-                score += pf * 0.3
-                score += sharpe * 0.3
+                score += pf * 0.4 # Increased weight for PF
                 
                 # 2. Robustness (Low Drawdown)
-                mdd = metrics.get("max_drawdown", 1.0)
-                score -= mdd * 0.2
+                mdd = metrics["max_drawdown"]
+                score -= mdd * 0.3 # Increased penalty for DD
                 
-                # 3. Efficiency (Win Rate)
-                wr = metrics.get("win_rate", 0)
-                score += wr * 0.1
+                # 3. Trade count sanity check
+                trades = metrics["trade_count"]
+                if trades < 10:
+                    score *= 0.1 # Severe penalty for too few trades
+                elif trades > 100:
+                    score *= 0.8 # Slight penalty for over-trading
                 
-                # 4. Target Matching (Proximity to user-defined targets)
-                # If a metric is provided in targets, penalize deviation
+                # 4. Target Matching
                 target_bonus = 0.0
                 for target_name, target_val in targets.items():
                     if target_name in metrics:
                         actual = metrics[target_name]
-                        # Normalized distance (capped at 1.0)
                         if target_val != 0:
                             dist = abs(actual - target_val) / abs(target_val)
                             target_bonus += max(0, 0.2 * (1.0 - min(1.0, dist)))
                 score += target_bonus
                 
-                # 5. Complexity Penalty (Occam's Razor)
-                formula_len = len(ind.get_formula())
-                score -= (formula_len / 1000.0) * 0.05 # Reduced penalty for AI evolution
+                # 5. Complexity Penalty
+                formula_len = len(population[i].get_formula())
+                score -= (formula_len / 1000.0) * 0.05
                 
-                scores.append(max(0.001, score)) # Ensure non-zero
-            except Exception as e:
-                logger.warning(f"Evaluation failed for indicator: {e}")
-                scores.append(0.0)
+                scores.append(max(0.001, score))
+                
+        except Exception as e:
+            logger.error(f"Batch evaluation failed: {e}")
+            # Fallback to individual evaluation if batch fails
+            scores = []
+            for ind in population:
+                try:
+                    signals = ind.generate_signals(data)
+                    metrics = self.metrics_calc.calculate_all(data, signals)
+                    # Simple fallback score
+                    pf = metrics.get("profit_factor", 0)
+                    scores.append(pf if not np.isinf(pf) else 10.0)
+                except Exception:
+                    scores.append(0.0)
+                    
         return scores
 
     def _crossover(self, p1: BaseIndicator, p2: BaseIndicator) -> BaseIndicator:
