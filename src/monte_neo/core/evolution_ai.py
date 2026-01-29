@@ -17,6 +17,7 @@ from monte_neo.indicators.dynamic import DynamicIndicator
 from monte_neo.metrics.calculator import MetricsCalculator
 from monte_neo.utils.logger import get_logger
 from monte_neo.core.gpu_scenarios import normalize_signal_array
+from monte_neo.core.mlx_engine import MLXBacktestEngine
 
 logger = get_logger(__name__)
 
@@ -47,6 +48,7 @@ class AIEvolutionEngine:
         self.rng = np.random.default_rng()
         self.code_gen = CodeGenerator(self.rng)
         self.progress_callback = progress_callback
+        self.mlx_engine = MLXBacktestEngine()
         
         # Heuristics: Map weaknesses to potential fixes
         self.heuristics = {
@@ -116,92 +118,80 @@ class AIEvolutionEngine:
         return pop
 
     def _evaluate_population(self, population: list[BaseIndicator], data: pd.DataFrame, targets: dict[str, float]) -> list[float]:
-        """Evaluates the entire population using vectorized batch calculation."""
-        scores = []
+        """Evaluates the entire population using 3D GPU acceleration (Pop x Scenarios)."""
         try:
-            # 1. Generate all signals first (can be parallelized further if needed)
-            raw_signals = [ind.generate_signals_fast(data) for ind in population]
+            # Используем 3D-бэктест (10 сценариев Monte-Carlo для КАЖДОГО члена популяции прямо в процессе)
+            # Это дает на порядок более устойчивые стратегии
+            n_scenarios = 5 # Умеренное кол-во для эволюции
             
-            # 2. Prepare signal matrix for batch calculation
-            n_pop = len(population)
-            n_data = len(data)
-            signal_matrix = np.zeros((n_pop, n_data), dtype=np.int32)
-            
-            for i, sig in enumerate(raw_signals):
-                signal_matrix[i] = normalize_signal_array(sig, n_data).astype(np.int32)
-                
-            # 3. Perform high-performance batch metrics calculation
-            # This uses Numba/Vectorized logic internally
-            batch_results = self.metrics_calc.calculate_batch_fast(
-                data["close"].values,
-                data["high"].values,
-                data["low"].values,
-                signal_matrix,
-                use_sl_tp=True, # Always use SL/TP for evolution to find realistic strategies
-                sl_pct=0.02,    # Default 2% SL
-                tp_pct=0.04     # Default 4% TP
+            results_3d = self.mlx_engine.backtest_population_multi_scenario(
+                data=data,
+                population=population,
+                n_scenarios=n_scenarios,
+                use_sl_tp=True
             )
             
-            # batch_results shape is (n_pop, 4) -> [return, drawdown, profit_factor, trade_count]
-            for i in range(n_pop):
-                metrics = {
-                    "total_return": batch_results[i, 0],
-                    "max_drawdown": batch_results[i, 1],
-                    "profit_factor": batch_results[i, 2],
-                    "trade_count": batch_results[i, 3]
-                }
+            # results_3d: [Population x Scenarios x 4]
+            # Агрегируем результаты сценариев (берем среднее или консервативное значение)
+            scores = []
+            for i in range(len(population)):
+                # Метрики по всем сценариям для данной особи
+                scen_metrics = results_3d[i] # [Scenarios x 4]
                 
-                # Multi-objective fitness score
-                score = 0.0
+                # Средние метрики
+                avg_pf = np.mean(scen_metrics[:, 2])
+                avg_mdd = np.mean(scen_metrics[:, 1])
+                avg_trades = np.mean(scen_metrics[:, 3])
                 
-                # 1. Performance (Profit Factor)
-                pf = metrics["profit_factor"]
-                if np.isinf(pf) or pf > 100.0:
-                    pf = 100.0
-                score += pf * 0.4 # Increased weight for PF
+                # Fitness score (используем консервативный подход)
+                pf = avg_pf
+                if np.isinf(pf) or pf > 100.0: pf = 100.0
                 
-                # 2. Robustness (Low Drawdown)
-                mdd = metrics["max_drawdown"]
-                score -= mdd * 0.3 # Increased penalty for DD
+                score = pf * 0.4
+                score -= avg_mdd * 0.3
                 
-                # 3. Trade count sanity check
-                trades = metrics["trade_count"]
-                if trades < 10:
-                    score *= 0.1 # Severe penalty for too few trades
-                elif trades > 100:
-                    score *= 0.8 # Slight penalty for over-trading
-                
-                # 4. Target Matching
-                target_bonus = 0.0
-                for target_name, target_val in targets.items():
-                    if target_name in metrics:
-                        actual = metrics[target_name]
-                        if target_val != 0:
-                            dist = abs(actual - target_val) / abs(target_val)
-                            target_bonus += max(0, 0.2 * (1.0 - min(1.0, dist)))
-                score += target_bonus
-                
-                # 5. Complexity Penalty
-                formula_len = len(population[i].get_formula())
-                score -= (formula_len / 1000.0) * 0.05
+                if avg_trades < 10: score *= 0.1
+                elif avg_trades > 100: score *= 0.8
                 
                 scores.append(max(0.001, score))
-                
+            
+            return scores
+
         except Exception as e:
-            logger.error(f"Batch evaluation failed: {e}")
-            # Fallback to individual evaluation if batch fails
+            logger.error(f"3D GPU evaluation failed, falling back to 2D Batch: {e}")
+            # Fallback to the previous 2D batch method if 3D fails
             scores = []
-            for ind in population:
-                try:
-                    signals = ind.generate_signals(data)
-                    metrics = self.metrics_calc.calculate_all(data, signals)
-                    # Simple fallback score
-                    pf = metrics.get("profit_factor", 0)
-                    scores.append(pf if not np.isinf(pf) else 10.0)
-                except Exception:
-                    scores.append(0.0)
+            try:
+                # 1. Generate all signals first
+                raw_signals = [ind.generate_signals_fast(data) for ind in population]
+                
+                # 2. Prepare signal matrix
+                n_pop = len(population)
+                n_data = len(data)
+                signal_matrix = np.zeros((n_pop, n_data), dtype=np.int32)
+                
+                for i, sig in enumerate(raw_signals):
+                    signal_matrix[i] = normalize_signal_array(sig, n_data).astype(np.int32)
                     
-        return scores
+                # 3. Perform 2D batch
+                batch_results = self.metrics_calc.calculate_batch_fast(
+                    data["close"].values,
+                    data["high"].values,
+                    data["low"].values,
+                    signal_matrix,
+                    use_sl_tp=True
+                )
+                
+                for i in range(n_pop):
+                    pf = batch_results[i, 2]
+                    if np.isinf(pf) or pf > 100.0: pf = 100.0
+                    score = pf * 0.4 - batch_results[i, 1] * 0.3
+                    scores.append(max(0.001, score))
+                
+                return scores
+            except Exception as e2:
+                logger.error(f"Fallback evaluation also failed: {e2}")
+                return [0.001] * len(population)
 
     def _crossover(self, p1: BaseIndicator, p2: BaseIndicator) -> BaseIndicator:
         """Tree-based crossover of indicator formulas."""
