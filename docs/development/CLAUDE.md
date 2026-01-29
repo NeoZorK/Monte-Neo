@@ -23,11 +23,17 @@ docker-compose -f docker/docker-compose.yml exec monte-neo bash
 ```
 
 ## Architecture
-- `src/monte_neo/core/`: Generator & optimizer
+- `src/monte_neo/core/`: Generator & optimizer (including 3D GPU acceleration)
+- `src/monte_neo/core/optimization/`: Production Gate, certification, and stress testing
 - `src/monte_neo/data/`: Downloader & storage
 - `src/monte_neo/monte_carlo/`: Shuffling, noise, sensitivity, walk-forward
 - `src/monte_neo/metrics/`: Performance calculation modules
 - `src/monte_neo/cli/`: Interactive interface
+
+## Key Technologies
+- **MLX/Metal**: 3D GPU acceleration for population evaluation (up to 125x speedup).
+- **Numba**: JIT-optimized metrics and SL/TP calculation.
+- **Production Gate**: Multi-stage robustness certification pipeline.
 
 ## Design Principles
 1. **Files < 300 lines**: Split larger modules.
