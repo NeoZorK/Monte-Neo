@@ -37,7 +37,7 @@ class InteractiveMenu:
         self._selected_symbol: str = config.default_symbol
         self._selected_timeframe: str = config.default_timeframe
         self._mc_methods: list[str] = ["shuffling", "noise", "sensitivity", "walk_forward", "block_bootstrap"]
-        self._pop_size, self._generations = 50, 20
+        self._pop_size, self._generations = 200, 20
         self._mutation_rate, self._crossover_rate = 0.3, 0.7
         self._cached_symbols: list[str] = []
 
