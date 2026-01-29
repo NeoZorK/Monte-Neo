@@ -24,11 +24,14 @@ def test_optimizer_overfitting_adjustment():
     assert menu._mutation_rate < 0.5
     assert menu._crossover_rate > 0.5
     assert "Overfitting" in optimizer.last_failure_reason
+    # Initial is index 4 (1h), should move to index 5 (4h)
+    assert menu._selected_timeframe == "4h" 
 
 def test_optimizer_low_trades_adjustment():
     # Setup
     menu = MagicMock()
     menu._pop_size = 50
+    menu._selected_timeframe = "1h"
     optimizer = SmartPipelineOptimizer(menu)
     
     # Mock validation result with low trades warnings
@@ -41,6 +44,27 @@ def test_optimizer_low_trades_adjustment():
     # Verify
     assert menu._pop_size > 50
     assert "selective" in optimizer.last_failure_reason
+    assert menu._selected_timeframe == "30m" # Switched from 1h to 30m
+
+def test_optimizer_ensure_data_auto_download():
+    # Setup
+    menu = MagicMock()
+    menu.storage.load.return_value = None
+    menu.config.auto_download_data = True
+    optimizer = SmartPipelineOptimizer(menu)
+    
+    with MagicMock() as mock_downloader:
+        from unittest.mock import patch
+        with patch("monte_neo.cli.menu.leadership.BinanceDownloader", return_value=mock_downloader):
+            mock_downloader.download.return_value = MagicMock(empty=False)
+            
+            # Run
+            res = optimizer.ensure_data("BTCUSDT", "1h")
+            
+            # Verify
+            assert res is not None
+            mock_downloader.download.assert_called()
+            menu.storage.save.assert_called()
 
 def test_optimizer_low_quality_adjustment():
     # Setup

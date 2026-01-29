@@ -31,6 +31,7 @@ def settings_workflow(menu: InteractiveMenu) -> None:
         {"name": f"🚀 Use GPU ({'✅' if menu._use_gpu else '❌'})", "value": "use_gpu"},
         {"name": f"💎 GPU Precision ({menu._gpu_precision})", "value": "gpu_precision"},
         {"name": f"⚡ Metal Driver ({menu._metal_driver.upper()})", "value": "metal_driver"},
+        {"name": f"📥 Auto-Download ({'✅' if menu.config.auto_download_data else '❌'})", "value": "auto_download"},
         {"name": "🔙 Back", "value": "back"},
     ]
 
@@ -105,3 +106,8 @@ def settings_workflow(menu: InteractiveMenu) -> None:
             from monte_neo.utils.config import save_config
             save_config(menu.config, "config.yaml")
             console.print(f"[green]Metal driver set to {val.upper()} and saved to config.yaml[/]")
+    elif choice == "auto_download":
+        menu.config.auto_download_data = not menu.config.auto_download_data
+        from monte_neo.utils.config import save_config
+        save_config(menu.config, "config.yaml")
+        console.print(f"[green]Auto-download data set to {'ENABLED' if menu.config.auto_download_data else 'DISABLED'} and saved to config.yaml[/]")

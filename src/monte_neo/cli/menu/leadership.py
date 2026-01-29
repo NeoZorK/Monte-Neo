@@ -6,6 +6,7 @@ End-to-end automated indicator discovery and production deployment.
 from __future__ import annotations
 
 import time
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -15,6 +16,7 @@ from rich.table import Table
 from monte_neo.cli.styles import press_any_key
 from monte_neo.core.evolution_ai import AIEvolutionEngine
 from monte_neo.core.optimization.production_gate import ProductionGate
+from monte_neo.data.downloader import BinanceDownloader
 from monte_neo.monte_carlo.engine import MonteCarloEngine
 from monte_neo.utils.console import console
 from monte_neo.utils.logger import get_logger
@@ -33,9 +35,12 @@ class SmartPipelineOptimizer:
         self.best_score_ever = 0.0
         self.last_failure_reason = "Initial search"
         self.adjustments_made = []
+        self.available_timeframes = ["1m", "5m", "15m", "30m", "1h", "4h", "1d"]
+        self.current_tf_index = self.available_timeframes.index(menu._selected_timeframe) \
+            if menu._selected_timeframe in self.available_timeframes else 4
 
     def brainstorm_and_adjust(self, validation_res: Any, gate_results: dict) -> str:
-        """Analyzes failures and adjusts evolution parameters for the next run."""
+        """Analyzes failures and adjusts evolution parameters and timeframe for the next run."""
         self.iteration += 1
         self.adjustments_made = []
         
@@ -56,6 +61,13 @@ class SmartPipelineOptimizer:
             self.menu._crossover_rate = min(0.9, self.menu._crossover_rate + 0.05)
             self.adjustments_made.append(f"Reduced mutation rate to {self.menu._mutation_rate:.2f}")
             self.adjustments_made.append(f"Increased crossover rate to {self.menu._crossover_rate:.2f}")
+            
+            # Brain logic: Maybe higher timeframe is more robust?
+            if self.current_tf_index < len(self.available_timeframes) - 1:
+                self.current_tf_index += 1
+                new_tf = self.available_timeframes[self.current_tf_index]
+                self.menu._selected_timeframe = new_tf
+                self.adjustments_made.append(f"Brain switched to higher timeframe: {new_tf}")
         
         # 2. Insufficient Activity Analysis
         low_trades_fail = any("Insufficient" in w and "trades" in w for w in warnings)
@@ -63,15 +75,21 @@ class SmartPipelineOptimizer:
             self.last_failure_reason = "Strategy is too selective (Not enough trades)"
             # Usually happens when target metrics are too high or formula is too complex
             self.menu._pop_size = min(200, self.menu._pop_size + 20)
-            self.adjustments_made.append(f"Increased population size to {self.menu._pop_size} to find more active candidates")
+            self.adjustments_made.append(f"Increased population size to {self.menu._pop_size}")
+            
+            # Brain logic: Maybe lower timeframe has more opportunities?
+            if self.current_tf_index > 0:
+                self.current_tf_index -= 1
+                new_tf = self.available_timeframes[self.current_tf_index]
+                self.menu._selected_timeframe = new_tf
+                self.adjustments_made.append(f"Brain switched to lower timeframe: {new_tf}")
 
         # 3. Quality Analysis
         if score < 50 and not (oos_ratio_fail or low_trades_fail):
             self.last_failure_reason = "Low overall quality/fitness"
             self.menu._generations = min(100, self.menu._generations + 10)
             self.menu._pop_size = min(200, self.menu._pop_size + 10)
-            self.adjustments_made.append(f"Increased generations to {self.menu._generations}")
-            self.adjustments_made.append(f"Increased population size to {self.menu._pop_size}")
+            self.adjustments_made.append(f"Increased evolution depth (Gens: {self.menu._generations})")
 
         if not self.adjustments_made:
             self.last_failure_reason = "General rejection from Production Gate"
@@ -79,6 +97,40 @@ class SmartPipelineOptimizer:
             self.adjustments_made.append("Slightly increased evolution depth")
 
         return self.last_failure_reason
+
+    def ensure_data(self, symbol: str, timeframe: str):
+        """Checks for local data and downloads if missing and auto-download is enabled."""
+        data = self.menu.storage.load(symbol, timeframe=timeframe)
+        if data is not None and not data.empty:
+            return data
+
+        if not self.menu.config.auto_download_data:
+            return None
+
+        console.print(f"[yellow]Data for {symbol} {timeframe} missing. Auto-downloading from Binance...[/]")
+        try:
+            downloader = BinanceDownloader()
+            end_date = datetime.now()
+            # Default to 365 days if not specified
+            start_date = end_date - timedelta(days=365)
+            
+            self.menu.progress.start(100, f"Downloading {symbol} {timeframe}...")
+            data = downloader.download(
+                symbol, timeframe, start_date, end_date, self.menu.progress.update
+            )
+            self.menu.progress.update(100, 100, "Done")
+            self.menu.progress.stop()
+            
+            if data is not None and not data.empty:
+                self.menu.storage.save(data, symbol, timeframe)
+                console.print(f"[green]✓ Successfully downloaded and saved {len(data)} candles.[/]")
+                return data
+        except Exception as e:
+            self.menu.progress.stop()
+            console.print(f"[red]✗ Auto-download failed: {e}[/]")
+            logger.error(f"Auto-download failed for {symbol} {timeframe}: {e}")
+        
+        return None
 
     def print_report(self):
         """Prints a brainstorm report to the console."""
@@ -118,15 +170,16 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
     menu._selected_timeframe = timeframe
 
     # Load data once
-    data = menu.storage.load(symbol, timeframe=timeframe)
-    if data is None or data.empty:
-        console.print(f"[red]No data found for {symbol}. Please download it first.[/]")
-        return
-
     optimizer = SmartPipelineOptimizer(menu)
     
     try:
         while True:
+            # Check/Download data for the current iteration (brain might have changed timeframe)
+            data = optimizer.ensure_data(symbol, menu._selected_timeframe)
+            if data is None or data.empty:
+                console.print(f"[red]No data available for {symbol} {menu._selected_timeframe}. Search aborted.[/]")
+                return
+
             # 2. Setup Evolution
             if optimizer.iteration > 0:
                 optimizer.print_report()
@@ -144,7 +197,7 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
                 progress_callback=menu.progress.update
             )
             
-            menu.progress.start(menu._generations, "Evolving formulas...")
+            menu.progress.start(menu._generations, f"Evolving formulas ({menu._selected_timeframe})...")
             try:
                 best_indicator = engine.evolve(data, menu._target_metrics, generations=menu._generations)
             finally:
