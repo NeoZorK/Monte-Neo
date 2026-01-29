@@ -86,24 +86,47 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
         
         # Methods / Robustness Table
         robust_table = Table.grid(expand=True, padding=(0, 1))
-        robust_table.add_column(justify="left")
+        robust_table.add_column(justify="left", ratio=1)
         robust_table.add_column(justify="right")
 
         def get_status_icon(passed: bool | None) -> str:
             if passed is None: return "[dim]-[/]"
             return "[bold green]✓[/]" if passed else "[bold red]✗[/]"
 
+        # Section: Validation Checks
+        robust_table.add_row("[bold cyan]Validation Checks[/]", "")
+        
         # Add MC Steps if available
         if optimizer.last_mc_step_results:
             for step in optimizer.last_mc_step_results:
-                robust_table.add_row(f"Monte Carlo: {step.method_name}", f"{get_status_icon(step.passed)} {step.pass_rate*100:.0f}%")
+                robust_table.add_row(f"  Monte Carlo: {step.method_name}", f"{get_status_icon(step.passed)} {step.pass_rate*100:.0f}%")
         else:
-            robust_table.add_row("Monte Carlo Robustness", get_status_icon(optimizer.last_mc_results.get("passed")))
+            robust_table.add_row("  Monte Carlo Robustness", get_status_icon(optimizer.last_mc_results.get("passed")))
 
-        robust_table.add_row("CSCV PBO Analysis", get_status_icon(optimizer.last_mc_results.get("cscv_passed")))
-        robust_table.add_row("Walk-Forward Efficiency", get_status_icon(optimizer.last_mc_results.get("wfe_passed")))
+        robust_table.add_row("  CSCV PBO Analysis", get_status_icon(optimizer.last_mc_results.get("cscv_passed")))
+        robust_table.add_row("  Walk-Forward Efficiency", get_status_icon(optimizer.last_mc_results.get("wfe_passed")))
         
-        robust_panel = Panel(robust_table, title="[bold magenta]🛡 Robustness Check[/]", border_style="magenta")
+        # Section: Target Metrics
+        if optimizer.menu._target_metrics:
+            robust_table.add_row("", "")
+            robust_table.add_row("[bold cyan]Target Metrics (OOS)[/]", "")
+            for metric, target in optimizer.menu._target_metrics.items():
+                actual = optimizer.last_metrics.get(metric)
+                if actual is not None:
+                    # Check if passed
+                    is_passed = False
+                    if metric in ["max_drawdown", "consecutive_losses"]:
+                        is_passed = actual <= target
+                    else:
+                        is_passed = actual >= target
+                    
+                    metric_name = metric.replace("_", " ").title()
+                    robust_table.add_row(f"  {metric_name} (>{target})", f"{get_status_icon(is_passed)} [dim]{actual:.2f}[/]")
+                else:
+                    metric_name = metric.replace("_", " ").title()
+                    robust_table.add_row(f"  {metric_name} (>{target})", "[dim]-[/]")
+
+        robust_panel = Panel(robust_table, title="[bold magenta]🛡 Robustness & Metrics Check[/]", border_style="magenta")
 
         # Logs Panel
         log_content = "\n".join(logs)
@@ -203,6 +226,7 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
                 }
                 optimizer.last_mc_step_results = mc_res.step_results
                 optimizer.last_validation_warnings = validation_res.warnings
+                optimizer.last_metrics = validation_res.out_sample_metrics  # Use OOS metrics for display
                 live.update(_generate_pipeline_layout())
 
                 # Prepare unified results
