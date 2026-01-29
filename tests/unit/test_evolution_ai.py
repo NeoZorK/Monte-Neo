@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+from unittest.mock import patch
 
 from monte_neo.core.evolution_ai import AIEvolutionEngine
 from monte_neo.indicators.dynamic import DynamicIndicator
@@ -19,9 +20,49 @@ def sample_data():
     return data
 
 def test_engine_init():
-    engine = AIEvolutionEngine(population_size=10)
+    engine = AIEvolutionEngine(population_size=10, use_gpu=False)
     assert engine.population_size == 10
     assert engine.mutation_rate == 0.2
+    assert engine.use_gpu is False
+
+def test_evaluate_population_gpu_toggle(sample_data):
+    # Test that it calls fallback when use_gpu is False
+    engine = AIEvolutionEngine(population_size=2, use_gpu=False)
+    pop = engine._initialize_population()
+    
+    with patch.object(engine, "_fallback_evaluate", return_value=[1.0, 1.0]) as mock_fallback:
+        scores = engine._evaluate_population(pop, sample_data, {})
+        assert scores == [1.0, 1.0]
+        mock_fallback.assert_called_once()
+
+def test_fitness_calculation_improved(sample_data):
+    engine = AIEvolutionEngine()
+    # Mock results that should give a good score
+    # Layout: 0:ret, 1:trades, 2:winrate, 3:maxdd, 4:pf, 5:sharpe
+    mock_results = np.array([
+        [0.1, 20, 0.6, 0.05, 2.0, 1.0], # Good: ret=0.1, trades=20, dd=0.05, pf=2.0
+    ])
+    
+    with patch.object(engine.mlx_engine, "backtest_population_multi_scenario", return_value=np.array([mock_results])):
+        pop = [DynamicIndicator()]
+        scores = engine._evaluate_population(pop, sample_data, {})
+        # pf(2.0)*1.5 + ret(0.1)*10.0 - dd(0.05)*2.0 = 3.0 + 1.0 - 0.1 = 3.9
+        assert scores[0] == pytest.approx(3.9)
+
+def test_fitness_penalty_low_trades(sample_data):
+    engine = AIEvolutionEngine()
+    # Mock results with low trades
+    mock_results = np.array([
+        [0.1, 5, 0.6, 0.05, 2.0, 1.0], # Low trades: 5 < 15
+    ])
+    
+    with patch.object(engine.mlx_engine, "backtest_population_multi_scenario", return_value=np.array([mock_results])):
+        pop = [DynamicIndicator()]
+        scores = engine._evaluate_population(pop, sample_data, {})
+        # Base score = 3.9, penalty = 5/15 = 1/3
+        # 3.9 * 0.333 = 1.3
+        assert scores[0] == pytest.approx(1.3)
+
 
 def test_initialize_population():
     engine = AIEvolutionEngine(population_size=5)

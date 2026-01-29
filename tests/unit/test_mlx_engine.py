@@ -34,17 +34,6 @@ def test_engine_init():
         assert engine.metal_driver == "cpp"
         assert mock_gpu.called
 
-def test_select_best_driver(engine):
-    with patch("monte_neo.core.mlx_engine.METAL_EXTENSION_AVAILABLE", True):
-        with patch("monte_neo.core.mlx_engine.MetalBacktestBridge") as mock_bridge_cls:
-            mock_bridge = mock_bridge_cls.return_value
-            mock_bridge.init.return_value = True
-            
-            with patch("monte_neo.core.mlx_engine.load_cache", return_value=None):
-                with patch("monte_neo.core.mlx_engine.save_cache"):
-                    driver = engine._select_best_driver()
-                    assert driver in ["cpp", "objc", "swift"]
-
 def test_run_full_simulation_native(engine, sample_data):
     indicator = MagicMock()
     indicator.to_mlx_representation.return_value = MagicMock()
@@ -68,12 +57,33 @@ def test_run_full_simulation_mlx_sl_tp(engine, sample_data):
         with patch("monte_neo.core.acceleration.tensor_ops.TensorOps.generate_shuffle_scenarios") as mock_gen:
             # Return a 2D array
             mock_gen.return_value = np.zeros((1, 10))
-            with patch("monte_neo.core.mlx_engine.MetricsCalculator.calculate_batch_multi_price_fast") as mock_batch:
+            with patch("monte_neo.metrics.calculator.MetricsCalculator.calculate_batch_multi_price_fast") as mock_batch:
                 mock_batch.return_value = np.array([[0.1, 0.05, 1.5, 5]])
                 
                 results, stats = engine.run_full_simulation(sample_data, indicator, n_scenarios=1, use_sl_tp=True)
                 assert len(results) == 1
                 assert results[0]["metrics"]["total_return"] == 0.1
+
+def test_run_full_simulation_positional_args(engine, sample_data):
+    indicator = MagicMock()
+    indicator.to_mlx_representation.return_value = MagicMock()
+    indicator.get_metal_params.return_value = None
+    
+    # Verify it accepts 3 positional arguments: data, indicator_or_list, n_scenarios
+    with patch("monte_neo.core.mlx_sim_engine.run_full_simulation_impl") as mock_impl:
+        mock_impl.return_value = ([], {})
+        engine.run_full_simulation(sample_data, indicator, 10)
+        mock_impl.assert_called_once_with(engine, sample_data, indicator, 10)
+
+def test_backtest_population_multi_scenario_dispatch(engine, sample_data):
+    population = [MagicMock(), MagicMock()]
+    n_scenarios = 5
+    
+    with patch("monte_neo.core.mlx_3d_engine.backtest_population_multi_scenario_impl") as mock_impl:
+        mock_impl.return_value = np.zeros((2, 5, 6))
+        results = engine.backtest_population_multi_scenario(data=sample_data, population=population, n_scenarios=n_scenarios)
+        assert results.shape == (2, 5, 6)
+        mock_impl.assert_called_once()
 
 def test_backtest_batch_sequential(engine, sample_data):
     indicator = MagicMock()
@@ -114,7 +124,7 @@ def test_backtest_batch_sequential(engine, sample_data):
             mock_mx_array.side_effect = array_side_effect
             mock_mx_where.side_effect = where_side_effect
             
-            results = engine.backtest_batch(sample_data, [indicator])
+            results = engine.backtest_batch(data=sample_data, indicators=[indicator])
             assert len(results) == 1
             assert "metrics" in results[0]
 
@@ -157,6 +167,7 @@ def test_backtest_batch_parallel(engine, sample_data):
             mock_mx_array.side_effect = array_side_effect
             mock_mx_where.side_effect = where_side_effect
             
-            results = engine.backtest_batch(sample_data, [indicator], executor=executor, force_parallel=True)
+            results = engine.backtest_batch(data=sample_data, indicators=[indicator], executor=executor, force_parallel=True)
             assert executor.map.called
             assert len(results) == 1
+

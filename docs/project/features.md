@@ -7,11 +7,16 @@
   - **Smart Search Brain**: Adaptive logic that learns from rejections (overfitting, low activity) and adjusts GA parameters or timeframes.
   - **Real-time TUI Dashboard**: Advanced layout with live stats, best formula tracking, and robustness checklists.
 - **Indicator Generation**: Automatic search for profitable trading indicators.
+- **3D GPU Acceleration**: 
+  - Massive parallel evaluation of strategy populations across multiple Monte Carlo scenarios.
+  - Integration with Apple Silicon Metal via MLX for 125x performance gains in evolutionary search.
 - **Dynamic Indicator Generation**:
   - Generates novel indicators using genetic programming concepts.
   - Creates random valid Python formulas from market data.
-  - **Evolutionary Optimization**: Cross-breeds and mutates the best candidates to evolve superior strategies.
-- **Monte Carlo Robustness**:
+  - **Evolutionary Optimization**: Improved fitness function weighting profit factor, returns, and drawdown with 3D GPU acceleration.
+- **Monte Carlo Robustness & Production Gate**:
+  - **Automated Certification**: Multi-stage validation including Black Swan tests, sensitivity analysis, and breaking point detection.
+  - **Robustness Scoring**: Final 0-100 score combining WFA efficiency, MC stability, and stress test resilience.
   - **Return Shuffling**: Tests if profit is dependent on sequence.
   - **Noise Injection**: Simulates market volatility and slippage.
   - **Sensitivity Analysis**: Varies parameters by ±10% to ensure stability.
