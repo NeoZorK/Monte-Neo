@@ -25,6 +25,7 @@ class DynamicIndicator(BaseIndicator):
         super().__init__(config)
         self._parameters.setdefault("source_code", "data['close']")
         self._compiled_code: Callable[..., Any] | None = None
+        self._mlx_repr_cache: Any | None = None
 
     def __getstate__(self) -> dict[str, Any]:
         """Prepare for pickling by removing compiled code."""
@@ -100,13 +101,11 @@ class DynamicIndicator(BaseIndicator):
         return f"Dynamic: {self.source_code}"
 
     def to_mlx_representation(self) -> Any | None:
-        """Convert to MLX representation for GPU execution.
-        
-        Tries to map common patterns to native MLX indicators for speed,
-        otherwise falls back to MLXDynamicStrategy.
-        """
-        import re
+        """Convert to MLX representation for GPU execution."""
+        if self._mlx_repr_cache is not None:
+            return self._mlx_repr_cache
 
+        import re
         from monte_neo.core.acceleration.indicators import (
             MLXSMA,
             MLXCrossStrategy,
@@ -120,32 +119,26 @@ class DynamicIndicator(BaseIndicator):
         sma_pattern = r"data\['close'\]>data\['close'\]\.rolling\((\d+)\)\.mean\(\)"
         match = re.search(sma_pattern, code)
         if match:
-            return MLXCrossStrategy(MLXSMA(int(match.group(1))), mode="greater")
+            self._mlx_repr_cache = MLXCrossStrategy(MLXSMA(int(match.group(1))), mode="greater")
+            return self._mlx_repr_cache
             
         # 2. Price < SMA(P)
         sma_pattern_lt = r"data\['close'\]<data\['close'\]\.rolling\((\d+)\)\.mean\(\)"
         match = re.search(sma_pattern_lt, code)
         if match:
-            return MLXCrossStrategy(MLXSMA(int(match.group(1))), mode="less")
+            self._mlx_repr_cache = MLXCrossStrategy(MLXSMA(int(match.group(1))), mode="less")
+            return self._mlx_repr_cache
             
         # 3. SMA(F) > SMA(S)
         sma_cross_pattern = r"data\['close'\]\.rolling\((\d+)\)\.mean\(\)>data\['close'\]\.rolling\((\d+)\)\.mean\(\)"
         match = re.search(sma_cross_pattern, code)
         if match:
-            return MLXSMACrossStrategy(int(match.group(1)), int(match.group(2)))
-            
-        # 4. RSI < Threshold
-        rsi_pattern_lt = r"rsi\(.*?,?(\d+)\)<([\d\.]+)"
-        match = re.search(rsi_pattern_lt, code)
-        if match:
-            # Re-use MLXCrossStrategy but with RSI as indicator
-            # Wait, MLXCrossStrategy compares close vs indicator.
-            # For RSI < 30, we need a different strategy or a constant indicator.
-            # For now, let's just use the fallback for RSI to be safe.
-            pass
+            self._mlx_repr_cache = MLXSMACrossStrategy(int(match.group(1)), int(match.group(2)))
+            return self._mlx_repr_cache
 
         # Fallback to general strategy
-        return MLXDynamicStrategy(self)
+        self._mlx_repr_cache = MLXDynamicStrategy(self)
+        return self._mlx_repr_cache
 
     def calculate(self, data: pd.DataFrame) -> pd.DataFrame:
         """Calculate indicator values using the generated code.

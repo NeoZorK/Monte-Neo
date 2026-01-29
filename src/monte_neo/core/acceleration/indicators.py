@@ -23,30 +23,27 @@ class MLXIndicator:
 class MLXSMA(MLXIndicator):
     def __init__(self, period: int):
         self.period = period
-        # Create kernel: (Out=1, Kernel=P, In=1)
         # Simple average = sum / P
         self.weight = mx.full((1, period, 1), 1.0 / period)
 
     def compute(self, close: mx.array) -> mx.array:
-        """Compute SMA using 1D convolution."""
+        """Compute SMA using cumulative sum for O(1) performance and vectorization."""
         if close.dtype != mx.float32 and close.dtype != mx.float16:
             close = close.astype(mx.float32)
-        # Reshape for conv1d: [batch, length, channels]
-        # x is [scenarios, time] -> [scenarios, time, 1]
-        x = close[..., None]
         
-        # Pad beginning with first value to keep same length
-        pad_size = self.period - 1
-        padding = [(0, 0), (pad_size, 0), (0, 0)]
-        x_padded = mx.pad(x, padding, constant_values=0)
-        # Fix: instead of 0, use first value to avoid spikes
-        # Actually, MLX pad constant_values can be an array/scalar.
-        # But we want to pad with the first value of EACH scenario.
-        # For now, let's use a simpler approach:
-        x_padded = mx.concatenate([mx.repeat(x[:, :1, :], pad_size, axis=1), x], axis=1)
+        # cs[i] = sum(close[0...i])
+        cs = mx.cumsum(close, axis=-1)
         
-        out = mx.conv1d(x_padded, self.weight, stride=1, padding=0)
-        return out.squeeze(-1)
+        # SMA(P) at index i: (cs[i] - cs[i-P]) / P
+        # For i < P-1, we can use cs[i] / (i+1) or just return 0/nan
+        # To match rolling().mean() exactly:
+        res = (cs[:, self.period-1:] - mx.concatenate([mx.zeros((cs.shape[0], 1)), cs[:, :-(self.period)]], axis=1)[:, :cs.shape[1]-self.period+1]) / self.period
+        
+        # Pad with first values to match original length
+        # Rolling mean in pandas/numpy usually has NaN for the first P-1 values
+        # We'll pad with the first valid SMA value to keep it simple and match previous logic
+        pad_vals = mx.repeat(res[:, :1], self.period - 1, axis=1)
+        return mx.concatenate([pad_vals, res], axis=1)
 
 class MLXRSI(MLXIndicator):
     """RSI indicator on MLX."""

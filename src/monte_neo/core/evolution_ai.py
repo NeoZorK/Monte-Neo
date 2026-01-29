@@ -48,7 +48,9 @@ class AIEvolutionEngine:
         self.rng = np.random.default_rng()
         self.code_gen = CodeGenerator(self.rng)
         self.progress_callback = progress_callback
-        self.mlx_engine = MLXBacktestEngine()
+        self.mlx_engine = MLXBacktestEngine(initial_capital=initial_capital, leverage=leverage)
+        self.best_individual: BaseIndicator | None = None
+        self.history: list[EvolutionStats] = []
         
         # Heuristics: Map weaknesses to potential fixes
         self.heuristics = {
@@ -128,20 +130,21 @@ class AIEvolutionEngine:
                 data=data,
                 population=population,
                 n_scenarios=n_scenarios,
-                use_sl_tp=True
+                use_sl_tp=True,
+                return_raw=True
             )
             
-            # results_3d: [Population x Scenarios x 4]
-            # Агрегируем результаты сценариев (берем среднее или консервативное значение)
+            # results_3d: [Population x Scenarios x 6]
+            # Layout: 0:ret, 1:trades, 2:winrate, 3:maxdd, 4:pf, 5:sharpe
             scores = []
             for i in range(len(population)):
                 # Метрики по всем сценариям для данной особи
-                scen_metrics = results_3d[i] # [Scenarios x 4]
+                scen_metrics = results_3d[i] # [Scenarios x 6]
                 
                 # Средние метрики
-                avg_pf = np.mean(scen_metrics[:, 2])
-                avg_mdd = np.mean(scen_metrics[:, 1])
-                avg_trades = np.mean(scen_metrics[:, 3])
+                avg_pf = np.mean(scen_metrics[:, 4])
+                avg_mdd = np.mean(scen_metrics[:, 3])
+                avg_trades = np.mean(scen_metrics[:, 1])
                 
                 # Fitness score (используем консервативный подход)
                 pf = avg_pf
