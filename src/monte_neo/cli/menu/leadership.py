@@ -36,7 +36,12 @@ class PipelineDashboard:
     def __init__(self, optimizer: SmartPipelineOptimizer):
         self.optimizer = optimizer
         self.start_time = time.time()
-        self.layout = Layout()
+        self.root_layout = Layout()
+        self.root_layout.split_column(
+            Layout(name="dashboard", ratio=8),
+            Layout(name="spacer", ratio=2)
+        )
+        self.layout = self.root_layout["dashboard"]
         self.layout.split_row(
             Layout(name="main", ratio=2),
             Layout(name="side", ratio=1)
@@ -51,14 +56,11 @@ class PipelineDashboard:
         elapsed = time.time() - self.start_time
         elapsed_str = str(timedelta(seconds=int(elapsed)))
         
-        # Estimate ETA (simple linear based on iterations, but let's just show elapsed for now
-        # since iterations are variable. Maybe ETA based on generations?)
+        # Estimate ETA (simple linear based on iterations)
         eta_str = "Calculating..."
         if self.optimizer.iteration > 0:
             avg_time_per_iter = elapsed / self.optimizer.iteration
-            # Assume we might need 5 iterations on average if not found? 
-            # Or just show "Searching..."
-            eta_str = str(timedelta(seconds=int(avg_time_per_iter * 0.5))) # Just a placeholder
+            eta_str = str(timedelta(seconds=int(avg_time_per_iter * 0.5)))
 
         # Stats Panel
         stats_table = Table.grid(padding=(0, 1))
@@ -76,7 +78,7 @@ class PipelineDashboard:
         formula_text = Text(self.optimizer.best_formula_ever or "None", style="bold white", justify="center")
         self.layout["best_formula"].update(Panel(formula_text, title="[bold green]🏆 Best Formula[/]", border_style="green"))
 
-        # Validation Panel (Monte Carlo etc)
+        # Validation Panel
         val_table = Table.grid(padding=(0, 1))
         val_table.add_column()
         val_table.add_column()
@@ -92,7 +94,7 @@ class PipelineDashboard:
 
         self.layout["validation"].update(Panel(val_table, title="[bold magenta]🛡 Robustness[/]", border_style="magenta"))
 
-        return self.layout
+        return self.root_layout
 
 class SmartPipelineOptimizer:
     """Intelligent search orchestrator for the Global Leadership Pipeline."""
@@ -248,7 +250,7 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
 
     def log(msg: str):
         logs.append(msg)
-        if len(logs) > 15:
+        if len(logs) > 12:
             logs.pop(0)
         dashboard.layout["main"].update(Panel(
             "\n".join(logs),
