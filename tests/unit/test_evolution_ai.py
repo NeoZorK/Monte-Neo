@@ -46,8 +46,8 @@ def test_fitness_calculation_improved(sample_data):
     with patch.object(engine.mlx_engine, "backtest_population_multi_scenario", return_value=np.array([mock_results])):
         pop = [DynamicIndicator()]
         scores = engine._evaluate_population(pop, sample_data, {})
-        # pf(2.0)*1.5 + ret(0.1)*10.0 - dd(0.05)*2.0 = 3.0 + 1.0 - 0.1 = 3.9
-        assert scores[0] == pytest.approx(3.9)
+        # Base score = 3.9, activity bonus = 20 * 0.001 = 0.02
+        assert scores[0] == pytest.approx(3.92)
 
 def test_fitness_penalty_low_trades(sample_data):
     engine = AIEvolutionEngine()
@@ -59,9 +59,9 @@ def test_fitness_penalty_low_trades(sample_data):
     with patch.object(engine.mlx_engine, "backtest_population_multi_scenario", return_value=np.array([mock_results])):
         pop = [DynamicIndicator()]
         scores = engine._evaluate_population(pop, sample_data, {})
-        # Base score = 3.9, penalty = 5/15 = 1/3
-        # 3.9 * 0.333 = 1.3
-        assert scores[0] == pytest.approx(1.3)
+        # Base score = 3.9, penalty = 5/15 = 1/3 -> 1.3
+        # Activity bonus = 5 * 0.001 = 0.005
+        assert scores[0] == pytest.approx(1.305)
 
 
 def test_initialize_population():

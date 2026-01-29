@@ -66,24 +66,37 @@ class AIEvolutionEngine:
         population = self._initialize_population()
         best_overall = None
         current_best_fitness = -float('inf')
+        stagnation_counter = 0
         
         try:
             for gen in range(generations):
-                fitness_scores = self._evaluate_population(population, data, target_metrics)
+                fitness_scores = self._evaluate_population(population, data, target_metrics, gen)
                 
                 # Sort by fitness
                 combined = sorted(zip(population, fitness_scores), key=lambda x: x[1], reverse=True)
                 population = [p for p, f in combined]
                 best_fitness = combined[0][1]
                 
-                if best_overall is None or best_fitness > current_best_fitness:
+                if best_overall is None or best_fitness > current_best_fitness + 0.0001:
                     best_overall = population[0]
                     current_best_fitness = best_fitness
+                    stagnation_counter = 0
+                else:
+                    stagnation_counter += 1
                 
                 logger.info(f"Gen {gen}: Best Fitness = {best_fitness:.4f}")
                 
                 # Selection & Breeding
                 new_population = population[:int(self.population_size * 0.1)] # Elitism 10%
+                
+                # If stagnant, inject fresh blood
+                if stagnation_counter > 3:
+                    logger.info(f"Stagnation detected ({stagnation_counter} gens). Injecting fresh blood...")
+                    for _ in range(int(self.population_size * 0.3)):
+                        ind = DynamicIndicator()
+                        ind.set_parameter("source_code", self.code_gen.generate_code())
+                        new_population.append(ind)
+                    stagnation_counter = 0
                 
                 while len(new_population) < self.population_size:
                     if self.rng.random() < self.crossover_rate:
@@ -123,7 +136,7 @@ class AIEvolutionEngine:
             pop.append(ind)
         return pop
 
-    def _evaluate_population(self, population: list[BaseIndicator], data: pd.DataFrame, targets: dict[str, float]) -> list[float]:
+    def _evaluate_population(self, population: list[BaseIndicator], data: pd.DataFrame, targets: dict[str, float], gen: int = 0) -> list[float]:
         """Evaluates the entire population using 3D GPU acceleration (Pop x Scenarios)."""
         if not self.use_gpu:
             # Skip GPU and go straight to fallback if GPU is disabled
@@ -168,9 +181,14 @@ class AIEvolutionEngine:
                 if avg_trades < 15:
                     score *= (avg_trades / 15.0)
                 
-                # Логируем если нашли что-то интересное
-                if score > 1.0:
-                    logger.debug(f"Good candidate found: score={score:.2f}, pf={pf:.2f}, trades={avg_trades:.1f}, ret={avg_ret:.2f}")
+                # Бонус за активность (чтобы избежать flat landscape 0.001)
+                # Даем крошечный бонус за каждую сделку, даже если стратегия пока убыточна
+                if avg_trades > 0:
+                    score += min(0.1, avg_trades * 0.001)
+                
+                # Логируем если нашли что-то интересное или для отладки первых поколений
+                if score > 1.0 or (gen == 0 and i < 5):
+                    logger.debug(f"Candidate {i}: score={score:.4f}, pf={pf:.2f}, trades={avg_trades:.1f}, ret={avg_ret:.4f}, mdd={avg_mdd:.4f}")
                 
                 scores.append(max(0.001, score))
             

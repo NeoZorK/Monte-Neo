@@ -32,25 +32,18 @@ class CodeGenerator:
             return self.rng.choice(operands)
 
         # Operators / Functions
-        # 0: Binary Op, 1: Unary/Func
-        op_type = self.rng.integers(0, 2)
+        # 0: Binary Op, 1: Unary/Func, 2: Crossover (New)
+        op_type = self.rng.integers(0, 3)
 
         if op_type == 0:
             # Binary
-            # For simplicity, let's stick to arithmetic and let DynamicIndicator handle >0 logic
-            # UNLESS we explicitly want boolean signals.
-            # The current DynamicIndicator maps >0 to 1, <0 to -1.
-            # So (Close - MA) is good.
-
             op = self.rng.choice(["+", "-", "*", "/"])
             left = self.generate_code(depth + 1)
             right = self.generate_code(depth + 1)
             return f"({left} {op} {right})"
 
-        else:
+        elif op_type == 1:
             # Functions
-            # rolling_mean, diff, shift, rsi, bbands, macd
-
             func_type = self.rng.choice(["mean", "max", "min", "std", "diff", "shift", "rsi", "bbands", "macd"])
             period = int(self.rng.integers(3, 50))
             inner = self.generate_code(depth + 1)
@@ -75,5 +68,11 @@ class CodeGenerator:
                 fast = period
                 slow = int(period * 2.2)
                 return f"({inner}.ewm(span={fast}).mean() - {inner}.ewm(span={slow}).mean())"
+        
+        else:
+            # Crossover patterns (Highly effective for signals)
+            p1 = int(self.rng.integers(5, 30))
+            p2 = int(self.rng.integers(p1 + 5, p1 + 50))
+            return f"(data['close'].rolling({p1}).mean() - data['close'].rolling({p2}).mean())"
 
         return "data['close']"  # Fallback
