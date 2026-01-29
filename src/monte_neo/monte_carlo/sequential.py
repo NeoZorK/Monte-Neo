@@ -42,6 +42,7 @@ class SequentialMCRunner:
         metrics_calc: MetricsCalculator,
         target_metrics: dict[str, float],
         interactive: bool = True,
+        quiet: bool = False,
     ) -> MCResult:
         """Run MC methods sequentially.
 
@@ -51,6 +52,7 @@ class SequentialMCRunner:
             metrics_calc: Metrics calculator.
             target_metrics: Target metrics.
             interactive: Whether to ask for confirmation before each step.
+            quiet: If True, suppress all console output.
 
         Returns:
             MCResult with sequential results.

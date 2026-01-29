@@ -30,6 +30,8 @@ class SmartPipelineOptimizer:
         self.last_failure_reason = "Initial search"
         self.adjustments_made = []
         self.last_mc_results = {}
+        self.last_mc_step_results = []
+        self.last_validation_warnings = []
         self.available_timeframes = ["1m", "5m", "15m", "30m", "1h", "4h", "1d"]
         self.current_tf_index = self.available_timeframes.index(menu._selected_timeframe) \
             if menu._selected_timeframe in self.available_timeframes else 4

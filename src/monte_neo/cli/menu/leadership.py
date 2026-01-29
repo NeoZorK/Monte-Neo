@@ -58,6 +58,18 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
         elapsed = time.time() - start_time
         elapsed_str = str(timedelta(seconds=int(elapsed)))
         
+        # Calculate ETA
+        eta_str = "Calculating..."
+        if optimizer.iteration > 0:
+            avg_time = elapsed / optimizer.iteration
+            # Estimate we might need 10-20 iterations on average if not found yet
+            # This is just a rough estimate
+            remaining_est = avg_time * max(1, (5 - optimizer.iteration)) 
+            if remaining_est > 0:
+                eta_str = str(timedelta(seconds=int(remaining_est)))
+            else:
+                eta_str = "Soon..."
+
         # Status Table (Horizontal)
         status_table = Table.grid(expand=True)
         status_table.add_column(justify="left", ratio=1)
@@ -66,17 +78,40 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
         
         status_table.add_row(
             f"[bold cyan]Symbol:[/] {optimizer.menu._selected_symbol} | [bold magenta]TF:[/] {optimizer.menu._selected_timeframe}",
-            f"[bold yellow]Iteration:[/] #{optimizer.iteration + 1} | [bold blue]Time:[/] {elapsed_str}",
+            f"[bold yellow]Iteration:[/] #{optimizer.iteration + 1} | [bold blue]Time:[/] {elapsed_str} | [bold dim]ETA:[/] {eta_str}",
             f"[bold green]Best Score:[/] {optimizer.best_score_ever:.2f}/100"
         )
         
         header = Panel(status_table, border_style="gold1", title="[bold gold1]🏆 Global Leadership Pipeline[/]")
         
+        # Methods / Robustness Table
+        robust_table = Table.grid(expand=True, padding=(0, 1))
+        robust_table.add_column(justify="left")
+        robust_table.add_column(justify="right")
+
+        def get_status_icon(passed: bool | None) -> str:
+            if passed is None: return "[dim]-[/]"
+            return "[bold green]✓[/]" if passed else "[bold red]✗[/]"
+
+        # Add MC Steps if available
+        if optimizer.last_mc_step_results:
+            for step in optimizer.last_mc_step_results:
+                robust_table.add_row(f"Monte Carlo: {step.method_name}", f"{get_status_icon(step.passed)} {step.pass_rate*100:.0f}%")
+        else:
+            robust_table.add_row("Monte Carlo Robustness", get_status_icon(optimizer.last_mc_results.get("passed")))
+
+        robust_table.add_row("CSCV PBO Analysis", get_status_icon(optimizer.last_mc_results.get("cscv_passed")))
+        robust_table.add_row("Walk-Forward Efficiency", get_status_icon(optimizer.last_mc_results.get("wfe_passed")))
+        
+        robust_panel = Panel(robust_table, title="[bold magenta]🛡 Robustness Check[/]", border_style="magenta")
+
         # Logs Panel
         log_content = "\n".join(logs)
         logs_panel = Panel(log_content, title="[bold yellow]🔍 Active Search Logs[/]", border_style="yellow")
         
-        return Group(header, logs_panel)
+        # Combine into groups
+        main_content = Group(header, Group(robust_panel, logs_panel))
+        return main_content
 
     def log(msg: str):
         # Prevent duplicate logs in same refresh
@@ -166,6 +201,8 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
                     "wfe_passed": (validation_res.out_sample_metrics.get("sharpe_ratio", 0) / 
                                    max(0.001, validation_res.in_sample_metrics.get("sharpe_ratio", 0))) > 0.5
                 }
+                optimizer.last_mc_step_results = mc_res.step_results
+                optimizer.last_validation_warnings = validation_res.warnings
                 live.update(_generate_pipeline_layout())
 
                 # Prepare unified results
