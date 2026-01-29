@@ -5,7 +5,8 @@ import logging
 import os
 import subprocess
 import time
-from typing import TYPE_CHECKING, Any
+import asyncio
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import mlx.core as mx
 import numpy as np
@@ -63,6 +64,8 @@ class MLXBacktestEngine:
             initial_capital=initial_capital,
             leverage=leverage
         )
+        self._data_prefetch_cache: Dict[str, mx.array] = {}
+        self._prefetch_lock = asyncio.Lock()
         
         self.native_bridge = None
         if METAL_EXTENSION_AVAILABLE:
@@ -84,6 +87,26 @@ class MLXBacktestEngine:
                 self.metal_driver = "cpp"
             else:
                 self.metal_driver = metal_driver
+
+    async def prefetch_data(self, data: pd.DataFrame, key: str = "current") -> None:
+        """Prefetch data to GPU asynchronously."""
+        from monte_neo.core.acceleration.tensor_ops import to_tensor
+        async with self._prefetch_lock:
+            tensors = to_tensor(data)
+            # MLX arrays are lazy, but calling eval() or using them in an op forces materialization
+            for k, v in tensors.items():
+                mx.eval(v)
+                self._data_prefetch_cache[f"{key}_{k}"] = v
+        logger.debug(f"🚀 Data prefetched to GPU with key: {key}")
+
+    def get_prefeteched_tensors(self, key: str = "current") -> Optional[Dict[str, mx.array]]:
+        """Retrieve prefetched tensors from GPU cache."""
+        results = {}
+        prefix = f"{key}_"
+        for k, v in self._data_prefetch_cache.items():
+            if k.startswith(prefix):
+                results[k[len(prefix):]] = v
+        return results if results else None
 
     def backtest_population_multi_scenario(
         self,
@@ -107,8 +130,13 @@ class MLXBacktestEngine:
         n_pop = len(population)
         
         # 1. Prepare Data Tensors (Once for all)
-        from monte_neo.core.acceleration.tensor_ops import to_tensor, TensorOps
-        tensors = to_tensor(data)
+        # Check if we have prefetched data
+        tensors = self.get_prefeteched_tensors(kwargs.get("data_key", "current"))
+        if tensors is None:
+            from monte_neo.core.acceleration.tensor_ops import to_tensor
+            tensors = to_tensor(data)
+            
+        from monte_neo.core.acceleration.tensor_ops import TensorOps
         close = tensors["close"]
         high = tensors.get("high", close)
         low = tensors.get("low", close)
@@ -139,6 +167,7 @@ class MLXBacktestEngine:
                 
         # Stack into 3D: [Population x Scenarios x Time]
         signal_tensor = mx.stack(all_signals)
+        mx.eval(signal_tensor) # Force evaluation on GPU
         
         # 4. Batch Backtest 3D
         # We use MetricsCalculator.calculate_batch_multi_price_fast but adapted for 3D
