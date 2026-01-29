@@ -21,8 +21,9 @@ logger = get_logger(__name__)
 class SmartPipelineOptimizer:
     """Intelligent search orchestrator for the Global Leadership Pipeline."""
     
-    def __init__(self, menu: InteractiveMenu):
+    def __init__(self, menu: InteractiveMenu, log_callback: callable = None):
         self.menu = menu
+        self.log_callback = log_callback
         self.iteration = 0
         self.best_score_ever = 0.0
         self.best_formula_ever = None
@@ -32,6 +33,13 @@ class SmartPipelineOptimizer:
         self.available_timeframes = ["1m", "5m", "15m", "30m", "1h", "4h", "1d"]
         self.current_tf_index = self.available_timeframes.index(menu._selected_timeframe) \
             if menu._selected_timeframe in self.available_timeframes else 4
+
+    def _log(self, msg: str):
+        """Internal helper to log to callback or console."""
+        if self.log_callback:
+            self.log_callback(msg)
+        else:
+            console.print(msg)
 
     def brainstorm_and_adjust(self, validation_res: Any, gate_results: dict) -> str:
         """Analyzes failures and adjusts evolution parameters and timeframe for the next run."""
@@ -100,26 +108,27 @@ class SmartPipelineOptimizer:
         if not self.menu.config.auto_download_data:
             return None
 
-        console.print(f"[yellow]Data for {symbol} {timeframe} missing. Auto-downloading from Binance...[/]")
+        self._log(f"[yellow]Data for {symbol} {timeframe} missing. Auto-downloading from Binance...[/]")
         try:
             downloader = BinanceDownloader()
             end_date = datetime.now()
             start_date = end_date - timedelta(days=365)
             
-            self.menu.progress.start(100, f"Downloading {symbol} {timeframe}...")
+            # Hide the global progress bar as it messes with Live dashboard
+            # self.menu.progress.start(100, f"Downloading {symbol} {timeframe}...")
             data = downloader.download(
-                symbol, timeframe, start_date, end_date, self.menu.progress.update
+                symbol, timeframe, start_date, end_date # , self.menu.progress.update
             )
-            self.menu.progress.update(100, 100, "Done")
-            self.menu.progress.stop()
+            # self.menu.progress.update(100, 100, "Done")
+            # self.menu.progress.stop()
             
             if data is not None and not data.empty:
                 self.menu.storage.save(data, symbol, timeframe)
-                console.print(f"[green]✓ Successfully downloaded and saved {len(data)} candles.[/]")
+                self._log(f"[green]✓ Successfully downloaded and saved {len(data)} candles.[/]")
                 return data
         except Exception as e:
-            self.menu.progress.stop()
-            console.print(f"[red]✗ Auto-download failed: {e}[/]")
+            # self.menu.progress.stop()
+            self._log(f"[red]✗ Auto-download failed: {e}[/]")
             logger.error(f"Auto-download failed for {symbol} {timeframe}: {e}")
         
         return None
