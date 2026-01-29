@@ -77,7 +77,28 @@ To maximize efficiency, validation can run in **Sequential Mode**:
 
 ---
 
-## 4. Workflow Summary
+## 4. Global Leadership Pipeline & Smart Search
+
+The **Global Leadership Pipeline** is the most advanced orchestration layer in Monte-Neo. It automates the entire lifecycle of an indicator, from initial evolution to production certification.
+
+### Iterative Smart Search
+Unlike a standard generation run, the Global Leadership Pipeline operates in a "Smart Search" loop. If a candidate indicator is evolved but then **REJECTED** by the Production Gate (due to overfitting, low trade count, or poor OOS performance), the system doesn't stop. Instead, it triggers the **SmartPipelineOptimizer**:
+
+1.  **Failure Analysis**: The optimizer analyzes the validation report to identify *why* the indicator failed.
+2.  **Adaptive Parameter Tuning**: 
+    - **Overfitting detected**: The system automatically decreases `mutation_rate` and increases `crossover_rate` to favor stable, proven genetic combinations over risky new mutations.
+    - **Low Trade Count**: It increases `population_size` to broaden the search space and find more active entry/exit conditions.
+    - **Low Quality/Fitness**: It increases the number of `generations` to allow the evolution more time to converge on a superior solution.
+3.  **Brainstorm Reporting**: Before each new iteration, the system provides a "Brainstorm Report" in the console, detailing the best score achieved so far, the identified failure reason, and the specific adjustments made to the search parameters.
+
+### Loop Persistence
+The pipeline continues this iterative process—evolving, validating, and adjusting—until one of two conditions is met:
+-   An **ACCEPTED** indicator is found and certified for production.
+-   The user manually interrupts the process (Ctrl+C).
+
+---
+
+## 5. Workflow Summary
 
 1.  **Generator** creates a string: `"(data['close'] - data['close'].rolling(14).mean())"`
 2.  **DynamicIndicator** compiles it into a Python function.
