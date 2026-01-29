@@ -232,10 +232,16 @@ def _display_pipeline_results(results: dict) -> None:
     table.add_column("Result")
     
     status_str = "[bold green]ACCEPTED[/]" if results["is_certified"] else "[bold red]REJECTED[/]"
+    score_val = results['final_score']
+    if hasattr(score_val, '__float__'):
+        score_val = float(score_val)
+    elif not isinstance(score_val, (int, float)):
+        score_val = 0.0
+        
     table.add_row("Final Status", status_str)
-    table.add_row("Final Score", f"{results['final_score']:.2f}/100")
-    table.add_row("Certificate", results["certificate_path"])
-    table.add_row("Export Path", results["export_path"] or "N/A")
+    table.add_row("Final Score", f"{score_val:.2f}/100")
+    table.add_row("Certificate", str(results["certificate_path"]))
+    table.add_row("Export Path", str(results["export_path"] or "N/A"))
     
     console.print("\n", table)
     
