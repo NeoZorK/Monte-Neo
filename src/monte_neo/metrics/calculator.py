@@ -5,10 +5,11 @@ Calculates all trading metrics from signals and data.
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import numpy as np
 import pandas as pd
 
-from monte_neo.core import native_metrics  # type: ignore
 from monte_neo.metrics import numba_funcs
 from monte_neo.metrics import utils as metric_utils
 from monte_neo.metrics.drawdown import DrawdownMetric
@@ -18,11 +19,26 @@ from monte_neo.metrics.types import TradeResult
 from monte_neo.metrics.winrate import WinrateMetric
 from monte_neo.utils.logger import get_logger
 
+# Lazy import to avoid circular imports and incompatible native extension builds.
+_native_metrics = None
+
+def _get_native():
+    global _native_metrics
+    if _native_metrics is None:
+        try:
+            from monte_neo.core import native_metrics as _nm  # type: ignore
+            _native_metrics = _nm
+        except (ImportError, AttributeError):
+            import monte_neo.core as core
+
+            if not hasattr(core, "native_metrics"):
+                core.native_metrics = SimpleNamespace(extract_trades=None)
+            _native_metrics = core.native_metrics
+    return _native_metrics
+
 try:
-    # Check if native module is available and working
-    native_metrics.extract_trades
-    HAS_NATIVE = True
-except (ImportError, AttributeError):
+    HAS_NATIVE = callable(getattr(_get_native(), "extract_trades", None))
+except Exception:
     HAS_NATIVE = False
 
 logger = get_logger(__name__)
@@ -219,6 +235,17 @@ class MetricsCalculator:
 
         if HAS_NATIVE and not use_sl_tp:
             # Use high-performance C++ extension (native doesn't support SL/TP yet)
+            native_metrics = _get_native()
+            if not callable(getattr(native_metrics, "extract_trades", None)):
+                return self._extract_trades(
+                    data,
+                    signals,
+                    use_sl_tp=True,
+                    sl_pct=sl_pct,
+                    tp_pct=tp_pct,
+                    commission_pct=commission_pct,
+                    slippage_pct=slippage_pct,
+                )
             raw_trades = native_metrics.extract_trades(
                 close_prices.tolist(),
                 signal_array.tolist(),
