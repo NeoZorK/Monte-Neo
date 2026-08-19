@@ -1,86 +1,93 @@
-import logging
+
+import os
+import sys
 import time
 
 import numpy as np
 import pandas as pd
 
-from monte_neo.indicators.dynamic import DynamicIndicator
+# Ensure src is in path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
+
+from monte_neo.indicators.base import BaseIndicator, IndicatorConfig
 from monte_neo.metrics.calculator import MetricsCalculator
-from monte_neo.monte_carlo.engine import MCConfig, MonteCarloEngine
-from monte_neo.utils.parallel import ParallelExecutor
+from monte_neo.monte_carlo.engine import MonteCarloEngine
+from monte_neo.monte_carlo.types import MCConfig
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
 
-def benchmark_mc():
-    # Setup data
-    n_rows = 730  # Like in user logs
-    dates = pd.date_range("2024-01-01", periods=n_rows, freq="D")
-    data = pd.DataFrame({
-        "open": np.random.uniform(100, 200, n_rows),
-        "high": np.random.uniform(100, 200, n_rows),
-        "low": np.random.uniform(100, 200, n_rows),
-        "close": np.random.uniform(100, 200, n_rows),
-        "volume": np.random.uniform(1000, 5000, n_rows),
-    }, index=dates)
+# Simple Indicator
+class BenchmarkIndicator(BaseIndicator):
+    def __init__(self):
+        super().__init__(IndicatorConfig(name="BenchmarkSMA", parameters={"period": 10}))
+        self.period = 10
 
-    # Setup Indicator
-    indicator = DynamicIndicator()
-    indicator._parameters["source_code"] = "data['close'].rolling(20).mean()"
+    def calculate(self, data: pd.DataFrame) -> pd.DataFrame:
+        df = data.copy()
+        close = df["close"].values
+        sma = np.zeros_like(close)
+        kernel = np.ones(self.period) / self.period
+        sma[self.period-1:] = np.convolve(close, kernel, mode='valid')
+        df["sma"] = sma
+        return df
 
-    # Setup MC
-    iterations = 500  # Smaller per run, but we run multiple times
-    config = MCConfig(
-        iterations=iterations,
-        use_shuffling=False,
-        use_noise=False,
-        use_sensitivity=False,
-        use_walk_forward=False,
-        use_block_bootstrap=True,
-        n_workers=None
-    )
+    def generate_signals(self, data: pd.DataFrame) -> pd.DataFrame:
+        df = self.calculate(data)
+        signals = np.zeros(len(df), dtype=int)
+        close = df["close"].values
+        sma = df["sma"].values
+        if len(df) > self.period:
+             signals[self.period:] = np.where(close[self.period:] > sma[self.period:], 1, -1)
+        df["signal"] = signals
+        return df
 
+    def generate(self, data: pd.DataFrame) -> pd.DataFrame:
+        return self.generate_signals(data)
+
+def generate_data(n=1000):
+    dates = pd.date_range("2023-01-01", periods=n, freq="h")
+    close = np.random.normal(100, 1, n).cumsum()
+    high = close + np.random.random(n)
+    low = close - np.random.random(n)
+    open_ = close + np.random.normal(0, 0.5, n)
+    volume = np.random.random(n) * 1000
+    return pd.DataFrame({
+        "timestamp": dates,
+        "open": open_,
+        "high": high,
+        "low": low,
+        "close": close,
+        "volume": volume
+    })
+
+def run_benchmark():
+    data = generate_data(1000)
+    indicator = BenchmarkIndicator()
     metrics_calc = MetricsCalculator()
-    target_metrics = {"profit_factor": 1.0}
-
-    print(f"Generating {iterations} Block Bootstrap scenarios (shared)...")
-    # Generate scenarios once to isolate MC engine overhead
-    temp_engine = MonteCarloEngine(config)
-    scenarios = temp_engine.scenario_builder.generate(data)
-
-    print("\n--- Benchmarking Persistent Executor ---")
-
-    # Initialize persistent executor
-    executor = ParallelExecutor()
-    executor.__enter__()
-
-    try:
-        n_runs = 5
-        total_time = 0
-
-        for i in range(n_runs):
-            # Pass persistent executor
-            engine = MonteCarloEngine(config, executor=executor)
-
-            t0 = time.time()
-            engine.run(
-                data,
-                indicator,
-                metrics_calc,
-                target_metrics,
-                existing_scenarios=scenarios
-            )
-            elapsed = time.time() - t0
-            total_time += elapsed
-
-            speed = iterations / elapsed
-            print(f"Run {i+1}: {elapsed:.4f}s | Speed: {speed:.1f} op/s")
-
-        avg_speed = (iterations * n_runs) / total_time
-        print(f"\nAverage Speed: {avg_speed:.1f} op/s")
-
-    finally:
-        executor.__exit__(None, None, None)
+    
+    # Configure MC
+    n_scenarios = 1000
+    config = MCConfig(
+        use_shuffling=True,
+        iterations=n_scenarios,
+        random_seed=42,
+        use_sl_tp=False, # Start without SL/TP for max throughput test
+        n_workers=1
+    )
+    
+    engine = MonteCarloEngine(config=config)
+    
+    print(f"Running Benchmark with {n_scenarios} scenarios...")
+    print(f"Data length: {len(data)}")
+    
+    start = time.time()
+    result = engine.run(data, indicator, metrics_calc, {"profit_factor": 1.0})
+    elapsed = time.time() - start
+    
+    ops_per_sec = n_scenarios / elapsed
+    print(f"Completed in {elapsed:.4f}s")
+    print(f"Throughput: {ops_per_sec:.2f} scenarios/sec")
+    
+    return ops_per_sec
 
 if __name__ == "__main__":
-    benchmark_mc()
+    run_benchmark()

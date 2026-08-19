@@ -6,6 +6,7 @@ Downloads OHLCV data from Binance API and saves in Parquet format.
 from __future__ import annotations
 
 import os
+import time
 from collections.abc import Callable
 from datetime import datetime, timedelta
 
@@ -83,21 +84,33 @@ class BinanceDownloader:
         klines: list[list[str | int | float]] = []
         current_start = start_ms
         while current_start < end_ms:
-            batch = self.client.klines(
-                symbol=symbol,
-                interval=interval,
-                startTime=current_start,
-                endTime=end_ms,
-                limit=1000,
-            )
-            if not batch:
-                break
-            klines.extend(batch)
-            last_close = int(batch[-1][6])
-            next_start = last_close + 1
-            if next_start <= current_start:
-                break
-            current_start = next_start
+            try:
+                batch = self.client.klines(
+                    symbol=symbol,
+                    interval=interval,
+                    startTime=current_start,
+                    endTime=end_ms,
+                    limit=1000,
+                )
+                if not batch:
+                    break
+                klines.extend(batch)
+                last_close = int(batch[-1][6])
+                next_start = last_close + 1
+
+                # Compliance with Binance rate limits (small delay between batches)
+                if len(batch) >= 1000:
+                    time.sleep(0.1) # 100ms delay between 1000-candle batches
+
+                if next_start <= current_start:
+                    break
+                current_start = next_start
+            except Exception as e:
+                if "429" in str(e) or "rate limit" in str(e).lower():
+                    logger.warning("Rate limit hit, sleeping for 10 seconds...")
+                    time.sleep(10)
+                    continue
+                raise e
         return klines
 
     def download(

@@ -20,22 +20,47 @@ class ExpressionCollector(ast.NodeVisitor):
     def __init__(self) -> None:
         self.nodes: list[ast.AST] = []
 
+    def _is_intermediate_pandas_object(self, node: ast.AST) -> bool:
+        """Check if node returns an intermediate object like Rolling or EWM."""
+        if isinstance(node, ast.Call):
+            if isinstance(node.func, ast.Attribute):
+                # Check for rolling, ewm, or methods that return them
+                if node.func.attr in ("rolling", "ewm"):
+                    return True
+        if isinstance(node, ast.Attribute):
+            if node.attr in ("rolling", "ewm"):
+                return True
+        return False
+
     def visit_BinOp(self, node: ast.BinOp) -> Any:
-        self.nodes.append(node)
+        # If any side is an intermediate object, the BinOp itself is invalid for crossover
+        if not self._is_intermediate_pandas_object(node.left) and not self._is_intermediate_pandas_object(node.right):
+            self.nodes.append(node)
+        self.generic_visit(node)
+
+    def visit_Compare(self, node: ast.Compare) -> Any:
+        # Specifically handle comparisons to avoid '>' not supported between Rolling and int
+        is_invalid = self._is_intermediate_pandas_object(node.left)
+        for comparator in node.comparators:
+            if self._is_intermediate_pandas_object(comparator):
+                is_invalid = True
+                break
+        
+        if not is_invalid:
+            self.nodes.append(node)
         self.generic_visit(node)
 
     def visit_Call(self, node: ast.Call) -> Any:
-        self.nodes.append(node)
+        if not self._is_intermediate_pandas_object(node):
+            self.nodes.append(node)
         self.generic_visit(node)
 
     def visit_Attribute(self, node: ast.Attribute) -> Any:
-        # data['close'].rolling(...) -> 'rolling' attribute is part of Call usually
-        # but let's collect it too if it's top level
-        self.nodes.append(node)
+        if not self._is_intermediate_pandas_object(node):
+            self.nodes.append(node)
         self.generic_visit(node)
 
     def visit_Subscript(self, node: ast.Subscript) -> Any:
-        # data['close']
         self.nodes.append(node)
         self.generic_visit(node)
 

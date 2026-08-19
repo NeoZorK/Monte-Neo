@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 from rich.console import Console
 
+from monte_neo._version import __version__
 from monte_neo.cli.menu import InteractiveMenu
 from monte_neo.cli.styles import print_banner, print_error
 from monte_neo.utils.config import load_config
@@ -46,6 +47,56 @@ class MonteNeoCLI:
             return self.menu.run()
         else:
             console.print("[yellow]Non-interactive mode not yet implemented[/]")
+            return 1
+
+    def run_export(self, json_path: str) -> int:
+        """Export an indicator to C++."""
+        import json
+
+        from monte_neo.core.optimization.production_exporter import ProductionExporter
+        
+        try:
+            with open(json_path) as f:
+                data = json.load(f)
+            
+            # Mock indicator for export
+            from monte_neo.indicators.dynamic import DynamicIndicator
+            indicator = DynamicIndicator()
+            indicator.set_parameter("source_code", data.get("formula", ""))
+            
+            exporter = ProductionExporter()
+            export_path = exporter.export(indicator, data.get("validation", {}))
+            
+            console.print(f"[green]Successfully exported to: {export_path}[/]")
+            return 0
+        except Exception as e:
+            console.print(f"[red]Export failed: {e}[/]")
+            return 1
+
+    def run_evolve(self, symbol: str) -> int:
+        """Run AI-driven evolution for a symbol."""
+        from monte_neo.core.evolution_ai import AIEvolutionEngine
+        from monte_neo.data.storage import ParquetStorage
+        from monte_neo.utils.config import Config
+        
+        try:
+            console.print(f"[bold cyan]Starting AI Evolution for {symbol}...[/]")
+            config = Config()
+            storage = ParquetStorage(config.data_dir)
+            data = storage.load(symbol, timeframe=config.default_timeframe)
+            
+            if data is None or data.empty:
+                console.print(f"[red]No data found for {symbol}[/]")
+                return 1
+                
+            engine = AIEvolutionEngine()
+            best_indicator = engine.evolve(data, {"profit_factor": 1.5, "sharpe_ratio": 1.0}, generations=5)
+            
+            console.print("[green]Evolution complete! Best formula:[/]")
+            console.print(f"[bold white]{best_indicator.get_formula()}[/]")
+            return 0
+        except Exception as e:
+            console.print(f"[red]Evolution failed: {e}[/]")
             return 1
 
     def run_headless(
@@ -94,6 +145,18 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--export",
+        type=str,
+        help="Path to indicator JSON to export to C++",
+    )
+
+    parser.add_argument(
+        "--evolve",
+        type=str,
+        help="Symbol to run AI evolution for (e.g. BTCUSDT)",
+    )
+
+    parser.add_argument(
         "--log-level",
         type=str,
         default="INFO",
@@ -105,7 +168,7 @@ def parse_args() -> argparse.Namespace:
         "--version",
         "-v",
         action="version",
-        version="monte-neo 0.0.1",
+        version=f"monte-neo {__version__}",
     )
 
     return parser.parse_args()
@@ -121,7 +184,11 @@ def main() -> int:
     try:
         app = MonteNeoCLI()
 
-        if args.headless and args.config:
+        if args.export:
+            return app.run_export(args.export)
+        elif args.evolve:
+            return app.run_evolve(args.evolve)
+        elif args.headless and args.config:
             return app.run_headless(args.config)
         else:
             return app.run(interactive=args.interactive)

@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from monte_neo.utils.logger import get_logger
@@ -70,6 +71,12 @@ class BaseIndicator(ABC):
         for name, value in params.items():
             self.set_parameter(name, value)
 
+    def get_id(self) -> str:
+        """Get unique identifier for this indicator instance."""
+        import json
+        params_str = json.dumps(self._parameters, sort_keys=True)
+        return f"{self.__class__.__name__}_{params_str}"
+
     @abstractmethod
     def calculate(self, data: pd.DataFrame) -> pd.DataFrame:
         """Calculate indicator values.
@@ -93,6 +100,40 @@ class BaseIndicator(ABC):
             DataFrame with 'signal' column (1=buy, -1=sell, 0=hold).
         """
         pass
+
+    def get_metal_params(self, commission_bps: float = 0.0, slippage_bps: float = 0.0) -> list[float] | None:
+        """Return parameters for native Metal kernel (5 floats)."""
+        return None
+
+    def to_mlx_representation(self) -> Any | None:
+        """Convert to MLX representation for GPU execution.
+        
+        Returns:
+            MLX Strategy object or None if not supported.
+        """
+        return None
+
+    def generate_signals_fast(self, data: pd.DataFrame | np.ndarray) -> np.ndarray:
+        """Fast version of signal generation returning numpy array.
+        
+        Default implementation calls generate_signals and extracts the array.
+        Subclasses should override this for better performance.
+        """
+        if isinstance(data, pd.DataFrame):
+            sigs = self.generate_signals(data)
+            if isinstance(sigs, pd.DataFrame):
+                return sigs["signal"].to_numpy(dtype=np.float32)
+            return np.asarray(sigs, dtype=np.float32)
+
+        # If it's already a numpy array, we might need a dummy DataFrame
+        # but this is exactly what we want to avoid.
+        # Subclasses MUST override this if they want to support pure numpy paths.
+        dummy_df = pd.DataFrame({"close": data[:, 3] if data.ndim > 1 else data})
+        return self.generate_signals(dummy_df)["signal"].to_numpy(dtype=np.float32)
+
+    def get_formula(self) -> str:
+        """Get the formula or logic of the indicator."""
+        return self.name
 
     def validate_data(self, data: pd.DataFrame) -> bool:
         """Validate input data.
