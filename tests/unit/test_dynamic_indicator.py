@@ -48,10 +48,50 @@ def test_dynamic_indicator_signals(sample_data):
         parameters={"source_code": "data['close'] + 999999"},
     )
     indicator = DynamicIndicator(config)
+    
+    # Test standard generate_signals
     signals = indicator.generate_signals(sample_data)
-
-    # All should be buy (1) because value > 0
     assert (signals["signal"] == 1).all()
+    
+    # Test generate_signals_fast
+    fast_signals = indicator.generate_signals_fast(sample_data)
+    assert isinstance(fast_signals, np.ndarray)
+    assert (fast_signals == 1.0).all()
+
+
+def test_dynamic_indicator_overflow(sample_data):
+    """Test overflow protection in fast signal generation."""
+    # Large number that would overflow float32 if not handled
+    config = IndicatorConfig(
+        name="OverflowTest",
+        parameters={"source_code": "data['close'] * 1e40"},
+    )
+    indicator = DynamicIndicator(config)
+    
+    # Should not raise RuntimeWarning: overflow encountered in cast
+    # and should correctly produce 1.0 for positive large values
+    signals = indicator.generate_signals_fast(sample_data)
+    assert (signals == 1.0).all()
+    assert signals.dtype == np.float32
+
+
+def test_dynamic_indicator_fast_data_types(sample_data):
+    """Test generate_signals_fast with different data input types."""
+    config = IndicatorConfig(
+        name="TypeTest",
+        parameters={"source_code": "data['close'] > 0"},
+    )
+    indicator = DynamicIndicator(config)
+    
+    # Test with DataFrame
+    sig1 = indicator.generate_signals_fast(sample_data)
+    assert len(sig1) == len(sample_data)
+    
+    # Test with numpy array (OHLCV)
+    numpy_data = sample_data.to_numpy()
+    sig2 = indicator.generate_signals_fast(numpy_data)
+    assert len(sig2) == len(sample_data)
+    np.testing.assert_array_equal(sig1, sig2)
 
 
 def test_generator_dynamic(sample_data):

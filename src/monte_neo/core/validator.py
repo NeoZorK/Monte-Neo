@@ -59,18 +59,12 @@ class OverfitValidator:
         metrics_calc: MetricsCalculator,
         target_metrics: dict[str, float],
     ) -> ValidationResult:
-        """Full validation check.
-
-        Args:
-            indicator: Indicator to validate.
-            data: Full OHLCV data.
-            metrics_calc: Metrics calculator.
-            target_metrics: Target metrics.
-
-        Returns:
-            ValidationResult with all checks.
-        """
+        """Full validation check."""
         warnings = []
+
+        # 1. Non-repainting check
+        if not self.check_non_repainting(indicator, data):
+            warnings.append("INDICATOR REPAINTS: Signals change when new data arrives!")
 
         # In-sample / Out-of-sample split
         split_idx = int(len(data) * 0.7)
@@ -126,6 +120,47 @@ class OverfitValidator:
             cross_val_scores=cv_scores,
             warnings=warnings,
         )
+
+    def check_non_repainting(
+        self,
+        indicator: BaseIndicator,
+        data: pd.DataFrame,
+        lookback: int = 50,
+    ) -> bool:
+        """Check if indicator repaints by simulating real-time data arrival.
+
+        Args:
+            indicator: Indicator to check.
+            data: OHLCV data.
+            lookback: Number of candles to check for repainting.
+
+        Returns:
+            True if non-repainting.
+        """
+        if len(data) < lookback + 10:
+            return True
+
+        # 1. Generate signals for the full dataset
+        full_signals = indicator.generate_signals(data)
+        
+        # 2. Simulate incremental data arrival and check if previous signals change
+        # We check the last 'lookback' points
+        test_start = len(data) - lookback
+        
+        for i in range(test_start, len(data)):
+            # Partial data up to index i
+            partial_data = data.iloc[:i+1]
+            partial_signals = indicator.generate_signals(partial_data)
+            
+            # Check if the signal at index i is the same as in the full dataset
+            # (Signal at current candle is allowed to change until candle closes,
+            # but we are checking closed candles here)
+            if not np.array_equal(full_signals[:i+1], partial_signals):
+                # Repainting detected!
+                logger.warning(f"Repainting detected at index {i}")
+                return False
+                
+        return True
 
     def _calculate_oos_ratio(
         self,

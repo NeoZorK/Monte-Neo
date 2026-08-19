@@ -21,7 +21,14 @@ from monte_neo.utils.console import console
 
 
 class ProgressTracker:
-    """Track progress with ETA estimation."""
+    """Track progress with ETA estimation.
+    
+    V0.0.5 Development Stages:
+    1. Metal Foundation: C++/Metal bridge and BaseKernel. [DONE]
+    2. Indicators Library: SMA, EMA, RSI, ATR in MSL. [DONE]
+    3. Optimization: GPU Grid Search and Walk-Forward. [DONE]
+    4. Production Gate: Robustness scoring and Certification. [DONE]
+    """
 
     def __init__(self) -> None:
         """Initialize tracker."""
@@ -37,6 +44,9 @@ class ProgressTracker:
             total: Total number of items.
             description: Progress description.
         """
+        if self._progress:
+            self.stop()
+
         self._total = total
         self._start_time = time.time()
 
@@ -51,6 +61,7 @@ class ProgressTracker:
             TimeRemainingColumn(),
             TextColumn("[dim]{task.fields[status]}"),
             console=console,
+            transient=False,  # Set to False to keep the bar visible during update
         )
 
         self._progress.start()
@@ -61,13 +72,7 @@ class ProgressTracker:
         )
 
     def update(self, current: int, total: int, status: str = "") -> None:
-        """Update progress.
-
-        Args:
-            current: Current position.
-            total: Total items.
-            status: Status message.
-        """
+        """Update progress."""
         if self._progress and self._task_id is not None:
             # Ensure we don't exceed 100% in display
             val = min(current, total)
@@ -76,7 +81,7 @@ class ProgressTracker:
                 completed=val,
                 total=total,
                 status=status,
-                refresh=True if val >= total else False,
+                refresh=True,  # Always refresh to keep UI snappy
             )
 
     def stop(self) -> None:
