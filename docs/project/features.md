@@ -2,17 +2,28 @@
 
 ## Core Features
 
+- **Global Leadership Pipeline**: 
+  - **End-to-End Automation**: Fully automated discovery -> evolution -> validation -> certification -> export.
+  - **Smart Search Brain**: Adaptive logic that learns from rejections (overfitting, low activity) and adjusts GA parameters or timeframes.
+  - **Real-time TUI Dashboard**: Advanced layout with live stats, best formula tracking, and robustness checklists.
 - **Indicator Generation**: Automatic search for profitable trading indicators.
+- **3D GPU Acceleration**: 
+  - Massive parallel evaluation of strategy populations across multiple Monte Carlo scenarios.
+  - Integration with Apple Silicon Metal via MLX for 125x performance gains in evolutionary search.
 - **Dynamic Indicator Generation**:
   - Generates novel indicators using genetic programming concepts.
   - Creates random valid Python formulas from market data.
-  - **Evolutionary Optimization**: Cross-breeds and mutates the best candidates to evolve superior strategies.
-- **Monte Carlo Robustness**:
+  - **Evolutionary Optimization**: Improved fitness function weighting profit factor, returns, and drawdown with 3D GPU acceleration.
+- **Monte Carlo Robustness & Production Gate**:
+  - **Automated Certification**: Multi-stage validation including Black Swan tests, sensitivity analysis, and breaking point detection.
+  - **Robustness Scoring**: Final 0-100 score combining WFA efficiency, MC stability, and stress test resilience.
   - **Return Shuffling**: Tests if profit is dependent on sequence.
   - **Noise Injection**: Simulates market volatility and slippage.
   - **Sensitivity Analysis**: Varies parameters by ±10% to ensure stability.
   - **Walk-Forward Analysis**: Realistic out-of-sample validation.
   - **Block Bootstrap**: Resamples contiguous blocks to preserve market structure.
+  - **Sequential Validation Mode**: Runs methods one-by-one with early termination to save time.
+  - **Dynamic Pass Threshold**: Configurable success criteria (e.g., 95% pass rate required).
 - **Data Management**:
   - Fast Parquet-based storage.
   - One-click Binance data downloader.
@@ -30,4 +41,8 @@
   - Sharpe, Sortino, Calmar ratios.
   - Max Drawdown with duration analysis.
   - Expectancy and Recovery factor.
+  - **Risk Management**:
+    - Built-in Stop Loss (SL) and Take Profit (TP) support.
+    - Configuration via Risk Ratio (e.g., 2:1, 3:1).
+    - Configurable presets (Conservative, Standard, Aggressive).
   - Parallelized calculation for high efficiency.

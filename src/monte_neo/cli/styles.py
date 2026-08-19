@@ -10,6 +10,8 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 
+from monte_neo._version import __version__
+
 console = Console()
 
 # Questionary custom style (matches cline/claude code aesthetic)
@@ -29,6 +31,11 @@ CUSTOM_STYLE = Style(
 )
 
 
+def press_any_key() -> None:
+    """Wait for user to press enter."""
+    import questionary
+    questionary.confirm("Press Enter to continue...", default=True, auto_enter=True, qmark="").ask()
+
 def print_banner() -> None:
     """Print the application banner."""
     banner = Text()
@@ -37,7 +44,7 @@ def print_banner() -> None:
     )  # noqa: E501
     banner.append("║", style="cyan")
     banner.append(
-        "            🎲 Monte-Neo v0.0.1                           ",
+        f"            🎲 Monte-Neo {__version__}                           ",
         style="bold white",
     )  # noqa: E501
     banner.append("║\n", style="cyan")

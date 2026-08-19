@@ -1,0 +1,17 @@
+{
+    "indicator_type": "DynamicIndicator",
+    "parameters": {
+        "source_code": "data['close']"
+    },
+    "formula": "Dynamic: data['close']",
+    "validation": {
+        "robustness_score": 15,
+        "is_production_ready": false,
+        "recommendation": "Reject: Unstable Strategy",
+        "wfe_score": 0.0,
+        "mc_score": 0.0,
+        "stress_score": 15
+    },
+    "metadata": {},
+    "version": "1.0.0"
+}

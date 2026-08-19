@@ -89,3 +89,13 @@ To find the best strategies, the system uses **Genetic Programming**:
 3.  **Final Validation**: The best evolved individual undergoes a final strict Monte Carlo validation before being presented as the winner.
 
 This process runs for multiple generations, constantly refining the population towards robust profitability.
+
+## Performance & High-Speed Execution
+
+To support the v0.0.4 goal of extreme performance (float8/Metal), the `DynamicIndicator` implementation includes several performance-critical optimizations:
+
+1. **Lightweight Data Injection**: Instead of passing full DataFrames to the evaluation engine, we use a dictionary of Pandas Series. This avoids the significant overhead of DataFrame creation and slicing during each search iteration.
+2. **Fast Signal Generation**: The `generate_signals_fast` method bypasses standard Pandas indexing where possible and uses direct NumPy boolean masks for signal generation.
+3. **Overflow Protection**: During high-speed casting to `float32` (required for GPU/Numba compatibility), we use `np.greater` and `np.less` to handle large values (up to 1e40+) without triggering `RuntimeWarning` overflow errors.
+4. **Lazy Compilation**: Indicators are compiled once and cached for the duration of the search/evolution loop.
+5. **GPU Batch Integration**: Optimized signals are returned as `float32` arrays, ready for direct offloading to the MLX GPU engine without further conversion overhead.

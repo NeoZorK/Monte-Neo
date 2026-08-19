@@ -5,12 +5,14 @@ Allows for creation of indicators from source code strings.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 import numpy as np
 import pandas as pd
 
 from monte_neo.indicators.base import BaseIndicator, IndicatorConfig
+from monte_neo.indicators.evaluator import compile_source, evaluate_fast_signals
 from monte_neo.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -22,7 +24,8 @@ class DynamicIndicator(BaseIndicator):
     def __init__(self, config: IndicatorConfig | None = None) -> None:
         super().__init__(config)
         self._parameters.setdefault("source_code", "data['close']")
-        self._compiled_code = None
+        self._compiled_code: Callable[..., Any] | None = None
+        self._mlx_repr_cache: Any | None = None
 
     def __getstate__(self) -> dict[str, Any]:
         """Prepare for pickling by removing compiled code."""
@@ -43,39 +46,21 @@ class DynamicIndicator(BaseIndicator):
     def _compile_if_needed(self) -> None:
         """Compile the source code if not already compiled."""
         if self._compiled_code is None:
-            try:
-                func_code = (
-                    f"def _dynamic_calc(data, np, pd):\n    return {self.source_code}"
-                )
-                local_scope: dict[str, Any] = {}
-                exec(func_code, {}, local_scope)
-                self._compiled_code = local_scope["_dynamic_calc"]
-            except Exception as e:
-                logger.debug(f"Failed to compile dynamic indicator: {e}")
-                self._reset_to_safe_source()
-                try:
-                    func_code = (
-                        f"def _dynamic_calc(data, np, pd):\n    return {self.source_code}"
-                    )
-                    safe_scope: dict[str, Any] = {}
-                    exec(func_code, {}, safe_scope)
-                    self._compiled_code = safe_scope["_dynamic_calc"]
-                except Exception as safe_error:
-                    logger.error(f"Failed to compile safe dynamic indicator: {safe_error}")
-                    raise ValueError(
-                        f"Invalid indicator source code: {safe_error}"
-                    ) from safe_error
+            self._compiled_code = compile_source(self.source_code)
 
     def _reset_to_safe_source(self) -> None:
         if self._parameters.get("source_code") != "data['close']":
             self._parameters["source_code"] = "data['close']"
             self._compiled_code = None
 
-    def _evaluate(self, data: pd.DataFrame) -> Any:
-        self._compile_if_needed()
-        assert self._compiled_code is not None
-
-        indicator_values = self._compiled_code(data, np, pd)
+    def _evaluate(self, data: pd.DataFrame | dict[str, Any]) -> Any:
+        if self._compiled_code is None:
+            self._compile_if_needed()
+        
+        if self._compiled_code is not None:
+            indicator_values = self._compiled_code(data, np, pd)
+        else:
+            indicator_values = np.nan
 
         if callable(indicator_values) and not isinstance(
             indicator_values, (pd.Series, pd.DataFrame)
@@ -92,17 +77,69 @@ class DynamicIndicator(BaseIndicator):
 
         return indicator_values
 
-    def _evaluate_with_fallback(self, data: pd.DataFrame) -> Any:
+    def _evaluate_with_fallback(self, data: pd.DataFrame | dict[str, Any]) -> Any:
         try:
             return self._evaluate(data)
         except Exception as e:
             logger.debug(f"Runtime error in dynamic indicator: {e}")
             self._reset_to_safe_source()
             try:
+                # If data is a dict, we might need to convert it back to DataFrame for fallback
+                # but 'data['close']' works for both.
                 return self._evaluate(data)
             except Exception as safe_error:
                 logger.debug(f"Runtime error in safe dynamic indicator: {safe_error}")
                 return np.nan
+
+    def get_metal_params(self, commission_bps: float = 5.0, slippage_bps: float = 5.0) -> list[float] | None:
+        """Return parameters for native Metal kernel if formula is supported."""
+        from monte_neo.indicators.metal_parser import parse_metal_params
+        return parse_metal_params(self.source_code, commission_bps=commission_bps, slippage_bps=slippage_bps)
+
+    def get_formula(self) -> str:
+        """Get the source code string used for calculation."""
+        return f"Dynamic: {self.source_code}"
+
+    def to_mlx_representation(self) -> Any | None:
+        """Convert to MLX representation for GPU execution."""
+        if self._mlx_repr_cache is not None:
+            return self._mlx_repr_cache
+
+        import re
+
+        from monte_neo.core.acceleration.indicators import (
+            MLXSMA,
+            MLXCrossStrategy,
+            MLXDynamicStrategy,
+            MLXSMACrossStrategy,
+        )
+        
+        code = self.source_code.replace(" ", "")
+        
+        # 1. Price > SMA(P)
+        sma_pattern = r"data\['close'\]>data\['close'\]\.rolling\((\d+)\)\.mean\(\)"
+        match = re.search(sma_pattern, code)
+        if match:
+            self._mlx_repr_cache = MLXCrossStrategy(MLXSMA(int(match.group(1))), mode="greater")
+            return self._mlx_repr_cache
+            
+        # 2. Price < SMA(P)
+        sma_pattern_lt = r"data\['close'\]<data\['close'\]\.rolling\((\d+)\)\.mean\(\)"
+        match = re.search(sma_pattern_lt, code)
+        if match:
+            self._mlx_repr_cache = MLXCrossStrategy(MLXSMA(int(match.group(1))), mode="less")
+            return self._mlx_repr_cache
+            
+        # 3. SMA(F) > SMA(S)
+        sma_cross_pattern = r"data\['close'\]\.rolling\((\d+)\)\.mean\(\)>data\['close'\]\.rolling\((\d+)\)\.mean\(\)"
+        match = re.search(sma_cross_pattern, code)
+        if match:
+            self._mlx_repr_cache = MLXSMACrossStrategy(int(match.group(1)), int(match.group(2)))
+            return self._mlx_repr_cache
+
+        # Fallback to general strategy
+        self._mlx_repr_cache = MLXDynamicStrategy(self)
+        return self._mlx_repr_cache
 
     def calculate(self, data: pd.DataFrame) -> pd.DataFrame:
         """Calculate indicator values using the generated code.
@@ -134,7 +171,17 @@ class DynamicIndicator(BaseIndicator):
         signals = pd.DataFrame(index=data.index)
         signals["signal"] = 0
 
-        vals = pd.to_numeric(vals, errors="coerce")
+        # Fix: Ensure vals is not a 0-d numpy array or scalar before pd.to_numeric
+        if hasattr(vals, "ndim") and vals.ndim == 0:
+            vals = vals.item()
+        elif isinstance(vals, np.ndarray) and vals.ndim > 1:
+            vals = vals.flatten()
+
+        try:
+            vals = pd.to_numeric(vals, errors="coerce")
+        except (ValueError, TypeError):
+            # Fallback for weird objects
+            pass
 
         if isinstance(vals, pd.Series):
             aligned = vals.reindex(data.index).fillna(0)
@@ -150,6 +197,20 @@ class DynamicIndicator(BaseIndicator):
             signals.loc[aligned < 0, "signal"] = -1
 
         return signals
+
+    def generate_signals_fast(self, data: pd.DataFrame | np.ndarray) -> np.ndarray:
+        """Fast version of signal generation for dynamic indicators."""
+        if self._compiled_code is None:
+            self._compile_if_needed()
+        
+        if self._compiled_code is None:
+            return np.zeros(len(data), dtype=np.float32)
+
+        # Ensure data is at least 1D if it's a numpy array
+        if isinstance(data, np.ndarray) and data.ndim == 0:
+            data = data.reshape(1)
+
+        return evaluate_fast_signals(self._compiled_code, data)
 
     def get_min_periods(self) -> int:
         # Difficult to know statically. Default to something safe or 0.
