@@ -24,7 +24,7 @@ classifiers = [
 dependencies = [
     "numpy>=1.24",
     "pandas>=2.0",
-    "pyarrow>=14.0",
+    "pyarrow>=23.0.1",
     "numba>=0.58",
     "ta>=0.10",
     "rich>=13.0",
@@ -33,7 +33,7 @@ dependencies = [
     "plotext>=5.2",
     "mplfinance",
     "pyyaml>=6.0",
-    "python-dotenv>=1.0",
+    "python-dotenv>=1.2.2",
     "mlx>=0.11.0",
     "pybind11>=2.10.0",
     "binance-connector>=3.12.0",
@@ -52,13 +52,13 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "pytest>=7.4",
+    "pytest>=9.0.3",
     "pytest-cov>=4.1",
     "pytest-asyncio>=0.21",
     "pytest-xdist>=3.3",
     "mypy>=1.5",
     "ruff>=0.1",
-    "black>=23.0",
+    "black>=26.3.1",
     "pre-commit>=3.4",
     "pandas-stubs",
     "types-PyYAML",

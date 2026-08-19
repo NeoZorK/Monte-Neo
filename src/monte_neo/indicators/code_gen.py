@@ -49,13 +49,13 @@ class CodeGenerator:
             inner = self.generate_code(depth + 1)
 
             if func_type == "mean":
-                return f"{inner}.rolling({period}).mean()"
+                return f"{inner}.rolling({period}, min_periods=1).mean()"
             elif func_type == "max":
-                return f"{inner}.rolling({period}).max()"
+                return f"{inner}.rolling({period}, min_periods=1).max()"
             elif func_type == "min":
-                return f"{inner}.rolling({period}).min()"
+                return f"{inner}.rolling({period}, min_periods=1).min()"
             elif func_type == "std":
-                return f"{inner}.rolling({period}).std()"
+                return f"{inner}.rolling({period}, min_periods=2).std()"
             elif func_type == "diff":
                 return f"{inner}.diff()"
             elif func_type == "shift":
