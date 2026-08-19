@@ -62,7 +62,43 @@ Since the generated code can return anything, the `DynamicIndicator` applies a s
 
 ---
 
-## 3. Workflow Summary
+## 3. Monte Carlo Validation Workflow
+
+Once a candidate indicator is evolved and passes basic backtesting, it enters the **Monte Carlo Validation** phase:
+
+### Parallel Execution (GPU/Numba)
+- **MLX Engine**: For large-scale testing, scenarios are offloaded to the GPU.
+- **Numba Parallelism**: Metrics calculations for SL/TP and scenarios are processed in parallel using JIT-compiled code, reaching 300k+ operations per second.
+
+### Sequential Mode (Optimized Workflow)
+To maximize efficiency, validation can run in **Sequential Mode**:
+1.  **Step-by-Step**: Each Monte Carlo method (Walk-Forward, Shuffling, etc.) is executed one after another.
+2.  **Early Termination**: If an indicator fails to pass the **Pass Threshold** (e.g., 95%) in any single method, the entire validation for that candidate is aborted. This prevents wasting CPU/GPU time on candidates that are already proven non-robust.
+
+---
+
+## 4. Global Leadership Pipeline & Smart Search
+
+The **Global Leadership Pipeline** is the most advanced orchestration layer in Monte-Neo. It automates the entire lifecycle of an indicator, from initial evolution to production certification.
+
+### Iterative Smart Search
+Unlike a standard generation run, the Global Leadership Pipeline operates in a "Smart Search" loop. If a candidate indicator is evolved but then **REJECTED** by the Production Gate (due to overfitting, low trade count, or poor OOS performance), the system doesn't stop. Instead, it triggers the **SmartPipelineOptimizer**:
+
+1.  **Failure Analysis**: The optimizer analyzes the validation report to identify *why* the indicator failed.
+2.  **Adaptive Parameter Tuning**: 
+    - **Overfitting detected**: The system automatically decreases `mutation_rate` and increases `crossover_rate` to favor stable, proven genetic combinations over risky new mutations.
+    - **Low Trade Count**: It increases `population_size` to broaden the search space and find more active entry/exit conditions.
+    - **Low Quality/Fitness**: It increases the number of `generations` to allow the evolution more time to converge on a superior solution.
+3.  **Brainstorm Reporting**: Before each new iteration, the system provides a "Brainstorm Report" in the console, detailing the best score achieved so far, the identified failure reason, and the specific adjustments made to the search parameters.
+
+### Loop Persistence
+The pipeline continues this iterative process—evolving, validating, and adjusting—until one of two conditions is met:
+-   An **ACCEPTED** indicator is found and certified for production.
+-   The user manually interrupts the process (Ctrl+C).
+
+---
+
+## 5. Workflow Summary
 
 1.  **Generator** creates a string: `"(data['close'] - data['close'].rolling(14).mean())"`
 2.  **DynamicIndicator** compiles it into a Python function.

@@ -1,0 +1,19 @@
+{
+    "indicator_type": "DynamicIndicator",
+    "parameters": {
+        "source_code": "data['close']"
+    },
+    "formula": "Dynamic: data['close']",
+    "validation": {
+        "robustness_score": 2.25,
+        "wfe": 0.0,
+        "pass_rate": 0.0,
+        "consistency": 0.0,
+        "mc_robustness": 0.0,
+        "stress_test_score": 0.15,
+        "is_production_ready": false,
+        "recommendation": "\u274c REJECTED. Strategy is too fragile to market conditions or trading costs."
+    },
+    "metadata": {},
+    "version": "1.0.0"
+}

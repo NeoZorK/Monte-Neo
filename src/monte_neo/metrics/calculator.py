@@ -5,51 +5,59 @@ Calculates all trading metrics from signals and data.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from types import SimpleNamespace
 
 import numpy as np
 import pandas as pd
-from numba import njit
 
+from monte_neo.metrics import numba_funcs
+from monte_neo.metrics import utils as metric_utils
 from monte_neo.metrics.drawdown import DrawdownMetric
 from monte_neo.metrics.profit_factor import ProfitFactorMetric
 from monte_neo.metrics.sharpe import SharpeRatioMetric, SortinoRatioMetric
+from monte_neo.metrics.types import TradeResult
 from monte_neo.metrics.winrate import WinrateMetric
 from monte_neo.utils.logger import get_logger
 
-try:
-    from monte_neo.core import native_metrics  # type: ignore
+# Lazy import to avoid circular imports and incompatible native extension builds.
+_native_metrics = None
 
-    HAS_NATIVE = True
-except ImportError:
+def _get_native():
+    global _native_metrics
+    if _native_metrics is None:
+        try:
+            from monte_neo.core import native_metrics as _nm  # type: ignore
+            _native_metrics = _nm
+        except (ImportError, AttributeError):
+            import monte_neo.core as core
+
+            if not hasattr(core, "native_metrics"):
+                core.native_metrics = SimpleNamespace(extract_trades=None)
+            _native_metrics = core.native_metrics
+    return _native_metrics
+
+try:
+    HAS_NATIVE = callable(getattr(_get_native(), "extract_trades", None))
+except Exception:
     HAS_NATIVE = False
 
 logger = get_logger(__name__)
 
 
-@dataclass
-class TradeResult:
-    """Single trade result."""
-
-    entry_idx: int
-    exit_idx: int
-    entry_price: float
-    exit_price: float
-    direction: int  # 1 = long, -1 = short
-    pnl: float
-    pnl_pct: float
-
-
 class MetricsCalculator:
     """Calculate all trading metrics."""
 
-    def __init__(self, risk_free_rate: float = 0.0) -> None:
+    def __init__(self, risk_free_rate: float = 0.0, initial_capital: float = 100000.0, leverage: float = 1.0) -> None:
         """Initialize metrics calculator.
 
         Args:
             risk_free_rate: Annual risk-free rate for Sharpe calculation.
+            initial_capital: Initial account balance.
+            leverage: Trading leverage (default 1.0 = no leverage).
         """
         self.risk_free_rate = risk_free_rate
+        self.initial_capital = initial_capital
+        self.leverage = leverage
 
         # Initialize individual metric calculators
         self.profit_factor = ProfitFactorMetric()
@@ -60,25 +68,35 @@ class MetricsCalculator:
 
     def calculate_all(
         self,
-        data: pd.DataFrame,
-        signals: pd.DataFrame,
+        data: pd.DataFrame | np.ndarray,
+        signals: pd.DataFrame | np.ndarray,
         required_metrics: list[str] | None = None,
+        use_sl_tp: bool = False,
+        sl_pct: float = 0.0,
+        tp_pct: float = 0.0,
+        commission_pct: float = 0.0,
+        slippage_pct: float = 0.0,
     ) -> dict[str, float]:
         """Calculate metrics.
 
         Args:
-            data: OHLCV DataFrame.
-            signals: DataFrame with entry/exit signals.
+            data: OHLCV DataFrame or numpy array (OHLCV).
+            signals: DataFrame with 'signal' column or numpy array of signals.
             required_metrics: Optional list of metrics to calculate. If None, calculate all.
+            use_sl_tp: Whether to apply Stop Loss and Take Profit.
+            sl_pct: Stop Loss percentage (e.g., 1.0 for 1%).
+            tp_pct: Take Profit percentage (e.g., 2.0 for 2%).
+            commission_pct: Commission percentage per trade (e.g., 0.05 for 0.05%).
+            slippage_pct: Slippage percentage per trade (e.g., 0.05 for 0.05%).
 
         Returns:
             Dictionary of metrics.
         """
         # Extract trades from signals
-        trades = self._extract_trades(data, signals)
+        trades = self._extract_trades(data, signals, use_sl_tp, sl_pct, tp_pct, commission_pct, slippage_pct)
 
         if not trades:
-            return self._empty_metrics()
+            return metric_utils.get_empty_metrics()
 
         # Basic PnLs are needed for almost everything
         pnls = [t.pnl for t in trades]
@@ -87,24 +105,25 @@ class MetricsCalculator:
         metrics = {}
 
         # If required_metrics is provided, check what we need
-        # Some intermediate values (equity, returns) are expensive, so calculate only if needed
-
         need_all = required_metrics is None
         reqs = set(required_metrics) if required_metrics else set()
 
         def needs(name: str) -> bool:
             return need_all or name in reqs
 
-        # Always calculate profit factor if any profit metric is needed?
-        # Actually, let's just follow the requests.
-
         # Profit metrics
         if needs("profit_factor"):
             metrics["profit_factor"] = self.profit_factor.calculate(pnls)
         if needs("total_return"):
             metrics["total_return"] = float(np.sum(pnl_pcts))
+        if needs("total_profit_abs"):
+            equity = self._calculate_equity(trades)
+            metrics["total_profit_abs"] = float(equity[-1] - self.initial_capital)
+        if needs("final_balance"):
+            equity = self._calculate_equity(trades)
+            metrics["final_balance"] = float(equity[-1])
         if needs("avg_return"):
-            metrics["avg_return"] = float(np.mean(pnl_pcts)) if pnl_pcts else 0
+            metrics["avg_return"] = float(np.mean(pnl_pcts)) if pnl_pcts else 0.0
         if needs("winrate"):
             metrics["winrate"] = self.winrate.calculate(pnls)
         if needs("expectancy"):
@@ -118,30 +137,47 @@ class MetricsCalculator:
         if needs("trade_count"):
             metrics["trade_count"] = len(trades)
         if needs("consecutive_wins"):
-            metrics["consecutive_wins"] = self._max_consecutive(pnls, True)
+            metrics["consecutive_wins"] = metric_utils.max_consecutive(pnls, True)
         if needs("consecutive_losses"):
-            metrics["consecutive_losses"] = self._max_consecutive(pnls, False)
+            metrics["consecutive_losses"] = metric_utils.max_consecutive(pnls, False)
 
         # Complex metrics requiring Equity Curve
         equity_metrics = {
-            "sharpe_ratio", "sortino_ratio", "max_drawdown", "avg_drawdown",
-            "recovery_factor", "calmar_ratio"
+            "sharpe_ratio",
+            "sortino_ratio",
+            "max_drawdown",
+            "avg_drawdown",
+            "recovery_factor",
+            "calmar_ratio",
         }
 
         if need_all or not reqs.isdisjoint(equity_metrics):
             equity = self._calculate_equity(trades)
+            max_dd_val = 0.0
 
-            if needs("max_drawdown") or needs("recovery_factor") or needs("calmar_ratio"):
-                metrics["max_drawdown"] = self.drawdown.calculate_max(equity)
+            if (
+                needs("max_drawdown")
+                or needs("recovery_factor")
+                or needs("calmar_ratio")
+            ):
+                max_dd_val = self.drawdown.calculate_max(equity)
+                if needs("max_drawdown"):
+                    metrics["max_drawdown"] = max_dd_val
 
             if needs("avg_drawdown"):
                 metrics["avg_drawdown"] = self.drawdown.calculate_avg(equity)
 
             if needs("recovery_factor"):
-                metrics["recovery_factor"] = self._recovery_factor(pnl_pcts, equity)
+                total_ret = float(np.sum(pnl_pcts))
+                metrics["recovery_factor"] = metric_utils.calculate_recovery_factor(
+                    total_ret, max_dd_val
+                )
 
             if needs("calmar_ratio"):
-                metrics["calmar_ratio"] = self._calmar_ratio(pnl_pcts, equity)
+                avg_ret = float(np.mean(pnl_pcts)) if pnl_pcts else 0.0
+                metrics["calmar_ratio"] = metric_utils.calculate_calmar_ratio(
+                    avg_ret, max_dd_val
+                )
 
             # Returns based metrics
             if needs("sharpe_ratio") or needs("sortino_ratio"):
@@ -156,21 +192,62 @@ class MetricsCalculator:
 
     def _extract_trades(
         self,
-        data: pd.DataFrame,
-        signals: pd.DataFrame,
+        data: pd.DataFrame | np.ndarray,
+        signals: pd.DataFrame | np.ndarray,
+        use_sl_tp: bool = False,
+        sl_pct: float = 0.0,
+        tp_pct: float = 0.0,
+        commission_pct: float = 0.0,
+        slippage_pct: float = 0.0,
     ) -> list[TradeResult]:
         """Extract trades from signals. Use C++ if available."""
-        if "signal" not in signals.columns:
-            return []
+        # Convert data to numpy arrays if it's a DataFrame
+        if isinstance(data, pd.DataFrame):
+            close_prices = data["close"].to_numpy()
+            high_prices = data["high"].to_numpy()
+            low_prices = data["low"].to_numpy()
+        else:
+            # Assume data is a numpy array (OHLCV)
+            # col 1=high, 2=low, 3=close
+            high_prices = data[:, 1]
+            low_prices = data[:, 2]
+            close_prices = data[:, 3]
 
-        # Convert to numpy for maximum speed
-        close_prices = data["close"].to_numpy()
-        signal_array = signals["signal"].to_numpy().astype(np.int32)
+        # Convert signals to numpy array if it's a DataFrame
+        if isinstance(signals, pd.DataFrame):
+            if "signal" not in signals.columns:
+                return []
+            signal_array = signals["signal"].to_numpy().astype(np.int32)
+        else:
+            signal_array = np.asarray(signals, dtype=np.int32)
 
-        if HAS_NATIVE:
-            # Use high-performance C++ extension
+        # Ensure signal_array is 1D and matches data length
+        if signal_array.ndim == 0:
+            signal_array = np.full(len(close_prices), signal_array.item(), dtype=np.int32)
+        elif signal_array.ndim > 1:
+            signal_array = signal_array.flatten()
+        
+        if len(signal_array) != len(close_prices):
+            new_signals = np.zeros(len(close_prices), dtype=np.int32)
+            n = min(len(signal_array), len(close_prices))
+            new_signals[-n:] = signal_array[-n:] # Align to the end
+            signal_array = new_signals
+
+        if HAS_NATIVE and not use_sl_tp:
+            # Use high-performance C++ extension (native doesn't support SL/TP yet)
+            native_metrics = _get_native()
+            if not callable(getattr(native_metrics, "extract_trades", None)):
+                return self._extract_trades(
+                    data,
+                    signals,
+                    use_sl_tp=True,
+                    sl_pct=sl_pct,
+                    tp_pct=tp_pct,
+                    commission_pct=commission_pct,
+                    slippage_pct=slippage_pct,
+                )
             raw_trades = native_metrics.extract_trades(
-                close_prices.tolist(),  # pybind11 might need list if not using numpy bindings
+                close_prices.tolist(),
                 signal_array.tolist(),
             )
             return [
@@ -187,153 +264,73 @@ class MetricsCalculator:
             ]
 
         # Fallback to JIT-compiled Python
-        raw_trades = self._extract_trades_fast(close_prices, signal_array)
+        raw_trades = numba_funcs.extract_trades_fast(
+            close_prices,
+            high_prices,
+            low_prices,
+            signal_array,
+            use_sl_tp,
+            sl_pct,
+            tp_pct,
+            commission_pct,
+            slippage_pct,
+        )
 
         return [TradeResult(*t) for t in raw_trades]
 
     @staticmethod
-    @njit
-    def _extract_trades_fast(
-        prices: np.ndarray, signals: np.ndarray
-    ) -> list[tuple[int, int, float, float, int, float, float]]:
-        """Fast trade extraction using Numba JIT.
+    def calculate_batch_fast(
+        prices: np.ndarray,
+        highs: np.ndarray,
+        lows: np.ndarray,
+        signal_matrix: np.ndarray,
+        use_sl_tp: bool,
+        sl_pct: float,
+        tp_pct: float,
+        commission_pct: float = 0.0,
+        slippage_pct: float = 0.0,
+    ) -> np.ndarray:
+        """Calculate basic metrics for a batch of signal sets in parallel."""
+        return numba_funcs.calculate_batch_fast(
+            prices, highs, lows, signal_matrix, use_sl_tp, sl_pct, tp_pct, commission_pct, slippage_pct
+        )
 
-        Note: Numba works best with primitive types, so we return a list of tuples
-        and convert to TradeResult objects in the wrapper.
-        """
-        results = []
-
-        position = 0
-        entry_idx = 0
-        entry_price = 0.0
-
-        for i in range(len(signals)):
-            signal = signals[i]
-            price = prices[i]
-
-            if position == 0:
-                if signal != 0:
-                    # Open position
-                    position = int(signal)
-                    entry_idx = i
-                    entry_price = price
-            elif signal == -position:
-                # Close position
-                exit_price = price
-                pnl = (exit_price - entry_price) * position
-                pnl_pct = pnl / entry_price
-
-                results.append(
-                    (entry_idx, i, entry_price, exit_price, position, pnl, pnl_pct)
-                )
-
-                # Reset position
-                position = 0
-
-        return results
+    @staticmethod
+    def calculate_batch_multi_price_fast(
+        price_matrix: np.ndarray,
+        high_matrix: np.ndarray,
+        low_matrix: np.ndarray,
+        signal_matrix: np.ndarray,
+        use_sl_tp: bool,
+        sl_pct: float,
+        tp_pct: float,
+        commission_pct: float = 0.0,
+        slippage_pct: float = 0.0,
+    ) -> np.ndarray:
+        """Calculate basic metrics for a batch where each row has its own prices."""
+        return numba_funcs.calculate_batch_multi_price_fast(
+            price_matrix,
+            high_matrix,
+            low_matrix,
+            signal_matrix,
+            use_sl_tp,
+            sl_pct,
+            tp_pct,
+            commission_pct,
+            slippage_pct,
+        )
 
     def _calculate_equity(self, trades: list[TradeResult]) -> np.ndarray:
         """Calculate equity curve from trades using vectorized cumprod."""
         if not trades:
-            return np.array([1.0])
+            return np.array([self.initial_capital])
 
         pnl_pcts = np.array([t.pnl_pct for t in trades])
-        # Equity starts at 1.0, then cumprod of (1 + pnl_pct)
-        equity = np.ones(len(trades) + 1)
-        equity[1:] = np.cumprod(1 + pnl_pcts)
+        # Apply leverage
+        effective_pnls = pnl_pcts * self.leverage
+        
+        # Equity starts at initial_capital, then cumprod of (1 + pnl_pct)
+        equity = np.ones(len(trades) + 1) * self.initial_capital
+        equity[1:] = self.initial_capital * np.cumprod(1 + effective_pnls)
 
         return equity
-
-    def _recovery_factor(
-        self,
-        pnl_pcts: list[float],
-        equity: np.ndarray,
-    ) -> float:
-        """Calculate recovery factor.
-
-        Args:
-            pnl_pcts: List of P&L percentages.
-            equity: Equity curve.
-
-        Returns:
-            Recovery factor (total_return / max_drawdown).
-        """
-        total_return = np.sum(pnl_pcts)
-        max_dd = self.drawdown.calculate_max(equity)
-
-        if max_dd == 0:
-            return 0.0
-
-        return float(total_return / max_dd)
-
-    def _calmar_ratio(
-        self,
-        pnl_pcts: list[float],
-        equity: np.ndarray,
-        periods_per_year: int = 252,
-    ) -> float:
-        """Calculate Calmar ratio.
-
-        Args:
-            pnl_pcts: List of P&L percentages.
-            equity: Equity curve.
-            periods_per_year: Trading periods per year.
-
-        Returns:
-            Calmar ratio (annual_return / max_drawdown).
-        """
-        max_dd = self.drawdown.calculate_max(equity)
-
-        if max_dd == 0 or not pnl_pcts:
-            return 0.0
-
-        # Annualize returns (simplified)
-        avg_return = np.mean(pnl_pcts)
-        annual_return = avg_return * periods_per_year
-
-        return float(annual_return / max_dd)
-
-    def _max_consecutive(self, pnls: list[float], wins: bool) -> int:
-        """Calculate max consecutive wins or losses.
-
-        Args:
-            pnls: List of P&L values.
-            wins: If True, count wins; else count losses.
-
-        Returns:
-            Maximum consecutive count.
-        """
-        max_count = 0
-        current = 0
-
-        for pnl in pnls:
-            is_win = pnl > 0
-            if is_win == wins:
-                current += 1
-                max_count = max(max_count, current)
-            else:
-                current = 0
-
-        return max_count
-
-    def _empty_metrics(self) -> dict[str, float]:
-        """Return empty metrics when no trades."""
-        return {
-            "profit_factor": 0,
-            "total_return": 0,
-            "avg_return": 0,
-            "sharpe_ratio": 0,
-            "sortino_ratio": 0,
-            "max_drawdown": 0,
-            "avg_drawdown": 0,
-            "recovery_factor": 0,
-            "calmar_ratio": 0,
-            "winrate": 0,
-            "expectancy": 0,
-            "avg_win": 0,
-            "avg_loss": 0,
-            "win_loss_ratio": 0,
-            "trade_count": 0,
-            "consecutive_wins": 0,
-            "consecutive_losses": 0,
-        }

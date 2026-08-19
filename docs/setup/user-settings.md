@@ -52,6 +52,12 @@ monte_carlo:
   use_noise: true
   use_sensitivity: true
   use_walk_forward: true
+
+# Risk Management
+risk_management:
+  use_sl_tp: true
+  stop_loss_pct: 1.0
+  take_profit_pct: 2.0  # 2:1 Risk Ratio
 ```
 
 ## Storage Location

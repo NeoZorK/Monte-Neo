@@ -1,0 +1,16 @@
+data:
+  dir: data
+  symbol: BTCUSDT
+  timeframe: 1d
+hardware:
+  gpu_precision: float32
+  metal_driver: cpp
+  use_gpu: true
+metrics:
+  max_drawdown: 0.2
+  profit_factor: 2.0
+  sharpe_ratio: 1.0
+  winrate: 0.45
+monte_carlo:
+  iterations: 1000
+  max_iterations: 1000000000

@@ -7,13 +7,14 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 
 from monte_neo.monte_carlo.scenarios import ScenarioBuilder
+from monte_neo.monte_carlo.types import MCConfig, MCResult
+from monte_neo.monte_carlo.utils import summarize_metrics
 from monte_neo.monte_carlo.workers import init_worker_data, run_scenario_batch, run_single_scenario
 from monte_neo.utils.logger import get_logger
 from monte_neo.utils.parallel import ParallelExecutor
@@ -23,35 +24,6 @@ if TYPE_CHECKING:
     from monte_neo.metrics.calculator import MetricsCalculator
 
 logger = get_logger(__name__)
-
-
-@dataclass
-class MCConfig:
-    """Monte Carlo configuration."""
-
-    iterations: int = 10000
-    use_shuffling: bool = True
-    use_noise: bool = True
-    use_sensitivity: bool = True
-    use_walk_forward: bool = True
-    use_block_bootstrap: bool = True
-    sensitivity_range: float = 0.10  # ±10%
-    walk_forward_splits: int = 5
-    n_workers: int | None = None
-    random_seed: int | None = None
-
-
-@dataclass
-class MCResult:
-    """Monte Carlo simulation result."""
-
-    passed: bool
-    pass_rate: float
-    iterations_run: int
-    elapsed_time: float
-    metrics_summary: dict = field(default_factory=dict)
-    detailed_results: list = field(default_factory=list)
-
 
 class MonteCarloEngine:
     """Monte Carlo simulation engine."""
@@ -75,7 +47,12 @@ class MonteCarloEngine:
         self.scenario_builder = ScenarioBuilder(self.config)
 
         from monte_neo.core.gpu_engine import MLXBacktestEngine
-        self.gpu_engine = MLXBacktestEngine()
+        self.gpu_engine = MLXBacktestEngine(
+            precision=self.config.gpu_precision,
+            metal_driver=self.config.metal_driver,
+            initial_capital=self.config.initial_capital,
+            leverage=self.config.leverage
+        )
 
         self._progress_callback: Callable[[int, int], None] | None = None
 
@@ -94,6 +71,7 @@ class MonteCarloEngine:
         metrics_calc: MetricsCalculator,
         target_metrics: dict[str, float],
         existing_scenarios: list[pd.DataFrame] | None = None,
+        interactive: bool = True,
     ) -> MCResult:
         """Run Monte Carlo simulation.
 
@@ -103,6 +81,7 @@ class MonteCarloEngine:
             metrics_calc: Metrics calculator.
             target_metrics: Target metrics to achieve.
             existing_scenarios: Optional list of pre-generated scenarios.
+            interactive: Whether to ask for confirmation in sequential mode.
 
         Returns:
             MCResult with simulation results.
@@ -111,6 +90,81 @@ class MonteCarloEngine:
         passed_count = 0
         all_results = []
 
+        def _meets_targets(metrics: dict[str, float]) -> bool:
+            for metric_name, target_value in target_metrics.items():
+                if metric_name not in metrics:
+                    continue
+                actual = metrics[metric_name]
+                if metric_name in ["max_drawdown", "consecutive_losses"]:
+                    if actual > target_value:
+                        return False
+                else:
+                    if actual < target_value:
+                        return False
+            return True
+
+        if self.config.use_sequential:
+            return self.run_sequential(data, indicator, metrics_calc, target_metrics, interactive=interactive)
+
+        # Check for Pure GPU Acceleration (End-to-End on GPU)
+        # Only for Shuffling method currently, and if indicator supports it.
+        # This bypasses CPU scenario generation and data transfer overhead.
+        has_mlx = indicator.to_mlx_representation() is not None
+        has_metal = indicator.get_metal_params() is not None
+        
+        only_shuffling = (
+            (self.config.use_shuffling or not any([
+                self.config.use_noise,
+                self.config.use_sensitivity,
+                self.config.use_walk_forward,
+                self.config.use_block_bootstrap
+            ]))
+            and not self.config.use_noise
+            and not self.config.use_sensitivity
+            and not self.config.use_walk_forward
+            and not self.config.use_block_bootstrap
+        )
+
+        if (has_mlx or has_metal) and only_shuffling and existing_scenarios is None and self.config.iterations > 100:
+            try:
+                engine_type = "Native Metal" if has_metal else "MLX"
+                logger.info(f"🚀 Using High-Performance {engine_type} Engine for {self.config.iterations} iterations")
+                results, timing_stats = self.gpu_engine.run_full_simulation(
+                    data=data,
+                    indicator=indicator,
+                    n_scenarios=self.config.iterations,
+                    method="shuffling",
+                    seed=self.config.random_seed or 42,
+                    use_sl_tp=self.config.use_sl_tp,
+                    sl_pct=self.config.sl_pct,
+                    tp_pct=self.config.tp_pct,
+                )
+                
+                # Transform results to match MCResult format
+                passed_count = sum(1 for r in results if _meets_targets(r.get("metrics", {})))
+                total = len(results)
+                
+                all_results = []
+                for i, res in enumerate(results):
+                    metrics = res.get("metrics", {})
+                    passed = _meets_targets(metrics)
+                    all_results.append({
+                        "scenario_idx": i,
+                        "passed": passed,
+                        "metrics": metrics
+                    })
+
+                if self._progress_callback:
+                    self._progress_callback(total, total)
+
+                finalize_res = self._finalize_results(passed_count, total, all_results, start_time)
+                finalize_res.timing_stats = timing_stats
+                return finalize_res
+            
+            except Exception as e:
+                logger.warning(f"Pure GPU execution failed, falling back: {e}")
+                # Fall through to standard methods
+        
         # Generate test scenarios
         other_methods_enabled = (
             self.config.use_shuffling
@@ -147,19 +201,24 @@ class MonteCarloEngine:
                     self.config.iterations,
                     executor=executor,
                     block_size=None, # Auto-calculated
-                    base_seed=self.config.random_seed or 42
+                    base_seed=self.config.random_seed or 42,
+                    use_sl_tp=self.config.use_sl_tp,
+                    sl_pct=self.config.sl_pct,
+                    tp_pct=self.config.tp_pct,
                 )
 
                 # Transform results
-                passed_count = sum(1 for r in results if r.get("passed", False))
+                passed_count = sum(1 for r in results if _meets_targets(r.get("metrics", {})))
                 total = len(results)
 
                 all_results = []
                 for i, res in enumerate(results):
+                    metrics = res.get("metrics", {})
+                    passed = _meets_targets(metrics)
                     all_results.append({
                         "scenario_idx": i,
-                        "passed": res.get("passed", False),
-                        "metrics": res.get("metrics", {})
+                        "passed": passed,
+                        "metrics": metrics
                     })
 
                 if self._progress_callback:
@@ -191,20 +250,23 @@ class MonteCarloEngine:
                 gpu_results = self.gpu_engine.backtest_scenarios(
                     indicator,
                     scenarios,
-                    executor=self.executor
+                    executor=self.executor,
+                    use_sl_tp=self.config.use_sl_tp,
+                    sl_pct=self.config.sl_pct,
+                    tp_pct=self.config.tp_pct,
                 )
 
                 for i, res in enumerate(gpu_results):
                     # The GPU engine returns a dict with 'passed' and 'metrics'
-                    if res["passed"]:
+                    metrics = res.get("metrics", {})
+                    passed = _meets_targets(metrics)
+                    if passed:
                         passed_count += 1
                     all_results.append(
                         {
                             "scenario_idx": i,
-                            "passed": res["passed"],
-                            "metrics": res[
-                                "metrics"
-                            ],  # Ensure metrics are correctly extracted
+                            "passed": passed,
+                            "metrics": metrics,
                         }
                     )
 
@@ -219,17 +281,34 @@ class MonteCarloEngine:
                 logger.warning(f"GPU acceleration failed, falling back to CPU: {e}")
 
         # Fallback to CPU parallel execution
-        from functools import partial
+        cpu_results = self._run_cpu_parallel(scenarios, indicator, metrics_calc, target_metrics)
+        passed_count += cpu_results["passed_count"]
+        all_results.extend(cpu_results["all_results"])
 
-        # Use batching for better performance with multiprocessing
+        if self._progress_callback:
+            self._progress_callback(total, total)
+
+        return self._finalize_results(passed_count, total, all_results, start_time)
+
+    def _run_cpu_parallel(
+        self,
+        scenarios: list[pd.DataFrame],
+        indicator: BaseIndicator,
+        metrics_calc: MetricsCalculator,
+        target_metrics: dict[str, float],
+    ) -> dict:
+        """Run scenarios on CPU in parallel."""
+        from functools import partial
+        passed_count = 0
+        all_results = []
+        total = len(scenarios)
+
         executor = self.executor
         if executor is None:
-            n_workers = self.config.n_workers
-            executor = ParallelExecutor(n_workers=n_workers)
+            executor = ParallelExecutor(n_workers=self.config.n_workers)
 
         n_workers = executor.n_workers
 
-        # If scenarios are few or workers=1, run sequentially without batching overhead
         if total < 50 or n_workers == 1:
             worker_func = partial(
                 run_single_scenario,
@@ -239,125 +318,68 @@ class MonteCarloEngine:
             )
             results = executor.map(worker_func, scenarios)
 
-            # Process results
             for i, result in enumerate(results):
-                if result is None:
-                    continue
+                if result is None: continue
                 meets_targets, metrics = result
-                if meets_targets:
-                    passed_count += 1
-                all_results.append({
-                    "scenario_idx": i,
-                    "passed": meets_targets,
-                    "metrics": metrics,
-                })
+                if meets_targets: passed_count += 1
+                all_results.append({"scenario_idx": i, "passed": meets_targets, "metrics": metrics})
         else:
-            # Batch processing
             batch_size = max(10, total // (n_workers * 4))
-            scenario_batches = [
-                scenarios[i : i + batch_size]
-                for i in range(0, total, batch_size)
-            ]
-
-            batch_worker = partial(
-                run_scenario_batch,
-                indicator=indicator,
-                metrics_calc=metrics_calc,
-                target_metrics=target_metrics,
-            )
-
+            scenario_batches = [scenarios[i : i + batch_size] for i in range(0, total, batch_size)]
+            batch_worker = partial(run_scenario_batch, indicator=indicator, metrics_calc=metrics_calc, target_metrics=target_metrics)
             batch_results_list = executor.map(batch_worker, scenario_batches)
 
-            # Flatten results
             current_idx = 0
             for batch_res in batch_results_list:
-                if not batch_res:
-                    continue
+                if not batch_res: continue
                 for meets_targets, metrics in batch_res:
-                    if meets_targets:
-                        passed_count += 1
-                    all_results.append({
-                        "scenario_idx": current_idx,
-                        "passed": meets_targets,
-                        "metrics": metrics,
-                    })
+                    if meets_targets: passed_count += 1
+                    all_results.append({"scenario_idx": current_idx, "passed": meets_targets, "metrics": metrics})
                     current_idx += 1
 
-        if self._progress_callback:
-            self._progress_callback(total, total)
-
-        return self._finalize_results(passed_count, total, all_results, start_time)
+        return {"passed_count": passed_count, "all_results": all_results}
 
     def _finalize_results(
         self, passed_count: int, total: int, all_results: list, start_time: float
     ) -> MCResult:
-        """Helper to package results."""
+        """Finalize and summarize results."""
         elapsed = time.time() - start_time
         pass_rate = passed_count / total if total > 0 else 0
+        passed = pass_rate >= self.config.pass_threshold
+        metrics_summary = summarize_metrics(all_results)
 
-        logger.debug(f"MC complete: {passed_count}/{total} passed ({pass_rate:.1%})")
+        logger.info(f"✨ Monte Carlo simulation completed in {elapsed:.2f}s ({total} iterations)")
+        logger.info(f"📊 Pass Rate: {pass_rate:.1%} ({'PASSED' if passed else 'FAILED'})")
 
         return MCResult(
-            passed=pass_rate >= 0.95,  # 95% pass rate required
+            passed=passed,
             pass_rate=pass_rate,
             iterations_run=total,
             elapsed_time=elapsed,
-            metrics_summary=self._summarize_metrics(all_results),
+            metrics_summary=metrics_summary,
             detailed_results=all_results,
         )
 
-    def _summarize_metrics(self, results: list[dict]) -> dict:
-        """Summarize metrics across all scenarios.
+    def run_sequential(
+        self,
+        data: pd.DataFrame,
+        indicator: BaseIndicator,
+        metrics_calc: MetricsCalculator,
+        target_metrics: dict[str, float],
+        interactive: bool = True,
+    ) -> MCResult:
+        """Run Monte Carlo simulation sequentially.
 
         Args:
-            results: List of scenario results.
+            data: OHLCV DataFrame.
+            indicator: Indicator to test.
+            metrics_calc: Metrics calculator.
+            target_metrics: Target metrics.
+            interactive: Whether to ask for confirmation before each step.
 
         Returns:
-            Summary statistics.
+            MCResult with sequential simulation results.
         """
-        if not results:
-            return {}
-
-        # Collect all metric values
-        metric_values: dict[str, list] = {}
-        for result in results:
-            for name, value in result.get("metrics", {}).items():
-                if name not in metric_values:
-                    metric_values[name] = []
-                metric_values[name].append(value)
-
-        # Calculate summary stats
-        summary = {}
-        for name, values in metric_values.items():
-            arr = np.array(values, dtype=float)
-
-            # Handle infinite values which cause warnings in std calculation
-            # We replace inf with nan and use nan-aware functions
-            is_inf = np.isinf(arr)
-            if np.any(is_inf):
-                arr[is_inf] = np.nan
-
-            # Check if we have any valid data left
-            if np.all(np.isnan(arr)):
-                summary[name] = {
-                    "mean": 0.0,
-                    "std": 0.0,
-                    "min": 0.0,
-                    "max": 0.0,
-                    "median": 0.0,
-                    "p5": 0.0,
-                    "p95": 0.0,
-                }
-                continue
-
-            summary[name] = {
-                "mean": float(np.nanmean(arr)),
-                "std": float(np.nanstd(arr)),
-                "min": float(np.nanmin(arr)),
-                "max": float(np.nanmax(arr)),
-                "median": float(np.nanmedian(arr)),
-                "p5": float(np.nanpercentile(arr, 5)),
-                "p95": float(np.nanpercentile(arr, 95)),
-            }
-
-        return summary
+        from monte_neo.monte_carlo.sequential import SequentialMCRunner
+        runner = SequentialMCRunner(self)
+        return runner.run(data, indicator, metrics_calc, target_metrics, interactive=interactive)

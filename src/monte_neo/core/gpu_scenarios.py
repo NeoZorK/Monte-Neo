@@ -8,6 +8,7 @@ import mlx.core as mx
 import numpy as np
 import pandas as pd
 
+from monte_neo.metrics.calculator import MetricsCalculator
 from monte_neo.monte_carlo.workers import _generate_signals_wrapper
 from monte_neo.utils.parallel import ParallelExecutor
 
@@ -43,14 +44,73 @@ def run_scenarios_backtest(
     indicator: BaseIndicator,
     scenarios: list[pd.DataFrame],
     executor: ParallelExecutor | None = None,
+    use_sl_tp: bool = False,
+    sl_pct: float = 0.0,
+    tp_pct: float = 0.0,
 ) -> list[dict[str, Any]]:
-    """Run one indicator across many data scenarios on GPU.
+    """Run one indicator across many data scenarios on GPU."""
+    if use_sl_tp:
+        # Optimization: Use parallelized batch Numba for SL/TP on multiple scenarios
+        # This is much faster than the previous Python loop
 
-    Args:
-        indicator: Indicator to test.
-        scenarios: List of data scenarios.
-        executor: Optional shared parallel executor for signal generation.
-    """
+        # 1. Get Signals (CPU parallelized)
+        tasks = [(indicator, df) for df in scenarios]
+        if executor is None:
+            local_executor = ParallelExecutor()
+            raw_signals = local_executor.map(_generate_signals_wrapper, tasks)
+        else:
+            raw_signals = executor.map(_generate_signals_wrapper, tasks)
+
+        # 2. Prepare Data and Signal Matrix
+        max_len = max(len(df) for df in scenarios)
+
+        # We need a unified price matrix for Numba batch
+        # Since scenarios can have different prices, we pad them
+        close_matrix = np.zeros((len(scenarios), max_len), dtype=np.float64)
+        high_matrix = np.zeros((len(scenarios), max_len), dtype=np.float64)
+        low_matrix = np.zeros((len(scenarios), max_len), dtype=np.float64)
+        signal_matrix = np.zeros((len(scenarios), max_len), dtype=np.int32)
+
+        for i, df in enumerate(scenarios):
+            l = len(df)
+            close_matrix[i, :l] = df["close"].to_numpy().astype(np.float64)
+            high_matrix[i, :l] = df["high"].to_numpy().astype(np.float64)
+            low_matrix[i, :l] = df["low"].to_numpy().astype(np.float64)
+            signal_matrix[i, :l] = normalize_signal_array(raw_signals[i], l).astype(np.int32)
+
+        # 3. Run Batch Calculation (Multi-scenario version)
+        # We use calculate_batch_multi_price_fast because each scenario has its own prices
+        batch_metrics = MetricsCalculator.calculate_batch_multi_price_fast(
+            close_matrix,
+            high_matrix,
+            low_matrix,
+            signal_matrix,
+            use_sl_tp,
+            sl_pct,
+            tp_pct
+        )
+
+        results = []
+        for i in range(len(scenarios)):
+            total_return = float(batch_metrics[i, 0])
+            max_dd = float(batch_metrics[i, 1])
+            pf = float(batch_metrics[i, 2])
+            trade_count = int(batch_metrics[i, 3])
+
+            results.append({
+                "total_return": total_return,
+                "max_drawdown": max_dd,
+                "profit_factor": pf,
+                "passed": bool(total_return > 0.0 and max_dd < 0.2),
+                "metrics": {
+                    "total_return": total_return,
+                    "max_drawdown": max_dd,
+                    "profit_factor": pf,
+                    "trade_count": trade_count,
+                }
+            })
+        return results
+
     # 1. Prepare Returns Matrix (S_scenarios x T_bars)
     # Assuming OHLCV format, we pre-calculate returns for all scenarios
     returns_list = []
@@ -110,10 +170,11 @@ def run_scenarios_backtest(
         signal_list.append(normalize_signal_array(sigs, max_len))
 
     # Matrix: (S, T-1)
-    signal_matrix = mx.array(np.stack(signal_list))
+    signal_matrix_np = np.stack(signal_list)
+    signal_matrix_mx: Any = mx.array(signal_matrix_np.astype(np.int32))
 
     # 3. Massive GPU calc
-    strat_returns = signal_matrix * returns_matrix
+    strat_returns = signal_matrix_mx * returns_matrix
 
     # Vectorized metrics
     equity_curves = mx.exp(

@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 class GeneratorConfig:
     """Generator configuration."""
 
-    max_iterations: int = 100000
+    max_iterations: int = 1000000000
     target_metrics: dict[str, float] = field(default_factory=dict)
     indicator_types: list[str] = field(
         default_factory=lambda: ["sma", "rsi", "macd", "dynamic"]
@@ -24,12 +24,28 @@ class GeneratorConfig:
     use_mc_sensitivity: bool = True
     use_mc_walk_forward: bool = True
     use_mc_block_bootstrap: bool = True
+    use_sequential_mc: bool = False
     early_stopping: bool = True
     min_trades: int = 30
     population_size: int = 50
     generations: int = 20
     mutation_rate: float = 0.3
     crossover_rate: float = 0.7
+    initial_capital: float = 100000.0
+    leverage: float = 1.0
+
+    # Risk Management
+    stop_loss_pct: float = 1.0  # Default 1%
+    take_profit_pct: float = 2.0  # Default 2% (2:1 RR)
+    use_sl_tp: bool = True
+
+    # Validation
+    mc_pass_threshold: float = 0.80  # Default 80% for production
+
+    # Hardware Acceleration
+    use_gpu: bool = True
+    gpu_precision: str = "float32"
+    metal_driver: str = "auto"  # auto, cpp, objc, swift
 
 
 @dataclass
@@ -44,3 +60,4 @@ class GeneratorResult:
     iterations_tried: int
     elapsed_time: float
     candidates_found: int
+    mc_details: dict = field(default_factory=dict)
