@@ -208,7 +208,9 @@ def select_symbol(menu: InteractiveMenu) -> str | None:
 def select_timeframe_for_symbol(menu: InteractiveMenu, symbol: str) -> str | None:
     """Select available timeframe for a given symbol."""
     import os
+
     import questionary
+
     from monte_neo.cli.styles import CUSTOM_STYLE
     
     data_dir = menu.config.data_dir

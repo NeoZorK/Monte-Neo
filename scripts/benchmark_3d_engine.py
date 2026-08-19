@@ -1,11 +1,13 @@
 
 import time
+
 import numpy as np
 import pandas as pd
-import mlx.core as mx
+
 from monte_neo.core.mlx_engine import MLXBacktestEngine
-from monte_neo.indicators.dynamic import DynamicIndicator
 from monte_neo.indicators.base import IndicatorConfig
+from monte_neo.indicators.dynamic import DynamicIndicator
+
 
 def generate_dummy_data(n_bars=5000):
     np.random.seed(42)

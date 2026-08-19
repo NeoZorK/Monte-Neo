@@ -1,10 +1,10 @@
 from __future__ import annotations
+
 import logging
 import os
 import subprocess
 import time
-from typing import Optional, Dict
-import mlx.core as mx
+
 from monte_neo.utils.cache import load_cache, save_cache
 
 logger = logging.getLogger(__name__)

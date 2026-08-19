@@ -106,6 +106,7 @@ class DynamicIndicator(BaseIndicator):
             return self._mlx_repr_cache
 
         import re
+
         from monte_neo.core.acceleration.indicators import (
             MLXSMA,
             MLXCrossStrategy,

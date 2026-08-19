@@ -1,14 +1,17 @@
 from __future__ import annotations
-import logging
-import time
+
 import asyncio
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+import logging
+from typing import TYPE_CHECKING, Any
+
 import mlx.core as mx
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 from monte_neo.core.acceleration.engine import GpuAccelerationEngine
-from monte_neo.core.mlx_driver_utils import try_auto_compile_metal, select_best_metal_driver
+from monte_neo.core.gpu_lazy import backtest_lazy_scenarios as run_lazy_backtest
+from monte_neo.core.gpu_scenarios import run_scenarios_backtest
+from monte_neo.core.mlx_driver_utils import select_best_metal_driver, try_auto_compile_metal
 
 if TYPE_CHECKING:
     from monte_neo.indicators.base import BaseIndicator
@@ -26,6 +29,8 @@ except ImportError:
         from monte_neo.core.acceleration.cpp_metal.metal_engine import Driver, MetalBacktestBridge
     else:
         logger.warning("❌ Metal extension unavailable.")
+        Driver = None
+        MetalBacktestBridge = None
 
 class MLXBacktestEngine:
     """GPU-accelerated backtesting engine using MLX."""
@@ -35,7 +40,7 @@ class MLXBacktestEngine:
         self.initial_capital = initial_capital
         self.leverage = leverage
         self.pure_gpu_engine = GpuAccelerationEngine(precision=precision, metal_driver=metal_driver, initial_capital=initial_capital, leverage=leverage)
-        self._data_prefetch_cache: Dict[str, mx.array] = {}
+        self._data_prefetch_cache: dict[str, mx.array] = {}
         self._prefetch_lock = asyncio.Lock()
         self.native_bridge = None
 
@@ -66,11 +71,11 @@ class MLXBacktestEngine:
                 self._data_prefetch_cache[f"{key}_{k}"] = v
         logger.debug(f"🚀 Data prefetched to GPU with key: {key}")
 
-    def get_prefeteched_tensors(self, key: str = "current") -> Optional[Dict[str, mx.array]]:
+    def get_prefeteched_tensors(self, key: str = "current") -> dict[str, mx.array] | None:
         results = {k[len(key)+1:]: v for k, v in self._data_prefetch_cache.items() if k.startswith(f"{key}_")}
         return results if results else None
 
-    def run_full_simulation(self, data: pd.DataFrame, indicator_or_list: Union[BaseIndicator, list[BaseIndicator]], n_scenarios: int, **kwargs) -> tuple[Union[list[dict[str, Any]], list[list[dict[str, Any]]]], dict[str, float]]:
+    def run_full_simulation(self, data: pd.DataFrame, indicator_or_list: BaseIndicator | list[BaseIndicator], n_scenarios: int, **kwargs) -> tuple[list[dict[str, Any]] | list[list[dict[str, Any]]], dict[str, float]]:
         from monte_neo.core.mlx_sim_engine import run_full_simulation_impl
         return run_full_simulation_impl(self, data, indicator_or_list, n_scenarios, **kwargs)
 
@@ -80,12 +85,10 @@ class MLXBacktestEngine:
 
     def backtest_scenarios(self, indicator: BaseIndicator, scenarios: list[pd.DataFrame], executor: ParallelExecutor | None = None,
                           use_sl_tp: bool = False, sl_pct: float = 0.0, tp_pct: float = 0.0) -> list[dict[str, Any]]:
-        from monte_neo.core.gpu_scenarios import run_scenarios_backtest
         return run_scenarios_backtest(indicator, scenarios, executor, use_sl_tp=use_sl_tp, sl_pct=sl_pct, tp_pct=tp_pct)
 
     def backtest_lazy_scenarios(self, indicator: BaseIndicator, n_scenarios: int, executor: ParallelExecutor,
                                block_size: int | None = None, base_seed: int = 42, use_sl_tp: bool = False,
                                sl_pct: float = 0.0, tp_pct: float = 0.0) -> list[dict[str, Any]]:
-        from monte_neo.core.gpu_lazy import backtest_lazy_scenarios as run_lazy_backtest
         return run_lazy_backtest(indicator=indicator, n_scenarios=n_scenarios, executor=executor, block_size=block_size,
                                  base_seed=base_seed, use_sl_tp=use_sl_tp, sl_pct=sl_pct, tp_pct=tp_pct)

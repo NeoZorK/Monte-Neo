@@ -1,9 +1,11 @@
+import mlx.core as mx
 import numpy as np
 import pandas as pd
-import mlx.core as mx
+
 from monte_neo.core.mlx_engine import MLXBacktestEngine
 from monte_neo.indicators.base import BaseIndicator
 from monte_neo.metrics.calculator import MetricsCalculator
+
 
 class SimpleMovingAverage(BaseIndicator):
     def __init__(self, period=20):

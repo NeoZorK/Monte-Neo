@@ -62,7 +62,9 @@ class PortfolioManager:
         
         # Ensure symmetry and 0 diagonal for squareform
         dist = (dist + dist.T) / 2
-        np.fill_diagonal(dist.values, 0)
+        dist_values = dist.to_numpy(copy=True)
+        np.fill_diagonal(dist_values, 0)
+        dist = pd.DataFrame(dist_values, index=dist.index, columns=dist.columns)
         
         # Hierarchical clustering
         try:
