@@ -7,22 +7,21 @@ from __future__ import annotations
 
 import time
 from datetime import timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import numpy as np
+from rich.console import Group
 from rich.live import Live
 from rich.panel import Panel
 from rich.table import Table
-from rich.console import Group
 
+from monte_neo.cli.menu.leadership_optimizer import SmartPipelineOptimizer
 from monte_neo.cli.styles import press_any_key
 from monte_neo.core.evolution_ai import AIEvolutionEngine
 from monte_neo.core.optimization.production_gate import ProductionGate
 from monte_neo.monte_carlo.engine import MonteCarloEngine
 from monte_neo.utils.console import console
 from monte_neo.utils.logger import get_logger
-
-from monte_neo.cli.menu.leadership_optimizer import SmartPipelineOptimizer
 
 if TYPE_CHECKING:
     from monte_neo.cli.menu.main import InteractiveMenu
@@ -64,7 +63,7 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
             avg_time = elapsed / optimizer.iteration
             # Estimate we might need 10-20 iterations on average if not found yet
             # This is just a rough estimate
-            remaining_est = avg_time * max(1, (5 - optimizer.iteration)) 
+            remaining_est = avg_time * max(1, (5 - optimizer.iteration))
             if remaining_est > 0:
                 eta_str = str(timedelta(seconds=int(remaining_est)))
             else:
@@ -164,7 +163,7 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
     # Load data once
     optimizer = SmartPipelineOptimizer(menu, log_callback=log)
     
-    console.print("\n" * 2) 
+    console.print("\n" * 2)
     
     try:
         with Live(_generate_pipeline_layout(), refresh_per_second=2, console=console) as live:
@@ -258,7 +257,7 @@ def leadership_pipeline_workflow(menu: InteractiveMenu) -> None:
                 optimizer.last_mc_results = {
                     "passed": mc_res.passed,
                     "cscv_passed": cscv_res.get("is_robust", False),
-                    "wfe_passed": (validation_res.out_sample_metrics.get("sharpe_ratio", 0) / 
+                    "wfe_passed": (validation_res.out_sample_metrics.get("sharpe_ratio", 0) /
                                    max(0.001, validation_res.in_sample_metrics.get("sharpe_ratio", 0))) > 0.5
                 }
                 optimizer.last_mc_step_results = mc_res.step_results

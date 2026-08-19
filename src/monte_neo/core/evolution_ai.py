@@ -11,13 +11,13 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
+from monte_neo.core.gpu_scenarios import normalize_signal_array
+from monte_neo.core.mlx_engine import MLXBacktestEngine
 from monte_neo.indicators.base import BaseIndicator
 from monte_neo.indicators.code_gen import CodeGenerator
 from monte_neo.indicators.dynamic import DynamicIndicator
 from monte_neo.metrics.calculator import MetricsCalculator
 from monte_neo.utils.logger import get_logger
-from monte_neo.core.gpu_scenarios import normalize_signal_array
-from monte_neo.core.mlx_engine import MLXBacktestEngine
 
 logger = get_logger(__name__)
 

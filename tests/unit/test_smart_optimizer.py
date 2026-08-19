@@ -1,6 +1,7 @@
-import pytest
 from unittest.mock import MagicMock
+
 from monte_neo.cli.menu.leadership_optimizer import SmartPipelineOptimizer
+
 
 class MockValidationResult:
     def __init__(self, warnings=None):
@@ -26,7 +27,7 @@ def test_optimizer_overfitting_adjustment():
     assert menu._crossover_rate > 0.5
     assert "Overfitting" in optimizer.last_failure_reason
     # Initial is index 4 (1h), should move to index 5 (4h)
-    assert menu._selected_timeframe == "4h" 
+    assert menu._selected_timeframe == "4h"
 
 def test_optimizer_low_trades_adjustment():
     # Setup

@@ -1,8 +1,9 @@
 
-import mlx.core as mx
-import numpy as np
 import time
+
+import mlx.core as mx
 import torch
+
 
 def test_dlpack():
     print("Creating 500M elements array...")
