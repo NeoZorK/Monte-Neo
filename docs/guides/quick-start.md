@@ -10,7 +10,7 @@ uv run monte-neo
 
 ## 2. Download Data
 
-Navigate to `📊 Download Market Data`, enter `BTCUSDT`, timeframe `1h`, and select `365 days`.
+Navigate to `📊 Download Market Data`. You will see a searchable grid of available symbols. Start typing to filter (e.g., `BTC`) and use arrow keys to select `BTCUSDT`. Select timeframe `1h` and `365 days`.
 
 ## 3. Generate
 

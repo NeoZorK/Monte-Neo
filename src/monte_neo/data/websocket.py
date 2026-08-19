@@ -183,13 +183,20 @@ class BinanceWebsocketStreamer:
         if callback not in self._callbacks:
             self._callbacks.append(callback)
 
-    def _dispatch_message(self, message: Any) -> None:
+    def _dispatch_message(self, _, message: Any) -> None:
         if not self._callbacks:
             return
-        if isinstance(message, dict):
+        if isinstance(message, str):
+            import json
+            try:
+                payload = json.loads(message)
+            except Exception:
+                payload = {"message": message}
+        elif isinstance(message, dict):
             payload = message
         else:
             payload = {"message": message}
+            
         for callback in self._callbacks:
             try:
                 callback(payload)

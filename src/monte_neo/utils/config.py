@@ -18,12 +18,15 @@ class Config:
     data_dir: Path = field(default_factory=lambda: Path("./data"))
     binance_api_key: str = ""
     binance_api_secret: str = ""
+    auto_download_data: bool = True  # Automatically download missing timeframes
 
     # Generation settings
     default_symbol: str = "BTCUSDT"
     default_timeframe: str = "1h"
-    max_iterations: int = 100000
+    max_iterations: int = 1000000000
     mc_iterations: int = 1000
+    initial_capital: float = 100000.0
+    leverage: float = 1.0
 
     # Default target metrics
     target_profit_factor: float = 2.0
@@ -34,6 +37,9 @@ class Config:
     # Performance settings
     n_workers: int | None = None
     log_level: str = "INFO"
+    use_gpu: bool = True
+    gpu_precision: str = "float32"
+    metal_driver: str = "cpp"
 
 
 def load_config(config_path: str | Path | None = None) -> Config:
@@ -83,6 +89,8 @@ def _merge_yaml_config(config: Config, path: Path) -> Config:
             config.default_symbol = data["symbol"]
         if "timeframe" in data:
             config.default_timeframe = data["timeframe"]
+        if "auto_download" in data:
+            config.auto_download_data = data["auto_download"]
 
     # Metrics settings
     if "metrics" in yaml_config:
@@ -100,6 +108,16 @@ def _merge_yaml_config(config: Config, path: Path) -> Config:
         if "iterations" in mc:
             config.mc_iterations = mc["iterations"]
 
+    # Hardware settings
+    if "hardware" in yaml_config:
+        hw = yaml_config["hardware"]
+        if "use_gpu" in hw:
+            config.use_gpu = hw["use_gpu"]
+        if "gpu_precision" in hw:
+            config.gpu_precision = hw["gpu_precision"]
+        if "metal_driver" in hw:
+            config.metal_driver = hw["metal_driver"]
+
     return config
 
 
@@ -110,6 +128,7 @@ def save_config(config: Config, path: str | Path) -> None:
             "dir": str(config.data_dir),
             "symbol": config.default_symbol,
             "timeframe": config.default_timeframe,
+            "auto_download": config.auto_download_data,
         },
         "metrics": {
             "profit_factor": config.target_profit_factor,
@@ -120,6 +139,11 @@ def save_config(config: Config, path: str | Path) -> None:
         "monte_carlo": {
             "iterations": config.mc_iterations,
             "max_iterations": config.max_iterations,
+        },
+        "hardware": {
+            "use_gpu": config.use_gpu,
+            "gpu_precision": config.gpu_precision,
+            "metal_driver": config.metal_driver,
         },
     }
 

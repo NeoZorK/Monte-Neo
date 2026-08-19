@@ -7,11 +7,19 @@ A professional Python framework for generating robust and profitable trading ind
 ## Features
 
 - 🎯 **Target-Based Generation**: Define metrics (Profit Factor, Sharpe, Max DD) and generate matching indicators
+- 🧠 **Smart Pipeline Optimizer**: Adaptive search logic that adjusts parameters and timeframes based on failures
+- 🏆 **Global Leadership Pipeline**: Fully automated end-to-end discovery with real-time status monitoring
+- 🚀 **Extreme GPU Acceleration**: Direct Metal Shaders (C++) and MLX support (>780k ops/sec on Apple Silicon)
+- 💎 **Low-Precision Computing**: Support for Float8 (E4M3/E5M2) for 4x memory bandwidth savings
+- 🧙 **Sequential "Wizard" Mode**: Step-by-step validation with detailed feedback and advice
+- 🧪 **Custom Strategy Lab**: Test your own formulas against professional stress tests
+- 📜 **Robustness Certificate**: Production-ready verification proof
 - 🔀 **Monte Carlo Methods**: Shuffling, noise injection, sensitivity analysis (±10%), walk-forward
 - 📊 **Binance Integration**: Download OHLCV data in fast Parquet format
 - 🖥️ **Interactive CLI**: Arrow-key navigation, progress bars, color output
 - 🐳 **Docker Support**: Headless mode for server deployment
 - ⚡ **High Performance**: Parallel processing, optimized data handling
+- 🛡️ **Reliability First**: Core modules (Backtesting, Metrics, Monte Carlo) covered by ~100% unit tests
 
 ## Quick Start
 
@@ -22,11 +30,11 @@ uv sync
 # 2. Run CLI
 uv run monte-neo
 
-# 3. Run Tests
-uv run pytest tests -n auto -W ignore
+# 3. Run All Tests (300+)
+uv run pytest tests -n auto
 
-# Alternatively, run full verification suite
-./scripts/run_full_test_suite.sh
+# 4. Generate Coverage Report
+uv run coverage run -m pytest && uv run coverage report
 ```
 
 ## Running with Docker
