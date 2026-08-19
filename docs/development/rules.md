@@ -1,4 +1,4 @@
-# Rules and Conventions
+# 📜 Monte-Neo Rules (v0.0.4)
 
 ## Coding Standards
 
@@ -27,4 +27,4 @@
 ## Versioning
 
 - Centralized in `src/monte_neo/_version.py`.
-- Pattern: `v0.0.1` -> `v0.0.2` -> `v0.0.3` (Patch increments during initial development).
+- Pattern: `v0.0.1` -> `v0.0.2` -> `v0.0.3` -> `v0.0.4` (Patch increments during initial development).

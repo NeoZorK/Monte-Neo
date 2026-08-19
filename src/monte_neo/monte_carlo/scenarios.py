@@ -35,6 +35,28 @@ class ScenarioBuilder:
         self.walk_forward = WalkForwardAnalyzer()
         self.sampler = DataSampler(self.config.random_seed)
 
+    def generate_shuffling(self, data: pd.DataFrame, iterations: int) -> list[pd.DataFrame]:
+        """Generate shuffling scenarios."""
+        scenarios = []
+        scenarios.extend(self.shuffler.shuffle_returns(data, iterations // 2))
+        scenarios.extend(self.shuffler.shuffle_blocks(data, iterations // 2))
+        return scenarios
+
+    def generate_noise(self, data: pd.DataFrame, iterations: int) -> list[pd.DataFrame]:
+        """Generate noise scenarios."""
+        return self.noise_injector.add_noise(data, iterations)
+
+    def generate_walk_forward(self, data: pd.DataFrame) -> list[pd.DataFrame]:
+        """Generate walk-forward scenarios."""
+        return self.walk_forward.generate_scenarios(
+            data,
+            n_splits=self.config.walk_forward_splits,
+        )
+
+    def generate_block_bootstrap(self, data: pd.DataFrame, iterations: int) -> list[pd.DataFrame]:
+        """Generate block bootstrap scenarios."""
+        return self.sampler.block_bootstrap(data, n_samples=iterations)
+
     def generate(self, data: pd.DataFrame) -> list[pd.DataFrame]:
         """Generate all test scenarios.
 

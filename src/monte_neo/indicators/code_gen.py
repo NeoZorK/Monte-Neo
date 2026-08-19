@@ -32,27 +32,20 @@ class CodeGenerator:
             return self.rng.choice(operands)
 
         # Operators / Functions
-        # 0: Binary Op, 1: Unary/Func
-        op_type = self.rng.integers(0, 2)
+        # 0: Binary Op, 1: Unary/Func, 2: Crossover (New)
+        op_type = self.rng.integers(0, 3)
 
         if op_type == 0:
             # Binary
-            # For simplicity, let's stick to arithmetic and let DynamicIndicator handle >0 logic
-            # UNLESS we explicitly want boolean signals.
-            # The current DynamicIndicator maps >0 to 1, <0 to -1.
-            # So (Close - MA) is good.
-
             op = self.rng.choice(["+", "-", "*", "/"])
             left = self.generate_code(depth + 1)
             right = self.generate_code(depth + 1)
             return f"({left} {op} {right})"
 
-        else:
+        elif op_type == 1:
             # Functions
-            # rolling_mean, diff, shift
-
-            func_type = self.rng.choice(["mean", "max", "min", "std", "diff", "shift"])
-            period = self.rng.integers(3, 21)
+            func_type = self.rng.choice(["mean", "max", "min", "std", "diff", "shift", "rsi", "bbands", "macd"])
+            period = int(self.rng.integers(3, 50))
             inner = self.generate_code(depth + 1)
 
             if func_type == "mean":
@@ -64,8 +57,22 @@ class CodeGenerator:
             elif func_type == "std":
                 return f"{inner}.rolling({period}, min_periods=2).std()"
             elif func_type == "diff":
-                return f"{inner}.diff()"  # Default diff 1
+                return f"{inner}.diff()"
             elif func_type == "shift":
                 return f"{inner}.shift({period})"
+            elif func_type == "rsi":
+                return f"rsi({inner}, {period})"
+            elif func_type == "bbands":
+                return f"({inner} - {inner}.rolling({period}).mean()) / {inner}.rolling({period}).std()"
+            elif func_type == "macd":
+                fast = period
+                slow = int(period * 2.2)
+                return f"({inner}.ewm(span={fast}).mean() - {inner}.ewm(span={slow}).mean())"
+        
+        else:
+            # Crossover patterns (Highly effective for signals)
+            p1 = int(self.rng.integers(5, 30))
+            p2 = int(self.rng.integers(p1 + 5, p1 + 50))
+            return f"(data['close'].rolling({p1}).mean() - data['close'].rolling({p2}).mean())"
 
         return "data['close']"  # Fallback
