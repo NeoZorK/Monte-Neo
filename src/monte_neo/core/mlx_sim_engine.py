@@ -1,14 +1,16 @@
 from __future__ import annotations
+
 import logging
 import time
-from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+
 import mlx.core as mx
 import numpy as np
 import pandas as pd
 
 if TYPE_CHECKING:
-    from monte_neo.indicators.base import BaseIndicator
     from monte_neo.core.mlx_engine import MLXBacktestEngine
+    from monte_neo.indicators.base import BaseIndicator
     from monte_neo.utils.parallel import ParallelExecutor
 
 logger = logging.getLogger(__name__)
@@ -16,7 +18,7 @@ logger = logging.getLogger(__name__)
 def run_full_simulation_impl(
     engine: MLXBacktestEngine,
     data: pd.DataFrame,
-    indicator_or_list: Union[BaseIndicator, list[BaseIndicator]],
+    indicator_or_list: BaseIndicator | list[BaseIndicator],
     n_scenarios: int,
     method: str = "shuffling",
     seed: int = 42,
@@ -24,9 +26,12 @@ def run_full_simulation_impl(
     sl_pct: float = 0.0,
     tp_pct: float = 0.0,
     **kwargs: Any,
-) -> tuple[Union[list[dict[str, Any]], list[list[dict[str, Any]]]], dict[str, float]]:
+) -> tuple[list[dict[str, Any]] | list[list[dict[str, Any]]], dict[str, float]]:
     """Implementation of full simulation."""
-    from monte_neo.core.acceleration.cpp_metal.metal_engine import Candle
+    try:
+        from monte_neo.core.acceleration.cpp_metal.metal_engine import Candle
+    except ImportError:
+        Candle = None  # noqa: N806
     from monte_neo.metrics.calculator import MetricsCalculator
 
     start_total = time.perf_counter()
@@ -50,7 +55,7 @@ def run_full_simulation_impl(
     
     if engine.native_bridge and method == "shuffling" and hasattr(indicator, "get_metal_params"):
         metal_params = indicator.get_metal_params(
-            commission_bps=kwargs.get("commission_bps", 5.0), 
+            commission_bps=kwargs.get("commission_bps", 5.0),
             slippage_bps=kwargs.get("slippage_bps", 5.0)
         )
         if metal_params is not None:
@@ -75,7 +80,7 @@ def run_full_simulation_impl(
                 logger.warning(f"Native Metal bridge execution failed, falling back: {e}")
 
     if use_sl_tp:
-        from monte_neo.core.acceleration.tensor_ops import to_tensor, TensorOps
+        from monte_neo.core.acceleration.tensor_ops import TensorOps, to_tensor
         close = to_tensor(data)["close"]
         scenarios = TensorOps.generate_shuffle_scenarios(close, n_scenarios, seed=seed) if method == "shuffling" else \
                     TensorOps.generate_noise_scenarios(close, n_scenarios, std_dev=kwargs.get('std_dev', 0.01), seed=seed)
@@ -110,8 +115,8 @@ def backtest_batch_impl(
 ) -> list[dict[str, Any]]:
     """Implementation of batch backtest."""
     from monte_neo.core.gpu_scenarios import normalize_signal_array
-    from monte_neo.monte_carlo.workers import run_indicator_batch
     from monte_neo.metrics.calculator import MetricsCalculator
+    from monte_neo.monte_carlo.workers import run_indicator_batch
 
     close_prices = mx.array(data["close"].to_numpy().astype(np.float32))
     use_parallel = False

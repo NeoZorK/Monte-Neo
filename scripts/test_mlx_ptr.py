@@ -1,7 +1,9 @@
 
+import time
+
 import mlx.core as mx
 import numpy as np
-import time
+
 
 def test_ptr():
     # 500M elements = 2GB for float32

@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import time
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
-from rich.table import Table
 from rich.panel import Panel
+from rich.table import Table
 
 from monte_neo.data.downloader import BinanceDownloader
 from monte_neo.utils.console import console
@@ -45,7 +44,7 @@ class SmartPipelineOptimizer:
                 self.log_callback(msg)
             except KeyboardInterrupt:
                 raise
-            except:
+            except Exception:
                 pass
         else:
             console.print(msg)

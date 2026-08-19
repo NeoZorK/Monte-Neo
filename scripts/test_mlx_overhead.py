@@ -1,7 +1,8 @@
 
-import mlx.core as mx
 import time
-import numpy as np
+
+import mlx.core as mx
+
 
 def test_mlx_overhead():
     n_pop = 1000

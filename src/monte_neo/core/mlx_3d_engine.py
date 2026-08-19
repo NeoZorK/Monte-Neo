@@ -1,15 +1,16 @@
 from __future__ import annotations
+
 import logging
 import time
-from typing import Any, Dict, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+
 import mlx.core as mx
 import numpy as np
 import pandas as pd
-from concurrent.futures import ThreadPoolExecutor
 
 if TYPE_CHECKING:
-    from monte_neo.indicators.base import BaseIndicator
     from monte_neo.core.mlx_engine import MLXBacktestEngine
+    from monte_neo.indicators.base import BaseIndicator
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ def backtest_3d_impl(
     n_pop = len(indicators)
     n_time = len(data)
     
-    from monte_neo.core.acceleration.tensor_ops import to_tensor, TensorOps
+    from monte_neo.core.acceleration.tensor_ops import TensorOps, to_tensor
     
     # 1. Generate scenarios
     if scenarios is None:
@@ -180,12 +181,12 @@ def backtest_population_multi_scenario_impl(
         logger.warning(f"Native 3D metrics failed, falling back: {e}")
         from monte_neo.metrics.calculator import MetricsCalculator
         flat_signals = signal_tensor.reshape(-1, signal_tensor.shape[-1])
-        flat_scenarios = mx.repeat(scenarios, n_pop, axis=0) 
+        flat_scenarios = mx.repeat(scenarios, n_pop, axis=0)
         batch_results = MetricsCalculator.calculate_batch_multi_price_fast(
-            np.array(flat_scenarios).astype(np.float64), 
-            np.array(flat_scenarios).astype(np.float64), 
-            np.array(flat_scenarios).astype(np.float64), 
-            np.array(flat_signals).astype(np.int32), 
+            np.array(flat_scenarios).astype(np.float64),
+            np.array(flat_scenarios).astype(np.float64),
+            np.array(flat_scenarios).astype(np.float64),
+            np.array(flat_signals).astype(np.int32),
             use_sl_tp, sl_pct, tp_pct
         )
         res_3d = batch_results.reshape(n_pop, n_scenarios, 6)

@@ -1,7 +1,8 @@
+from unittest.mock import patch
+
 import numpy as np
 import pandas as pd
 import pytest
-from unittest.mock import patch
 
 from monte_neo.core.evolution_ai import AIEvolutionEngine
 from monte_neo.indicators.dynamic import DynamicIndicator
