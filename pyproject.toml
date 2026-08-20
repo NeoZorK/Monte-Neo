@@ -48,6 +48,7 @@ dependencies = [
     "uvicorn>=0.49.0",
     "pyobjc-framework-metal>=12.2.2",
     "pyobjc-framework-cocoa>=12.2.2",
+    "pillow>=12.3.0",
 ]
 
 [dependency-groups]
