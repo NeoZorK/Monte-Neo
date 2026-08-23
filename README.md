@@ -113,3 +113,39 @@ Monte-Neo/
 ## License
 
 MIT License - See [LICENSE](LICENSE)
+
+
+## LLM Integration
+
+This project now has access to local LLM models via `local_ai_wrapper.py`.
+
+### Quick Start
+
+```python
+from local_ai_wrapper import query
+
+# Simple query
+response = query("Analyze this data: ...")
+print(response)
+```
+
+### Full Features
+
+```python
+from local_ai_wrapper import LocalAIControlPlane, LLMConfig
+
+# With configuration
+config = LLMConfig(model_name="qwen3:8b", temperature=0.5)
+ai = LocalAIControlPlane(config)
+response = ai.query("Your prompt here")
+print(f"Model: {response.model}")
+print(f"Speed: {response.speed_tps:.1f} tok/s")
+```
+
+### Available Models
+
+- **gemma4:e2b-mlx** (33.7 tok/s) - Recommended for speed
+- **qwen3:8b** (14.5 tok/s) - Good balance
+- **StarCoder2-7b-4bit** (29.6 tok/s) - Code-focused
+
+See [INTEGRATION_GUIDE.md](../local-ai-control-plane/INTEGRATION_GUIDE.md) for more examples.
