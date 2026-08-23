@@ -139,3 +139,6 @@ data/results/
 *.pkl
 *.h5
 .DS_Store
+
+# LLM Integration (local wrapper)
+local_ai_wrapper.py
