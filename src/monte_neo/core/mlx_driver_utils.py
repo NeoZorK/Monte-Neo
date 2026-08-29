@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import os
 import subprocess
+import sys
 import time
 
 from monte_neo.utils.cache import load_cache, save_cache
@@ -12,9 +13,19 @@ logger = logging.getLogger(__name__)
 def try_auto_compile_metal():
     """Attempt to auto-compile Metal extension if missing."""
     try:
-        script_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "acceleration/cpp_metal/compile.sh")
+        script_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "acceleration/cpp_metal/compile.sh",
+        )
         if os.path.exists(script_path):
-            result = subprocess.run(["bash", script_path], capture_output=True, text=True)
+            env = os.environ.copy()
+            env["PYTHON"] = sys.executable
+            result = subprocess.run(
+                ["bash", script_path],
+                capture_output=True,
+                text=True,
+                env=env,
+            )
             if result.returncode == 0:
                 logger.info("✅ Metal extension compiled successfully.")
                 return True

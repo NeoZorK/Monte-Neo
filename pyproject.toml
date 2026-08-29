@@ -63,6 +63,7 @@ dev = [
     "pre-commit>=3.4",
     "pandas-stubs",
     "types-PyYAML",
+    "setuptools>=75.0",
 ]
 
 [project.scripts]
