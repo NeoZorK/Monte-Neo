@@ -41,7 +41,7 @@
 
 11) **Planning**: Create a detailed plan and conduct brainstorming sessions.
 
-12) **Git Integration**: Maintain a private repository on `github.com/neozork/Monte-Neo`.
+12) **Git Integration**: Private NeoZorK gitserver only (`NeoZorK/Monte-Neo.git`). Not on GitHub.
 
 13) **Version Control & Organization**:
     - Initialize git and set version to `v0.0.4`.

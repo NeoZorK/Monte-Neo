@@ -6,26 +6,46 @@
 - [uv](https://github.com/astral-sh/uv) (highly recommended)
 - Git
 - Docker (optional)
+- macOS Apple Silicon for Metal native extensions
 
 ## Initial Setup
 
-1. **Clone the repository**:
+1. **Clone from NeoZorK gitserver** (private):
+
    ```bash
-   git clone https://github.com/NeoZorK/Monte-Neo.git
+   git clone /Users/rostsh/git-server/NeoZorK/Monte-Neo.git
+   cd Monte-Neo
+   ```
+
+   From LAN:
+
+   ```bash
+   git clone ssh://rost@2014/Users/rost/git-server/NeoZorK/Monte-Neo.git
    cd Monte-Neo
    ```
 
 2. **Sync the environment**:
-   Using `uv` is the fastest and most reliable way to set up the project:
+
    ```bash
    uv sync
    ```
-   *This command creates a virtual environment in `.venv` and installs all dependencies including development tools.*
+
+3. **Build native extensions** (Metal + pybind11, macOS):
+
+   ```bash
+   uv run bash scripts/build_native.sh
+   uv run python verify_hardware.py
+   ```
 
 ## Development Workflow
 
-- **Testing**: Run tests frequently using `uv run pytest`.
-- **Parallel Testing**: Use `uv run pytest -n auto` for fast execution.
-- **Linting & Formatting**: `uv run ruff check` and `uv run black .`.
-- **Pre-commit**: It is recommended to install pre-commit hooks: `uv run pre-commit install`.
+- **Testing**: `uv run pytest tests -n auto`
+- **Linting**: `uv run ruff check` and `uv run black .`
+- **Pre-commit**: `uv run pre-commit install`
 
+## Remotes (R-REMOTE)
+
+- `origin` → `/Users/rostsh/git-server/NeoZorK/Monte-Neo.git`
+- `lan` → `ssh://rost@2014/Users/rost/git-server/NeoZorK/Monte-Neo.git` (optional)
+
+Push tags with branches: `git push origin --all && git push origin --tags`

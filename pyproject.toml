@@ -7,7 +7,7 @@ name = "monte-neo"
 dynamic = ["version"]
 description = "Monte Carlo Indicator Generator Framework"
 readme = "README.md"
-license = "MIT"
+license = "LicenseRef-Proprietary"
 requires-python = ">=3.11"
 authors = [
     { name = "Monte-Neo Team" }
@@ -68,11 +68,6 @@ dev = [
 
 [project.scripts]
 monte-neo = "monte_neo.cli.app:main"
-
-[project.urls]
-Homepage = "https://github.com/neozork/Monte-Neo"
-Repository = "https://github.com/neozork/Monte-Neo"
-Documentation = "https://github.com/neozork/Monte-Neo/docs"
 
 [tool.hatch.version]
 path = "src/monte_neo/_version.py"

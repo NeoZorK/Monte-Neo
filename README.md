@@ -112,4 +112,5 @@ Monte-Neo/
 
 ## License
 
-MIT License - See [LICENSE](LICENSE)
+Proprietary — NeoZorK. See [LICENSE](LICENSE) and [docs/COMMERCIAL_RU.md](docs/COMMERCIAL_RU.md).
+Not open source. Clone only from NeoZorK gitserver.
