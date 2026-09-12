@@ -68,6 +68,7 @@ dev = [
 
 [project.scripts]
 monte-neo = "monte_neo.cli.app:main"
+monte-neo-fair-race = "monte_neo.fair_race_cli:main"
 
 [tool.hatch.version]
 path = "src/monte_neo/_version.py"
