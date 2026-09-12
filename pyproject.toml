@@ -7,7 +7,7 @@ name = "monte-neo"
 dynamic = ["version"]
 description = "Monte Carlo Indicator Generator Framework"
 readme = "README.md"
-license = "LicenseRef-Proprietary"
+license = "MIT"
 requires-python = ">=3.11"
 authors = [
     { name = "Monte-Neo Team" }

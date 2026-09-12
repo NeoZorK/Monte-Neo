@@ -79,3 +79,25 @@ def test_version_consistency():
         f"Actual value found: '{actual_version}'\n"
         f"Please change it to 'v{actual_version}' in the file."
     )
+
+
+def test_license_and_docs_version_sync():
+    """Keep LICENSE, pyproject, and docs/INDEX version headers aligned."""
+    root_dir = find_root()
+    version_file = root_dir / "src" / "monte_neo" / "_version.py"
+    version = re.search(
+        r'__version__\s*=\s*["\'](v\d+\.\d+\.\d+)["\']',
+        version_file.read_text(encoding="utf-8"),
+    ).group(1)
+
+    license_text = (root_dir / "LICENSE").read_text(encoding="utf-8")
+    assert license_text.startswith("MIT License"), "LICENSE must be MIT"
+
+    pyproject = (root_dir / "pyproject.toml").read_text(encoding="utf-8")
+    assert 'license = "MIT"' in pyproject, "pyproject.toml license must be MIT"
+
+    index = (root_dir / "docs" / "INDEX.md").read_text(encoding="utf-8")
+    assert version in index, f"docs/INDEX.md must mention {version}"
+
+    roadmap = (root_dir / "docs" / "project" / "ROADMAP.md").read_text(encoding="utf-8")
+    assert version in roadmap, f"docs/project/ROADMAP.md must mention {version}"

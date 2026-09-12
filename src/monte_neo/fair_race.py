@@ -71,8 +71,11 @@ def return_path_bootstrap(
 def run_type_c_sweep(n_bars: int = 50_000, combos: int = 256, seed: int = 42) -> dict[str, Any]:
     data = synthetic_ohlcv(n_bars, seed=seed)
     out = fused_sma_sweep(data, combos=combos)
+    elapsed = float(out.get("elapsed_s") or 0.0)
+    n = int(out.get("combos") or combos)
     out["type"] = "C_sweep"
     out["bars"] = n_bars
+    out["combos_per_s"] = (n / elapsed) if elapsed > 0 else float("inf")
     out["ok"] = True
     return out
 

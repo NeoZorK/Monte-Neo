@@ -5,8 +5,14 @@ from __future__ import annotations
 import argparse
 import json
 
-from monte_neo.fair_race import run_type_b_scenarios, run_type_c_sweep, return_path_bootstrap, synthetic_ohlcv
 import numpy as np
+
+from monte_neo.fair_race import (
+    return_path_bootstrap,
+    run_type_b_scenarios,
+    run_type_c_sweep,
+    synthetic_ohlcv,
+)
 
 
 def main() -> None:
