@@ -112,4 +112,7 @@ Monte-Neo/
 
 ## License
 
-MIT License - See [LICENSE](LICENSE)
+MIT License — see [LICENSE](LICENSE).
+
+Public repository: https://github.com/NeoZorK/Monte-Neo
+

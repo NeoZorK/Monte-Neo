@@ -1,4 +1,4 @@
-# 🗺️ Monte-Neo Roadmap (v0.0.6)
+# 🗺️ Monte-Neo Roadmap (v0.0.7)
 
 ## ✅ Version 0.0.5 - Robustness Factory (Completed)
 - [x] **C++/Metal Engine**: Lightning-fast GPU backtesting extension.
@@ -7,7 +7,7 @@
 - [x] **Walk-Forward Optimization**: Hardware-accelerated validation.
 - [x] **Production Gate**: Robustness scoring and certification.
 
-## 🚀 Version 0.0.6 - Global Leadership & Production Mastery (Current)
+## ✅ Version 0.0.6 - Global Leadership & Production Mastery (Completed)
 - [x] **Smart Portfolio Engine**: Multi-indicator management with Kelly Criterion.
 - [x] **Non-Repainting Validator**: Hard enforcement of signal causality.
 - [x] **Advanced Noise Suite**: Latency shifts, variable spreads, and slippage.
@@ -19,7 +19,10 @@
 - [x] **High Test Coverage**: Core modules (Backtesting, Metrics, Monte Carlo) achieved ~100% coverage.
 - [x] **Unified UI/UX**: Streamlined progress bars and logs for clear workflow execution.
 
-## 🌟 Version 0.0.7 - Ecosystem & Scaling (Planned)
+## 🚀 Version 0.0.7 - Fair-race & Public Reproduce (Current)
+- [x] **MIT license sync**: LICENSE + pyproject metadata aligned for public GitHub.
+- [x] **ClaimBound fair-race helpers**: Type A/B/C public APIs + `monte-neo-fair-race` CLI.
+- [x] **CPU fallback for Type B**: Reproduce stays green without compiled Metal extension.
 - [ ] **Web-based Dashboard**: Real-time monitoring and strategy management.
 - [ ] **Multi-Exchange Support**: Bybit, OKX, and Kraken integration.
 - [ ] **Cloud-Native Workers**: Distributed Monte Carlo simulations via Kubernetes.
@@ -38,6 +41,7 @@
 - [x] Implement Genetic Programming (GP) for formula discovery.
 - [x] Add "Smart Mutation" based on performance feedback loops.
 - [x] Integrate AI-inspired heuristics for formula optimization.
+
 
 ### Hour 5: Portfolio Intelligence & Risk
 - [x] Implement multi-asset correlation clustering.

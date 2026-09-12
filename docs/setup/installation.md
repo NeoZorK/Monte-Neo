@@ -1,32 +1,29 @@
 # Installation
 
-## Standard Installation
-
-The recommended way to install Monte-Neo is using `uv`:
+## Standard Installation (private gitserver)
 
 ```bash
-# Clone the repository
-git clone https://github.com/NeoZorK/Monte-Neo.git
+git clone /Users/rostsh/git-server/NeoZorK/Monte-Neo.git
 cd Monte-Neo
-
-# Install dependencies and create environment
 uv sync
+uv run bash scripts/build_native.sh
+```
+
+LAN clone:
+
+```bash
+git clone ssh://rost@2014/Users/rost/git-server/NeoZorK/Monte-Neo.git
 ```
 
 ## Docker Installation
 
-For an isolated environment, use Docker:
-
 ```bash
-# Build and start the container
 docker-compose -f docker/docker-compose.yml up -d
-
-# Run interactive CLI
 docker-compose -f docker/docker-compose.yml exec monte-neo monte-neo
 ```
 
 ## Requirements
 
-- **Operating System**: macOS, Linux, or Windows (WSL2 recommended).
+- **Operating System**: macOS (Metal), Linux, or Windows (WSL2)
 - **Python**: 3.11+
-- **Memory**: 4GB+ recommended for large MC simulations.
+- **Memory**: 4GB+ recommended for large MC simulations

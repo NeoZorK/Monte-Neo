@@ -1,4 +1,4 @@
-# 🤖 Monte-Neo Development (v0.0.4)
+# 🤖 Monte-Neo Development (v0.0.7)
 
 ## Project Overview
 Monte-Neo is a Monte Carlo indicator generator framework.
@@ -45,7 +45,7 @@ docker-compose -f docker/docker-compose.yml exec monte-neo bash
 
 ## Versioning Strategy
 Primary version source: `src/monte_neo/_version.py`.
-Pattern: `v0.0.1` -> `v0.0.2` -> `v0.0.3` -> `v0.0.4`.
+Pattern: `v0.0.1` -> `v0.0.2` -> ... -> `v0.0.7`.
 
 ## Coding Style
 - Imports: standard, third-party, local. `from __future__ import annotations` required.
