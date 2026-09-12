@@ -63,15 +63,12 @@ dev = [
     "pre-commit>=3.4",
     "pandas-stubs",
     "types-PyYAML",
+    "setuptools>=75.0",
 ]
 
 [project.scripts]
 monte-neo = "monte_neo.cli.app:main"
-
-[project.urls]
-Homepage = "https://github.com/neozork/Monte-Neo"
-Repository = "https://github.com/neozork/Monte-Neo"
-Documentation = "https://github.com/neozork/Monte-Neo/docs"
+monte-neo-fair-race = "monte_neo.fair_race_cli:main"
 
 [tool.hatch.version]
 path = "src/monte_neo/_version.py"
