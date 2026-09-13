@@ -7,9 +7,9 @@ import pytest
 
 from monte_neo.backtest import (
     ExecutionModel,
+    ReplayBarSource,
     assert_fee_hurts_return,
     frame_to_ohlc,
-    ReplayBarSource,
     midprice_ticks_to_ohlc,
     run_bar_backtest,
     run_sma_sweep,

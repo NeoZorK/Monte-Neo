@@ -8,7 +8,6 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-
 REQUIRED_COLS = ("open", "high", "low", "close")
 
 
