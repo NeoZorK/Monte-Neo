@@ -3,6 +3,32 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.0.9] — 2026-09-13
+
+### Added
+- `ExecutionModel.sl_pct` / `tp_pct` with H/L exits (SL preferred on dual hit)
+- Trade journal + metrics (`sharpe`, `profit_factor`, `win_rate`, max DD)
+- `run_bar_backtest_batch` for external signal matrices (shared economics)
+- `run_multi_symbol_lite` (independent cash books)
+- `run_sma_sweep` now wraps batch (labeled convenience, not D001 kernel)
+
+### Notes
+- Costs remain **bps** on this path; older `metrics` helpers may use %.
+
+## [v0.0.8] — 2026-09-13
+
+### Added
+- Professional fee-aware bar backtest engine (`monte_neo.backtest`):
+  next-bar fills, commission/slippage bps, cash/position/equity,
+  SMA sweep with the same `ExecutionModel`, optional `ReplayBarSource`
+  mid-price feeder (no Redis on hot path)
+- Docs: `docs/project/backtest_engine.md`
+- Unit / integration / stress / performance tests for the new engine
+
+### Notes
+- ClaimBound D001 Type C remains a specialized SMA kernel gate; this package
+  path is for matched-semantics peer races (private or future D002).
+
 ## [v0.0.7] — 2026-09-12
 
 First formal GitHub Release. Canonical development branch is **`main`**
