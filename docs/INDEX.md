@@ -1,4 +1,4 @@
-# 🎲 Monte-Neo v0.0.9
+# 🎲 Monte-Neo v0.1.0
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -19,8 +19,9 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/features.md - Detailed overview of framework features
 - docs/project/dynamic_indicators.md - Explanation of dynamic indicator generation
 - docs/project/ROADMAP.md - Development roadmap and milestones (v0.0.7)
-- docs/project/CHANGELOG.md - Release changelog (current: v0.0.9)
+- docs/project/CHANGELOG.md - Release changelog (current: v0.1.0)
 - docs/project/backtest_engine.md - Fee-aware bar engine (execution model + API)
+- docs/assets/monteneo-logo.png - Project logo
 - docs/project/BRANCHING.md - Branch and version policy
 - docs/project/v0.0.5_plan.md - Development plan for v0.0.5
 - docs/project/tech-stack.md - Technology stack and performance targets
@@ -55,7 +56,7 @@ A simplified guide to the Monte-Neo file structure.
 - docker/docker-compose.yml - Docker Compose service definitions
 
 ### Source Code (src/monte_neo/)
-- src/monte_neo/_version.py - Central version management (v0.0.9)
+- src/monte_neo/_version.py - Central version management (v0.1.0)
 - src/monte_neo/__init__.py - Main package entry point
 - src/monte_neo/fair_race.py - Public fair-race Type A/B/C helpers
 - src/monte_neo/fair_race_cli.py - CLI entrypoint `monte-neo-fair-race`
