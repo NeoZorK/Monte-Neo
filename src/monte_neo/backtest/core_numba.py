@@ -13,12 +13,60 @@ REASON_TRAIL = 5
 
 
 @njit(cache=True)
+def _stop_hit(
+    position: int,
+    high: float,
+    low: float,
+    use_sl: bool,
+    use_tp: bool,
+    use_trail: bool,
+    sl_px: float,
+    tp_px: float,
+    peak_px: float,
+    trail_pct: float,
+) -> tuple:
+    """Return (hit_reason, exit_raw, new_sl_px, new_peak_px). hit_reason 0 = none."""
+    if position > 0:
+        peak = peak_px
+        stop = sl_px
+        if use_trail and high > peak:
+            peak = high
+            trail_stop = peak * (1.0 - trail_pct * 0.01)
+            if (not use_sl) or trail_stop > stop:
+                stop = trail_stop
+        if (use_sl or use_trail) and low <= stop:
+            reason = REASON_TRAIL if (use_trail and stop != sl_px) else REASON_SL
+            if use_trail and not use_sl:
+                reason = REASON_TRAIL
+            return reason, stop, stop, peak
+        if use_tp and high >= tp_px:
+            return REASON_TP, tp_px, stop, peak
+        return 0, 0.0, stop, peak
+    peak = peak_px
+    stop = sl_px
+    if use_trail and low < peak:
+        peak = low
+        trail_stop = peak * (1.0 + trail_pct * 0.01)
+        if (not use_sl) or trail_stop < stop:
+            stop = trail_stop
+    if (use_sl or use_trail) and high >= stop:
+        reason = REASON_TRAIL if (use_trail and stop != sl_px) else REASON_SL
+        if use_trail and not use_sl:
+            reason = REASON_TRAIL
+        return reason, stop, stop, peak
+    if use_tp and low <= tp_px:
+        return REASON_TP, tp_px, stop, peak
+    return 0, 0.0, stop, peak
+
+
+@njit(cache=True)
 def run_core_full(
     open_: np.ndarray,
     high: np.ndarray,
     low: np.ndarray,
     close: np.ndarray,
     signal: np.ndarray,
+    session_ok: np.ndarray,
     fill_open: bool,
     long_short: bool,
     size_fraction: float,
@@ -30,8 +78,10 @@ def run_core_full(
     tp_pct: float,
     trail_pct: float,
     fill_fraction: float,
+    leverage: float,
+    funding_bps: float,
 ) -> tuple:
-    """Full path: equity + trade journal (SL/TP/trail/partial)."""
+    """Full path: equity + journal (SL/TP/trail/partial/funding/leverage/session)."""
     n = close.shape[0]
     equity = np.empty(n, dtype=np.float64)
     cash = initial_cash
@@ -42,6 +92,7 @@ def run_core_full(
     max_dd = 0.0
     fee_rate = commission_bps * 1e-4
     slip_rate = slip_bps * 1e-4
+    fund_rate = funding_bps * 1e-4
     use_sl = sl_pct > 0.0
     use_tp = tp_pct > 0.0
     use_trail = trail_pct > 0.0
@@ -61,6 +112,8 @@ def run_core_full(
     n_closed = 0
 
     for i in range(n):
+        if position != 0 and qty != 0.0 and fund_rate > 0.0:
+            cash -= abs(qty * close[i]) * fund_rate
         mtm = cash + qty * close[i]
         equity[i] = mtm
         if mtm > peak_eq:
@@ -70,34 +123,18 @@ def run_core_full(
             max_dd = dd
 
         if position != 0 and qty != 0.0 and (use_sl or use_tp or use_trail):
-            hit = 0
-            exit_raw = 0.0
-            if position > 0:
-                if use_trail and high[i] > peak_px:
-                    peak_px = high[i]
-                    trail_stop = peak_px * (1.0 - trail_pct * 0.01)
-                    if (not use_sl) or trail_stop > sl_px:
-                        sl_px = trail_stop
-                stop_lvl = sl_px if (use_sl or use_trail) else 0.0
-                if (use_sl or use_trail) and low[i] <= stop_lvl:
-                    hit = REASON_TRAIL if use_trail else REASON_SL
-                    exit_raw = stop_lvl
-                elif use_tp and high[i] >= tp_px:
-                    hit = REASON_TP
-                    exit_raw = tp_px
-            else:
-                if use_trail and low[i] < peak_px:
-                    peak_px = low[i]
-                    trail_stop = peak_px * (1.0 + trail_pct * 0.01)
-                    if (not use_sl) or trail_stop < sl_px:
-                        sl_px = trail_stop
-                stop_lvl = sl_px if (use_sl or use_trail) else 0.0
-                if (use_sl or use_trail) and high[i] >= stop_lvl:
-                    hit = REASON_TRAIL if use_trail else REASON_SL
-                    exit_raw = stop_lvl
-                elif use_tp and low[i] <= tp_px:
-                    hit = REASON_TP
-                    exit_raw = tp_px
+            hit, exit_raw, sl_px, peak_px = _stop_hit(
+                position,
+                high[i],
+                low[i],
+                use_sl,
+                use_tp,
+                use_trail,
+                sl_px,
+                tp_px,
+                peak_px,
+                trail_pct,
+            )
             if hit != 0:
                 exit_px = exit_raw * (1.0 - float(position) * slip_rate)
                 proceeds = qty * exit_px
@@ -147,7 +184,11 @@ def run_core_full(
             entry_fees = 0.0
 
         if target != 0:
-            notional = cash * size_fraction * fill_fraction
+            if not session_ok[i]:
+                continue
+            notional = cash * size_fraction * fill_fraction * leverage
+            if notional <= 0.0 or cash <= 0.0:
+                continue
             entry = fill_px * (1.0 + float(target) * slip_rate)
             if entry <= 0.0:
                 continue
@@ -214,6 +255,7 @@ def run_terminal_return(
     low: np.ndarray,
     close: np.ndarray,
     signal: np.ndarray,
+    session_ok: np.ndarray,
     fill_open: bool,
     long_short: bool,
     size_fraction: float,
@@ -225,14 +267,17 @@ def run_terminal_return(
     tp_pct: float,
     trail_pct: float,
     fill_fraction: float,
+    leverage: float,
+    funding_bps: float,
 ) -> float:
     """Lean terminal return — same economics as :func:`run_core_full`."""
-    eq, ret, _, _, _, _, _, _, _, _, _, _, _ = run_core_full(
+    _, ret, _, _, _, _, _, _, _, _, _, _, _ = run_core_full(
         open_,
         high,
         low,
         close,
         signal,
+        session_ok,
         fill_open,
         long_short,
         size_fraction,
@@ -244,6 +289,7 @@ def run_terminal_return(
         tp_pct,
         trail_pct,
         fill_fraction,
+        leverage,
+        funding_bps,
     )
-    _ = eq
     return ret

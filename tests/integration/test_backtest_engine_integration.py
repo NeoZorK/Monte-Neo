@@ -60,7 +60,7 @@ def test_sweep_checklist_matches_model(ohlc: dict[str, np.ndarray]) -> None:
     out = run_sma_sweep(
         ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"], combos=16, model=model
     )
-    assert out["work_checklist"] == model.work_checklist
+    assert out["work_checklist"] == model.work_checklist()
     assert out["model"]["commission_bps"] == 7.0
 
 
@@ -74,7 +74,7 @@ def test_sl_tp_checklist_and_batch_end_to_end(ohlc: dict[str, np.ndarray]) -> No
         sl_pct=1.5,
         tp_pct=3.0,
     )
-    assert model.work_checklist["sl_tp"] is True
+    assert model.work_checklist()["sl_tp"] is True
     sig = sma_signal(ohlc["close"], 10, 40)
     single = run_bar_backtest(
         ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"], sig, model=model

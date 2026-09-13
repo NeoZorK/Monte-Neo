@@ -46,7 +46,7 @@ def run_sma_sweep(
         "engine": "monte_neo.backtest.sweep",
         "device": "cpu_numba",
         "model": model.to_dict(),
-        "work_checklist": model.work_checklist,
+        "work_checklist": model.work_checklist(),
         "combos": len(pairs),
         "elapsed_s": batch["elapsed_s"],
         "combos_per_s": batch["combos_per_s"],
@@ -82,12 +82,15 @@ def verify_sweep_matches_single(
     model = model or ExecutionModel(side_mode="long_flat")
     sig = sma_signal(close, fast, slow)
     single = run_bar_backtest(open_, high, low, close, sig, model=model)
+    n = int(np.asarray(close).shape[0])
+    sess = np.ones(n, dtype=np.bool_)
     term = run_terminal_return(
         np.asarray(open_, dtype=np.float64),
         np.asarray(high, dtype=np.float64),
         np.asarray(low, dtype=np.float64),
         np.asarray(close, dtype=np.float64),
         np.asarray(sig, dtype=np.int64),
+        sess,
         model.fill_policy == "next_bar_open",
         False,
         float(model.size_fraction),
@@ -99,5 +102,7 @@ def verify_sweep_matches_single(
         float(model.tp_pct),
         float(model.trail_pct),
         float(model.fill_fraction),
+        float(model.leverage),
+        float(model.funding_bps_per_bar),
     )
     return abs(float(term) - float(single["total_return"])) < 1e-9

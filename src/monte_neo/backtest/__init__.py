@@ -14,6 +14,7 @@ from monte_neo.backtest.data import (
 from monte_neo.backtest.metrics import assert_fee_hurts_return, summarize_equity
 from monte_neo.backtest.model import ExecutionModel
 from monte_neo.backtest.portfolio_lite import run_multi_symbol_lite
+from monte_neo.backtest.portfolio_shared import run_portfolio_shared_cash
 from monte_neo.backtest.strategy import StrategySpec, build_signal
 from monte_neo.backtest.sweep import run_sma_sweep, sma_signal, verify_sweep_matches_single
 
@@ -25,6 +26,7 @@ __all__ = [
     "run_strategy_backtest",
     "run_bar_backtest_batch",
     "run_multi_symbol_lite",
+    "run_portfolio_shared_cash",
     "run_sma_sweep",
     "sma_signal",
     "verify_sweep_matches_single",
