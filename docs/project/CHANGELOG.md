@@ -3,6 +3,17 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.1.0] — 2026-09-13
+
+### Added
+- Brand logo (`docs/assets/monteneo-logo.png`) and honest GitHub-facing README
+- GP bar engine: `StrategySpec` / `run_strategy_backtest`, trail stops, impact_bps,
+  partial `fill_fraction`, expanded work checklist
+- Docs: clearer scope (research bar engine ≠ full OMS)
+
+### Notes
+- License remains **MIT**.
+
 ## [v0.0.9] — 2026-09-13
 
 ### Added

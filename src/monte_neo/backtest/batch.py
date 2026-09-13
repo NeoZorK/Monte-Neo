@@ -23,11 +23,13 @@ def _batch_terminal_returns(
     long_short: bool,
     size_fraction: float,
     commission_bps: float,
-    slippage_bps: float,
+    slip_bps: float,
     initial_cash: float,
     warmup: int,
     sl_pct: float,
     tp_pct: float,
+    trail_pct: float,
+    fill_fraction: float,
 ) -> np.ndarray:
     m = signals.shape[0]
     out = np.empty(m, dtype=np.float64)
@@ -42,11 +44,13 @@ def _batch_terminal_returns(
             long_short,
             size_fraction,
             commission_bps,
-            slippage_bps,
+            slip_bps,
             initial_cash,
             warmup,
             sl_pct,
             tp_pct,
+            trail_pct,
+            fill_fraction,
         )
     return out
 
@@ -59,10 +63,7 @@ def run_bar_backtest_batch(
     signals: np.ndarray,
     model: ExecutionModel | None = None,
 ) -> dict[str, Any]:
-    """Run N external signal rows through the same engine (not SMA-only).
-
-    ``signals`` shape is ``(n_combos, n_bars)`` int64 target positions / signs.
-    """
+    """Run N external signal rows through the same engine."""
     model = model or ExecutionModel()
     o = np.asarray(open_, dtype=np.float64)
     h = np.asarray(high, dtype=np.float64)
@@ -78,7 +79,20 @@ def run_bar_backtest_batch(
 
     fill_open = model.fill_policy == "next_bar_open"
     long_short = model.side_mode == "long_short"
-    # JIT warmup
+    slip = float(model.effective_slip_bps)
+    args = (
+        fill_open,
+        long_short,
+        float(model.size_fraction),
+        float(model.commission_bps),
+        slip,
+        float(model.initial_cash),
+        int(model.warmup_bars),
+        float(model.sl_pct),
+        float(model.tp_pct),
+        float(model.trail_pct),
+        float(model.fill_fraction),
+    )
     _ = _batch_terminal_returns(
         o[: min(256, o.size)],
         h[: min(256, o.size)],
@@ -89,29 +103,16 @@ def run_bar_backtest_batch(
         long_short,
         float(model.size_fraction),
         float(model.commission_bps),
-        float(model.slippage_bps),
+        slip,
         float(model.initial_cash),
         min(int(model.warmup_bars), 10),
         float(model.sl_pct),
         float(model.tp_pct),
+        float(model.trail_pct),
+        float(model.fill_fraction),
     )
     t0 = time.perf_counter()
-    rets = _batch_terminal_returns(
-        o,
-        h,
-        l,
-        c,
-        sig,
-        fill_open,
-        long_short,
-        float(model.size_fraction),
-        float(model.commission_bps),
-        float(model.slippage_bps),
-        float(model.initial_cash),
-        int(model.warmup_bars),
-        float(model.sl_pct),
-        float(model.tp_pct),
-    )
+    rets = _batch_terminal_returns(o, h, l, c, sig, *args)
     elapsed = time.perf_counter() - t0
     n = int(sig.shape[0])
     return {

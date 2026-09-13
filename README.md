@@ -1,122 +1,105 @@
 # Monte-Neo
 
-🎲 **Monte Carlo Indicator Generator Framework** · **v0.0.9**
+<p align="center">
+  <img src="docs/assets/monteneo-logo.png" alt="Monte-Neo logo" width="220"/>
+</p>
 
-A professional Python framework for generating robust and profitable trading indicators using Monte Carlo simulation methods.
+<p align="center">
+  <strong>Monte Carlo indicator research</strong> and a fee-aware bar backtest engine<br/>
+  MIT · Python 3.11+ · Apple Silicon (Metal / MLX) friendly
+</p>
 
-> Current: [`v0.0.9`](https://github.com/NeoZorK/Monte-Neo) · first formal release [`v0.0.7`](https://github.com/NeoZorK/Monte-Neo/releases/tag/v0.0.7) · default branch: `main` · license: MIT
+<p align="center">
+  <a href="https://github.com/NeoZorK/Monte-Neo/actions/workflows/ci.yml"><img src="https://github.com/NeoZorK/Monte-Neo/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"/></a>
+  <a href="https://github.com/NeoZorK/Monte-Neo/releases/latest"><img src="https://img.shields.io/github/v/release/NeoZorK/Monte-Neo?label=release" alt="Latest release"/></a>
+  <img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+"/>
+</p>
 
+> Current: **v0.1.0** · [Changelog](docs/project/CHANGELOG.md) · [Docs index](docs/INDEX.md)
 
-## Features
+## What it is
 
-- 🎯 **Target-Based Generation**: Define metrics (Profit Factor, Sharpe, Max DD) and generate matching indicators
-- 🧠 **Smart Pipeline Optimizer**: Adaptive search logic that adjusts parameters and timeframes based on failures
-- 🏆 **Global Leadership Pipeline**: Fully automated end-to-end discovery with real-time status monitoring
-- 🚀 **Extreme GPU Acceleration**: Direct Metal Shaders (C++) and MLX support (>780k ops/sec on Apple Silicon)
-- 💎 **Low-Precision Computing**: Support for Float8 (E4M3/E5M2) for 4x memory bandwidth savings
-- 🧙 **Sequential "Wizard" Mode**: Step-by-step validation with detailed feedback and advice
-- 🧪 **Custom Strategy Lab**: Test your own formulas against professional stress tests
-- 📜 **Robustness Certificate**: Production-ready verification proof
-- 🔀 **Monte Carlo Methods**: Shuffling, noise injection, sensitivity analysis (±10%), walk-forward
-- 📊 **Binance Integration**: Download OHLCV data in fast Parquet format
-- 🖥️ **Interactive CLI**: Arrow-key navigation, progress bars, color output
-- 🐳 **Docker Support**: Headless mode for server deployment
-- ⚡ **High Performance**: Parallel processing, optimized data handling
-- 🛡️ **Reliability First**: Core modules (Backtesting, Metrics, Monte Carlo) covered by ~100% unit tests
+- **Monte Carlo research tooling** for trading indicators (noise, shuffle, sensitivity, walk-forward helpers).
+- **Interactive CLI** for data download (Binance), generation workflows, and charts.
+- **Fee-aware bar backtest engine** (`monte_neo.backtest`): next-bar fills, commission/slippage (bps), cash/equity, optional SL/TP/trail, batch sweeps, trade journal.
+- Optional **Metal / MLX** acceleration paths on Apple Silicon where available.
 
-## Quick Start
+## What it is not
+
+- Not a full broker OMS / exchange simulator (no L2 matching engine, no live order gateway in this package line).
+- Not a claim that every specialized throughput kernel equals the general bar engine — use `monte_neo.backtest` when you need matched execution semantics.
+
+## Quick start
 
 ```bash
-# 1. Install & Setup Environment
 uv sync
-
-# 2. Run CLI
 uv run monte-neo
-
-# 3. Run All Tests (300+)
 uv run pytest tests -n auto
-
-# 4. Generate Coverage Report
-uv run coverage run -m pytest && uv run coverage report
 ```
 
-## Running with Docker
+### Bar backtest (minimal)
 
-The framework is fully dockerized and supports both interactive and headless modes.
+```python
+from monte_neo.backtest import (
+    ExecutionModel,
+    frame_to_ohlc,
+    run_bar_backtest,
+    sma_signal,
+    synthetic_ohlcv,
+)
 
-### 1. Start Persistent Container
-This starts the container in the background and keeps it alive:
-```bash
-docker-compose -f docker/docker-compose.yml up -d
+ohlc = frame_to_ohlc(synthetic_ohlcv(5_000, seed=42))
+model = ExecutionModel(
+    commission_bps=5.0,
+    slippage_bps=5.0,
+    size_fraction=0.25,
+    sl_pct=1.0,
+    tp_pct=2.0,
+)
+sig = sma_signal(ohlc["close"], fast=10, slow=40)
+out = run_bar_backtest(
+    ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"], sig, model=model
+)
+print(out["total_return"], out["metrics"]["max_drawdown"], len(out["trades"]))
 ```
 
-### 2. Enter Container & Run CLI
-To interact with the generator inside Docker:
-```bash
-# Enter the shell
-docker-compose -f docker/docker-compose.yml exec monte-neo bash
+Details: [docs/project/backtest_engine.md](docs/project/backtest_engine.md).
 
-# Run the interactive CLI from inside
-uv run monte-neo
-```
+## Features (honest)
 
-### 3. Persistent Data
-All data remains persistent between restarts:
-- **OHLCV Data**: Stored in `./data/raw` and `./data/processed`
-- **Results**: Optimized indicators and charts are saved to `./data/results`
-These directories are mapped to your local machine via volumes.
+| Area | Status |
+|------|--------|
+| MC indicator / robustness workflows | Available via CLI and library |
+| Fee-aware next-bar bar engine | `monte_neo.backtest` (research-grade) |
+| Strategy expressions / SMA helpers | Library API (expanding) |
+| Metal / MLX paths | Best-effort on Apple Silicon; CPU fallbacks exist |
+| Docker | Supported for headless/CI-style runs |
 
-### 4. Cleanup
-To stop and remove the container:
-```bash
-docker-compose -f docker/docker-compose.yml down
-```
-
-## Workflow
-
-1. **Download Data** → Select symbol, timeframe, date range from Binance
-2. **Set Metrics** → Define target (e.g., Profit Factor > 2, Max DD < 20%)
-3. **Configure MC** → Select methods: shuffling, noise, sensitivity, walk-forward
-4. **Generate** → Run 100,000+ iterations to find robust indicator
-5. **Visualize** → View chart with entries, exits, and all metrics
-
-## Available Metrics
-
-| Metric | Target | Description |
-|--------|--------|-------------|
-| Winrate | 40-60% | Win percentage |
-| Profit Factor | > 2.0 | Gross profit / loss |
-| Sharpe Ratio | > 1.0 | Risk-adjusted return |
-| Sortino Ratio | > 1.5 | Downside-adjusted |
-| Max Drawdown | < 20% | Max capital decline |
-| Recovery Factor | > 2.0 | Profit / Max DD |
-| Calmar Ratio | > 0.5 | Annual / Max DD |
-
-## Project Structure
+## Project structure
 
 ```
 Monte-Neo/
-├── src/monte_neo/     # Main package
-│   ├── core/          # Generator engine
-│   ├── data/          # Binance downloader
+├── src/monte_neo/
+│   ├── backtest/      # Fee-aware bar engine
+│   ├── core/          # Generator / portfolio helpers
+│   ├── data/          # Market data downloaders
 │   ├── monte_carlo/   # MC methods
 │   ├── metrics/       # Trading metrics
 │   ├── cli/           # Interactive CLI
-│   └── visualization/ # Charts
-├── tests/             # Unit & integration tests
-├── docs/              # Documentation
-└── scripts/           # Utility scripts
+│   └── visualization/
+├── tests/
+├── docs/
+└── docker/
 ```
 
 ## Requirements
 
-- Python 3.11+
-- See `pyproject.toml` for dependencies
+- Python **3.11+**
+- Dependencies: see `pyproject.toml` (`uv sync`)
 
 ## License
 
-MIT License — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).
 
-Public repository: https://github.com/NeoZorK/Monte-Neo  
-Changelog: [docs/project/CHANGELOG.md](docs/project/CHANGELOG.md) · Branching: [docs/project/BRANCHING.md](docs/project/BRANCHING.md)
-
+Public repository: https://github.com/NeoZorK/Monte-Neo

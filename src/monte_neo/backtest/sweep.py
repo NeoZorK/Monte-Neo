@@ -5,33 +5,12 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
-from numba import njit
 
 from monte_neo.backtest.bar_engine import run_bar_backtest
 from monte_neo.backtest.batch import run_bar_backtest_batch
 from monte_neo.backtest.core_numba import run_terminal_return
 from monte_neo.backtest.model import ExecutionModel
-
-
-@njit(cache=True)
-def _sma_signal_long_flat(close: np.ndarray, fast: int, slow: int) -> np.ndarray:
-    n = close.shape[0]
-    out = np.zeros(n, dtype=np.int64)
-    if fast <= 0 or slow <= fast or slow > n:
-        return out
-    fsum = 0.0
-    ssum = 0.0
-    for i in range(n):
-        fsum += close[i]
-        ssum += close[i]
-        if i >= fast:
-            fsum -= close[i - fast]
-        if i >= slow:
-            ssum -= close[i - slow]
-        if i + 1 < slow:
-            continue
-        out[i] = 1 if (fsum / fast) > (ssum / slow) else 0
-    return out
+from monte_neo.backtest.strategy import sma_signal_long_flat
 
 
 def _sma_pairs(combos: int) -> list[tuple[int, int]]:
@@ -59,7 +38,7 @@ def run_sma_sweep(
     c = np.asarray(close, dtype=np.float64)
     signals = np.empty((len(pairs), c.shape[0]), dtype=np.int64)
     for i, (fast, slow) in enumerate(pairs):
-        signals[i] = _sma_signal_long_flat(c, int(fast), int(slow))
+        signals[i] = sma_signal_long_flat(c, int(fast), int(slow))
     batch = run_bar_backtest_batch(open_, high, low, close, signals, model=model)
     rets = batch["total_returns"]
     return {
@@ -86,7 +65,7 @@ def run_sma_sweep(
 
 def sma_signal(close: np.ndarray, fast: int, slow: int) -> np.ndarray:
     """Public helper: long/flat SMA cross signal (int64)."""
-    return _sma_signal_long_flat(np.asarray(close, dtype=np.float64), int(fast), int(slow))
+    return sma_signal_long_flat(np.asarray(close, dtype=np.float64), int(fast), int(slow))
 
 
 def verify_sweep_matches_single(
@@ -113,10 +92,12 @@ def verify_sweep_matches_single(
         False,
         float(model.size_fraction),
         float(model.commission_bps),
-        float(model.slippage_bps),
+        float(model.effective_slip_bps),
         float(model.initial_cash),
         int(model.warmup_bars),
         float(model.sl_pct),
         float(model.tp_pct),
+        float(model.trail_pct),
+        float(model.fill_fraction),
     )
     return abs(float(term) - float(single["total_return"])) < 1e-9

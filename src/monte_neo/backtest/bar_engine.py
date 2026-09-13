@@ -9,9 +9,14 @@ import numpy as np
 from monte_neo.backtest.core_numba import run_core_full, run_terminal_return
 from monte_neo.backtest.metrics import summarize_backtest
 from monte_neo.backtest.model import ExecutionModel
+from monte_neo.backtest.strategy import StrategySpec, build_signal
 from monte_neo.backtest.trades import pack_trades
 
-__all__ = ["run_bar_backtest", "run_terminal_return"]
+__all__ = ["run_bar_backtest", "run_strategy_backtest", "run_terminal_return"]
+
+
+def _model_slip_bps(model: ExecutionModel) -> float:
+    return float(model.effective_slip_bps)
 
 
 def run_bar_backtest(
@@ -58,11 +63,13 @@ def run_bar_backtest(
         model.side_mode == "long_short",
         float(model.size_fraction),
         float(model.commission_bps),
-        float(model.slippage_bps),
+        _model_slip_bps(model),
         float(model.initial_cash),
         int(model.warmup_bars),
         float(model.sl_pct),
         float(model.tp_pct),
+        float(model.trail_pct),
+        float(model.fill_fraction),
     )
     trades = pack_trades(
         n_closed, te_i, tx_i, te_px, tx_px, t_qty, t_fees, t_reason
@@ -84,3 +91,18 @@ def run_bar_backtest(
         "trades": trades,
         "metrics": metrics,
     }
+
+
+def run_strategy_backtest(
+    open_: np.ndarray,
+    high: np.ndarray,
+    low: np.ndarray,
+    close: np.ndarray,
+    spec: StrategySpec,
+    model: ExecutionModel | None = None,
+) -> dict[str, Any]:
+    """Compile ``spec`` to signals and run the shared ExecutionModel path."""
+    sig = build_signal(close, spec)
+    out = run_bar_backtest(open_, high, low, close, sig, model=model)
+    out["strategy"] = {"kind": spec.kind, "fast": spec.fast, "slow": spec.slow}
+    return out
