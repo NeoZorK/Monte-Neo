@@ -3,6 +3,20 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.0.8] — 2026-09-13
+
+### Added
+- Professional fee-aware bar backtest engine (`monte_neo.backtest`):
+  next-bar fills, commission/slippage bps, cash/position/equity,
+  SMA sweep with the same `ExecutionModel`, optional `ReplayBarSource`
+  mid-price feeder (no Redis on hot path)
+- Docs: `docs/project/backtest_engine.md`
+- Unit / integration / stress / performance tests for the new engine
+
+### Notes
+- ClaimBound D001 Type C remains a specialized SMA kernel gate; this package
+  path is for matched-semantics peer races (private or future D002).
+
 ## [v0.0.7] — 2026-09-12
 
 First formal GitHub Release. Canonical development branch is **`main`**
