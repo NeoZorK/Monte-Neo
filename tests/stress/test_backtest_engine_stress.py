@@ -38,3 +38,21 @@ def test_sweep_256_combos_stable() -> None:
     assert out["ok"] is True
     assert out["combos"] == 256
     assert all(np.isfinite(row["total_return"]) for row in out["rows"])
+
+
+@pytest.mark.stress
+def test_batch_with_sl_tp_stress() -> None:
+    from monte_neo.backtest import run_bar_backtest_batch
+
+    ohlc = frame_to_ohlc(synthetic_ohlcv(n_bars=20_000, seed=8))
+    model = ExecutionModel(
+        warmup_bars=50, commission_bps=5.0, slippage_bps=5.0, sl_pct=1.0, tp_pct=2.0
+    )
+    signals = np.vstack(
+        [sma_signal(ohlc["close"], f, s) for f, s in ((5, 30), (8, 35), (12, 45))]
+    )
+    out = run_bar_backtest_batch(
+        ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"], signals, model=model
+    )
+    assert out["combos"] == 3
+    assert np.all(np.isfinite(out["total_returns"]))

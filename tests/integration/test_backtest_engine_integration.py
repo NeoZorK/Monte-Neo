@@ -62,3 +62,30 @@ def test_sweep_checklist_matches_model(ohlc: dict[str, np.ndarray]) -> None:
     )
     assert out["work_checklist"] == model.work_checklist
     assert out["model"]["commission_bps"] == 7.0
+
+
+def test_sl_tp_checklist_and_batch_end_to_end(ohlc: dict[str, np.ndarray]) -> None:
+    from monte_neo.backtest import run_bar_backtest_batch
+
+    model = ExecutionModel(
+        commission_bps=5.0,
+        slippage_bps=5.0,
+        warmup_bars=40,
+        sl_pct=1.5,
+        tp_pct=3.0,
+    )
+    assert model.work_checklist["sl_tp"] is True
+    sig = sma_signal(ohlc["close"], 10, 40)
+    single = run_bar_backtest(
+        ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"], sig, model=model
+    )
+    batch = run_bar_backtest_batch(
+        ohlc["open"],
+        ohlc["high"],
+        ohlc["low"],
+        ohlc["close"],
+        sig.reshape(1, -1),
+        model=model,
+    )
+    assert abs(float(batch["total_returns"][0]) - single["total_return"]) < 1e-9
+    assert "trades" in single

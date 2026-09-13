@@ -15,7 +15,8 @@ class ExecutionModel:
 
     Signal observed on bar ``t`` fills on bar ``t+1`` (no same-bar fill).
     Commission is charged on each fill notional; slippage moves the fill price
-    adversely by ``slippage_bps``.
+    adversely by ``slippage_bps``. Optional ``sl_pct`` / ``tp_pct`` exit on H/L
+    after entry (percent of entry price; 0 disables).
     """
 
     fill_policy: FillPolicy = "next_bar_open"
@@ -25,6 +26,8 @@ class ExecutionModel:
     slippage_bps: float = 5.0
     initial_cash: float = 100_000.0
     warmup_bars: int = 60
+    sl_pct: float = 0.0
+    tp_pct: float = 0.0
 
     def __post_init__(self) -> None:
         if self.size_fraction <= 0.0 or self.size_fraction > 1.0:
@@ -35,6 +38,8 @@ class ExecutionModel:
             raise ValueError("initial_cash must be positive")
         if self.warmup_bars < 0:
             raise ValueError("warmup_bars must be non-negative")
+        if self.sl_pct < 0.0 or self.tp_pct < 0.0:
+            raise ValueError("sl_pct/tp_pct must be non-negative")
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -48,4 +53,7 @@ class ExecutionModel:
             "slippage": self.slippage_bps > 0.0,
             "cash_position_equity": True,
             "no_lookahead": True,
+            "sl_tp": self.sl_pct > 0.0 or self.tp_pct > 0.0,
+            "trade_journal": True,
+            "summary_metrics": True,
         }

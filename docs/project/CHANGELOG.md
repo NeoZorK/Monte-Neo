@@ -3,6 +3,18 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.0.9] — 2026-09-13
+
+### Added
+- `ExecutionModel.sl_pct` / `tp_pct` with H/L exits (SL preferred on dual hit)
+- Trade journal + metrics (`sharpe`, `profit_factor`, `win_rate`, max DD)
+- `run_bar_backtest_batch` for external signal matrices (shared economics)
+- `run_multi_symbol_lite` (independent cash books)
+- `run_sma_sweep` now wraps batch (labeled convenience, not D001 kernel)
+
+### Notes
+- Costs remain **bps** on this path; older `metrics` helpers may use %.
+
 ## [v0.0.8] — 2026-09-13
 
 ### Added
