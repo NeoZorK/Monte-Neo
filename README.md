@@ -16,19 +16,20 @@
   <img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+"/>
 </p>
 
-> Current: **v0.2.0** · [Changelog](docs/project/CHANGELOG.md) · [Docs index](docs/INDEX.md)
+> Current: **v0.3.0** · [Changelog](docs/project/CHANGELOG.md) · [Docs index](docs/INDEX.md)
 
 ## What it is
 
 - **Monte Carlo research tooling** for trading indicators (noise, shuffle, sensitivity, walk-forward helpers).
 - **Interactive CLI** for data download (Binance), generation workflows, and charts.
-- **Fee-aware bar backtest engine** (`monte_neo.backtest`): next-bar fills, commission/slippage/impact (bps), cash/equity, SL/TP/trail, funding, leverage, session masks, batch sweeps, shared-cash portfolio, trade journal.
-- Optional **Metal / MLX** acceleration paths on Apple Silicon where available.
+- **Fee-aware research bar engine** (`monte_neo.backtest`): next-bar fills, costs (bps), SL/TP/trail, funding, leverage, sessions, batch sweeps, shared-cash portfolio, journal.
+- **Paper OMS lane** (`monte_neo.oms`): order lifecycle, matching, blotter, Apple Silicon device select (Numba / Metal / MLX).
+- Optional **Metal / MLX** acceleration on Apple Silicon (16GB-class hosts first).
 
 ## What it is not
 
-- Not a full broker OMS / exchange simulator (no L2 matching engine, no live order gateway in this package line).
-- Not a claim that every specialized throughput kernel equals the general bar engine — use `monte_neo.backtest` when you need matched execution semantics.
+- Not a live exchange or funded trading bot by default (live adapters are env-gated when present).
+- Not a claim that research-bar batch throughput equals full OMS event-loop cost — use each lane for its semantics.
 
 ## Quick start
 
@@ -66,14 +67,28 @@ print(out["total_return"], out["metrics"]["max_drawdown"], len(out["trades"]))
 
 Details: [docs/project/backtest_engine.md](docs/project/backtest_engine.md).
 
+### Paper OMS (minimal)
+
+```python
+from monte_neo.oms import SignalStrategy, run_oms_bar_backtest
+
+out = run_oms_bar_backtest(
+    open_, high, low, close,
+    SignalStrategy(signal, size_fraction=0.25),
+    device="cpu_numba",
+)
+```
+
+Details: [docs/project/oms_engine.md](docs/project/oms_engine.md).
+
 ## Features (honest)
 
 | Area | Status |
 |------|--------|
 | MC indicator / robustness workflows | Available via CLI and library |
-| Fee-aware next-bar bar engine | `monte_neo.backtest` (research-grade) |
-| Strategy expressions / SMA helpers | Library API (expanding) |
-| Metal / MLX paths | Best-effort on Apple Silicon; CPU fallbacks exist |
+| Fee-aware research bar engine | `monte_neo.backtest` |
+| Paper OMS (orders / blotter) | `monte_neo.oms` (v0.3.0+) |
+| Metal / MLX / Numba device select | Best-effort on Apple Silicon; CPU fallbacks |
 | Docker | Supported for headless/CI-style runs |
 
 ## Project structure
@@ -81,8 +96,9 @@ Details: [docs/project/backtest_engine.md](docs/project/backtest_engine.md).
 ```
 Monte-Neo/
 ├── src/monte_neo/
-│   ├── backtest/      # Fee-aware bar engine
-│   ├── core/          # Generator / portfolio helpers
+│   ├── backtest/      # Research bar engine
+│   ├── oms/           # Paper OMS + accel
+│   ├── core/          # Generator / Metal bridges
 │   ├── data/          # Market data downloaders
 │   ├── monte_carlo/   # MC methods
 │   ├── metrics/       # Trading metrics

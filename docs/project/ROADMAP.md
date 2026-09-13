@@ -1,12 +1,18 @@
-# Monte-Neo Roadmap (v0.2.0)
+# Monte-Neo Roadmap (v0.3.0)
 
-## HARD GATE — ClaimBound
-- [ ] **No ClaimBound-Evidence / public speed bake-offs** until Monte-Neo honestly
-      beats all top-10 landscape peers on speed under private P001
-      (`manifold_bt_comparison`) **and** explicit user OK.
-- Until then: local/private harness only.
+## Project rules
+- [x] **Silence:** never name external competing products or individuals in this repo
+- [x] **ClaimBound Evidence:** only after complete correct private comparisons **and** explicit maintainer permission
+- [x] **Version sync:** `_version.py` ↔ CHANGELOG ↔ README ↔ ROADMAP ↔ INDEX ↔ tag ↔ Release ↔ tests ↔ CI
+- [x] **Swiss-watch quality:** parity tests, loud failures, perf budgets on 16GB Apple Silicon
 
-## Version 0.2.0 - Full research bar engine (Current)
+## Version 0.3.0 - Paper OMS + accel foundation (Current)
+- [x] `monte_neo.oms` paper bar OMS (orders, match, portfolio, blotter)
+- [x] Device select (`cpu_numba` / `metal` / `mlx` / `auto`)
+- [x] Numba batch helper + Metal shader scaffold for OMS bar match
+- [x] Unit / integration / stress / perf coverage for OMS lane
+
+## Version 0.2.0 - Full research bar engine
 - [x] Session mask + funding lite + leverage
 - [x] Shared-cash portfolio (`run_portfolio_shared_cash`)
 - [x] Correctness invariants + batch parity with new knobs
@@ -16,70 +22,7 @@
 - [x] StrategySpec / trail / impact_bps / partial fills
 - [x] Fee-aware shared ExecutionModel path
 
-## ✅ Version 0.0.5 - Robustness Factory (Completed)
-- [x] **C++/Metal Engine**: Lightning-fast GPU backtesting extension.
-- [x] **Unified Kernel Architecture**: Zero-latency trade execution on GPU.
-- [x] **GPU Grid Search**: Testing thousands of scenarios in milliseconds.
-- [x] **Walk-Forward Optimization**: Hardware-accelerated validation.
-- [x] **Production Gate**: Robustness scoring and certification.
-
-## ✅ Version 0.0.6 - Global Leadership & Production Mastery (Completed)
-- [x] **Smart Portfolio Engine**: Multi-indicator management with Kelly Criterion.
-- [x] **Non-Repainting Validator**: Hard enforcement of signal causality.
-- [x] **Advanced Noise Suite**: Latency shifts, variable spreads, and slippage.
-- [x] **Combinatorial WFO (CSCV)**: Advanced overfitting detection (PBO).
-- [x] **One-Click Production Export**: C++/Metal binary standalone generation.
-- [x] **AI-Driven Evolution**: Self-correcting indicator formulas.
-- [x] **Global Leadership Pipeline**: End-to-end automated discovery workflow.
-- [x] **Realistic Calculation Engine**: $100,000 initial deposit & 1.0 leverage hard-enforcement.
-- [x] **High Test Coverage**: Core modules (Backtesting, Metrics, Monte Carlo) achieved ~100% coverage.
-- [x] **Unified UI/UX**: Streamlined progress bars and logs for clear workflow execution.
-
-## 🚀 Version 0.0.7 - Fair-race & Public Reproduce (Completed)
-- [x] **MIT license sync**: LICENSE + pyproject metadata aligned for public GitHub.
-- [x] **ClaimBound fair-race helpers**: Type A/B/C public APIs + `monte-neo-fair-race` CLI.
-- [x] **CPU fallback for Type B**: Reproduce stays green without compiled Metal extension.
-
-## 🚀 Version 0.0.8 - Professional bar backtest engine
-- [x] **Fee-aware bar engine**: `monte_neo.backtest` with frozen `ExecutionModel`
-- [x] **Matched SMA sweep**: same fees/slippage/next-bar semantics as single run
-- [x] **Optional ReplayBarSource**: mid-price → OHLC without Redis on hot path
-
-## 🚀 Version 0.0.9 - SL/TP, journal, batch (Current)
-- [x] **SL/TP on H/L** + trade journal + summary metrics
-- [x] **`run_bar_backtest_batch`** for external signal matrices
-- [x] **`run_multi_symbol_lite`** independent cash books
-- [ ] **Web-based Dashboard**: Real-time monitoring and strategy management.
-- [ ] **Multi-Exchange Support**: Bybit, OKX, and Kraken integration.
-- [ ] **Cloud-Native Workers**: Distributed Monte Carlo simulations via Kubernetes.
-- [ ] **Advanced ML Integration**: Transformer-based signal refinement.
-
----
-
-## ⏱️ 6-Hour Sprint Plan (Completed)
-
-### Hour 1-2: Production Export & C++ Core
-- [x] Implement `ProductionExporter` for zero-latency standalone execution.
-- [x] Create C++ templates for indicator logic (fast-path).
-- [x] Add `uv run monte-neo export` command.
-
-### Hour 3-4: AI-Driven Evolution (Symbolic Regression)
-- [x] Implement Genetic Programming (GP) for formula discovery.
-- [x] Add "Smart Mutation" based on performance feedback loops.
-- [x] Integrate AI-inspired heuristics for formula optimization.
-
-
-### Hour 5: Portfolio Intelligence & Risk
-- [x] Implement multi-asset correlation clustering.
-- [x] Automated portfolio rebalancing logic (Risk Parity/Kelly).
-- [x] Dashboard for "Portfolio Robustness" (Combined MC).
-
-### Hour 6: Certification & Final Integration
-- [x] Auto-generate "World-Class Robustness Certificate".
-- [x] Full pipeline verification (Data -> Evolution -> Validation -> Export).
-- [x] UI/UX final touch for the "Wizard" mode (Global Leadership Pipeline).
-
----
-
-## Milestones
-
+## Next
+- [ ] v0.4.0 — tick/L2 matching + MC Metal unify
+- [ ] v0.5.0 — paper/live exchange adapters (env-gated)
+- [ ] Private P002/P003 protocols (separate harness) — no Evidence without permission

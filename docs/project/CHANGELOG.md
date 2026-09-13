@@ -3,6 +3,19 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.3.0] — 2026-09-13
+
+### Added
+- Paper OMS lane (`monte_neo.oms`): orders, matching, portfolio netting, blotter
+- Accel device select (`cpu_numba` / `metal` / `mlx` / `auto`) for Apple Silicon
+- Numba OMS batch helper + Metal shader scaffold (`oms_bar_match.metal`)
+- Docs: `docs/project/oms_engine.md`; roadmap rules (silence, Evidence gate, sync)
+
+### Notes
+- Research bar engine (`monte_neo.backtest`) unchanged as a separate lane.
+- License remains **MIT**.
+- No public Evidence publication without maintainer permission after correct private runs.
+
 ## [v0.2.0] — 2026-09-13
 
 ### Added

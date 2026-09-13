@@ -1,4 +1,4 @@
-# Monte-Neo v0.2.0
+# Monte-Neo v0.3.0
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -19,8 +19,9 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/features.md - Detailed overview of framework features
 - docs/project/dynamic_indicators.md - Explanation of dynamic indicator generation
 - docs/project/ROADMAP.md - Development roadmap and milestones (v0.0.7)
-- docs/project/CHANGELOG.md - Release changelog (current: v0.2.0)
-- docs/project/backtest_engine.md - Fee-aware bar engine (execution model + API)
+- docs/project/CHANGELOG.md - Release changelog (current: v0.3.0)
+- docs/project/backtest_engine.md - Fee-aware research bar engine
+- docs/project/oms_engine.md - Paper OMS lane + Apple Silicon device select
 - docs/assets/monteneo-logo.png - Project logo
 - docs/project/BRANCHING.md - Branch and version policy
 - docs/project/v0.0.5_plan.md - Development plan for v0.0.5
@@ -56,11 +57,12 @@ A simplified guide to the Monte-Neo file structure.
 - docker/docker-compose.yml - Docker Compose service definitions
 
 ### Source Code (src/monte_neo/)
-- src/monte_neo/_version.py - Central version management (v0.2.0)
+- src/monte_neo/_version.py - Central version management (v0.3.0)
 - src/monte_neo/__init__.py - Main package entry point
 - src/monte_neo/fair_race.py - Public fair-race Type A/B/C helpers
 - src/monte_neo/fair_race_cli.py - CLI entrypoint `monte-neo-fair-race`
-- src/monte_neo/backtest/ - Professional fee-aware bar engine + SMA sweep
+- src/monte_neo/backtest/ - Professional fee-aware research bar engine + SMA sweep
+- src/monte_neo/oms/ - Paper OMS lane + Apple Silicon accel helpers
 
 #### Core Engine (core/)
 - src/monte_neo/core/__init__.py - Core exports
