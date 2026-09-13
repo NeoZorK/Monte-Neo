@@ -81,6 +81,10 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-v --tb=short"
 filterwarnings = []
+markers = [
+    "stress: larger workloads / longer series",
+    "performance: throughput smoke checks (not public claims)",
+]
 
 [tool.mypy]
 python_version = "3.11"
