@@ -50,7 +50,7 @@ def run_multi_symbol_lite(
         "ok": True,
         "engine": "monte_neo.backtest.portfolio_lite",
         "model": model.to_dict(),
-        "work_checklist": model.work_checklist,
+        "work_checklist": model.work_checklist(),
         "n_symbols": n,
         "initial_cash_total": initial,
         "final_cash_total": total_final,

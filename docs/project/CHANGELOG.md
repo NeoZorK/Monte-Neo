@@ -3,6 +3,19 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.2.0] — 2026-09-13
+
+### Added
+- Session mask (block new entries off-session; exits/SL/TP still allowed)
+- Funding lite (`funding_bps_per_bar`) and leverage (`leverage >= 1`)
+- Shared-cash multi-symbol portfolio (`run_portfolio_shared_cash`)
+- Correctness suite: dual-hit SL preference, batch≡single with new knobs
+
+### Notes
+- Research bar engine scope unchanged (not a full OMS).
+- No ClaimBound speed evidence until honest top-10 private speed win + user OK.
+- License remains **MIT**.
+
 ## [v0.1.0] — 2026-09-13
 
 ### Added

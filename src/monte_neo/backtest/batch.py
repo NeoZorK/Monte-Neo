@@ -19,6 +19,7 @@ def _batch_terminal_returns(
     low: np.ndarray,
     close: np.ndarray,
     signals: np.ndarray,
+    session_ok: np.ndarray,
     fill_open: bool,
     long_short: bool,
     size_fraction: float,
@@ -30,6 +31,8 @@ def _batch_terminal_returns(
     tp_pct: float,
     trail_pct: float,
     fill_fraction: float,
+    leverage: float,
+    funding_bps: float,
 ) -> np.ndarray:
     m = signals.shape[0]
     out = np.empty(m, dtype=np.float64)
@@ -40,6 +43,7 @@ def _batch_terminal_returns(
             low,
             close,
             signals[j],
+            session_ok,
             fill_open,
             long_short,
             size_fraction,
@@ -51,6 +55,8 @@ def _batch_terminal_returns(
             tp_pct,
             trail_pct,
             fill_fraction,
+            leverage,
+            funding_bps,
         )
     return out
 
@@ -62,6 +68,7 @@ def run_bar_backtest_batch(
     close: np.ndarray,
     signals: np.ndarray,
     model: ExecutionModel | None = None,
+    session_mask: np.ndarray | None = None,
 ) -> dict[str, Any]:
     """Run N external signal rows through the same engine."""
     model = model or ExecutionModel()
@@ -76,11 +83,20 @@ def run_bar_backtest_batch(
         raise ValueError("signals second dim must match OHLC length")
     if o.ndim != 1 or o.size < model.warmup_bars + 2:
         raise ValueError("need 1-D series with enough bars for warmup + fill")
+    if session_mask is None:
+        sess = np.ones(o.size, dtype=np.bool_)
+        sess_used = False
+    else:
+        sess = np.asarray(session_mask, dtype=np.bool_)
+        if sess.shape != (o.size,):
+            raise ValueError("session_mask must match bar length")
+        sess_used = True
 
     fill_open = model.fill_policy == "next_bar_open"
     long_short = model.side_mode == "long_short"
     slip = float(model.effective_slip_bps)
     args = (
+        sess,
         fill_open,
         long_short,
         float(model.size_fraction),
@@ -92,13 +108,17 @@ def run_bar_backtest_batch(
         float(model.tp_pct),
         float(model.trail_pct),
         float(model.fill_fraction),
+        float(model.leverage),
+        float(model.funding_bps_per_bar),
     )
+    warm_n = min(256, o.size)
     _ = _batch_terminal_returns(
-        o[: min(256, o.size)],
-        h[: min(256, o.size)],
-        l[: min(256, o.size)],
-        c[: min(256, o.size)],
-        sig[:1, : min(256, o.size)],
+        o[:warm_n],
+        h[:warm_n],
+        l[:warm_n],
+        c[:warm_n],
+        sig[:1, :warm_n],
+        sess[:warm_n],
         fill_open,
         long_short,
         float(model.size_fraction),
@@ -110,6 +130,8 @@ def run_bar_backtest_batch(
         float(model.tp_pct),
         float(model.trail_pct),
         float(model.fill_fraction),
+        float(model.leverage),
+        float(model.funding_bps_per_bar),
     )
     t0 = time.perf_counter()
     rets = _batch_terminal_returns(o, h, l, c, sig, *args)
@@ -120,7 +142,7 @@ def run_bar_backtest_batch(
         "engine": "monte_neo.backtest.batch",
         "device": "cpu_numba",
         "model": model.to_dict(),
-        "work_checklist": model.work_checklist,
+        "work_checklist": model.work_checklist(session_mask_used=sess_used),
         "combos": n,
         "elapsed_s": elapsed,
         "combos_per_s": n / elapsed if elapsed > 0 else float("inf"),

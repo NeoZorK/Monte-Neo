@@ -16,13 +16,13 @@
   <img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+"/>
 </p>
 
-> Current: **v0.1.0** · [Changelog](docs/project/CHANGELOG.md) · [Docs index](docs/INDEX.md)
+> Current: **v0.2.0** · [Changelog](docs/project/CHANGELOG.md) · [Docs index](docs/INDEX.md)
 
 ## What it is
 
 - **Monte Carlo research tooling** for trading indicators (noise, shuffle, sensitivity, walk-forward helpers).
 - **Interactive CLI** for data download (Binance), generation workflows, and charts.
-- **Fee-aware bar backtest engine** (`monte_neo.backtest`): next-bar fills, commission/slippage (bps), cash/equity, optional SL/TP/trail, batch sweeps, trade journal.
+- **Fee-aware bar backtest engine** (`monte_neo.backtest`): next-bar fills, commission/slippage/impact (bps), cash/equity, SL/TP/trail, funding, leverage, session masks, batch sweeps, shared-cash portfolio, trade journal.
 - Optional **Metal / MLX** acceleration paths on Apple Silicon where available.
 
 ## What it is not

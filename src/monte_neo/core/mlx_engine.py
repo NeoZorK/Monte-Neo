@@ -79,9 +79,14 @@ class MLXBacktestEngine:
         from monte_neo.core.mlx_sim_engine import run_full_simulation_impl
         return run_full_simulation_impl(self, data, indicator_or_list, n_scenarios, **kwargs)
 
-    def backtest_batch(self, **kwargs) -> list[dict[str, Any]]:
+    def backtest_batch(
+        self,
+        data: pd.DataFrame,
+        indicators: list[BaseIndicator],
+        **kwargs: Any,
+    ) -> list[dict[str, Any]]:
         from monte_neo.core.mlx_sim_engine import backtest_batch_impl
-        return backtest_batch_impl(self, **kwargs)
+        return backtest_batch_impl(self, data, indicators, **kwargs)
 
     def backtest_scenarios(self, indicator: BaseIndicator, scenarios: list[pd.DataFrame], executor: ParallelExecutor | None = None,
                           use_sl_tp: bool = False, sl_pct: float = 0.0, tp_pct: float = 0.0) -> list[dict[str, Any]]:

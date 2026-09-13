@@ -1,6 +1,17 @@
-# 🗺️ Monte-Neo Roadmap (v0.1.0)
+# Monte-Neo Roadmap (v0.2.0)
 
-## 🚀 Version 0.1.0 - GP bar engine + public face (Current)
+## HARD GATE — ClaimBound
+- [ ] **No ClaimBound-Evidence / public speed bake-offs** until Monte-Neo honestly
+      beats all top-10 landscape peers on speed under private P001
+      (`manifold_bt_comparison`) **and** explicit user OK.
+- Until then: local/private harness only.
+
+## Version 0.2.0 - Full research bar engine (Current)
+- [x] Session mask + funding lite + leverage
+- [x] Shared-cash portfolio (`run_portfolio_shared_cash`)
+- [x] Correctness invariants + batch parity with new knobs
+
+## Version 0.1.0 - GP bar engine + public face
 - [x] Honest README + logo + badges
 - [x] StrategySpec / trail / impact_bps / partial fills
 - [x] Fee-aware shared ExecutionModel path
