@@ -1,10 +1,10 @@
 # Monte-Neo
 
-🎲 **Monte Carlo Indicator Generator Framework** · **v0.0.7**
+🎲 **Monte Carlo Indicator Generator Framework** · **v0.0.8**
 
 A professional Python framework for generating robust and profitable trading indicators using Monte Carlo simulation methods.
 
-> First formal release: [`v0.0.7`](https://github.com/NeoZorK/Monte-Neo/releases/tag/v0.0.7) · default branch: `main` · license: MIT
+> Current: [`v0.0.8`](https://github.com/NeoZorK/Monte-Neo) · first formal release [`v0.0.7`](https://github.com/NeoZorK/Monte-Neo/releases/tag/v0.0.7) · default branch: `main` · license: MIT
 
 
 ## Features

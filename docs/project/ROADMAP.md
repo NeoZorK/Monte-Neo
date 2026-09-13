@@ -1,4 +1,4 @@
-# 🗺️ Monte-Neo Roadmap (v0.0.7)
+# 🗺️ Monte-Neo Roadmap (v0.0.8)
 
 ## ✅ Version 0.0.5 - Robustness Factory (Completed)
 - [x] **C++/Metal Engine**: Lightning-fast GPU backtesting extension.
@@ -19,10 +19,15 @@
 - [x] **High Test Coverage**: Core modules (Backtesting, Metrics, Monte Carlo) achieved ~100% coverage.
 - [x] **Unified UI/UX**: Streamlined progress bars and logs for clear workflow execution.
 
-## 🚀 Version 0.0.7 - Fair-race & Public Reproduce (Current)
+## 🚀 Version 0.0.7 - Fair-race & Public Reproduce (Completed)
 - [x] **MIT license sync**: LICENSE + pyproject metadata aligned for public GitHub.
 - [x] **ClaimBound fair-race helpers**: Type A/B/C public APIs + `monte-neo-fair-race` CLI.
 - [x] **CPU fallback for Type B**: Reproduce stays green without compiled Metal extension.
+
+## 🚀 Version 0.0.8 - Professional bar backtest engine (Current)
+- [x] **Fee-aware bar engine**: `monte_neo.backtest` with frozen `ExecutionModel`
+- [x] **Matched SMA sweep**: same fees/slippage/next-bar semantics as single run
+- [x] **Optional ReplayBarSource**: mid-price → OHLC without Redis on hot path
 - [ ] **Web-based Dashboard**: Real-time monitoring and strategy management.
 - [ ] **Multi-Exchange Support**: Bybit, OKX, and Kraken integration.
 - [ ] **Cloud-Native Workers**: Distributed Monte Carlo simulations via Kubernetes.
