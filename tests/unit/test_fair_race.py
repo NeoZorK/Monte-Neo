@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from monte_neo import __version__
 from monte_neo.fair_race import (
     return_path_bootstrap,
@@ -12,7 +14,8 @@ from monte_neo.fair_race import (
 
 
 def test_package_version_matches_source() -> None:
-    assert __version__.startswith("v0.0.")
+    assert __version__.startswith("v0.")
+    assert re.fullmatch(r"v\d+\.\d+\.\d+", __version__)
 
 
 def test_synthetic_ohlcv_shape_and_seed() -> None:
