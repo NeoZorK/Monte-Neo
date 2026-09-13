@@ -11,12 +11,14 @@ REASON_SIGNAL = 1
 REASON_SL = 2
 REASON_TP = 3
 REASON_FLATTEN = 4
+REASON_TRAIL = 5
 
 REASON_NAMES = {
     REASON_SIGNAL: "signal",
     REASON_SL: "sl",
     REASON_TP: "tp",
     REASON_FLATTEN: "flatten",
+    REASON_TRAIL: "trail",
 }
 
 

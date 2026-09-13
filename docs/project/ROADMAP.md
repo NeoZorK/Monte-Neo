@@ -1,4 +1,9 @@
-# 🗺️ Monte-Neo Roadmap (v0.0.9)
+# 🗺️ Monte-Neo Roadmap (v0.1.0)
+
+## 🚀 Version 0.1.0 - GP bar engine + public face (Current)
+- [x] Honest README + logo + badges
+- [x] StrategySpec / trail / impact_bps / partial fills
+- [x] Fee-aware shared ExecutionModel path
 
 ## ✅ Version 0.0.5 - Robustness Factory (Completed)
 - [x] **C++/Metal Engine**: Lightning-fast GPU backtesting extension.
