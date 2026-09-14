@@ -11,6 +11,19 @@ from monte_neo.backtest.data import (
     synthetic_ohlcv,
     try_import_replay_inprocess,
 )
+from monte_neo.backtest.export import (
+    EXPORT_API_VERSION,
+    export_batch,
+    export_single,
+    export_sma_signal,
+    export_sma_sweep,
+    research_manifest,
+    verify_export_golden,
+)
+from monte_neo.backtest.golden import (
+    golden_fixture,
+    verify_golden_vectors,
+)
 from monte_neo.backtest.metal_economics import (
     get_metal_research_engine,
     metal_economics_eligible,
@@ -43,4 +56,13 @@ __all__ = [
     "try_import_replay_inprocess",
     "summarize_equity",
     "assert_fee_hurts_return",
+    "EXPORT_API_VERSION",
+    "export_batch",
+    "export_single",
+    "export_sma_signal",
+    "export_sma_sweep",
+    "research_manifest",
+    "verify_export_golden",
+    "golden_fixture",
+    "verify_golden_vectors",
 ]
