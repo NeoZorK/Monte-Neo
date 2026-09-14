@@ -36,16 +36,17 @@ def test_engine_init():
 
 def test_run_full_simulation_native(engine, sample_data):
     indicator = MagicMock()
-    indicator.to_mlx_representation.return_value = MagicMock()
-    indicator.get_metal_params.return_value = [1.0, 2.0]
-    
-    engine.native_bridge = MagicMock()
-    engine.native_bridge.run_backtest.return_value = [MagicMock(total_return=0.1, trade_count=5, profit_factor=1.5, win_rate=0.6, max_drawdown=0.05, sharpe_ratio=1.0)]
-    
-    results, stats = engine.run_full_simulation(sample_data, indicator, n_scenarios=1, method="shuffling")
+    with patch("monte_neo.core.mlx_sim_engine.run_full_simulation_impl") as mock_impl:
+        mock_impl.return_value = (
+            [{"metrics": {"total_return": 0.1, "trade_count": 5, "profit_factor": 1.5, "win_rate": 0.6, "max_drawdown": 0.05, "sharpe_ratio": 1.0}}],
+            {"kernel_execution": 0.01},
+        )
+        results, stats = engine.run_full_simulation(sample_data, indicator, n_scenarios=1, method="shuffling")
     assert len(results) == 1
     assert results[0]["metrics"]["total_return"] == 0.1
     assert "kernel_execution" in stats
+
+
 
 def test_run_full_simulation_mlx_sl_tp(engine, sample_data):
     indicator = MagicMock()

@@ -34,10 +34,7 @@ class TestMLXEngineExtra(unittest.TestCase):
         out = engine.backtest_batch(self.data, [self.indicator], use_sl_tp=True)
         self.assertEqual(len(out), 1)
         mock_impl.assert_called_once()
-        kwargs = mock_impl.call_args.kwargs
-        if not kwargs and len(mock_impl.call_args.args) >= 1:
-            kwargs = {}
-        self.assertTrue(kwargs.get("use_sl_tp", True))
+        self.assertTrue(mock_impl.call_args.kwargs.get("use_sl_tp", False))
 
     @patch("monte_neo.core.mlx_engine.run_scenarios_backtest")
     def test_backtest_scenarios(self, mock_run) -> None:
@@ -63,9 +60,13 @@ class TestMLXEngineExtra(unittest.TestCase):
         mock_impl.assert_called_once()
 
     @patch("monte_neo.core.mlx_engine.select_best_metal_driver", return_value="objc")
+    @patch("monte_neo.core.mlx_engine.Driver")
     @patch("monte_neo.core.mlx_engine.METAL_EXTENSION_AVAILABLE", True)
     @patch("monte_neo.core.mlx_engine.MetalBacktestBridge")
-    def test_auto_driver_uses_select_best(self, mock_bridge_cls, _sel) -> None:
+    def test_auto_driver_uses_select_best(self, mock_bridge_cls, mock_driver, _sel) -> None:
+        mock_driver.CPP = "cpp"
+        mock_driver.OBJC = "objc"
+        mock_driver.SWIFT = "swift"
         mock_bridge = MagicMock()
         mock_bridge.init.return_value = True
         mock_bridge_cls.return_value = mock_bridge
@@ -73,9 +74,13 @@ class TestMLXEngineExtra(unittest.TestCase):
         self.assertEqual(engine.metal_driver, "objc")
         self.assertIsNotNone(engine.native_bridge)
 
+    @patch("monte_neo.core.mlx_engine.Driver")
     @patch("monte_neo.core.mlx_engine.METAL_EXTENSION_AVAILABLE", True)
     @patch("monte_neo.core.mlx_engine.MetalBacktestBridge")
-    def test_init_bridge_fail(self, mock_bridge_cls) -> None:
+    def test_init_bridge_fail(self, mock_bridge_cls, mock_driver) -> None:
+        mock_driver.CPP = "cpp"
+        mock_driver.OBJC = "objc"
+        mock_driver.SWIFT = "swift"
         mock_bridge = MagicMock()
         mock_bridge.init.return_value = False
         mock_bridge_cls.return_value = mock_bridge
