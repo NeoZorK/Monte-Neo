@@ -11,16 +11,6 @@ from monte_neo.backtest.data import (
     synthetic_ohlcv,
     try_import_replay_inprocess,
 )
-from monte_neo.backtest.metal_economics import (
-    get_metal_research_engine,
-    metal_economics_eligible,
-)
-from monte_neo.backtest.metrics import assert_fee_hurts_return, summarize_equity
-from monte_neo.backtest.model import ExecutionModel
-from monte_neo.backtest.portfolio_lite import run_multi_symbol_lite
-from monte_neo.backtest.portfolio_shared import run_portfolio_shared_cash
-from monte_neo.backtest.strategy import StrategySpec, build_signal
-from monte_neo.backtest.sweep import run_sma_sweep, sma_signal, verify_sweep_matches_single
 from monte_neo.backtest.export import (
     EXPORT_API_VERSION,
     export_batch,
@@ -34,6 +24,16 @@ from monte_neo.backtest.golden import (
     golden_fixture,
     verify_golden_vectors,
 )
+from monte_neo.backtest.metal_economics import (
+    get_metal_research_engine,
+    metal_economics_eligible,
+)
+from monte_neo.backtest.metrics import assert_fee_hurts_return, summarize_equity
+from monte_neo.backtest.model import ExecutionModel
+from monte_neo.backtest.portfolio_lite import run_multi_symbol_lite
+from monte_neo.backtest.portfolio_shared import run_portfolio_shared_cash
+from monte_neo.backtest.strategy import StrategySpec, build_signal
+from monte_neo.backtest.sweep import run_sma_sweep, sma_signal, verify_sweep_matches_single
 
 __all__ = [
     "ExecutionModel",
