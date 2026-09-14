@@ -6,17 +6,22 @@ from typing import Any
 
 import numpy as np
 
-from monte_neo.backtest.core_numba import run_core_full, run_terminal_return
+from monte_neo.backtest.core_numba import run_core_full
 from monte_neo.backtest.metrics import summarize_backtest
 from monte_neo.backtest.model import ExecutionModel
 from monte_neo.backtest.strategy import StrategySpec, build_signal
 from monte_neo.backtest.trades import pack_trades
 
-__all__ = ["run_bar_backtest", "run_strategy_backtest", "run_terminal_return"]
+__all__ = ["run_bar_backtest", "run_strategy_backtest"]
 
 
-def _model_slip_bps(model: ExecutionModel) -> float:
-    return float(model.effective_slip_bps)
+def _session_ok(n: int, session_mask: np.ndarray | None) -> tuple[np.ndarray, bool]:
+    if session_mask is None:
+        return np.ones(n, dtype=np.bool_), False
+    mask = np.asarray(session_mask, dtype=np.bool_)
+    if mask.shape != (n,):
+        raise ValueError("session_mask must match bar length")
+    return mask, True
 
 
 def run_bar_backtest(
@@ -26,6 +31,7 @@ def run_bar_backtest(
     close: np.ndarray,
     signal: np.ndarray,
     model: ExecutionModel | None = None,
+    session_mask: np.ndarray | None = None,
 ) -> dict[str, Any]:
     """Run one bar backtest under a frozen :class:`ExecutionModel`."""
     model = model or ExecutionModel()
@@ -38,6 +44,7 @@ def run_bar_backtest(
         raise ValueError("OHLC and signal must share the same shape")
     if o.ndim != 1 or o.size < model.warmup_bars + 2:
         raise ValueError("need 1-D series with enough bars for warmup + fill")
+    sess, sess_used = _session_ok(o.size, session_mask)
 
     (
         equity,
@@ -59,17 +66,20 @@ def run_bar_backtest(
         l,
         c,
         s,
+        sess,
         model.fill_policy == "next_bar_open",
         model.side_mode == "long_short",
         float(model.size_fraction),
         float(model.commission_bps),
-        _model_slip_bps(model),
+        float(model.effective_slip_bps),
         float(model.initial_cash),
         int(model.warmup_bars),
         float(model.sl_pct),
         float(model.tp_pct),
         float(model.trail_pct),
         float(model.fill_fraction),
+        float(model.leverage),
+        float(model.funding_bps_per_bar),
     )
     trades = pack_trades(
         n_closed, te_i, tx_i, te_px, tx_px, t_qty, t_fees, t_reason
@@ -81,7 +91,7 @@ def run_bar_backtest(
         "ok": True,
         "engine": "monte_neo.backtest",
         "model": model.to_dict(),
-        "work_checklist": model.work_checklist,
+        "work_checklist": model.work_checklist(session_mask_used=sess_used),
         "total_return": float(total_return),
         "max_drawdown": float(max_dd),
         "n_trades": int(fill_events),
@@ -100,9 +110,12 @@ def run_strategy_backtest(
     close: np.ndarray,
     spec: StrategySpec,
     model: ExecutionModel | None = None,
+    session_mask: np.ndarray | None = None,
 ) -> dict[str, Any]:
     """Compile ``spec`` to signals and run the shared ExecutionModel path."""
     sig = build_signal(close, spec)
-    out = run_bar_backtest(open_, high, low, close, sig, model=model)
+    out = run_bar_backtest(
+        open_, high, low, close, sig, model=model, session_mask=session_mask
+    )
     out["strategy"] = {"kind": spec.kind, "fast": spec.fast, "slow": spec.slow}
     return out

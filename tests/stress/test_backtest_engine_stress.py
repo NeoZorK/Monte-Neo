@@ -56,3 +56,24 @@ def test_batch_with_sl_tp_stress() -> None:
     )
     assert out["combos"] == 3
     assert np.all(np.isfinite(out["total_returns"]))
+
+
+@pytest.mark.stress
+def test_shared_portfolio_stress() -> None:
+    from monte_neo.backtest import run_portfolio_shared_cash
+
+    a = frame_to_ohlc(synthetic_ohlcv(n_bars=30_000, seed=1))
+    b = frame_to_ohlc(synthetic_ohlcv(n_bars=30_000, seed=2))
+    model = ExecutionModel(
+        warmup_bars=60,
+        size_fraction=0.35,
+        leverage=1.25,
+        funding_bps_per_bar=0.05,
+    )
+    out = run_portfolio_shared_cash(
+        {"A": a, "B": b},
+        {"A": sma_signal(a["close"], 10, 40), "B": sma_signal(b["close"], 12, 48)},
+        model=model,
+    )
+    assert out["ok"] is True
+    assert np.isfinite(out["total_return"])

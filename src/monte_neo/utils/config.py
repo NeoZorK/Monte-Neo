@@ -60,6 +60,7 @@ def load_config(config_path: str | Path | None = None) -> Config:
     config.data_dir = Path(os.getenv("MONTE_NEO_DATA_DIR", config.data_dir))
     config.binance_api_key = os.getenv("BINANCE_API_KEY", "")
     config.binance_api_secret = os.getenv("BINANCE_API_SECRET", "")
+    # Optional Bybit keys are read by OMS adapters directly from env.
     config.log_level = os.getenv("MONTE_NEO_LOG_LEVEL", "INFO")
 
     workers = os.getenv("MONTE_NEO_WORKERS", "auto")

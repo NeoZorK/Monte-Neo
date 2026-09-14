@@ -1,7 +1,13 @@
 """Monte Carlo simulation module."""
 
 from monte_neo.monte_carlo.cscv import CSCVAnalyzer
+from monte_neo.monte_carlo.dispatch import MCDispatchPlan, plan_mc_run
 from monte_neo.monte_carlo.engine import MonteCarloEngine
+from monte_neo.monte_carlo.memory_budget import (
+    ScenarioBudget,
+    iter_scenario_tiles,
+    plan_scenario_budget,
+)
 from monte_neo.monte_carlo.noise import NoiseInjector
 from monte_neo.monte_carlo.sensitivity import SensitivityAnalyzer
 from monte_neo.monte_carlo.shuffler import DataShuffler
@@ -13,6 +19,11 @@ __all__ = [
     "MCConfig",
     "MCResult",
     "MCStepResult",
+    "MCDispatchPlan",
+    "ScenarioBudget",
+    "plan_mc_run",
+    "plan_scenario_budget",
+    "iter_scenario_tiles",
     "DataShuffler",
     "NoiseInjector",
     "SensitivityAnalyzer",

@@ -54,7 +54,7 @@ def midprice_ticks_to_ohlc(
     """Build coarse OHLC from mid-prices (replay-style feeder, no Redis).
 
     Splits the mid series into ``bars`` equal chunks. Used for realism-path
-    experiments; not required for hot-path Manifold-fair bar races.
+    experiments; not required for the research-bar hot path.
     """
     bid = np.asarray(bids, dtype=np.float64)
     ask = np.asarray(asks, dtype=np.float64)
