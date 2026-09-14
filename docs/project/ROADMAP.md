@@ -3,7 +3,13 @@
 ## Project rules
 - [x] Silence / Evidence permission-gate / version sync / Swiss-watch quality
 
-## Version 0.11.0 - Metal funding/session/long_short (Current)
+## Version 0.12.0 - Research export API + golden vectors (Current)
+- [x] `monte_neo.backtest.export` stable schema (API v1)
+- [x] Frozen golden vectors + `verify_golden_vectors` / `verify_export_golden`
+- [x] Timers disclose `includes_signal_build`
+- [x] Unit coverage for export schema + Numba golden exactness
+
+## Version 0.11.0 - Metal funding/session/long_short
 - [x] Metal research economics: funding + session mask + long_short
 - [x] MLX unit skips cleared against current engine API
 
