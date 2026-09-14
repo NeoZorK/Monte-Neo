@@ -12,8 +12,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 
-from monte_neo.monte_carlo.scenarios import ScenarioBuilder
 from monte_neo.monte_carlo.dispatch import plan_mc_run
+from monte_neo.monte_carlo.scenarios import ScenarioBuilder
 from monte_neo.monte_carlo.types import MCConfig, MCResult
 from monte_neo.monte_carlo.utils import summarize_metrics
 from monte_neo.monte_carlo.workers import init_worker_data, run_scenario_batch, run_single_scenario

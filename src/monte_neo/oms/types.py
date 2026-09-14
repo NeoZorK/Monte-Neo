@@ -25,6 +25,13 @@ class OrderStatus(IntEnum):
     REJECTED = 5
 
 
+class TimeInForce(IntEnum):
+    """Order lifetime. GTC rests until fill or cancel; IOC cancels remainder."""
+
+    GTC = 1
+    IOC = 2
+
+
 @dataclass(slots=True)
 class Order:
     order_id: int
@@ -37,6 +44,8 @@ class Order:
     filled_qty: float = 0.0
     created_i: int = 0
     tag: str = ""
+    tif: TimeInForce = TimeInForce.GTC
+    oco_group: int = 0  # 0 = none; shared id links OCO/bracket exits
 
     @property
     def remaining(self) -> float:

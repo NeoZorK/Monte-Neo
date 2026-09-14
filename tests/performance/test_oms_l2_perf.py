@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import time
 
-import numpy as np
 import pytest
 
 from monte_neo.oms.accel.match_l2_numba import walk_book_market

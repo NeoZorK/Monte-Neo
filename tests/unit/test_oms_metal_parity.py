@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 
 from monte_neo.oms.accel.compute_pref import preferred_compute_device
-from monte_neo.oms.accel.device import metal_available
 from monte_neo.oms.accel.match_numba import batch_terminal_long_flat
 from monte_neo.oms.accel.metal_dispatch import get_metal_oms_engine, run_batch_terminal
 

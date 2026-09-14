@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from monte_neo.oms.types import AccountState, Fill, OrderSide, Position
+from monte_neo.oms.types import AccountState, Fill, OrderSide
 
 
 def apply_fill(account: AccountState, fill: Fill) -> None:

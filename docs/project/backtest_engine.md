@@ -1,6 +1,6 @@
 # Professional bar backtest engine
 
-Package: `monte_neo.backtest` (research lane; current line **v0.8.0**).
+Package: `monte_neo.backtest` (research lane; current line **v0.9.0**).
 
 ## Purpose
 
@@ -57,6 +57,19 @@ port = run_portfolio_shared_cash(books, signals, model=ExecutionModel(size_fract
 
 Also: `run_bar_backtest`, `run_bar_backtest_batch`, `run_sma_sweep`,
 `run_multi_symbol_lite` (independent cash books).
+
+## Apple Silicon (Metal)
+
+Batch / SMA sweep accept `device="auto"|"metal"|"cpu_numba"`. Metal runs the
+long/flat next-bar-open subset (fees, slip, `fill_fraction`, `leverage`).
+SL/TP/trail/funding/session/long_short stay on Numba golden.
+
+```python
+from monte_neo.backtest import ExecutionModel, run_sma_sweep
+
+out = run_sma_sweep(open_, high, low, close, combos=64, device="auto")
+# out["device"] is "metal" or "cpu_numba"
+```
 
 ## Testing
 

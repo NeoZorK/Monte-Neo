@@ -11,6 +11,10 @@ from monte_neo.backtest.data import (
     synthetic_ohlcv,
     try_import_replay_inprocess,
 )
+from monte_neo.backtest.metal_economics import (
+    get_metal_research_engine,
+    metal_economics_eligible,
+)
 from monte_neo.backtest.metrics import assert_fee_hurts_return, summarize_equity
 from monte_neo.backtest.model import ExecutionModel
 from monte_neo.backtest.portfolio_lite import run_multi_symbol_lite
@@ -30,6 +34,8 @@ __all__ = [
     "run_sma_sweep",
     "sma_signal",
     "verify_sweep_matches_single",
+    "metal_economics_eligible",
+    "get_metal_research_engine",
     "frame_to_ohlc",
     "synthetic_ohlcv",
     "midprice_ticks_to_ohlc",

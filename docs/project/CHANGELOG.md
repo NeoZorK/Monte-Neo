@@ -3,6 +3,20 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.9.0] — 2026-09-14
+
+### Added
+- Research bar Metal economics batch (long/flat next-bar-open subset)
+- OMS: `BarClock`, `TimeInForce` (GTC/IOC), OCO/bracket helper, honest `max_fill_qty` partials
+- OMS: `adapters/replay.py` OHLC replay; accel `BufferPool` + `shader_catalog`
+- `device=` on `run_bar_backtest_batch` / `run_sma_sweep` (Metal when eligible, else Numba golden)
+- Parity + perf smoke for Metal vs Numba (`fill_fraction` / `leverage` included)
+
+### Notes
+- SL/TP/trail/funding/session/long_short remain Numba-only (full ExecutionModel).
+- Metal float32 vs Numba float64 uses documented rtol/atol.
+- License remains **MIT**. Evidence publication still permission-gated.
+
 ## [v0.8.0] — 2026-09-14
 
 ### Added

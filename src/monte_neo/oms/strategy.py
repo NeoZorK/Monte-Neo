@@ -7,7 +7,7 @@ from typing import Any
 
 import numpy as np
 
-from monte_neo.oms.types import Order, OrderSide, OrderType
+from monte_neo.oms.types import OrderSide, OrderType
 
 
 class Strategy(ABC):

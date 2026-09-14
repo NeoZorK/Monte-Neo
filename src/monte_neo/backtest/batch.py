@@ -69,8 +69,14 @@ def run_bar_backtest_batch(
     signals: np.ndarray,
     model: ExecutionModel | None = None,
     session_mask: np.ndarray | None = None,
+    *,
+    device: str = "auto",
 ) -> dict[str, Any]:
-    """Run N external signal rows through the same engine."""
+    """Run N external signal rows through the same engine.
+
+    Metal is used for long/flat next-bar-open without SL/TP/trail/funding when
+    ``device`` resolves to metal; otherwise Numba golden (full economics).
+    """
     model = model or ExecutionModel()
     o = np.asarray(open_, dtype=np.float64)
     h = np.asarray(high, dtype=np.float64)
@@ -91,6 +97,31 @@ def run_bar_backtest_batch(
         if sess.shape != (o.size,):
             raise ValueError("session_mask must match bar length")
         sess_used = True
+
+    from monte_neo.backtest.metal_economics import (
+        metal_economics_eligible,
+        try_metal_batch_returns,
+    )
+
+    if metal_economics_eligible(model, sess if sess_used else None):
+        t0 = time.perf_counter()
+        metal_out = try_metal_batch_returns(o, c, sig, model, device=device)
+        elapsed = time.perf_counter() - t0
+        if metal_out is not None:
+            rets = metal_out["returns"]
+            n = int(sig.shape[0])
+            return {
+                "ok": True,
+                "engine": "monte_neo.backtest.batch",
+                "device": "metal",
+                "model": model.to_dict(),
+                "work_checklist": model.work_checklist(session_mask_used=sess_used),
+                "combos": n,
+                "elapsed_s": elapsed,
+                "combos_per_s": n / elapsed if elapsed > 0 else float("inf"),
+                "total_returns": rets,
+                "best_return": float(np.max(rets)) if n else 0.0,
+            }
 
     fill_open = model.fill_policy == "next_bar_open"
     long_short = model.side_mode == "long_short"

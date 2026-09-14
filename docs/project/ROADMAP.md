@@ -1,20 +1,21 @@
-# Monte-Neo Roadmap (v0.8.0)
+# Monte-Neo Roadmap (v0.9.0)
 
 ## Project rules
 - [x] Silence / Evidence permission-gate / version sync / Swiss-watch quality
 
-## Version 0.8.0 - MC Metal/MLX unify + 16GB budgets (Current)
+## Version 0.9.0 - Research bar Metal economics (Current)
+- [x] Metal long/flat batch economics with Numba golden parity
+- [x] `device=` on batch / SMA sweep; advanced knobs stay Numba
+
+## Version 0.8.0 - MC Metal/MLX unify + 16GB budgets
 - [x] `plan_mc_run` Metal-first / MLX / CPU dispatch
 - [x] Scenario memory budgets + tile helpers for M1 Pro 16GB
-- [x] Engine wires `compute_device` / `use_gpu`; result accel fields
 
 ## Version 0.7.0 - Metal L2 walk dispatch
 - [x] PyObjC Metal L2 book-walk with Numba parity
-- [x] `run_l2_walk` / `run_l2_walk_batch` + TickL2Engine wiring
 
 ## Version 0.6.0 - Metal OMS batch + compute pref
 - [x] PyObjC Metal batch long/flat with Numba parity
-- [x] `run_batch_terminal` / `preferred_compute_device`
 
 ## Version 0.5.0 - Venue adapters
 - [x] Paper / Binance / Bybit adapters; live env-gated dry-run
@@ -27,5 +28,5 @@
 
 ## Next
 - [ ] Private P002/P003 (separate harness) — no Evidence without permission
-- [ ] Research bar Metal economics sweep (Numba golden)
+- [ ] Metal SL/TP/trail research subset (optional)
 - [ ] Release cut when green on main
