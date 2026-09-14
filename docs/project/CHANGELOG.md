@@ -3,6 +3,17 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.7.0] — 2026-09-14
+
+### Added
+- Metal L2 book-walk dispatch (PyObjC) with Numba float64 golden parity
+- `run_l2_walk` / `run_l2_walk_batch` device-aware paths; TickL2Engine uses them
+- Unit parity + performance smoke for Metal L2 batch walk
+
+### Notes
+- Metal uses float32; parity tests allow documented rtol/atol vs Numba float64.
+- License remains **MIT**. Evidence publication still permission-gated.
+
 ## [v0.6.0] — 2026-09-14
 
 ### Added

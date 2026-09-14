@@ -6,7 +6,6 @@ from typing import Any
 
 import numpy as np
 
-from monte_neo.oms.accel.match_l2_numba import walk_book_market
 from monte_neo.oms.accel.match_numba import batch_terminal_long_flat
 
 _BATCH_KERNEL = r"""
@@ -211,25 +210,19 @@ def run_l2_walk(
     *,
     commission_bps: float = 5.0,
     slip_bps: float = 0.0,
-    device: str = "cpu_numba",
+    device: str = "auto",
 ) -> dict[str, Any]:
-    """L2 walk via Numba golden path (Metal L2 scaffold reserved for native wire)."""
-    _ = device
-    filled, vwap, fee, levels = walk_book_market(
-        int(side),
-        float(qty),
-        np.asarray(bid_px, dtype=np.float64),
-        np.asarray(bid_sz, dtype=np.float64),
-        np.asarray(ask_px, dtype=np.float64),
-        np.asarray(ask_sz, dtype=np.float64),
-        float(commission_bps),
-        float(slip_bps),
+    """L2 walk: Metal when available, else Numba golden path."""
+    from monte_neo.oms.accel.metal_l2 import run_l2_walk_dispatch
+
+    return run_l2_walk_dispatch(
+        side,
+        qty,
+        bid_px,
+        bid_sz,
+        ask_px,
+        ask_sz,
+        commission_bps=commission_bps,
+        slip_bps=slip_bps,
+        device=device,
     )
-    return {
-        "filled": float(filled),
-        "vwap": float(vwap),
-        "fee": float(fee),
-        "levels": int(levels),
-        "device_used": "cpu_numba",
-        "ok": True,
-    }

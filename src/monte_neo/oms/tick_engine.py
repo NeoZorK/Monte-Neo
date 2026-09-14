@@ -7,7 +7,6 @@ from typing import Any
 import numpy as np
 
 from monte_neo.oms.accel.device import AccelDevice, resolve_device
-from monte_neo.oms.accel.match_l2_numba import walk_book_market
 from monte_neo.oms.blotter import Blotter
 from monte_neo.oms.book import OrderBook, book_from_mid
 from monte_neo.oms.l2_match import L2FillSlice, L2MatchConfig, match_limit_l2, match_market_l2
@@ -107,16 +106,22 @@ class TickL2Engine:
             return
         if self.use_numba_walk and order.order_type == OrderType.MARKET:
             bid_px, bid_sz, ask_px, ask_sz = book.to_arrays(self.l2.max_levels)
-            filled, vwap, fee, _lvl = walk_book_market(
+            from monte_neo.oms.accel.metal_dispatch import run_l2_walk
+
+            walked = run_l2_walk(
                 int(order.side),
                 order.remaining,
                 bid_px,
                 bid_sz,
                 ask_px,
                 ask_sz,
-                self.l2.commission_bps,
-                self.l2.slippage_bps,
+                commission_bps=self.l2.commission_bps,
+                slip_bps=self.l2.slippage_bps,
+                device=self.device,
             )
+            filled = float(walked["filled"])
+            vwap = float(walked["vwap"])
+            fee = float(walked["fee"])
             if filled <= 0.0:
                 return
             self._apply_slices(

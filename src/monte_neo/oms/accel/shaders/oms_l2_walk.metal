@@ -1,5 +1,6 @@
-// L2 book-walk kernel scaffold (Metal) — parity with Numba walk_book_market.
-// Wired via native bridge in a later build; keep economics identical.
+// L2 book-walk kernel (Metal) — economics match Numba walk_book_market.
+// Runtime path uses the flat-buffer variant in metal_l2.py; keep this file
+// as the canonical shader source for native bridge packaging.
 
 #include <metal_stdlib>
 using namespace metal;
@@ -14,11 +15,12 @@ kernel void oms_l2_walk_market(
     device float* out_filled [[buffer(6)]],
     device float* out_vwap [[buffer(7)]],
     device float* out_fee [[buffer(8)]],
-    constant int& depth [[buffer(9)]],
-    constant float& commission_bps [[buffer(10)]],
-    constant float& slip_bps [[buffer(11)]],
+    const device float* params [[buffer(9)]],
     uint id [[thread_position_in_grid]]
 ) {
+    int depth = int(params[0]);
+    float commission_bps = params[1];
+    float slip_bps = params[2];
     float fee_rate = commission_bps * 1e-4f;
     float slip = slip_bps * 1e-4f;
     int side = sides[id];

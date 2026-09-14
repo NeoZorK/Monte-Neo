@@ -1,9 +1,14 @@
-# Monte-Neo Roadmap (v0.6.0)
+# Monte-Neo Roadmap (v0.7.0)
 
 ## Project rules
 - [x] Silence / Evidence permission-gate / version sync / Swiss-watch quality
 
-## Version 0.6.0 - Metal OMS batch + compute pref (Current)
+## Version 0.7.0 - Metal L2 walk dispatch (Current)
+- [x] PyObjC Metal L2 book-walk with Numba parity
+- [x] `run_l2_walk` / `run_l2_walk_batch` + TickL2Engine wiring
+- [x] Parity + perf smoke tests
+
+## Version 0.6.0 - Metal OMS batch + compute pref
 - [x] PyObjC Metal batch long/flat with Numba parity
 - [x] `run_batch_terminal` / `preferred_compute_device`
 - [x] MCConfig.compute_device + engine compute_pref
@@ -18,7 +23,6 @@
 - [x] Bar OMS + device select + Metal bar-match scaffold
 
 ## Next
-- [ ] Native bridge load of `oms_l2_walk.metal` (parity vs Numba)
 - [ ] Deeper MC Metal/MLX scenario unify + 16GB budgets
 - [ ] Private P002/P003 (separate harness) — no Evidence without permission
 - [ ] Release cut when green on main

@@ -11,6 +11,7 @@ from monte_neo.oms.accel.device import (
     work_checklist_accel,
 )
 from monte_neo.oms.accel.metal_dispatch import run_batch_terminal, run_l2_walk
+from monte_neo.oms.accel.metal_l2 import run_l2_walk_batch
 
 __all__ = [
     "AccelDevice",
@@ -20,5 +21,6 @@ __all__ = [
     "resolve_device",
     "run_batch_terminal",
     "run_l2_walk",
+    "run_l2_walk_batch",
     "work_checklist_accel",
 ]

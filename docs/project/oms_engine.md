@@ -1,6 +1,6 @@
 # OMS engine
 
-Package: `monte_neo.oms` (current line **v0.6.0**).
+Package: `monte_neo.oms` (current line **v0.7.0**).
 
 ## Purpose
 
@@ -48,6 +48,17 @@ out = run_batch_terminal(open_, close, signals, device="auto")
 
 Metal float32 vs Numba float64 parity is tested with documented tolerances.
 Shader scaffolds also live under `oms/accel/shaders/`.
+
+L2 book-walk batch:
+
+```python
+from monte_neo.oms import run_l2_walk_batch
+
+out = run_l2_walk_batch(
+    sides, qtys, bid_px, bid_sz, ask_px, ask_sz, device="auto"
+)
+# out["device_used"] is "metal" or "cpu_numba"
+```
 
 ## Testing
 
