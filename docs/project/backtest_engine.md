@@ -79,5 +79,5 @@ uv run pytest tests -n auto
 
 ## Scope honesty
 
-Matched bar-research semantics for private local races. Public ClaimBound speed
+Matched bar-research semantics for private local races. Public speed rankings stay gated until private comparisons are complete and explicit user permission is granted.
 evidence is gated until an honest top-10 speed win (see project roadmap / plan).

@@ -1,4 +1,4 @@
-# Monte-Neo v0.9.0
+# Monte-Neo v0.9.1
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -18,8 +18,8 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/project-structure.md - Deep dive into physical directory layout
 - docs/project/features.md - Detailed overview of framework features
 - docs/project/dynamic_indicators.md - Explanation of dynamic indicator generation
-- docs/project/ROADMAP.md - Development roadmap and milestones (v0.9.0)
-- docs/project/CHANGELOG.md - Release changelog (current: v0.9.0)
+- docs/project/ROADMAP.md - Development roadmap and milestones (v0.9.1)
+- docs/project/CHANGELOG.md - Release changelog (current: v0.9.1)
 - docs/project/backtest_engine.md - Fee-aware research bar engine
 - docs/project/oms_engine.md - Paper OMS (bar + tick/L2) + venue adapters
 - docs/assets/monteneo-logo.png - Project logo
@@ -44,8 +44,6 @@ A simplified guide to the Monte-Neo file structure.
 - docs/development/external-libs.md - List and purpose of external dependencies
 - docs/development/api-documentation.md - Guide to API and code documentation
 - docs/development/CLAUDE.md - AI assistant guide and coding conventions
-- docs/development/race.md - Fair-race helpers (ClaimBound reproduce)
-- docs/development/race_RU.md - Fair-race helpers (Russian)
 
 ### Guides & Examples (docs/guides/, docs/examples/)
 - docs/guides/quick-start.md - 3-step guide to get started
@@ -57,11 +55,9 @@ A simplified guide to the Monte-Neo file structure.
 - docker/docker-compose.yml - Docker Compose service definitions
 
 ### Source Code (src/monte_neo/)
-- src/monte_neo/_version.py - Central version management (v0.9.0)
+- src/monte_neo/_version.py - Central version management (v0.9.1)
 - docs/project/mc_accel.md - MC Metal/MLX dispatch + 16GB budgets
 - src/monte_neo/__init__.py - Main package entry point
-- src/monte_neo/fair_race.py - Public fair-race Type A/B/C helpers
-- src/monte_neo/fair_race_cli.py - CLI entrypoint `monte-neo-fair-race`
 - src/monte_neo/backtest/ - Professional fee-aware research bar engine + SMA sweep
 - src/monte_neo/oms/ - Paper OMS lane + Apple Silicon accel helpers
 

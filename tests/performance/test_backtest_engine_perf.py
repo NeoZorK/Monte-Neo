@@ -1,4 +1,4 @@
-"""Performance smoke for fee-aware SMA sweep (not a ClaimBound gate)."""
+"""Performance smoke for fee-aware SMA sweep (throughput smoke only; not a public ranking gate)."""
 
 from __future__ import annotations
 

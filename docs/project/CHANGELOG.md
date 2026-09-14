@@ -3,6 +3,16 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.9.1] — 2026-09-14
+
+### Removed
+- Public evidence-reproduce helpers, CLI entrypoint, and `core/race` optimization surface
+- Development race docs that described public evidence reproduce flows
+
+### Notes
+- Evidence publication remains permission-gated and lives outside this repository.
+- License remains **MIT**.
+
 ## [v0.9.0] — 2026-09-14
 
 ### Added
@@ -15,7 +25,7 @@ Version source of truth: `src/monte_neo/_version.py`.
 ### Notes
 - SL/TP/trail/funding/session/long_short remain Numba-only (full ExecutionModel).
 - Metal float32 vs Numba float64 uses documented rtol/atol.
-- License remains **MIT**. Evidence publication still permission-gated.
+- License remains **MIT**. Evidence publication still permission-gated (out of tree).
 
 ## [v0.8.0] — 2026-09-14
 
@@ -27,7 +37,7 @@ Version source of truth: `src/monte_neo/_version.py`.
 
 ### Notes
 - Metal-first on Apple Silicon; MLX used when native params are absent but MLX repr exists.
-- License remains **MIT**. Evidence publication still permission-gated.
+- License remains **MIT**. Evidence publication still permission-gated (out of tree).
 
 ## [v0.7.0] — 2026-09-14
 
@@ -38,7 +48,7 @@ Version source of truth: `src/monte_neo/_version.py`.
 
 ### Notes
 - Metal uses float32; parity tests allow documented rtol/atol vs Numba float64.
-- License remains **MIT**. Evidence publication still permission-gated.
+- License remains **MIT**. Evidence publication still permission-gated (out of tree).
 
 ## [v0.6.0] — 2026-09-14
 
@@ -50,7 +60,7 @@ Version source of truth: `src/monte_neo/_version.py`.
 
 ### Notes
 - Metal uses float32; parity tests allow documented rtol/atol vs Numba float64.
-- License remains **MIT**. Evidence publication still permission-gated.
+- License remains **MIT**. Evidence publication still permission-gated (out of tree).
 
 ## [v0.5.0] — 2026-09-14
 
@@ -62,7 +72,7 @@ Version source of truth: `src/monte_neo/_version.py`.
 
 ### Notes
 - Paper mode is default (no network). Live submit without dry-run is blocked in this build.
-- License remains **MIT**. Evidence publication still permission-gated.
+- License remains **MIT**. Evidence publication still permission-gated (out of tree).
 
 ## [v0.4.0] — 2026-09-14
 
@@ -74,7 +84,7 @@ Version source of truth: `src/monte_neo/_version.py`.
 
 ### Notes
 - Paper/synthetic books only in this cut (live adapters later).
-- License remains **MIT**. Evidence publication still permission-gated.
+- License remains **MIT**. Evidence publication still permission-gated (out of tree).
 
 ## [v0.3.0] — 2026-09-13
 
@@ -99,7 +109,7 @@ Version source of truth: `src/monte_neo/_version.py`.
 
 ### Notes
 - Research bar engine scope unchanged (not a full OMS).
-- No ClaimBound speed evidence until honest top-10 private speed win + user OK.
+- No public speed evidence until private comparisons complete and user OK.
 - License remains **MIT**.
 
 ## [v0.1.0] — 2026-09-13
@@ -136,7 +146,7 @@ Version source of truth: `src/monte_neo/_version.py`.
 - Unit / integration / stress / performance tests for the new engine
 
 ### Notes
-- ClaimBound D001 Type C remains a specialized SMA kernel gate; this package
+- Specialized SMA kernel gates for private local protocols remain out of scope; this package
   path is for matched-semantics peer races (private or future D002).
 
 ## [v0.0.7] — 2026-09-12
@@ -145,9 +155,9 @@ First formal GitHub Release. Canonical development branch is **`main`**
 (older branches named `v0.0.1` … `v0.0.6` are historical archives only).
 
 ### Added
-- Public ClaimBound fair-race helpers (`monte_neo.fair_race`) and CLI `monte-neo-fair-race`
+- Public evidence-reproduce helpers and CLI (later removed in v0.9.1)
 - Type B CPU fallback when Metal native extension is unavailable
-- Unit tests for fair-race helpers and license/version doc sync
+- Unit tests for license/version doc sync
 
 ### Changed
 - License metadata aligned to **MIT** (`LICENSE` + `pyproject.toml`)
