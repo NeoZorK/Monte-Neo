@@ -3,6 +3,18 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.4.0] — 2026-09-14
+
+### Added
+- Tick/L2 OMS lane: `TickL2Engine`, synthetic ticks, order book, L2 walk
+- Numba `walk_book_market` with Python L2 parity tests
+- Metal shader scaffold `oms_l2_walk.metal`
+- Docs updated for dual research + OMS tick paths
+
+### Notes
+- Paper/synthetic books only in this cut (live adapters later).
+- License remains **MIT**. Evidence publication still permission-gated.
+
 ## [v0.3.0] — 2026-09-13
 
 ### Added

@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.3.0)
+# Monte-Neo Roadmap (v0.4.0)
 
 ## Project rules
 - [x] **Silence:** never name external competing products or individuals in this repo
@@ -6,23 +6,22 @@
 - [x] **Version sync:** `_version.py` ↔ CHANGELOG ↔ README ↔ ROADMAP ↔ INDEX ↔ tag ↔ Release ↔ tests ↔ CI
 - [x] **Swiss-watch quality:** parity tests, loud failures, perf budgets on 16GB Apple Silicon
 
-## Version 0.3.0 - Paper OMS + accel foundation (Current)
+## Version 0.4.0 - Tick / L2 paper OMS (Current)
+- [x] Tick feed + synthetic OHLC downsample
+- [x] L2 book + market/limit walk (Python + Numba parity)
+- [x] `TickL2Engine` paper path + Metal L2 shader scaffold
+- [x] Stress/perf on large tick streams (16GB-friendly)
+
+## Version 0.3.0 - Paper OMS + accel foundation
 - [x] `monte_neo.oms` paper bar OMS (orders, match, portfolio, blotter)
 - [x] Device select (`cpu_numba` / `metal` / `mlx` / `auto`)
-- [x] Numba batch helper + Metal shader scaffold for OMS bar match
-- [x] Unit / integration / stress / perf coverage for OMS lane
+- [x] Numba batch helper + Metal bar-match shader scaffold
 
 ## Version 0.2.0 - Full research bar engine
 - [x] Session mask + funding lite + leverage
 - [x] Shared-cash portfolio (`run_portfolio_shared_cash`)
-- [x] Correctness invariants + batch parity with new knobs
-
-## Version 0.1.0 - GP bar engine + public face
-- [x] Honest README + logo + badges
-- [x] StrategySpec / trail / impact_bps / partial fills
-- [x] Fee-aware shared ExecutionModel path
 
 ## Next
-- [ ] v0.4.0 — tick/L2 matching + MC Metal unify
 - [ ] v0.5.0 — paper/live exchange adapters (env-gated)
-- [ ] Private P002/P003 protocols (separate harness) — no Evidence without permission
+- [ ] MC Metal/MLX unify + parity budgets on M1 Pro 16GB
+- [ ] Private P002/P003 (separate harness) — no Evidence without permission

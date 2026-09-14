@@ -1,47 +1,49 @@
-# OMS engine (paper bar path)
+# OMS engine
 
-Package: `monte_neo.oms` (introduced in **v0.3.0**).
+Package: `monte_neo.oms` (current line **v0.4.0**).
 
 ## Purpose
 
 Event-driven **paper OMS** lane: orders → matching → positions → blotter.
 Separate from the research bar package `monte_neo.backtest`.
 
-This is **not** a live exchange by itself. Paper path is first-class; live
-adapters are versioned later and env-gated.
+Lanes:
+
+1. **Bar paper OMS** — next-bar fills, market/limit/cancel
+2. **Tick / L2 paper OMS** — synthetic ticks, book walk, Numba parity
+
+Live exchange adapters are versioned later and env-gated.
 
 ## Apple Silicon
 
 Device select (`auto` / `cpu_numba` / `metal` / `mlx`) via `monte_neo.oms.accel`.
-Bulk long/flat batch helper uses Numba on CPU; Metal shader scaffold lives at
-`oms/accel/shaders/oms_bar_match.metal` for native wiring. Economics parity
-between devices is mandatory.
+Numba walks books and batch paths on CPU; Metal shader scaffolds:
 
-Target host class for budgets: Apple Silicon laptop with 16GB unified memory.
+- `oms/accel/shaders/oms_bar_match.metal`
+- `oms/accel/shaders/oms_l2_walk.metal`
 
-## Quick start
+Economics parity between Python and Numba is tested. Target host: 16GB Apple Silicon.
+
+## Quick start (bar)
 
 ```python
 from monte_neo.oms import SignalStrategy, run_oms_bar_backtest
-import numpy as np
 
-signal = np.zeros(1_000, dtype=np.int64)
-signal[100:800] = 1
 out = run_oms_bar_backtest(
     open_, high, low, close,
     SignalStrategy(signal, size_fraction=0.25),
-    commission_bps=5.0,
-    slippage_bps=5.0,
     device="cpu_numba",
 )
 ```
 
-## Work checklist (paper)
+## Quick start (tick / L2)
 
-- order lifecycle (market / limit / cancel)
-- fees + slippage (bps)
-- blotter + account equity
-- next-bar open fill policy (default)
+```python
+from monte_neo.oms import run_tick_l2_market_buy, synthetic_ticks
+
+ticks = synthetic_ticks(10_000, seed=1)
+out = run_tick_l2_market_buy(ticks, qty=1.0, device="cpu_numba")
+```
 
 ## Testing
 
@@ -51,7 +53,6 @@ uv run pytest tests -n auto
 
 ## Policy
 
-Public documentation in this repository does not name external competing
-products or individuals. Private comparison protocols and any Evidence
-publication are gated by explicit maintainer permission after complete correct
-runs.
+This repository does not name external competing products or individuals.
+Evidence publication is gated by explicit maintainer permission after complete
+correct private runs.
