@@ -3,6 +3,18 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.8.0] — 2026-09-14
+
+### Added
+- MC Metal/MLX/CPU unified dispatch (`plan_mc_run`) honoring `compute_device` / `use_gpu`
+- M1 Pro 16GB-class scenario memory budgets (`plan_scenario_budget`, tile ranges)
+- `MCResult.device_used` / `bytes_peak_est` / `accel_plan`; `MCConfig.memory_budget_bytes`
+- Docs: `docs/project/mc_accel.md`
+
+### Notes
+- Metal-first on Apple Silicon; MLX used when native params are absent but MLX repr exists.
+- License remains **MIT**. Evidence publication still permission-gated.
+
 ## [v0.7.0] — 2026-09-14
 
 ### Added

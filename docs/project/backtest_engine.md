@@ -1,6 +1,6 @@
 # Professional bar backtest engine
 
-Package: `monte_neo.backtest` (research lane; current line **v0.7.0**).
+Package: `monte_neo.backtest` (research lane; current line **v0.8.0**).
 
 ## Purpose
 

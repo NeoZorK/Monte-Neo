@@ -132,9 +132,25 @@ def metal_scenario_batch(
     """Batch Monte Carlo / scenarios via MLX/Metal with optional CPU overlap prefetch."""
     from monte_neo.core.mlx_engine import MLXBacktestEngine
     from monte_neo.indicators.technical import RSIIndicator
+    from monte_neo.monte_carlo.dispatch import plan_mc_run
+    from monte_neo.monte_carlo.types import MCConfig
 
     ind = RSIIndicator()
     ind.set_parameter("period", 14)
+    cfg = MCConfig(
+        iterations=n_scenarios,
+        use_gpu=True,
+        compute_device="auto",
+        gpu_precision=precision,
+        metal_driver=metal_driver,
+    )
+    plan = plan_mc_run(
+        cfg,
+        n_bars=len(data),
+        n_scenarios=n_scenarios,
+        has_metal_params=ind.get_metal_params() is not None,
+        has_mlx_repr=ind.to_mlx_representation() is not None,
+    )
     engine = MLXBacktestEngine(precision=precision, metal_driver=metal_driver)
     # Best-effort async prefetch overlap (CPU prepare while GPU warms)
     try:
@@ -147,12 +163,18 @@ def metal_scenario_batch(
     results, timing = engine.run_full_simulation(data, ind, n_scenarios=n_scenarios)
     elapsed = time.perf_counter() - t0
     n = len(results) if isinstance(results, list) else n_scenarios
+    timing = dict(timing or {})
+    timing["bytes_peak_est"] = float(plan.budget.bytes_peak_est)
+    timing["tile_scenarios"] = float(plan.budget.tile_scenarios)
     return {
         "engine": "monte_neo",
-        "device": "metal",
+        "device": plan.backend,
         "precision": precision,
         "scenarios": n,
         "elapsed_s": elapsed,
         "timing": timing,
+        "bytes_peak_est": plan.budget.bytes_peak_est,
+        "tile_scenarios": plan.budget.tile_scenarios,
+        "accel_plan": plan.to_dict(),
         "ok": True,
     }

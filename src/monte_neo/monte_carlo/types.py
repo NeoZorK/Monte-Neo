@@ -38,6 +38,8 @@ class MCConfig:
     gpu_precision: str = "float32"  # float32, float16, float8
     metal_driver: str = "cpp"  # cpp, objc, swift
     compute_device: str = "auto"  # auto | metal | mlx | cpu_numba
+    # Usable unified-memory budget for scenario tiles (bytes). Default ~10GiB of 16GB host.
+    memory_budget_bytes: int | None = None
 
     # Capital and Leverage
     initial_capital: float = 100000.0
@@ -68,3 +70,6 @@ class MCResult:
     detailed_results: list = field(default_factory=list)
     step_results: list[MCStepResult] = field(default_factory=list)
     timing_stats: dict[str, float] = field(default_factory=dict)
+    device_used: str = ""
+    bytes_peak_est: int = 0
+    accel_plan: dict = field(default_factory=dict)

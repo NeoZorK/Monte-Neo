@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 
 from monte_neo.monte_carlo.scenarios import ScenarioBuilder
+from monte_neo.monte_carlo.dispatch import plan_mc_run
 from monte_neo.monte_carlo.types import MCConfig, MCResult
 from monte_neo.monte_carlo.utils import summarize_metrics
 from monte_neo.monte_carlo.workers import init_worker_data, run_scenario_batch, run_single_scenario
@@ -56,6 +57,7 @@ class MonteCarloEngine:
             initial_capital=self.config.initial_capital,
             leverage=self.config.leverage
         )
+        self._last_dispatch = None
 
         self._progress_callback: Callable[[int, int], None] | None = None
 
@@ -109,12 +111,22 @@ class MonteCarloEngine:
         if self.config.use_sequential:
             return self.run_sequential(data, indicator, metrics_calc, target_metrics, interactive=interactive)
 
-        # Check for Pure GPU Acceleration (End-to-End on GPU)
-        # Only for Shuffling method currently, and if indicator supports it.
-        # This bypasses CPU scenario generation and data transfer overhead.
         has_mlx = indicator.to_mlx_representation() is not None
         has_metal = indicator.get_metal_params() is not None
-        
+        n_scen_hint = (
+            len(existing_scenarios)
+            if existing_scenarios is not None
+            else self.config.iterations
+        )
+        dispatch = plan_mc_run(
+            self.config,
+            n_bars=len(data),
+            n_scenarios=n_scen_hint,
+            has_metal_params=has_metal,
+            has_mlx_repr=has_mlx,
+        )
+        self._last_dispatch = dispatch
+
         only_shuffling = (
             (self.config.use_shuffling or not any([
                 self.config.use_noise,
@@ -128,10 +140,20 @@ class MonteCarloEngine:
             and not self.config.use_block_bootstrap
         )
 
-        if (has_mlx or has_metal) and only_shuffling and existing_scenarios is None and self.config.iterations > 100:
+        if (
+            dispatch.allow_gpu
+            and (has_mlx or has_metal)
+            and only_shuffling
+            and existing_scenarios is None
+            and self.config.iterations > 100
+        ):
             try:
-                engine_type = "Native Metal" if has_metal else "MLX"
-                logger.info(f"🚀 Using High-Performance {engine_type} Engine for {self.config.iterations} iterations")
+                engine_type = "Native Metal" if dispatch.prefer_native_metal else "MLX"
+                logger.info(
+                    f"Using {engine_type} for {self.config.iterations} iterations "
+                    f"(tile={dispatch.budget.tile_scenarios}, "
+                    f"bytes_peak_est={dispatch.budget.bytes_peak_est})"
+                )
                 results, timing_stats = self.gpu_engine.run_full_simulation(
                     data=data,
                     indicator=indicator,
@@ -176,7 +198,8 @@ class MonteCarloEngine:
             or self.config.use_walk_forward
         )
         if (
-            self.config.use_block_bootstrap
+            dispatch.device_allows_accel
+            and self.config.use_block_bootstrap
             and not other_methods_enabled
             and existing_scenarios is None
         ):
@@ -246,10 +269,13 @@ class MonteCarloEngine:
         # but ProcessPoolExecutor usually handles methods if they are defined at module level.
         # Alternatively, we can use a standalone function.
 
-        # Try GPU acceleration if many scenarios
-        if len(scenarios) > 10:
+        # Try GPU acceleration if many scenarios (device accel; engine may fall back).
+        if dispatch.device_allows_accel and len(scenarios) > 10:
             try:
-                logger.debug(f"Offloading {total} scenarios to GPU (MLX)...")
+                logger.debug(
+                    f"Offloading {total} scenarios to GPU "
+                    f"(backend={dispatch.backend}, tile={dispatch.budget.tile_scenarios})..."
+                )
                 gpu_results = self.gpu_engine.backtest_scenarios(
                     indicator,
                     scenarios,
@@ -361,6 +387,17 @@ class MonteCarloEngine:
             elapsed_time=elapsed,
             metrics_summary=metrics_summary,
             detailed_results=all_results,
+            device_used=(
+                self._last_dispatch.backend if self._last_dispatch is not None else ""
+            ),
+            bytes_peak_est=(
+                int(self._last_dispatch.budget.bytes_peak_est)
+                if self._last_dispatch is not None
+                else 0
+            ),
+            accel_plan=(
+                self._last_dispatch.to_dict() if self._last_dispatch is not None else {}
+            ),
         )
 
     def run_sequential(

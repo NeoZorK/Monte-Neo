@@ -1,6 +1,6 @@
 # OMS engine
 
-Package: `monte_neo.oms` (current line **v0.7.0**).
+Package: `monte_neo.oms` (current line **v0.8.0**).
 
 ## Purpose
 
