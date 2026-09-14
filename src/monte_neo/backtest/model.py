@@ -11,11 +11,11 @@ SideMode = Literal["long_flat", "long_short"]
 
 @dataclass(frozen=True, slots=True)
 class ExecutionModel:
-    """Documented execution model shared by single, batch, and strategy APIs.
+    """Documented execution model shared by single, batch, portfolio, strategy.
 
     Signal on bar ``t`` fills on bar ``t+1``. Costs are bps on fill notional.
-    Optional SL/TP/trail on H/L; ``fill_fraction`` enables research-grade partials.
-    ``impact_bps`` is added to slippage on fills (beyond fixed ``slippage_bps``).
+    ``leverage`` scales entry notional; ``funding_bps_per_bar`` debits holders.
+    Session masks are passed at call time (block new entries only).
     """
 
     fill_policy: FillPolicy = "next_bar_open"
@@ -31,6 +31,8 @@ class ExecutionModel:
     trail_pct: float = 0.0
     fill_fraction: float = 1.0
     oco_bracket: bool = True
+    leverage: float = 1.0
+    funding_bps_per_bar: float = 0.0
 
     def __post_init__(self) -> None:
         if self.size_fraction <= 0.0 or self.size_fraction > 1.0:
@@ -39,6 +41,10 @@ class ExecutionModel:
             raise ValueError("fill_fraction must be in (0, 1]")
         if min(self.commission_bps, self.slippage_bps, self.impact_bps) < 0.0:
             raise ValueError("bps costs must be non-negative")
+        if self.funding_bps_per_bar < 0.0:
+            raise ValueError("funding_bps_per_bar must be non-negative")
+        if self.leverage < 1.0:
+            raise ValueError("leverage must be >= 1")
         if self.initial_cash <= 0.0:
             raise ValueError("initial_cash must be positive")
         if self.warmup_bars < 0:
@@ -53,8 +59,7 @@ class ExecutionModel:
     def effective_slip_bps(self) -> float:
         return float(self.slippage_bps + self.impact_bps)
 
-    @property
-    def work_checklist(self) -> dict[str, bool]:
+    def work_checklist(self, *, session_mask_used: bool = False) -> dict[str, bool]:
         """Explicit work checklist for peer honesty."""
         return {
             "next_bar_fill": True,
@@ -71,4 +76,8 @@ class ExecutionModel:
             "trade_journal": True,
             "summary_metrics": True,
             "strategy_expressions": True,
+            "leverage": self.leverage > 1.0,
+            "funding": self.funding_bps_per_bar > 0.0,
+            "session_mask": bool(session_mask_used),
+            "shared_cash_portfolio": False,
         }

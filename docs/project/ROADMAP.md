@@ -1,74 +1,36 @@
-# 🗺️ Monte-Neo Roadmap (v0.1.0)
+# Monte-Neo Roadmap (v0.10.0)
 
-## 🚀 Version 0.1.0 - GP bar engine + public face (Current)
-- [x] Honest README + logo + badges
-- [x] StrategySpec / trail / impact_bps / partial fills
-- [x] Fee-aware shared ExecutionModel path
+## Project rules
+- [x] Silence / Evidence permission-gate / version sync / Swiss-watch quality
 
-## ✅ Version 0.0.5 - Robustness Factory (Completed)
-- [x] **C++/Metal Engine**: Lightning-fast GPU backtesting extension.
-- [x] **Unified Kernel Architecture**: Zero-latency trade execution on GPU.
-- [x] **GPU Grid Search**: Testing thousands of scenarios in milliseconds.
-- [x] **Walk-Forward Optimization**: Hardware-accelerated validation.
-- [x] **Production Gate**: Robustness scoring and certification.
+## Version 0.10.0 - Metal SL/TP/trail research subset (Current)
+- [x] Metal long/flat batch with SL/TP/trail vs Numba parity
+- [x] Funding / session / long_short remain Numba golden
 
-## ✅ Version 0.0.6 - Global Leadership & Production Mastery (Completed)
-- [x] **Smart Portfolio Engine**: Multi-indicator management with Kelly Criterion.
-- [x] **Non-Repainting Validator**: Hard enforcement of signal causality.
-- [x] **Advanced Noise Suite**: Latency shifts, variable spreads, and slippage.
-- [x] **Combinatorial WFO (CSCV)**: Advanced overfitting detection (PBO).
-- [x] **One-Click Production Export**: C++/Metal binary standalone generation.
-- [x] **AI-Driven Evolution**: Self-correcting indicator formulas.
-- [x] **Global Leadership Pipeline**: End-to-end automated discovery workflow.
-- [x] **Realistic Calculation Engine**: $100,000 initial deposit & 1.0 leverage hard-enforcement.
-- [x] **High Test Coverage**: Core modules (Backtesting, Metrics, Monte Carlo) achieved ~100% coverage.
-- [x] **Unified UI/UX**: Streamlined progress bars and logs for clear workflow execution.
+## Version 0.9.0 - Research bar Metal economics
+- [x] Metal long/flat batch economics with Numba golden parity
+- [x] `device=` on batch / SMA sweep; advanced knobs stay Numba
 
-## 🚀 Version 0.0.7 - Fair-race & Public Reproduce (Completed)
-- [x] **MIT license sync**: LICENSE + pyproject metadata aligned for public GitHub.
-- [x] **ClaimBound fair-race helpers**: Type A/B/C public APIs + `monte-neo-fair-race` CLI.
-- [x] **CPU fallback for Type B**: Reproduce stays green without compiled Metal extension.
+## Version 0.8.0 - MC Metal/MLX unify + 16GB budgets
+- [x] `plan_mc_run` Metal-first / MLX / CPU dispatch
+- [x] Scenario memory budgets + tile helpers for M1 Pro 16GB
 
-## 🚀 Version 0.0.8 - Professional bar backtest engine
-- [x] **Fee-aware bar engine**: `monte_neo.backtest` with frozen `ExecutionModel`
-- [x] **Matched SMA sweep**: same fees/slippage/next-bar semantics as single run
-- [x] **Optional ReplayBarSource**: mid-price → OHLC without Redis on hot path
+## Version 0.7.0 - Metal L2 walk dispatch
+- [x] PyObjC Metal L2 book-walk with Numba parity
 
-## 🚀 Version 0.0.9 - SL/TP, journal, batch (Current)
-- [x] **SL/TP on H/L** + trade journal + summary metrics
-- [x] **`run_bar_backtest_batch`** for external signal matrices
-- [x] **`run_multi_symbol_lite`** independent cash books
-- [ ] **Web-based Dashboard**: Real-time monitoring and strategy management.
-- [ ] **Multi-Exchange Support**: Bybit, OKX, and Kraken integration.
-- [ ] **Cloud-Native Workers**: Distributed Monte Carlo simulations via Kubernetes.
-- [ ] **Advanced ML Integration**: Transformer-based signal refinement.
+## Version 0.6.0 - Metal OMS batch + compute pref
+- [x] PyObjC Metal batch long/flat with Numba parity
 
----
+## Version 0.5.0 - Venue adapters
+- [x] Paper / Binance / Bybit adapters; live env-gated dry-run
 
-## ⏱️ 6-Hour Sprint Plan (Completed)
+## Version 0.4.0 - Tick / L2 paper OMS
+- [x] Tick feed + L2 walk + Metal L2 shader scaffold
 
-### Hour 1-2: Production Export & C++ Core
-- [x] Implement `ProductionExporter` for zero-latency standalone execution.
-- [x] Create C++ templates for indicator logic (fast-path).
-- [x] Add `uv run monte-neo export` command.
+## Version 0.3.0 - Paper OMS + accel foundation
+- [x] Bar OMS + device select + Metal bar-match scaffold
 
-### Hour 3-4: AI-Driven Evolution (Symbolic Regression)
-- [x] Implement Genetic Programming (GP) for formula discovery.
-- [x] Add "Smart Mutation" based on performance feedback loops.
-- [x] Integrate AI-inspired heuristics for formula optimization.
-
-
-### Hour 5: Portfolio Intelligence & Risk
-- [x] Implement multi-asset correlation clustering.
-- [x] Automated portfolio rebalancing logic (Risk Parity/Kelly).
-- [x] Dashboard for "Portfolio Robustness" (Combined MC).
-
-### Hour 6: Certification & Final Integration
-- [x] Auto-generate "World-Class Robustness Certificate".
-- [x] Full pipeline verification (Data -> Evolution -> Validation -> Export).
-- [x] UI/UX final touch for the "Wizard" mode (Global Leadership Pipeline).
-
----
-
-## Milestones
-
+## Next
+- [ ] Private P002/P003 (separate harness) — no Evidence without permission
+- [x] Metal SL/TP/trail research subset
+- [ ] Release cut when green on main (in progress)

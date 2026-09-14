@@ -25,11 +25,12 @@ def run_sma_sweep(
     *,
     combos: int = 256,
     model: ExecutionModel | None = None,
+    device: str = "auto",
 ) -> dict[str, Any]:
     """Fee-aware SMA long/flat sweep via :func:`run_bar_backtest_batch`.
 
     Convenience wrapper only — economics come from the shared ExecutionModel
-    path (not a specialized D001 fused kernel).
+    path (not a specialized D001 fused kernel). Metal when eligible + available.
     """
     model = model or ExecutionModel(side_mode="long_flat")
     if model.side_mode != "long_flat":
@@ -39,14 +40,16 @@ def run_sma_sweep(
     signals = np.empty((len(pairs), c.shape[0]), dtype=np.int64)
     for i, (fast, slow) in enumerate(pairs):
         signals[i] = sma_signal_long_flat(c, int(fast), int(slow))
-    batch = run_bar_backtest_batch(open_, high, low, close, signals, model=model)
+    batch = run_bar_backtest_batch(
+        open_, high, low, close, signals, model=model, device=device
+    )
     rets = batch["total_returns"]
     return {
         "ok": True,
         "engine": "monte_neo.backtest.sweep",
-        "device": "cpu_numba",
+        "device": batch.get("device", "cpu_numba"),
         "model": model.to_dict(),
-        "work_checklist": model.work_checklist,
+        "work_checklist": model.work_checklist(),
         "combos": len(pairs),
         "elapsed_s": batch["elapsed_s"],
         "combos_per_s": batch["combos_per_s"],
@@ -82,12 +85,15 @@ def verify_sweep_matches_single(
     model = model or ExecutionModel(side_mode="long_flat")
     sig = sma_signal(close, fast, slow)
     single = run_bar_backtest(open_, high, low, close, sig, model=model)
+    n = int(np.asarray(close).shape[0])
+    sess = np.ones(n, dtype=np.bool_)
     term = run_terminal_return(
         np.asarray(open_, dtype=np.float64),
         np.asarray(high, dtype=np.float64),
         np.asarray(low, dtype=np.float64),
         np.asarray(close, dtype=np.float64),
         np.asarray(sig, dtype=np.int64),
+        sess,
         model.fill_policy == "next_bar_open",
         False,
         float(model.size_fraction),
@@ -99,5 +105,7 @@ def verify_sweep_matches_single(
         float(model.tp_pct),
         float(model.trail_pct),
         float(model.fill_fraction),
+        float(model.leverage),
+        float(model.funding_bps_per_bar),
     )
     return abs(float(term) - float(single["total_return"])) < 1e-9

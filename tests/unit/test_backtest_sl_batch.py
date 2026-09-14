@@ -65,7 +65,8 @@ def test_batch_matches_single(ohlc: dict[str, np.ndarray]) -> None:
     s1 = sma_signal(ohlc["close"], 10, 40)
     signals = np.vstack([s0, s1])
     batch = run_bar_backtest_batch(
-        ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"], signals, model=model
+        ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"], signals, model=model,
+        device="cpu_numba",
     )
     a = run_bar_backtest(
         ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"], s0, model=model
