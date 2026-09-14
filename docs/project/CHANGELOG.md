@@ -3,6 +3,16 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.11.0] — 2026-09-14
+
+### Added
+- Research Metal economics: funding, session mask, long_short (Numba golden parity)
+- Rewrote stale MLX engine unit tests against current kwargs-only API (no skips)
+
+### Notes
+- Evidence publication stays out of this repository.
+- License remains **MIT**.
+
 ## [v0.10.0] — 2026-09-14
 
 ### Added
