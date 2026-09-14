@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.11.0)
+# Monte-Neo Roadmap (v0.12.0)
 
 ## Project rules
 - [x] Silence / Evidence permission-gate / version sync / Swiss-watch quality
@@ -37,4 +37,4 @@
 ## Next
 - [ ] Private P002/P003 (separate harness) — no Evidence without permission
 - [x] Metal SL/TP/trail research subset
-- [ ] Release cut when green on main (in progress)
+- [x] Release cut when green on main (v0.10.0 / v0.12.0 tagged)
