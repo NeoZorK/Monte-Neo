@@ -3,6 +3,17 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.10.0] — 2026-09-14
+
+### Added
+- Research Metal economics: SL/TP/trail on long/flat next-bar-open (Numba golden parity)
+- Parity + perf coverage for Metal stop/trail subset
+
+### Notes
+- Funding / session mask / long_short remain Numba-only.
+- Evidence publication stays out of this repository and permission-gated.
+- License remains **MIT**.
+
 ## [v0.9.1] — 2026-09-14
 
 ### Removed

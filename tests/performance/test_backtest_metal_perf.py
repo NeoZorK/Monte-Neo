@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import numpy as np
 import pytest
 
 from monte_neo.backtest import (
@@ -10,6 +11,7 @@ from monte_neo.backtest import (
     get_metal_research_engine,
     run_bar_backtest_batch,
     run_sma_sweep,
+    sma_signal,
     synthetic_ohlcv,
 )
 
@@ -42,13 +44,9 @@ def test_metal_sma_sweep_perf_smoke() -> None:
 
 
 @pytest.mark.skipif(get_metal_research_engine() is None, reason="Metal research unavailable")
-def test_metal_batch_sl_forces_numba() -> None:
+def test_metal_batch_with_sl_tp_uses_metal() -> None:
     ohlc = frame_to_ohlc(synthetic_ohlcv(1_000, seed=4))
     model = ExecutionModel(sl_pct=0.02, tp_pct=0.03, warmup_bars=40)
-    import numpy as np
-
-    from monte_neo.backtest import sma_signal
-
     sigs = np.stack([sma_signal(ohlc["close"], 5, 30)])
     out = run_bar_backtest_batch(
         ohlc["open"],
@@ -59,4 +57,5 @@ def test_metal_batch_sl_forces_numba() -> None:
         model=model,
         device="metal",
     )
-    assert out["device"] == "cpu_numba"
+    assert out["device"] == "metal"
+    assert out["ok"] is True

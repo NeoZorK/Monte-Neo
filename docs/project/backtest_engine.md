@@ -61,7 +61,7 @@ Also: `run_bar_backtest`, `run_bar_backtest_batch`, `run_sma_sweep`,
 ## Apple Silicon (Metal)
 
 Batch / SMA sweep accept `device="auto"|"metal"|"cpu_numba"`. Metal runs the
-long/flat next-bar-open subset (fees, slip, `fill_fraction`, `leverage`).
+long/flat next-bar-open with optional SL/TP/trail (fees, slip, `fill_fraction`, `leverage`).
 SL/TP/trail/funding/session/long_short stay on Numba golden.
 
 ```python

@@ -1,9 +1,13 @@
-# Monte-Neo Roadmap (v0.9.1)
+# Monte-Neo Roadmap (v0.10.0)
 
 ## Project rules
 - [x] Silence / Evidence permission-gate / version sync / Swiss-watch quality
 
-## Version 0.9.0 - Research bar Metal economics (Current)
+## Version 0.10.0 - Metal SL/TP/trail research subset (Current)
+- [x] Metal long/flat batch with SL/TP/trail vs Numba parity
+- [x] Funding / session / long_short remain Numba golden
+
+## Version 0.9.0 - Research bar Metal economics
 - [x] Metal long/flat batch economics with Numba golden parity
 - [x] `device=` on batch / SMA sweep; advanced knobs stay Numba
 
@@ -28,5 +32,5 @@
 
 ## Next
 - [ ] Private P002/P003 (separate harness) — no Evidence without permission
-- [ ] Metal SL/TP/trail research subset (optional)
-- [ ] Release cut when green on main
+- [x] Metal SL/TP/trail research subset
+- [ ] Release cut when green on main (in progress)

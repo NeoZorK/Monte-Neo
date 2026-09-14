@@ -17,9 +17,9 @@ from monte_neo.backtest import (
 from monte_neo.backtest.metal_economics import try_metal_batch_returns
 
 
-def _fixture() -> tuple[dict[str, np.ndarray], np.ndarray, ExecutionModel]:
+def _fixture(model: ExecutionModel | None = None) -> tuple:
     ohlc = frame_to_ohlc(synthetic_ohlcv(800, seed=19))
-    model = ExecutionModel(
+    model = model or ExecutionModel(
         commission_bps=5.0,
         slippage_bps=5.0,
         size_fraction=0.5,
@@ -38,9 +38,11 @@ def _fixture() -> tuple[dict[str, np.ndarray], np.ndarray, ExecutionModel]:
     return ohlc, sigs, model
 
 
-def test_metal_eligible_blocks_advanced_knobs() -> None:
+def test_metal_eligible_blocks_funding_and_session() -> None:
     assert metal_economics_eligible(ExecutionModel()) is True
-    assert metal_economics_eligible(ExecutionModel(sl_pct=0.01)) is False
+    assert metal_economics_eligible(ExecutionModel(sl_pct=0.01)) is True
+    assert metal_economics_eligible(ExecutionModel(tp_pct=0.02)) is True
+    assert metal_economics_eligible(ExecutionModel(trail_pct=0.01)) is True
     assert metal_economics_eligible(ExecutionModel(funding_bps_per_bar=0.1)) is False
     mask = np.ones(10, dtype=np.bool_)
     mask[3] = False
@@ -62,9 +64,8 @@ def test_batch_cpu_device_forces_numba() -> None:
     assert out["ok"] is True
 
 
-@pytest.mark.skipif(get_metal_research_engine() is None, reason="Metal research unavailable")
-def test_metal_research_parity_vs_numba() -> None:
-    ohlc, sigs, model = _fixture()
+def _parity(model: ExecutionModel) -> None:
+    ohlc, sigs, model = _fixture(model)
     cpu = run_bar_backtest_batch(
         ohlc["open"],
         ohlc["high"],
@@ -75,15 +76,52 @@ def test_metal_research_parity_vs_numba() -> None:
         device="cpu_numba",
     )
     metal = try_metal_batch_returns(
-        ohlc["open"], ohlc["close"], sigs, model, device="metal"
+        ohlc["open"],
+        ohlc["high"],
+        ohlc["low"],
+        ohlc["close"],
+        sigs,
+        model,
+        device="metal",
     )
     assert metal is not None
     assert np.allclose(cpu["total_returns"], metal["returns"], rtol=1e-4, atol=1e-5)
 
 
 @pytest.mark.skipif(get_metal_research_engine() is None, reason="Metal research unavailable")
+def test_metal_research_parity_vs_numba() -> None:
+    _parity(
+        ExecutionModel(
+            commission_bps=5.0,
+            slippage_bps=5.0,
+            size_fraction=0.5,
+            warmup_bars=40,
+            fill_fraction=0.8,
+            leverage=1.5,
+        )
+    )
+
+
+@pytest.mark.skipif(get_metal_research_engine() is None, reason="Metal research unavailable")
+def test_metal_research_parity_with_sl_tp_trail() -> None:
+    _parity(
+        ExecutionModel(
+            commission_bps=5.0,
+            slippage_bps=5.0,
+            size_fraction=0.5,
+            warmup_bars=40,
+            sl_pct=1.5,
+            tp_pct=2.5,
+            trail_pct=1.0,
+        )
+    )
+
+
+@pytest.mark.skipif(get_metal_research_engine() is None, reason="Metal research unavailable")
 def test_batch_auto_uses_metal_when_eligible() -> None:
-    ohlc, sigs, model = _fixture()
+    ohlc, sigs, model = _fixture(
+        ExecutionModel(sl_pct=1.0, tp_pct=2.0, warmup_bars=40, size_fraction=0.5)
+    )
     out = run_bar_backtest_batch(
         ohlc["open"],
         ohlc["high"],

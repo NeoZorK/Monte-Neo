@@ -86,6 +86,7 @@ def test_sl_tp_checklist_and_batch_end_to_end(ohlc: dict[str, np.ndarray]) -> No
         ohlc["close"],
         sig.reshape(1, -1),
         model=model,
+        device="cpu_numba",
     )
     assert abs(float(batch["total_returns"][0]) - single["total_return"]) < 1e-9
     assert "trades" in single
