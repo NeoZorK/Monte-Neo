@@ -1,9 +1,13 @@
-# Monte-Neo Roadmap (v0.10.0)
+# Monte-Neo Roadmap (v0.11.0)
 
 ## Project rules
 - [x] Silence / Evidence permission-gate / version sync / Swiss-watch quality
 
-## Version 0.10.0 - Metal SL/TP/trail research subset (Current)
+## Version 0.11.0 - Metal funding/session/long_short (Current)
+- [x] Metal research economics: funding + session mask + long_short
+- [x] MLX unit skips cleared against current engine API
+
+## Version 0.10.0 - Metal SL/TP/trail research subset
 - [x] Metal long/flat batch with SL/TP/trail vs Numba parity
 - [x] Funding / session / long_short remain Numba golden
 
