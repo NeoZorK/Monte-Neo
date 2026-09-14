@@ -16,19 +16,19 @@
   <img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+"/>
 </p>
 
-> Current: **v0.4.0** · [Changelog](docs/project/CHANGELOG.md) · [Docs index](docs/INDEX.md)
+> Current: **v0.5.0** · [Changelog](docs/project/CHANGELOG.md) · [Docs index](docs/INDEX.md)
 
 ## What it is
 
 - **Monte Carlo research tooling** for trading indicators (noise, shuffle, sensitivity, walk-forward helpers).
 - **Interactive CLI** for data download (Binance), generation workflows, and charts.
 - **Fee-aware research bar engine** (`monte_neo.backtest`): next-bar fills, costs (bps), SL/TP/trail, funding, leverage, sessions, batch sweeps, shared-cash portfolio, journal.
-- **Paper OMS lane** (`monte_neo.oms`): bar orders + tick/L2 book walk, blotter, Apple Silicon device select (Numba / Metal / MLX).
+- **Paper OMS lane** (`monte_neo.oms`): bar + tick/L2 matching, venue adapters (paper default; live env-gated dry-run).
 - Optional **Metal / MLX** acceleration on Apple Silicon (16GB-class hosts first).
 
 ## What it is not
 
-- Not a live exchange or funded trading bot by default (live adapters are env-gated when present).
+- Not a funded live trading bot by default (live adapters require explicit env flags and stay dry-run unless carefully enabled).
 - Not a claim that research-bar batch throughput equals full OMS event-loop cost — use each lane for its semantics.
 
 ## Quick start
@@ -87,7 +87,7 @@ Details: [docs/project/oms_engine.md](docs/project/oms_engine.md).
 |------|--------|
 | MC indicator / robustness workflows | Available via CLI and library |
 | Fee-aware research bar engine | `monte_neo.backtest` |
-| Paper OMS (bar + tick/L2) | `monte_neo.oms` (v0.4.0+) |
+| Paper OMS + venue adapters | `monte_neo.oms` (v0.5.0+) |
 | Metal / MLX / Numba device select | Best-effort on Apple Silicon; CPU fallbacks |
 | Docker | Supported for headless/CI-style runs |
 

@@ -3,6 +3,18 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.5.0] — 2026-09-14
+
+### Added
+- Venue adapters: `PaperExchangeAdapter`, `BinanceAdapter`, `BybitAdapter`
+- `make_adapter()` factory + fill reconciliation helper
+- Live safety gates: `MONTE_NEO_LIVE_TRADING`, `MONTE_NEO_LIVE_DRY_RUN` (default dry-run)
+- `.env.example` keys for Bybit + live flags
+
+### Notes
+- Paper mode is default (no network). Live submit without dry-run is blocked in this build.
+- License remains **MIT**. Evidence publication still permission-gated.
+
 ## [v0.4.0] — 2026-09-14
 
 ### Added

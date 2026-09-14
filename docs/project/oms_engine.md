@@ -1,49 +1,42 @@
 # OMS engine
 
-Package: `monte_neo.oms` (current line **v0.4.0**).
+Package: `monte_neo.oms` (current line **v0.5.0**).
 
 ## Purpose
 
-Event-driven **paper OMS** lane: orders → matching → positions → blotter.
-Separate from the research bar package `monte_neo.backtest`.
+Event-driven **paper OMS** + venue adapters:
 
-Lanes:
+1. Bar paper OMS
+2. Tick / L2 paper OMS
+3. Venue adapters (`paper` / `binance` / `bybit`) — **paper by default**
 
-1. **Bar paper OMS** — next-bar fills, market/limit/cancel
-2. **Tick / L2 paper OMS** — synthetic ticks, book walk, Numba parity
+## Venue adapters
 
-Live exchange adapters are versioned later and env-gated.
+```python
+from monte_neo.oms import OrderIntent, OrderSide, OrderType, make_adapter
+
+ad = make_adapter("binance", mode="paper", mid=100.0)
+rep = ad.submit(OrderIntent(
+    symbol="BTCUSDT",
+    side=OrderSide.BUY,
+    order_type=OrderType.MARKET,
+    qty=0.01,
+))
+fills = ad.poll_fills()
+```
+
+### Live safety
+
+- Live mode requires `MONTE_NEO_LIVE_TRADING=1` and venue API keys in env.
+- Default dry-run: `MONTE_NEO_LIVE_DRY_RUN=1` (no real orders).
+- Turning dry-run off is blocked for real sends in this build.
+
+Never commit secrets.
 
 ## Apple Silicon
 
-Device select (`auto` / `cpu_numba` / `metal` / `mlx`) via `monte_neo.oms.accel`.
-Numba walks books and batch paths on CPU; Metal shader scaffolds:
-
-- `oms/accel/shaders/oms_bar_match.metal`
-- `oms/accel/shaders/oms_l2_walk.metal`
-
-Economics parity between Python and Numba is tested. Target host: 16GB Apple Silicon.
-
-## Quick start (bar)
-
-```python
-from monte_neo.oms import SignalStrategy, run_oms_bar_backtest
-
-out = run_oms_bar_backtest(
-    open_, high, low, close,
-    SignalStrategy(signal, size_fraction=0.25),
-    device="cpu_numba",
-)
-```
-
-## Quick start (tick / L2)
-
-```python
-from monte_neo.oms import run_tick_l2_market_buy, synthetic_ticks
-
-ticks = synthetic_ticks(10_000, seed=1)
-out = run_tick_l2_market_buy(ticks, qty=1.0, device="cpu_numba")
-```
+Device select for matching helpers: `cpu_numba` / `metal` / `mlx` / `auto`.
+Metal shader scaffolds under `oms/accel/shaders/`.
 
 ## Testing
 

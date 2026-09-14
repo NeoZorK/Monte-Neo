@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+from monte_neo.oms.adapters import make_adapter
+from monte_neo.oms.adapters.base import FillReport, OrderIntent, OrderReport
+from monte_neo.oms.adapters.binance import BinanceAdapter
+from monte_neo.oms.adapters.bybit import BybitAdapter
+from monte_neo.oms.adapters.paper_exchange import PaperExchangeAdapter
+from monte_neo.oms.adapters.reconcile import reconcile_fills
 from monte_neo.oms.blotter import Blotter
 from monte_neo.oms.book import OrderBook, book_from_mid
 from monte_neo.oms.engine import OmsEngine
@@ -22,21 +28,29 @@ from monte_neo.oms.types import (
 
 __all__ = [
     "AccountState",
+    "BinanceAdapter",
     "Blotter",
+    "BybitAdapter",
     "Fill",
+    "FillReport",
     "L2MatchConfig",
     "OmsEngine",
     "Order",
     "OrderBook",
+    "OrderIntent",
+    "OrderReport",
     "OrderSide",
     "OrderStatus",
     "OrderType",
     "PaperBroker",
+    "PaperExchangeAdapter",
     "Position",
     "SignalStrategy",
     "Strategy",
     "TickL2Engine",
     "book_from_mid",
+    "make_adapter",
+    "reconcile_fills",
     "run_oms_bar_backtest",
     "run_tick_l2_market_buy",
     "synthetic_ticks",
