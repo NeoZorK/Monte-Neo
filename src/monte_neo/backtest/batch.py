@@ -74,8 +74,8 @@ def run_bar_backtest_batch(
 ) -> dict[str, Any]:
     """Run N external signal rows through the same engine.
 
-    Metal is used for long/flat next-bar-open (incl. optional SL/TP/trail) when
-    ``device`` resolves to metal and funding/session/long_short are off; else Numba.
+    Metal is used for next-bar-open research economics (SL/TP/trail/funding/
+    session/long_short) when ``device`` resolves to metal; else Numba golden.
     """
     model = model or ExecutionModel()
     o = np.asarray(open_, dtype=np.float64)
@@ -105,7 +105,7 @@ def run_bar_backtest_batch(
 
     if metal_economics_eligible(model, sess if sess_used else None):
         t0 = time.perf_counter()
-        metal_out = try_metal_batch_returns(o, h, l, c, sig, model, device=device)
+        metal_out = try_metal_batch_returns(o, h, l, c, sig, model, session_ok=sess, device=device)
         elapsed = time.perf_counter() - t0
         if metal_out is not None:
             rets = metal_out["returns"]

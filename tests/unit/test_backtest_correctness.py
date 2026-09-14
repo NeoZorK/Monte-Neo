@@ -68,6 +68,7 @@ def test_batch_matches_single_with_funding_leverage() -> None:
         ohlc["close"],
         sig.reshape(1, -1),
         model=model,
+        device="cpu_numba",
     )
     assert abs(float(batch["total_returns"][0]) - single["total_return"]) < 1e-9
 

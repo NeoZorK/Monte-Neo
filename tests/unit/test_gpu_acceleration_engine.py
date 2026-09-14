@@ -172,17 +172,20 @@ class TestGpuAccelerationEngine(unittest.TestCase):
             self.assertEqual(len(results), 1)
             mock_shuffle.assert_called_once()
 
-    @unittest.skip("pre-existing API drift: tests predate MLXBacktestEngine kwargs-only refactor and the removed _select_best_driver method (confirmed failing before this PR, at commit 1b8f209) -- needs a real rewrite against the current architecture, not a mock patch")
     @patch("monte_neo.core.acceleration.engine.to_tensor")
     @patch("monte_neo.core.acceleration.engine.generate_shuffle_scenarios")
     def test_run_benchmark_simulation(self, mock_shuffle, mock_to_tensor):
-        mock_to_tensor.return_value = {"close": mx.array([100.0, 101.0])}
-        mock_shuffle.return_value = mx.array([[100.0, 101.0]])
-        
-        # Test with 2 scenarios and batch size 1 to check looping
+        close = mx.array([100.0 + 0.1 * i for i in range(32)])
+        mock_to_tensor.return_value = {"close": close}
+        # One scenario row per batch call; length must support SMA(10)
+        mock_shuffle.side_effect = [
+            mx.array(close.reshape(1, -1)),
+            mx.array(close.reshape(1, -1)),
+        ]
+
         self.engine.batch_size = 1
         result = self.engine.run_benchmark_simulation(self.data, n_scenarios=2)
-        
+
         self.assertIn("elapsed", result)
         self.assertIn("ops_per_sec", result)
         self.assertEqual(result["scenarios_processed"], 2)
