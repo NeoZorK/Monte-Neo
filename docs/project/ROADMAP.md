@@ -1,24 +1,24 @@
-# Monte-Neo Roadmap (v0.5.0)
+# Monte-Neo Roadmap (v0.6.0)
 
 ## Project rules
-- [x] **Silence:** never name external competing products or individuals in this repo
-- [x] **ClaimBound Evidence:** only after complete correct private comparisons **and** explicit maintainer permission
-- [x] **Version sync:** `_version.py` ↔ CHANGELOG ↔ README ↔ ROADMAP ↔ INDEX ↔ tag ↔ Release ↔ tests ↔ CI
-- [x] **Swiss-watch quality:** parity tests, loud failures, perf budgets on 16GB Apple Silicon
+- [x] Silence / Evidence permission-gate / version sync / Swiss-watch quality
 
-## Version 0.5.0 - Venue adapters (Current)
-- [x] `BrokerAdapter` intents/reports + paper exchange
-- [x] Binance / Bybit adapters (paper default; live env-gated + dry-run)
-- [x] Fill reconciliation helper; `.env.example` live flags
+## Version 0.6.0 - Metal OMS batch + compute pref (Current)
+- [x] PyObjC Metal batch long/flat with Numba parity
+- [x] `run_batch_terminal` / `preferred_compute_device`
+- [x] MCConfig.compute_device + engine compute_pref
+
+## Version 0.5.0 - Venue adapters
+- [x] Paper / Binance / Bybit adapters; live env-gated dry-run
 
 ## Version 0.4.0 - Tick / L2 paper OMS
-- [x] Tick feed + L2 book walk (Python + Numba parity)
-- [x] `TickL2Engine` + Metal L2 shader scaffold
+- [x] Tick feed + L2 walk + Metal L2 shader scaffold
 
 ## Version 0.3.0 - Paper OMS + accel foundation
-- [x] Bar paper OMS + device select + Metal bar-match scaffold
+- [x] Bar OMS + device select + Metal bar-match scaffold
 
 ## Next
-- [ ] Wire Metal shaders into native bridge (parity vs Numba on M1 Pro 16GB)
-- [ ] MC Metal/MLX unify + perf budgets
+- [ ] Native bridge load of `oms_l2_walk.metal` (parity vs Numba)
+- [ ] Deeper MC Metal/MLX scenario unify + 16GB budgets
 - [ ] Private P002/P003 (separate harness) — no Evidence without permission
+- [ ] Release cut when green on main

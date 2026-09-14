@@ -47,6 +47,9 @@ class MonteCarloEngine:
         self.scenario_builder = ScenarioBuilder(self.config)
 
         from monte_neo.core.gpu_engine import MLXBacktestEngine
+        from monte_neo.oms.accel.compute_pref import preferred_compute_device
+
+        self.compute_pref = preferred_compute_device(self.config.compute_device)
         self.gpu_engine = MLXBacktestEngine(
             precision=self.config.gpu_precision,
             metal_driver=self.config.metal_driver,

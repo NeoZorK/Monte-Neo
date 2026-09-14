@@ -8,6 +8,14 @@ AccelDevice = Literal["auto", "cpu_numba", "metal", "mlx"]
 
 
 def metal_available() -> bool:
+    """True if PyObjC Metal device or native metal_engine extension exists."""
+    try:
+        import Metal
+
+        if Metal.MTLCreateSystemDefaultDevice() is not None:
+            return True
+    except Exception:
+        pass
     try:
         from monte_neo.core.acceleration.cpp_metal import metal_engine  # noqa: F401
 

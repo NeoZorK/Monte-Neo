@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+"/>
 </p>
 
-> Current: **v0.5.0** · [Changelog](docs/project/CHANGELOG.md) · [Docs index](docs/INDEX.md)
+> Current: **v0.6.0** · [Changelog](docs/project/CHANGELOG.md) · [Docs index](docs/INDEX.md)
 
 ## What it is
 

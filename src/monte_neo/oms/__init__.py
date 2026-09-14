@@ -8,6 +8,7 @@ from monte_neo.oms.adapters.binance import BinanceAdapter
 from monte_neo.oms.adapters.bybit import BybitAdapter
 from monte_neo.oms.adapters.paper_exchange import PaperExchangeAdapter
 from monte_neo.oms.adapters.reconcile import reconcile_fills
+from monte_neo.oms.accel import preferred_compute_device, run_batch_terminal
 from monte_neo.oms.blotter import Blotter
 from monte_neo.oms.book import OrderBook, book_from_mid
 from monte_neo.oms.engine import OmsEngine
@@ -50,7 +51,9 @@ __all__ = [
     "TickL2Engine",
     "book_from_mid",
     "make_adapter",
+    "preferred_compute_device",
     "reconcile_fills",
+    "run_batch_terminal",
     "run_oms_bar_backtest",
     "run_tick_l2_market_buy",
     "synthetic_ticks",

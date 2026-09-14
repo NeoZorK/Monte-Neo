@@ -3,6 +3,18 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.6.0] — 2026-09-14
+
+### Added
+- Metal OMS batch dispatch (PyObjC) with Numba float64 golden parity
+- `run_batch_terminal(device=...)` / `preferred_compute_device` for honest device reports
+- MCConfig.`compute_device` + engine `compute_pref` checklist
+- Perf smoke for auto Metal/Numba batch path
+
+### Notes
+- Metal uses float32; parity tests allow documented rtol/atol vs Numba float64.
+- License remains **MIT**. Evidence publication still permission-gated.
+
 ## [v0.5.0] — 2026-09-14
 
 ### Added

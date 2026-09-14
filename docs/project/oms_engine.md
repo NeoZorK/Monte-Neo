@@ -1,6 +1,6 @@
 # OMS engine
 
-Package: `monte_neo.oms` (current line **v0.5.0**).
+Package: `monte_neo.oms` (current line **v0.6.0**).
 
 ## Purpose
 
@@ -36,7 +36,18 @@ Never commit secrets.
 ## Apple Silicon
 
 Device select for matching helpers: `cpu_numba` / `metal` / `mlx` / `auto`.
-Metal shader scaffolds under `oms/accel/shaders/`.
+
+Bulk path:
+
+```python
+from monte_neo.oms import run_batch_terminal
+
+out = run_batch_terminal(open_, close, signals, device="auto")
+# out["device_used"] is "metal" or "cpu_numba"
+```
+
+Metal float32 vs Numba float64 parity is tested with documented tolerances.
+Shader scaffolds also live under `oms/accel/shaders/`.
 
 ## Testing
 

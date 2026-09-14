@@ -37,6 +37,7 @@ class MCConfig:
     use_gpu: bool = True
     gpu_precision: str = "float32"  # float32, float16, float8
     metal_driver: str = "cpp"  # cpp, objc, swift
+    compute_device: str = "auto"  # auto | metal | mlx | cpu_numba
 
     # Capital and Leverage
     initial_capital: float = 100000.0
