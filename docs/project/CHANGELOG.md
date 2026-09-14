@@ -3,6 +3,17 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.12.0] — 2026-09-14
+
+### Added
+- Stable research-bar export API (`export_single` / `export_batch` / `export_sma_sweep` / `research_manifest`)
+- Frozen golden vectors (`verify_golden_vectors`) for fee-hurts + batch↔single parity before any external timer
+- Timers disclose `includes_signal_build` so harnesses cannot mis-attribute work
+
+### Notes
+- No peer product names in this tree. Export is for external honesty harnesses only.
+- License remains **MIT**.
+
 ## [v0.11.0] — 2026-09-14
 
 ### Added

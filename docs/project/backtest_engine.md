@@ -1,6 +1,6 @@
 # Professional bar backtest engine
 
-Package: `monte_neo.backtest` (research lane; current line **v0.9.0**).
+Package: `monte_neo.backtest` (research lane; current line **v0.12.0**).
 
 ## Purpose
 
@@ -34,6 +34,31 @@ live gateway in this line).
 
 Optional call arg: `session_mask` (bool array) — blocks **new entries** off-session;
 exits and SL/TP/trail still apply.
+
+
+
+## Honest export API (v0.12.0)
+
+Stable surface for **external** honesty harnesses (no peer names in-tree):
+
+```python
+from monte_neo.backtest import (
+    research_manifest,
+    export_single,
+    export_batch,
+    export_sma_sweep,
+    verify_export_golden,
+    golden_fixture,
+)
+
+assert verify_export_golden(device="cpu_numba")["ok"]
+manifest = research_manifest()  # export_api_version, required_work_keys, semantics
+```
+
+Export dicts always include: `export_api_version`, `lane`, `engine`, `device`,
+`model`, `work_checklist`, `timing` (with `includes_signal_build`), and `metrics`.
+Golden vectors freeze seed/bars/SMA and expected Numba float64 returns so
+economics cannot silently drift before a throughput run.
 
 ## APIs
 
