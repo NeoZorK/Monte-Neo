@@ -1,6 +1,6 @@
 # Professional bar backtest engine
 
-Package: `monte_neo.backtest` (research lane; current line **v0.12.0**).
+Package: `monte_neo.backtest` (research lane; current line **v0.13.0**).
 
 ## Purpose
 
@@ -36,6 +36,13 @@ Optional call arg: `session_mask` (bool array) — blocks **new entries** off-se
 exits and SL/TP/trail still apply.
 
 
+
+## Signal factory (v0.13.0)
+
+`build_sma_cross_grid(close, pairs, device="cpu_numba"|"mlx"|"auto")` builds an
+`(n_combos, n_bars)` int64 long/flat SMA-cross grid. Default `auto` uses Numba
+parallel (bit-exact vs single-signal helper). `run_sma_sweep` / `export_sma_sweep`
+report `signal_elapsed_s` and `economics_elapsed_s` separately.
 
 ## Honest export API (v0.12.0)
 
