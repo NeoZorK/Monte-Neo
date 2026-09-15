@@ -23,8 +23,8 @@ def test_chart_generator_init():
     gen = ChartGenerator()
     assert hasattr(gen, "_has_mplfinance")
 
-@patch("plotext.show")
-@patch("plotext.candlestick")
+@patch("plotext.show", create=True)
+@patch("plotext.candlestick", create=True)
 def test_plot_candlestick_terminal(mock_candlestick, mock_show, sample_ohlc):
     gen = ChartGenerator()
     gen._has_mplfinance = False
@@ -33,8 +33,8 @@ def test_plot_candlestick_terminal(mock_candlestick, mock_show, sample_ohlc):
     assert mock_candlestick.called
     assert mock_show.called
 
-@patch("plotext.show")
-@patch("plotext.scatter")
+@patch("plotext.show", create=True)
+@patch("plotext.scatter", create=True)
 def test_plot_with_signals(mock_scatter, mock_show, sample_ohlc):
     gen = ChartGenerator()
     signals = pd.Series([0] * 10, index=sample_ohlc.index)

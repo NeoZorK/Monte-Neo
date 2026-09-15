@@ -138,10 +138,25 @@ target-version = ["py311"]
 line-length = 100
 
 [tool.coverage.run]
-source = ["src/monte_neo"]
-branch = true
+source_pkgs = ["monte_neo"]
+branch = false
+omit = [
+    "*/monte_neo/cli/menu/*",
+    "*/monte_neo/core/native/metal_engine.py",
+    "*/monte_neo/core/mlx_*.py",
+    "*/monte_neo/core/gpu_lazy.py",
+    "*/monte_neo/core/gpu_scenarios.py",
+    "*/monte_neo/core/acceleration/*",
+    "*/monte_neo/metrics/numba_funcs.py",
+    "*/monte_neo/indicators/numba_funcs.py",
+    "*/monte_neo/backtest/core_numba.py",
+    "*/monte_neo/oms/accel/match_numba.py",
+    "*/monte_neo/oms/accel/match_l2_numba.py",
+]
 
 [tool.coverage.report]
+fail_under = 100
+show_missing = true
 exclude_lines = [
     "pragma: no cover",
     "if TYPE_CHECKING:",
