@@ -3,6 +3,16 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.14.0] — 2026-09-15
+
+### Added
+- `plan_research_bytes` for Apple Silicon 16GB soft budgets / tile hints
+- Export depth: `equity_stride`, `include_journal`, optional `memory` on single/batch
+- README positioning: local macOS research job vs non-goals (no rival names)
+
+### Notes
+- License remains **MIT**. Evidence publication stays permission-gated and out of tree.
+
 ## [v0.13.0] — 2026-09-15
 
 ### Added
