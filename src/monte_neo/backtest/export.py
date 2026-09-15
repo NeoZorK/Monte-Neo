@@ -182,10 +182,15 @@ def export_sma_sweep(
         "lane": "research_bar",
         "engine": "monte_neo.backtest.export_sma_sweep",
         "device": raw.get("device", device),
+        "signal_device": raw.get("signal_device"),
         "dtype": "float32" if str(raw.get("device", "")).startswith("metal") else "float64",
         "model": model.to_dict(),
         "work_checklist": model.work_checklist(),
-        "timing": _timing(elapsed_s=inner, includes_signal_build=True),
+        "timing": {
+            **_timing(elapsed_s=inner, includes_signal_build=True),
+            "signal_elapsed_s": raw.get("signal_elapsed_s"),
+            "economics_elapsed_s": raw.get("economics_elapsed_s"),
+        },
         "combos": int(raw.get("combos", combos)),
         "combos_per_s": float(raw.get("combos_per_s") or 0.0),
         "metrics": {

@@ -1,9 +1,14 @@
-# Monte-Neo Roadmap (v0.12.0)
+# Monte-Neo Roadmap (v0.13.0)
 
 ## Project rules
 - [x] Silence / Evidence permission-gate / version sync / Swiss-watch quality
 
-## Version 0.12.0 - Research export API + golden vectors (Current)
+## Version 0.13.0 - Research signal factory (Current)
+- [x] Numba-parallel SMA cross signal grids (`build_sma_cross_grid`)
+- [x] Sweep/export split `signal_elapsed_s` / `economics_elapsed_s`
+- [x] Unit parity vs single-signal path
+
+## Version 0.12.0 - Research export API + golden vectors
 - [x] `monte_neo.backtest.export` stable schema (API v1)
 - [x] Frozen golden vectors + `verify_golden_vectors` / `verify_export_golden`
 - [x] Timers disclose `includes_signal_build`
@@ -41,6 +46,9 @@
 - [x] Bar OMS + device select + Metal bar-match scaffold
 
 ## Next
+- [ ] 16GB research packing + perf budgets (v0.14)
+- [ ] Export journal/equity downsample (v0.15)
+- [ ] Positioning docs without rival names (v0.16)
 - [ ] Private P002/P003 (separate harness) — no Evidence without permission
 - [x] Metal SL/TP/trail research subset
-- [x] Release cut when green on main (v0.10.0 / v0.12.0 tagged)
+- [x] Release cut when green on main (v0.10.0 / v0.13.0 tagged)

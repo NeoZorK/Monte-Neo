@@ -32,6 +32,7 @@ from monte_neo.backtest.metrics import assert_fee_hurts_return, summarize_equity
 from monte_neo.backtest.model import ExecutionModel
 from monte_neo.backtest.portfolio_lite import run_multi_symbol_lite
 from monte_neo.backtest.portfolio_shared import run_portfolio_shared_cash
+from monte_neo.backtest.signal_factory import build_sma_cross_grid, build_sma_cross_grid_numba_golden
 from monte_neo.backtest.strategy import StrategySpec, build_signal
 from monte_neo.backtest.sweep import run_sma_sweep, sma_signal, verify_sweep_matches_single
 
@@ -65,4 +66,6 @@ __all__ = [
     "verify_export_golden",
     "golden_fixture",
     "verify_golden_vectors",
+    "build_sma_cross_grid",
+    "build_sma_cross_grid_numba_golden",
 ]
