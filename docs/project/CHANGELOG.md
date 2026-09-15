@@ -3,6 +3,20 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.14.1] — 2026-09-15
+
+### Fixed
+- Research accelerator **no-hang gate**: oversized Metal/MLX workloads fall back to `cpu_numba` instead of blocking forever on GPU wait (e.g. 10M-bar sweeps on 16GB-class hosts)
+- Transparent `fallback_reason` when auto demotes Metal (`metal_max_bars_exceeded`, shared-budget, host soft budget)
+
+### Docs
+- README: install from GitHub, research export quickstart, advantages, device notes
+- `docs/guides/FAQ.md` starter
+
+### Notes
+- Env knobs: `MONTE_NEO_RESEARCH_BYTES_BUDGET`, `MONTE_NEO_METAL_SHARED_BYTES_BUDGET`, `MONTE_NEO_METAL_MAX_BARS`
+- License remains **MIT**. No peer product names in this tree.
+
 ## [v0.14.0] — 2026-09-15
 
 ### Added

@@ -1,4 +1,4 @@
-# Monte-Neo v0.14.0
+# Monte-Neo v0.14.1
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -18,8 +18,8 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/project-structure.md - Deep dive into physical directory layout
 - docs/project/features.md - Detailed overview of framework features
 - docs/project/dynamic_indicators.md - Explanation of dynamic indicator generation
-- docs/project/ROADMAP.md - Development roadmap and milestones (v0.14.0)
-- docs/project/CHANGELOG.md - Release changelog (current: v0.14.0)
+- docs/project/ROADMAP.md - Development roadmap and milestones (v0.14.1)
+- docs/project/CHANGELOG.md - Release changelog (current: v0.14.1)
 - docs/project/backtest_engine.md - Fee-aware research bar engine
 - docs/project/oms_engine.md - Paper OMS (bar + tick/L2) + venue adapters
 - docs/assets/monteneo-logo.png - Project logo
@@ -46,6 +46,7 @@ A simplified guide to the Monte-Neo file structure.
 
 ### Guides & Examples (docs/guides/, docs/examples/)
 - docs/guides/quick-start.md - 3-step guide to get started
+- docs/guides/FAQ.md - Metal vs Numba, install, no-hang gate, PyPI timing
 - docs/examples/README.md - Standalone script examples (Placeholder)
 - docs/api/README.md - API reference (Placeholder)
 
@@ -54,7 +55,7 @@ A simplified guide to the Monte-Neo file structure.
 - docker/docker-compose.yml - Docker Compose service definitions
 
 ### Source Code (src/monte_neo/)
-- src/monte_neo/_version.py - Central version management (v0.14.0)
+- src/monte_neo/_version.py - Central version management (v0.14.1)
 - docs/project/mc_accel.md - MC Metal/MLX dispatch + 16GB budgets
 - src/monte_neo/__init__.py - Main package entry point
 - src/monte_neo/backtest/ - Professional fee-aware research bar engine + SMA sweep
@@ -145,3 +146,4 @@ A simplified guide to the Monte-Neo file structure.
 ### Utility Scripts (scripts/)
 - scripts/run_full_test_suite.sh - Master verification script (uv + docker)
 - scripts/check_system.py - Native verification of Genetic Algorithms & Dynamic Indicators
+
