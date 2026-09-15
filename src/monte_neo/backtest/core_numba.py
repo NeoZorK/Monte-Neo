@@ -270,7 +270,7 @@ def run_terminal_return(
     leverage: float,
     funding_bps: float,
 ) -> float:
-    """Lean terminal return — same economics as :func:`run_core_full`."""
+    """Scalar terminal return — same economics as :func:`run_core_full`."""
     _, ret, _, _, _, _, _, _, _, _, _, _, _ = run_core_full(
         open_,
         high,
