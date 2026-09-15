@@ -10,6 +10,7 @@ from monte_neo.backtest.bar_engine import run_bar_backtest
 from monte_neo.backtest.batch import run_bar_backtest_batch
 from monte_neo.backtest.core_numba import run_terminal_return
 from monte_neo.backtest.model import ExecutionModel
+from monte_neo.backtest.signal_factory import build_sma_cross_grid
 from monte_neo.backtest.strategy import sma_signal_long_flat
 
 
@@ -37,22 +38,27 @@ def run_sma_sweep(
         raise ValueError("run_sma_sweep currently supports long_flat only")
     pairs = _sma_pairs(combos)
     c = np.asarray(close, dtype=np.float64)
-    signals = np.empty((len(pairs), c.shape[0]), dtype=np.int64)
-    for i, (fast, slow) in enumerate(pairs):
-        signals[i] = sma_signal_long_flat(c, int(fast), int(slow))
+    # Signal device: prefer MLX on Apple Silicon when batch device is auto/metal.
+    sig_device = "auto" if device in ("auto", "metal", "mlx") else "cpu_numba"
+    sig = build_sma_cross_grid(c, pairs, device=sig_device)
+    signals = sig["signals"]
     batch = run_bar_backtest_batch(
         open_, high, low, close, signals, model=model, device=device
     )
     rets = batch["total_returns"]
+    total_elapsed = float(sig["elapsed_s"]) + float(batch["elapsed_s"])
     return {
         "ok": True,
         "engine": "monte_neo.backtest.sweep",
         "device": batch.get("device", "cpu_numba"),
+        "signal_device": sig.get("device"),
+        "signal_elapsed_s": sig.get("elapsed_s"),
+        "economics_elapsed_s": batch.get("elapsed_s"),
         "model": model.to_dict(),
         "work_checklist": model.work_checklist(),
         "combos": len(pairs),
-        "elapsed_s": batch["elapsed_s"],
-        "combos_per_s": batch["combos_per_s"],
+        "elapsed_s": total_elapsed,
+        "combos_per_s": (len(pairs) / total_elapsed) if total_elapsed > 0 else 0.0,
         "best_return": float(batch["best_return"]),
         "rows": [
             {
@@ -62,7 +68,7 @@ def run_sma_sweep(
             }
             for i in range(len(pairs))
         ],
-        "note": "SMA sweep wraps run_bar_backtest_batch (shared ExecutionModel)",
+        "note": "SMA sweep: signal_factory + run_bar_backtest_batch (shared ExecutionModel)",
     }
 
 

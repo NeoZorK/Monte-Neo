@@ -3,6 +3,16 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.13.0] — 2026-09-15
+
+### Added
+- Research signal factory (`build_sma_cross_grid`): Numba-parallel SMA cross grids
+- Sweep/export expose `signal_elapsed_s` + `economics_elapsed_s` (wall includes both)
+
+### Notes
+- Default signal device is Numba (exact); MLX signal path remains opt-in.
+- No peer product names in this tree. License remains **MIT**.
+
 ## [v0.12.0] — 2026-09-14
 
 ### Added
