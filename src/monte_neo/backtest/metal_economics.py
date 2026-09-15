@@ -295,30 +295,46 @@ def try_metal_batch_returns(
     *,
     session_ok: np.ndarray | None = None,
     device: str = "auto",
+    skip_size_gate: bool = False,
+    tile_combos: int | None = None,
 ) -> dict[str, Any] | None:
-    """Run Metal batch when requested/available; else None (caller uses Numba)."""
+    """Run Metal batch when requested/available; else None (caller uses Numba).
+
+    Applies a hard size gate before any Metal buffer allocation /
+    ``waitUntilCompleted`` so oversized jobs cannot hang the process.
+    When ``tile_combos`` is set and smaller than n_combos, economics run in
+    Metal tiles (still barred by the max-bars / shared-bytes gate).
+    """
+    from monte_neo.backtest.memory_plan import decide_research_accelerator
     from monte_neo.oms.accel.device import resolve_device
 
     want = resolve_device(device)
     if want != "metal":
         return None
+    sig = np.asarray(signals)
+    n_combo = int(sig.shape[0])
+    n = int(np.asarray(close).shape[0])
+    decision = decide_research_accelerator(n_bars=n, n_combos=n_combo, device=device)
+    if not skip_size_gate and not decision["use_metal"]:
+        return {
+            "returns": None,
+            "device_used": "cpu_numba",
+            "ok": False,
+            "skipped": True,
+            "fallback_reason": decision.get("fallback_reason") or "metal_size_gate",
+        }
     eng = get_metal_research_engine()
     if eng is None:
         return None
-    n = int(np.asarray(close).shape[0])
     if session_ok is None:
         sess = np.ones(n, dtype=np.int32)
     else:
         sess = np.asarray(session_ok, dtype=np.int32)
         if sess.shape != (n,):
             raise ValueError("session_ok must match bar length")
-    rets = eng.batch_terminal(
-        open_,
-        high,
-        low,
-        close,
-        signals,
-        sess,
+    tile = int(tile_combos or decision.get("metal_tile_combos") or n_combo)
+    tile = max(1, min(tile, n_combo))
+    kwargs = dict(
         commission_bps=float(model.commission_bps),
         slip_bps=float(model.effective_slip_bps),
         initial_cash=float(model.initial_cash),
@@ -332,4 +348,18 @@ def try_metal_batch_returns(
         funding_bps=float(model.funding_bps_per_bar),
         long_short=model.side_mode == "long_short",
     )
-    return {"returns": rets, "device_used": "metal", "ok": True}
+    if tile >= n_combo:
+        rets = eng.batch_terminal(open_, high, low, close, sig, sess, **kwargs)
+        return {"returns": rets, "device_used": "metal", "ok": True, "tiles": 1}
+    parts = []
+    for start in range(0, n_combo, tile):
+        chunk = sig[start : start + tile]
+        parts.append(eng.batch_terminal(open_, high, low, close, chunk, sess, **kwargs))
+    rets = np.concatenate(parts, axis=0)
+    return {
+        "returns": rets,
+        "device_used": "metal",
+        "ok": True,
+        "tiles": int((n_combo + tile - 1) // tile),
+        "tile_combos": tile,
+    }

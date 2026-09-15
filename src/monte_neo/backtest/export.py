@@ -154,7 +154,7 @@ def export_batch(
     sess_used = session_mask is not None
     rets = np.asarray(raw["total_returns"], dtype=np.float64)
     n = int(rets.shape[0])
-    return {
+    out = {
         "ok": True,
         "export_api_version": EXPORT_API_VERSION,
         "lane": "research_bar",
@@ -171,10 +171,13 @@ def export_batch(
             "best_return": float(raw.get("best_return", float(np.max(rets)) if n else 0.0)),
         },
         "bars": int(np.asarray(close).shape[0]),
-        "memory": __import__("monte_neo.backtest.memory_plan", fromlist=["plan_research_bytes"]).plan_research_bytes(
+        "memory": plan_research_bytes(
             n_bars=int(np.asarray(close).shape[0]), n_combos=n, include_signals=True
         ),
     }
+    if raw.get("fallback_reason"):
+        out["fallback_reason"] = raw["fallback_reason"]
+    return out
 
 
 def export_sma_sweep(
@@ -196,7 +199,7 @@ def export_sma_sweep(
     wrap_elapsed = time.perf_counter() - t0
     # Prefer inner batch timer; still flag that signal build is inside this path.
     inner = float(raw.get("elapsed_s") or wrap_elapsed)
-    return {
+    out = {
         "ok": bool(raw.get("ok", True)),
         "export_api_version": EXPORT_API_VERSION,
         "lane": "research_bar",
@@ -220,6 +223,9 @@ def export_sma_sweep(
         "bars": int(np.asarray(close).shape[0]),
         "note": "SMA sweep builds signals inside the reported path",
     }
+    if raw.get("fallback_reason"):
+        out["fallback_reason"] = raw["fallback_reason"]
+    return out
 
 
 def verify_export_golden(
