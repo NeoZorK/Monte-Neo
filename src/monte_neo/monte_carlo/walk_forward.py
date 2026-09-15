@@ -118,7 +118,7 @@ class WalkForwardAnalyzer:
             train_data = data.iloc[window.train_start : window.train_end]
             test_data = data.iloc[window.test_start : window.test_end]
             if train_data.empty or test_data.empty:
-                continue  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                continue
 
             # Optimize on training data (simplified - just calculate metrics)
             train_signals = indicator.generate_signals(train_data)
@@ -162,7 +162,7 @@ class WalkForwardAnalyzer:
             List of WalkForwardWindow objects.
         """
         if n_samples <= 0 or self.n_splits <= 0:
-            return []  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return []
 
         windows = []
         window_size = n_samples // self.n_splits
@@ -172,14 +172,14 @@ class WalkForwardAnalyzer:
         train_size = int(window_size * self.train_pct)
         test_size = window_size - train_size
         if train_size <= 0 or test_size <= 0:
-            return []  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return []
 
         for i in range(self.n_splits):
             if self.anchored:
-                train_start = 0  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                train_end = train_size + (i * test_size)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                test_start = train_end  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                test_end = min(test_start + test_size, n_samples)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                train_start = 0
+                train_end = train_size + (i * test_size)
+                test_start = train_end
+                test_end = min(test_start + test_size, n_samples)
             else:
                 train_start = i * test_size
                 train_end = train_start + train_size
@@ -215,21 +215,21 @@ class WalkForwardAnalyzer:
         """
         for metric_name, target_value in targets.items():
             if metric_name not in metrics:
-                continue  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                continue
 
             actual = metrics[metric_name]
             if not np.isfinite(actual):
-                return False  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                return False
 
             # Handle metrics that should be less than target
             if metric_name in ["max_drawdown", "consecutive_losses"]:
-                if actual > target_value:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    return False  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                if actual > target_value:
+                    return False
             else:
                 if actual < target_value:
                     return False
 
-        return True  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return True
 
     def _aggregate_metrics(self, metrics_list: list[dict]) -> dict:
         """Aggregate metrics across windows.
@@ -241,7 +241,7 @@ class WalkForwardAnalyzer:
             Aggregated metrics.
         """
         if not metrics_list:
-            return {}  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return {}
 
         aggregated = {}
         all_keys: set[str] = set()
@@ -279,7 +279,7 @@ class WalkForwardAnalyzer:
             Efficiency ratio (ideally close to 1.0).
         """
         if not windows:
-            return 0.0  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return 0.0
 
         train_pf = []
         test_pf = []
@@ -295,4 +295,4 @@ class WalkForwardAnalyzer:
         if not train_pf or np.mean(train_pf) == 0:
             return 0.0
 
-        return float(np.mean(test_pf) / np.mean(train_pf))  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return float(np.mean(test_pf) / np.mean(train_pf))

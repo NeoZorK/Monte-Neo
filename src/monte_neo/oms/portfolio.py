@@ -34,12 +34,12 @@ def apply_fill(account: AccountState, fill: Fill) -> None:
     if abs(new_qty) < 1e-15:
         pos.qty = 0.0
         pos.avg_px = 0.0
-    elif (pos.qty > 0.0) != (new_qty > 0.0):  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+    elif (pos.qty > 0.0) != (new_qty > 0.0):
         # Flip residual
-        pos.qty = new_qty  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        pos.avg_px = fill.price  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        pos.qty = new_qty
+        pos.avg_px = fill.price
     else:
-        pos.qty = new_qty  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        pos.qty = new_qty
 
 
 def mark_positions(account: AccountState, marks: dict[str, float]) -> float:

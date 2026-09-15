@@ -177,22 +177,22 @@ class MetalResearchEngine:
         self._Metal = Metal
         self.device = Metal.MTLCreateSystemDefaultDevice()
         if self.device is None:
-            raise RuntimeError("No Metal device")  # pragma: no cover  # Metal hardware-absent arm after mocks
+            raise RuntimeError("No Metal device")
         self.queue = self.device.newCommandQueue()
         lib, err = self.device.newLibraryWithSource_options_error_(
             _RESEARCH_KERNEL, None, None
         )
-        if lib is None:  # pragma: no cover  # Metal hardware-absent arm after mocks
-            raise RuntimeError(f"Metal research shader compile failed: {err}")  # pragma: no cover  # Metal hardware-absent arm after mocks
-        fn = lib.newFunctionWithName_("research_batch_full")  # pragma: no cover  # Metal hardware-absent arm after mocks
-        pipe, err = self.device.newComputePipelineStateWithFunction_error_(fn, None)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        if pipe is None:  # pragma: no cover  # Metal hardware-absent arm after mocks
-            raise RuntimeError(f"Metal research pipeline failed: {err}")  # pragma: no cover  # Metal hardware-absent arm after mocks
-        self.pipe = pipe  # pragma: no cover  # Metal hardware-absent arm after mocks
-        self._shared = Metal.MTLResourceStorageModeShared  # pragma: no cover  # Metal hardware-absent arm after mocks
+        if lib is None:
+            raise RuntimeError(f"Metal research shader compile failed: {err}")
+        fn = lib.newFunctionWithName_("research_batch_full")
+        pipe, err = self.device.newComputePipelineStateWithFunction_error_(fn, None)
+        if pipe is None:
+            raise RuntimeError(f"Metal research pipeline failed: {err}")
+        self.pipe = pipe
+        self._shared = Metal.MTLResourceStorageModeShared
 
     def _buf_bytes(self, arr: np.ndarray):
-        return self.device.newBufferWithBytes_length_options_(  # pragma: no cover  # Metal hardware-absent arm after mocks
+        return self.device.newBufferWithBytes_length_options_(
             arr.tobytes(), arr.nbytes, self._shared
         )
 
@@ -218,14 +218,14 @@ class MetalResearchEngine:
         funding_bps: float,
         long_short: bool,
     ) -> np.ndarray:
-        open_f = np.ascontiguousarray(open_, dtype=np.float32)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        high_f = np.ascontiguousarray(high, dtype=np.float32)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        low_f = np.ascontiguousarray(low, dtype=np.float32)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        close_f = np.ascontiguousarray(close, dtype=np.float32)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        sig = np.ascontiguousarray(signals, dtype=np.int32)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        sess = np.ascontiguousarray(session_ok.astype(np.int32, copy=False))  # pragma: no cover  # Metal hardware-absent arm after mocks
-        n_combo, n_bars = int(sig.shape[0]), int(sig.shape[1])  # pragma: no cover  # Metal hardware-absent arm after mocks
-        params = np.array(  # pragma: no cover  # Metal hardware-absent arm after mocks
+        open_f = np.ascontiguousarray(open_, dtype=np.float32)
+        high_f = np.ascontiguousarray(high, dtype=np.float32)
+        low_f = np.ascontiguousarray(low, dtype=np.float32)
+        close_f = np.ascontiguousarray(close, dtype=np.float32)
+        sig = np.ascontiguousarray(signals, dtype=np.int32)
+        sess = np.ascontiguousarray(session_ok.astype(np.int32, copy=False))
+        n_combo, n_bars = int(sig.shape[0]), int(sig.shape[1])
+        params = np.array(
             [
                 float(n_bars),
                 float(commission_bps),
@@ -243,33 +243,33 @@ class MetalResearchEngine:
             ],
             dtype=np.float32,
         )
-        b_open = self._buf_bytes(open_f)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        b_high = self._buf_bytes(high_f)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        b_low = self._buf_bytes(low_f)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        b_close = self._buf_bytes(close_f)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        b_sig = self._buf_bytes(sig.reshape(-1))  # pragma: no cover  # Metal hardware-absent arm after mocks
-        b_sess = self._buf_bytes(sess)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        b_out = self.device.newBufferWithLength_options_(n_combo * 4, self._shared)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        b_params = self._buf_bytes(params)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        cmd = self.queue.commandBuffer()  # pragma: no cover  # Metal hardware-absent arm after mocks
-        enc = cmd.computeCommandEncoder()  # pragma: no cover  # Metal hardware-absent arm after mocks
-        enc.setComputePipelineState_(self.pipe)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        enc.setBuffer_offset_atIndex_(b_open, 0, 0)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        enc.setBuffer_offset_atIndex_(b_high, 0, 1)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        enc.setBuffer_offset_atIndex_(b_low, 0, 2)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        enc.setBuffer_offset_atIndex_(b_close, 0, 3)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        enc.setBuffer_offset_atIndex_(b_sig, 0, 4)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        enc.setBuffer_offset_atIndex_(b_sess, 0, 5)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        enc.setBuffer_offset_atIndex_(b_out, 0, 6)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        enc.setBuffer_offset_atIndex_(b_params, 0, 7)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        tpt = int(self.pipe.maxTotalThreadsPerThreadgroup())  # pragma: no cover  # Metal hardware-absent arm after mocks
-        tg = max(1, (n_combo + tpt - 1) // tpt)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        enc.dispatchThreadgroups_threadsPerThreadgroup_((tg, 1, 1), (tpt, 1, 1))  # pragma: no cover  # Metal hardware-absent arm after mocks
-        enc.endEncoding()  # pragma: no cover  # Metal hardware-absent arm after mocks
-        cmd.commit()  # pragma: no cover  # Metal hardware-absent arm after mocks
-        cmd.waitUntilCompleted()  # pragma: no cover  # Metal hardware-absent arm after mocks
-        out = np.frombuffer(b_out.contents().as_buffer(n_combo * 4), dtype=np.float32).copy()  # pragma: no cover  # Metal hardware-absent arm after mocks
-        return out.astype(np.float64)  # pragma: no cover  # Metal hardware-absent arm after mocks
+        b_open = self._buf_bytes(open_f)
+        b_high = self._buf_bytes(high_f)
+        b_low = self._buf_bytes(low_f)
+        b_close = self._buf_bytes(close_f)
+        b_sig = self._buf_bytes(sig.reshape(-1))
+        b_sess = self._buf_bytes(sess)
+        b_out = self.device.newBufferWithLength_options_(n_combo * 4, self._shared)
+        b_params = self._buf_bytes(params)
+        cmd = self.queue.commandBuffer()
+        enc = cmd.computeCommandEncoder()
+        enc.setComputePipelineState_(self.pipe)
+        enc.setBuffer_offset_atIndex_(b_open, 0, 0)
+        enc.setBuffer_offset_atIndex_(b_high, 0, 1)
+        enc.setBuffer_offset_atIndex_(b_low, 0, 2)
+        enc.setBuffer_offset_atIndex_(b_close, 0, 3)
+        enc.setBuffer_offset_atIndex_(b_sig, 0, 4)
+        enc.setBuffer_offset_atIndex_(b_sess, 0, 5)
+        enc.setBuffer_offset_atIndex_(b_out, 0, 6)
+        enc.setBuffer_offset_atIndex_(b_params, 0, 7)
+        tpt = int(self.pipe.maxTotalThreadsPerThreadgroup())
+        tg = max(1, (n_combo + tpt - 1) // tpt)
+        enc.dispatchThreadgroups_threadsPerThreadgroup_((tg, 1, 1), (tpt, 1, 1))
+        enc.endEncoding()
+        cmd.commit()
+        cmd.waitUntilCompleted()
+        out = np.frombuffer(b_out.contents().as_buffer(n_combo * 4), dtype=np.float32).copy()
+        return out.astype(np.float64)
 
 
 _metal_research: MetalResearchEngine | None | bool = False
@@ -305,36 +305,36 @@ def try_metal_batch_returns(
     When ``tile_combos`` is set and smaller than n_combos, economics run in
     Metal tiles (still barred by the max-bars / shared-bytes gate).
     """
-    from monte_neo.backtest.memory_plan import decide_research_accelerator  # pragma: no cover  # Metal hardware-absent arm after mocks
-    from monte_neo.oms.accel.device import resolve_device  # pragma: no cover  # Metal hardware-absent arm after mocks
+    from monte_neo.backtest.memory_plan import decide_research_accelerator
+    from monte_neo.oms.accel.device import resolve_device
 
-    want = resolve_device(device)  # pragma: no cover  # Metal hardware-absent arm after mocks
-    if want != "metal":  # pragma: no cover  # Metal hardware-absent arm after mocks
-        return None  # pragma: no cover  # Metal hardware-absent arm after mocks
-    sig = np.asarray(signals)  # pragma: no cover  # Metal hardware-absent arm after mocks
-    n_combo = int(sig.shape[0])  # pragma: no cover  # Metal hardware-absent arm after mocks
-    n = int(np.asarray(close).shape[0])  # pragma: no cover  # Metal hardware-absent arm after mocks
-    decision = decide_research_accelerator(n_bars=n, n_combos=n_combo, device=device)  # pragma: no cover  # Metal hardware-absent arm after mocks
-    if not skip_size_gate and not decision["use_metal"]:  # pragma: no cover  # Metal hardware-absent arm after mocks
-        return {  # pragma: no cover  # Metal hardware-absent arm after mocks
+    want = resolve_device(device)
+    if want != "metal":
+        return None
+    sig = np.asarray(signals)
+    n_combo = int(sig.shape[0])
+    n = int(np.asarray(close).shape[0])
+    decision = decide_research_accelerator(n_bars=n, n_combos=n_combo, device=device)
+    if not skip_size_gate and not decision["use_metal"]:
+        return {
             "returns": None,
             "device_used": "cpu_numba",
             "ok": False,
             "skipped": True,
             "fallback_reason": decision.get("fallback_reason") or "metal_size_gate",
         }
-    eng = get_metal_research_engine()  # pragma: no cover  # Metal hardware-absent arm after mocks
-    if eng is None:  # pragma: no cover  # Metal hardware-absent arm after mocks
-        return None  # pragma: no cover  # Metal hardware-absent arm after mocks
-    if session_ok is None:  # pragma: no cover  # Metal hardware-absent arm after mocks
-        sess = np.ones(n, dtype=np.int32)  # pragma: no cover  # Metal hardware-absent arm after mocks
+    eng = get_metal_research_engine()
+    if eng is None:
+        return None
+    if session_ok is None:
+        sess = np.ones(n, dtype=np.int32)
     else:
-        sess = np.asarray(session_ok, dtype=np.int32)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        if sess.shape != (n,):  # pragma: no cover  # Metal hardware-absent arm after mocks
-            raise ValueError("session_ok must match bar length")  # pragma: no cover  # Metal hardware-absent arm after mocks
-    tile = int(tile_combos or decision.get("metal_tile_combos") or n_combo)  # pragma: no cover  # Metal hardware-absent arm after mocks
-    tile = max(1, min(tile, n_combo))  # pragma: no cover  # Metal hardware-absent arm after mocks
-    kwargs = dict(  # pragma: no cover  # Metal hardware-absent arm after mocks
+        sess = np.asarray(session_ok, dtype=np.int32)
+        if sess.shape != (n,):
+            raise ValueError("session_ok must match bar length")
+    tile = int(tile_combos or decision.get("metal_tile_combos") or n_combo)
+    tile = max(1, min(tile, n_combo))
+    kwargs = dict(
         commission_bps=float(model.commission_bps),
         slip_bps=float(model.effective_slip_bps),
         initial_cash=float(model.initial_cash),
@@ -348,15 +348,15 @@ def try_metal_batch_returns(
         funding_bps=float(model.funding_bps_per_bar),
         long_short=model.side_mode == "long_short",
     )
-    if tile >= n_combo:  # pragma: no cover  # Metal hardware-absent arm after mocks
-        rets = eng.batch_terminal(open_, high, low, close, sig, sess, **kwargs)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        return {"returns": rets, "device_used": "metal", "ok": True, "tiles": 1}  # pragma: no cover  # Metal hardware-absent arm after mocks
-    parts = []  # pragma: no cover  # Metal hardware-absent arm after mocks
-    for start in range(0, n_combo, tile):  # pragma: no cover  # Metal hardware-absent arm after mocks
-        chunk = sig[start : start + tile]  # pragma: no cover  # Metal hardware-absent arm after mocks
-        parts.append(eng.batch_terminal(open_, high, low, close, chunk, sess, **kwargs))  # pragma: no cover  # Metal hardware-absent arm after mocks
-    rets = np.concatenate(parts, axis=0)  # pragma: no cover  # Metal hardware-absent arm after mocks
-    return {  # pragma: no cover  # Metal hardware-absent arm after mocks
+    if tile >= n_combo:
+        rets = eng.batch_terminal(open_, high, low, close, sig, sess, **kwargs)
+        return {"returns": rets, "device_used": "metal", "ok": True, "tiles": 1}
+    parts = []
+    for start in range(0, n_combo, tile):
+        chunk = sig[start : start + tile]
+        parts.append(eng.batch_terminal(open_, high, low, close, chunk, sess, **kwargs))
+    rets = np.concatenate(parts, axis=0)
+    return {
         "returns": rets,
         "device_used": "metal",
         "ok": True,

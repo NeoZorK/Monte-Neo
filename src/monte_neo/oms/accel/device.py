@@ -12,21 +12,21 @@ def metal_available() -> bool:
     try:
         import Metal
 
-        if Metal.MTLCreateSystemDefaultDevice() is not None:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            return True  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        if Metal.MTLCreateSystemDefaultDevice() is not None:
+            return True
     except Exception:
         pass
     try:
         from monte_neo.core.acceleration.cpp_metal import metal_engine  # noqa: F401
 
-        return True  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return True
     except Exception:
         try:
             from monte_neo.core.acceleration.cpp_metal.metal_engine import (  # noqa: F401
                 MetalBacktestBridge,
             )
 
-            return True  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return True
         except Exception:
             return False
 
@@ -36,26 +36,26 @@ def mlx_available() -> bool:
         import mlx.core  # noqa: F401
 
         return True
-    except Exception:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        return False  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+    except Exception:
+        return False
 
 
 def resolve_device(device: AccelDevice | str = "auto") -> str:
     """Resolve requested device; prefer Metal on Apple Silicon when auto."""
     d = str(device or "auto").lower()
     if d not in {"auto", "cpu_numba", "metal", "mlx"}:
-        raise ValueError(f"unsupported device: {device}")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        raise ValueError(f"unsupported device: {device}")
     if d == "cpu_numba":
         return "cpu_numba"
     if d == "metal":
-        return "metal" if metal_available() else "cpu_numba"  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return "metal" if metal_available() else "cpu_numba"
     if d == "mlx":
-        return "mlx" if mlx_available() else "cpu_numba"  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return "mlx" if mlx_available() else "cpu_numba"
     if metal_available():
-        return "metal"  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return "metal"
     if mlx_available():
         return "mlx"
-    return "cpu_numba"  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+    return "cpu_numba"
 
 
 def work_checklist_accel(device: str) -> dict[str, bool]:

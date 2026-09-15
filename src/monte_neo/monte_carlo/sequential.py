@@ -211,16 +211,16 @@ class SequentialMCRunner:
             passed = True
             for metric_name, target_value in target_metrics.items():
                 if metric_name not in metrics:
-                    continue  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                    continue
                 actual = metrics[metric_name]
                 if metric_name in ["max_drawdown", "consecutive_losses"]:
-                    if actual > target_value:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                    if actual > target_value:
                         passed = False
-                        break  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                        break
                 else:
                     if actual < target_value:
                         passed = False
-                        break  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                        break
             if passed:
                 passed_count += 1
         pass_rate = passed_count / len(results) if results else 0.0

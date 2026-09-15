@@ -38,9 +38,9 @@ def setup_logging(
             show_time=True,
             show_path=False,
         )
-    except ImportError:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        console_handler = logging.StreamHandler(sys.stdout)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        console_handler.setFormatter(formatter)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+    except ImportError:
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setFormatter(formatter)
 
     console_handler.setLevel(log_level)
 

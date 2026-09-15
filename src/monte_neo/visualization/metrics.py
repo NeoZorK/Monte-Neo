@@ -37,7 +37,7 @@ class MetricsDisplay:
             if isinstance(value, float):
                 formatted = f"{value:.4f}"
             else:
-                formatted = str(value)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                formatted = str(value)
 
             # Check against target
             status = ""
@@ -48,7 +48,7 @@ class MetricsDisplay:
                 elif op == "<=" and value <= target:
                     status = "[green]✓[/]"
                 else:
-                    status = "[red]✗[/]"  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                    status = "[red]✗[/]"
 
             table.add_row(name, formatted, status)
 
@@ -61,19 +61,19 @@ class MetricsDisplay:
             metrics: Dictionary of metrics.
             title: Panel title.
         """
-        lines = []  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        for name, value in metrics.items():  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            if isinstance(value, float):  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                lines.append(f"[cyan]{name}:[/] {value:.4f}")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        lines = []
+        for name, value in metrics.items():
+            if isinstance(value, float):
+                lines.append(f"[cyan]{name}:[/] {value:.4f}")
             else:
-                lines.append(f"[cyan]{name}:[/] {value}")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                lines.append(f"[cyan]{name}:[/] {value}")
 
-        panel = Panel(  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        panel = Panel(
             "\n".join(lines),
             title=f"[bold]{title}[/]",
             border_style="cyan",
         )
-        console.print(panel)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        console.print(panel)
 
     def compare_metrics(
         self,
@@ -88,42 +88,42 @@ class MetricsDisplay:
             after: After metrics.
             title: Table title.
         """
-        table = Table(title=title)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        table.add_column("Metric", style="cyan")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        table.add_column("Before", style="yellow")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        table.add_column("After", style="green")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        table.add_column("Change", style="bold")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        table = Table(title=title)
+        table.add_column("Metric", style="cyan")
+        table.add_column("Before", style="yellow")
+        table.add_column("After", style="green")
+        table.add_column("Change", style="bold")
 
-        all_keys = set(before.keys()) | set(after.keys())  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        all_keys = set(before.keys()) | set(after.keys())
 
-        for key in sorted(all_keys):  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            before_val = before.get(key)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            after_val = after.get(key)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        for key in sorted(all_keys):
+            before_val = before.get(key)
+            after_val = after.get(key)
 
-            before_str = (  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            before_str = (
                 f"{before_val:.4f}"
                 if isinstance(before_val, float)
                 else str(before_val or "-")
             )
-            after_str = (  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            after_str = (
                 f"{after_val:.4f}"
                 if isinstance(after_val, float)
                 else str(after_val or "-")
             )
 
             # Calculate change
-            change = ""  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            if isinstance(before_val, (int, float)) and isinstance(  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            change = ""
+            if isinstance(before_val, (int, float)) and isinstance(
                 after_val, (int, float)
             ):
-                diff = after_val - before_val  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                if diff > 0:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    change = f"[green]+{diff:.4f}[/]"  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                elif diff < 0:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    change = f"[red]{diff:.4f}[/]"  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                diff = after_val - before_val
+                if diff > 0:
+                    change = f"[green]+{diff:.4f}[/]"
+                elif diff < 0:
+                    change = f"[red]{diff:.4f}[/]"
                 else:
-                    change = "="  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                    change = "="
 
-            table.add_row(key, before_str, after_str, change)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            table.add_row(key, before_str, after_str, change)
 
-        console.print(table)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        console.print(table)

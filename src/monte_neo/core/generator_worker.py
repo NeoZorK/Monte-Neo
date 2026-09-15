@@ -40,11 +40,11 @@ def _search_worker(args: tuple) -> tuple[BaseIndicator | None, float]:
     # Inline check for performance
     for name, target in target_metrics.items():
         if name not in basic_metrics:
-            continue  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            continue
         actual = basic_metrics[name]
         if name in ["max_drawdown", "consecutive_losses"]:
-            if actual > target:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                return None, 0.0  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            if actual > target:
+                return None, 0.0
         else:
             if actual < target:
                 return None, 0.0

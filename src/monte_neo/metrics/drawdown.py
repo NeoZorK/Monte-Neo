@@ -107,7 +107,7 @@ class DrawdownMetric:
             Array of drawdown values at each point.
         """
         if not len(equity):
-            return np.array([])  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return np.array([])
 
         equity = np.array(equity)
         running_max = np.maximum.accumulate(equity)
@@ -144,7 +144,7 @@ class DrawdownMetric:
             List of drawdown info dictionaries.
         """
         if not len(equity):
-            return []  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return []
 
         equity = np.array(equity)
         running_max = np.maximum.accumulate(equity)
@@ -159,13 +159,13 @@ class DrawdownMetric:
         for i, (dd, eq, peak) in enumerate(zip(drawdowns, equity, running_max)):
             if dd > 0 and not in_dd:
                 # Start of drawdown
-                in_dd = True  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                start_idx = i  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                peak_val = peak  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            elif dd == 0 and in_dd:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                in_dd = True
+                start_idx = i
+                peak_val = peak
+            elif dd == 0 and in_dd:
                 # End of drawdown
-                in_dd = False  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                periods.append(  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                in_dd = False
+                periods.append(
                     {
                         "start_idx": start_idx,
                         "end_idx": i,
@@ -177,8 +177,8 @@ class DrawdownMetric:
                 )
 
         # Handle ongoing drawdown
-        if in_dd:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            periods.append(  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        if in_dd:
+            periods.append(
                 {
                     "start_idx": start_idx,
                     "end_idx": len(equity) - 1,
@@ -190,5 +190,5 @@ class DrawdownMetric:
             )
 
         # Sort by max_drawdown and return worst N
-        periods.sort(key=lambda x: x["max_drawdown"], reverse=True)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        return periods[:n_worst]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        periods.sort(key=lambda x: x["max_drawdown"], reverse=True)
+        return periods[:n_worst]

@@ -176,7 +176,7 @@ def export_batch(
         ),
     }
     if raw.get("fallback_reason"):
-        out["fallback_reason"] = raw["fallback_reason"]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        out["fallback_reason"] = raw["fallback_reason"]
     return out
 
 

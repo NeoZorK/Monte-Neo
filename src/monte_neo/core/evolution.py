@@ -66,15 +66,15 @@ class EvolutionEngine:
 
                 # Use parallel execution for fitness evaluation to reach >2000 ops/s
                 if executor:
-                    from monte_neo.monte_carlo.workers import run_indicator_batch  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    n_workers = executor.n_workers  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    chunk_size = max(1, len(population) // n_workers)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    chunks = [population[i : i + chunk_size] for i in range(0, len(population), chunk_size)]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    tasks = [(chunk, None) for chunk in chunks]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    batch_results = executor.map(run_indicator_batch, tasks)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    raw_signals = []  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    for batch in batch_results:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                        raw_signals.extend(batch)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                    from monte_neo.monte_carlo.workers import run_indicator_batch
+                    n_workers = executor.n_workers
+                    chunk_size = max(1, len(population) // n_workers)
+                    chunks = [population[i : i + chunk_size] for i in range(0, len(population), chunk_size)]
+                    tasks = [(chunk, None) for chunk in chunks]
+                    batch_results = executor.map(run_indicator_batch, tasks)
+                    raw_signals = []
+                    for batch in batch_results:
+                        raw_signals.extend(batch)
                 else:
                     raw_signals = [ind.generate_signals_fast(data) for ind in population]
 
@@ -109,8 +109,8 @@ class EvolutionEngine:
                 fitness_scores.sort(key=lambda x: x[1], reverse=True)
                 
                 if self.progress_callback:
-                    status = f"Evolution Gen {gen + 1}/{self.config.generations} | Best Fitness: {fitness_scores[0][1]:.4f}"  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    self.progress_callback(gen + 1, self.config.generations, status)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                    status = f"Evolution Gen {gen + 1}/{self.config.generations} | Best Fitness: {fitness_scores[0][1]:.4f}"
+                    self.progress_callback(gen + 1, self.config.generations, status)
 
                 # Selection (Elite + Tournament)
                 elite_count = max(2, int(self.config.population_size * 0.1))
@@ -127,17 +127,17 @@ class EvolutionEngine:
                 
                 population = new_pop
         
-        except KeyboardInterrupt:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            print("\nEvolution interrupted. Returning best found so far.")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            if best_overall is None and population:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                best_overall = population[0]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        except KeyboardInterrupt:
+            print("\nEvolution interrupted. Returning best found so far.")
+            if best_overall is None and population:
+                best_overall = population[0]
 
         return best_overall if best_overall else (population[0] if population else None)
 
     def _crossover_indicators(self, p1: BaseIndicator, p2: BaseIndicator) -> BaseIndicator:
         """Perform crossover."""
         if not isinstance(p1, DynamicIndicator) or not isinstance(p2, DynamicIndicator):
-            return self._mutate_indicator(p1)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return self._mutate_indicator(p1)
 
         code1 = p1.get_parameters().get("source_code", "data['close']")
         code2 = p2.get_parameters().get("source_code", "data['close']")
@@ -156,11 +156,11 @@ class EvolutionEngine:
     def _mutate_indicator(self, indicator: BaseIndicator) -> BaseIndicator:
         """Mutate an indicator."""
         if not isinstance(indicator, DynamicIndicator):
-            return indicator  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return indicator
 
         code = indicator.get_parameters().get("source_code", "")
         if not code:
-            return indicator  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return indicator
 
         new_code = code
 
@@ -173,9 +173,9 @@ class EvolutionEngine:
         if self.rng.random() < 0.5:
             new_code = re.sub(r"\b\d+\b", replace_num, code)
         else:
-            op = self.rng.choice(["+", "-", "*"])  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            operand = self.rng.choice(["data['close']", "data['volume']"])  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            new_code = f"({code} {op} {operand})"  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            op = self.rng.choice(["+", "-", "*"])
+            operand = self.rng.choice(["data['close']", "data['volume']"])
+            new_code = f"({code} {op} {operand})"
 
         new_ind = DynamicIndicator()
         new_ind.set_parameter("source_code", new_code)

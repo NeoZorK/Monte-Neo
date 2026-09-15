@@ -37,9 +37,9 @@ class PaperExchangeAdapter:
         self._next_fill = 1
 
     def set_mid(self, mid: float) -> None:
-        if mid <= 0.0:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            raise ValueError("mid must be positive")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        self.mid = float(mid)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        if mid <= 0.0:
+            raise ValueError("mid must be positive")
+        self.mid = float(mid)
 
     def submit(self, intent: OrderIntent) -> OrderReport:
         oid = f"PAPER-{self._next_id}"
@@ -86,13 +86,13 @@ class PaperExchangeAdapter:
         if filled <= 0.0:
             status = "NEW" if intent.order_type == OrderType.LIMIT else "REJECTED"
             if status == "REJECTED":
-                order.status = OrderStatus.REJECTED  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                order.status = OrderStatus.REJECTED
         elif filled + 1e-15 >= order.qty:
             order.status = OrderStatus.FILLED
             status = "FILLED"
         else:
-            order.status = OrderStatus.PARTIAL  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            status = "PARTIAL"  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            order.status = OrderStatus.PARTIAL
+            status = "PARTIAL"
         avg = (notional / filled) if filled > 0 else 0.0
         return OrderReport(
             venue_order_id=oid,
@@ -112,17 +112,17 @@ class PaperExchangeAdapter:
         if side == OrderSide.BUY:
             self.cash -= qty * px
         else:
-            self.cash += qty * px  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            self.cash += qty * px
         self._positions[symbol] = self._positions.get(symbol, 0.0) + signed
 
     def cancel(self, venue_order_id: str) -> bool:
-        order = self._orders.get(venue_order_id)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        if order is None:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            return False  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        if order.status in {OrderStatus.FILLED, OrderStatus.CANCELED, OrderStatus.REJECTED}:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            return False  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        order.status = OrderStatus.CANCELED  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        return True  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        order = self._orders.get(venue_order_id)
+        if order is None:
+            return False
+        if order.status in {OrderStatus.FILLED, OrderStatus.CANCELED, OrderStatus.REJECTED}:
+            return False
+        order.status = OrderStatus.CANCELED
+        return True
 
     def poll_fills(self) -> list[FillReport]:
         out = list(self._pending_fills)
@@ -136,7 +136,7 @@ class PaperExchangeAdapter:
         return dict(self._positions)
 
     def work_checklist(self) -> dict[str, bool]:
-        return {  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return {
             "paper": True,
             "live": False,
             "submit": True,
@@ -146,7 +146,7 @@ class PaperExchangeAdapter:
         }
 
     def snapshot(self) -> dict[str, Any]:
-        return {  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return {
             "balances": self.get_balances(),
             "positions": self.get_positions(),
             "n_orders": len(self._orders),

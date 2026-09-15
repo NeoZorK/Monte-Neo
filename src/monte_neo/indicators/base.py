@@ -103,7 +103,7 @@ class BaseIndicator(ABC):
 
     def get_metal_params(self, commission_bps: float = 0.0, slippage_bps: float = 0.0) -> list[float] | None:
         """Return parameters for native Metal kernel (5 floats)."""
-        return None  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return None
 
     def to_mlx_representation(self) -> Any | None:
         """Convert to MLX representation for GPU execution.
@@ -119,21 +119,21 @@ class BaseIndicator(ABC):
         Default implementation calls generate_signals and extracts the array.
         Subclasses should override this for better performance.
         """
-        if isinstance(data, pd.DataFrame):  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            sigs = self.generate_signals(data)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            if isinstance(sigs, pd.DataFrame):  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                return sigs["signal"].to_numpy(dtype=np.float32)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            return np.asarray(sigs, dtype=np.float32)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        if isinstance(data, pd.DataFrame):
+            sigs = self.generate_signals(data)
+            if isinstance(sigs, pd.DataFrame):
+                return sigs["signal"].to_numpy(dtype=np.float32)
+            return np.asarray(sigs, dtype=np.float32)
 
         # If it's already a numpy array, we might need a dummy DataFrame
         # but this is exactly what we want to avoid.
         # Subclasses MUST override this if they want to support pure numpy paths.
-        dummy_df = pd.DataFrame({"close": data[:, 3] if data.ndim > 1 else data})  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        return self.generate_signals(dummy_df)["signal"].to_numpy(dtype=np.float32)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        dummy_df = pd.DataFrame({"close": data[:, 3] if data.ndim > 1 else data})
+        return self.generate_signals(dummy_df)["signal"].to_numpy(dtype=np.float32)
 
     def get_formula(self) -> str:
         """Get the formula or logic of the indicator."""
-        return self.name  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return self.name
 
     def validate_data(self, data: pd.DataFrame) -> bool:
         """Validate input data.
@@ -148,12 +148,12 @@ class BaseIndicator(ABC):
 
         for col in required_cols:
             if col not in data.columns:
-                logger.warning(f"Missing column: {col}")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                return False  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                logger.warning(f"Missing column: {col}")
+                return False
 
         if len(data) < 10:
-            logger.warning("Insufficient data points")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            return False  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            logger.warning("Insufficient data points")
+            return False
 
         return True
 
@@ -163,7 +163,7 @@ class BaseIndicator(ABC):
         Returns:
             Minimum number of periods.
         """
-        return 1  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return 1
 
     def to_dict(self) -> dict:
         """Convert indicator to dictionary.

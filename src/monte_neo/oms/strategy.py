@@ -43,7 +43,7 @@ class SignalStrategy(Strategy):
         self.allow_short = bool(allow_short)
         self.symbol = symbol
         if self.size_fraction <= 0.0 or self.size_fraction > 1.0:
-            raise ValueError("size_fraction must be in (0, 1]")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            raise ValueError("size_fraction must be in (0, 1]")
 
     def on_bar(
         self,
@@ -57,10 +57,10 @@ class SignalStrategy(Strategy):
     ) -> list[dict[str, Any]]:
         _ = open_, high, low
         if i < 0 or i >= self.signal.shape[0]:
-            return []  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return []
         raw = int(self.signal[i])
         if self.allow_short:
-            target = 1 if raw > 0 else (-1 if raw < 0 else 0)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            target = 1 if raw > 0 else (-1 if raw < 0 else 0)
         else:
             target = 1 if raw > 0 else 0
         cur = 1 if position_qty > 0 else (-1 if position_qty < 0 else 0)

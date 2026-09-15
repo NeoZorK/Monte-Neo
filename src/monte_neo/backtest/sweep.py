@@ -36,7 +36,7 @@ def run_sma_sweep(
     """
     model = model or ExecutionModel(side_mode="long_flat")
     if model.side_mode != "long_flat":
-        raise ValueError("run_sma_sweep currently supports long_flat only")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        raise ValueError("run_sma_sweep currently supports long_flat only")
     pairs = _sma_pairs(combos)
     c = np.asarray(close, dtype=np.float64)
     # Signal device: MLX only when explicitly requested and size gate allows.
@@ -44,7 +44,7 @@ def run_sma_sweep(
         n_bars=int(c.shape[0]), n_combos=len(pairs), device=device
     )
     if device == "mlx" and accel.get("use_mlx"):
-        sig_device = "mlx"  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        sig_device = "mlx"
     elif device in ("auto", "metal", "mlx"):
         sig_device = "cpu_numba" if accel.get("fallback_reason") else "auto"
     else:

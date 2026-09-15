@@ -61,28 +61,28 @@ class TradeVisualizer:
         Args:
             trades: List of TradeResult objects.
         """
-        if not trades:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            console.print("[yellow]No trades to display[/]")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            return  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        if not trades:
+            console.print("[yellow]No trades to display[/]")
+            return
 
-        winners = [t for t in trades if t.pnl > 0]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        losers = [t for t in trades if t.pnl < 0]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        winners = [t for t in trades if t.pnl > 0]
+        losers = [t for t in trades if t.pnl < 0]
 
-        table = Table(title="Trade Summary")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        table.add_column("Stat", style="cyan")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        table.add_column("Value", style="green")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        table = Table(title="Trade Summary")
+        table.add_column("Stat", style="cyan")
+        table.add_column("Value", style="green")
 
-        table.add_row("Total Trades", str(len(trades)))  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        table.add_row("Winners", str(len(winners)))  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        table.add_row("Losers", str(len(losers)))  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        table.add_row("Win Rate", f"{len(winners) / len(trades) * 100:.1f}%")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        table.add_row("Total Trades", str(len(trades)))
+        table.add_row("Winners", str(len(winners)))
+        table.add_row("Losers", str(len(losers)))
+        table.add_row("Win Rate", f"{len(winners) / len(trades) * 100:.1f}%")
 
-        if winners:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            avg_win = sum(t.pnl_pct for t in winners) / len(winners)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            table.add_row("Avg Win", f"{avg_win * 100:.2f}%")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        if winners:
+            avg_win = sum(t.pnl_pct for t in winners) / len(winners)
+            table.add_row("Avg Win", f"{avg_win * 100:.2f}%")
 
-        if losers:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            avg_loss = sum(t.pnl_pct for t in losers) / len(losers)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            table.add_row("Avg Loss", f"{avg_loss * 100:.2f}%")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        if losers:
+            avg_loss = sum(t.pnl_pct for t in losers) / len(losers)
+            table.add_row("Avg Loss", f"{avg_loss * 100:.2f}%")
 
-        console.print(table)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        console.print(table)

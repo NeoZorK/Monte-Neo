@@ -24,9 +24,9 @@ def submit_bracket(
 ) -> tuple[Order, Order, Order]:
     """Entry plus OCO take-profit / stop-loss exits (limit legs)."""
     if qty <= 0.0:
-        raise ValueError("qty must be positive")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        raise ValueError("qty must be positive")
     if take_profit <= 0.0 or stop_loss <= 0.0:
-        raise ValueError("take_profit and stop_loss must be positive")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        raise ValueError("take_profit and stop_loss must be positive")
     entry = engine.submit(
         {
             "side": side,

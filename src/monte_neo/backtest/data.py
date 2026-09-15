@@ -15,7 +15,7 @@ def frame_to_ohlc(df: pd.DataFrame) -> dict[str, np.ndarray]:
     """Extract float64 OHLC arrays from a DataFrame."""
     missing = [c for c in REQUIRED_COLS if c not in df.columns]
     if missing:
-        raise ValueError(f"missing columns: {missing}")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        raise ValueError(f"missing columns: {missing}")
     return {c: df[c].to_numpy(dtype=np.float64, copy=True) for c in REQUIRED_COLS}
 
 
@@ -59,7 +59,7 @@ def midprice_ticks_to_ohlc(
     bid = np.asarray(bids, dtype=np.float64)
     ask = np.asarray(asks, dtype=np.float64)
     if bid.shape != ask.shape or bid.ndim != 1 or bid.size < bars:
-        raise ValueError("bids/asks must be 1-D with size >= bars")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        raise ValueError("bids/asks must be 1-D with size >= bars")
     mid = 0.5 * (bid + ask)
     edges = np.linspace(0, mid.size, bars + 1, dtype=np.int64)
     open_ = np.empty(bars, dtype=np.float64)
@@ -93,12 +93,12 @@ class ReplayBarSource:
     def from_synthetic_ticks(
         cls, *, n_ticks: int = 10_000, seed: int = 0
     ) -> ReplayBarSource:
-        rng = np.random.default_rng(seed)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        mid = 100.0 + np.cumsum(rng.normal(0.0, 0.05, size=n_ticks))  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        spread = 0.02  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        bid = mid - 0.5 * spread  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        ask = mid + 0.5 * spread  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        return cls(bids=bid, asks=ask)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        rng = np.random.default_rng(seed)
+        mid = 100.0 + np.cumsum(rng.normal(0.0, 0.05, size=n_ticks))
+        spread = 0.02
+        bid = mid - 0.5 * spread
+        ask = mid + 0.5 * spread
+        return cls(bids=bid, asks=ask)
 
 
 def try_import_replay_inprocess() -> dict[str, Any]:
@@ -106,6 +106,6 @@ def try_import_replay_inprocess() -> dict[str, Any]:
     try:
         from src.inprocess_midprice import vectorized_midprice  # type: ignore
 
-        return {"ok": True, "symbol": "vectorized_midprice", "fn": vectorized_midprice}  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return {"ok": True, "symbol": "vectorized_midprice", "fn": vectorized_midprice}
     except Exception as exc:  # noqa: BLE001
         return {"ok": False, "error": str(exc)}

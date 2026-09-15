@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, Any
 
 try:
     import mlx.core as mx
-except ImportError:  # optional: pip install "monte-neo[apple]"  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-    mx = None  # type: ignore[assignment]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+except ImportError:  # optional: pip install "monte-neo[apple]"
+    mx = None  # type: ignore[assignment]
 import numpy as np
 import pandas as pd
 
@@ -25,22 +25,22 @@ def normalize_signal_array(
 ) -> np.ndarray:
     """Normalize signals to numpy array of target length."""
     if target_len <= 0:
-        return np.zeros(0, dtype=np.float32)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return np.zeros(0, dtype=np.float32)
     if signals is None:
         return np.zeros(target_len, dtype=np.float32)
     if isinstance(signals, pd.DataFrame):
         if "signal" in signals.columns:
             arr = signals["signal"].to_numpy()
         else:
-            arr = signals.to_numpy().reshape(-1)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            arr = signals.to_numpy().reshape(-1)
     elif isinstance(signals, pd.Series):
-        arr = signals.to_numpy()  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        arr = signals.to_numpy()
     else:
         arr = np.asarray(signals)
     arr = arr.astype(np.float32, copy=False).reshape(-1)
     if arr.size >= target_len:
         return arr[:target_len]
-    return np.pad(arr, (0, target_len - arr.size), "constant", constant_values=0)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+    return np.pad(arr, (0, target_len - arr.size), "constant", constant_values=0)
 
 
 def run_scenarios_backtest(
@@ -57,33 +57,33 @@ def run_scenarios_backtest(
         # This is much faster than the previous Python loop
 
         # 1. Get Signals (CPU parallelized)
-        tasks = [(indicator, df) for df in scenarios]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        if executor is None:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            local_executor = ParallelExecutor()  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            raw_signals = local_executor.map(_generate_signals_wrapper, tasks)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        tasks = [(indicator, df) for df in scenarios]
+        if executor is None:
+            local_executor = ParallelExecutor()
+            raw_signals = local_executor.map(_generate_signals_wrapper, tasks)
         else:
-            raw_signals = executor.map(_generate_signals_wrapper, tasks)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            raw_signals = executor.map(_generate_signals_wrapper, tasks)
 
         # 2. Prepare Data and Signal Matrix
-        max_len = max(len(df) for df in scenarios)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        max_len = max(len(df) for df in scenarios)
 
         # We need a unified price matrix for Numba batch
         # Since scenarios can have different prices, we pad them
-        close_matrix = np.zeros((len(scenarios), max_len), dtype=np.float64)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        high_matrix = np.zeros((len(scenarios), max_len), dtype=np.float64)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        low_matrix = np.zeros((len(scenarios), max_len), dtype=np.float64)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        signal_matrix = np.zeros((len(scenarios), max_len), dtype=np.int32)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        close_matrix = np.zeros((len(scenarios), max_len), dtype=np.float64)
+        high_matrix = np.zeros((len(scenarios), max_len), dtype=np.float64)
+        low_matrix = np.zeros((len(scenarios), max_len), dtype=np.float64)
+        signal_matrix = np.zeros((len(scenarios), max_len), dtype=np.int32)
 
-        for i, df in enumerate(scenarios):  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            l = len(df)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            close_matrix[i, :l] = df["close"].to_numpy().astype(np.float64)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            high_matrix[i, :l] = df["high"].to_numpy().astype(np.float64)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            low_matrix[i, :l] = df["low"].to_numpy().astype(np.float64)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            signal_matrix[i, :l] = normalize_signal_array(raw_signals[i], l).astype(np.int32)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        for i, df in enumerate(scenarios):
+            l = len(df)
+            close_matrix[i, :l] = df["close"].to_numpy().astype(np.float64)
+            high_matrix[i, :l] = df["high"].to_numpy().astype(np.float64)
+            low_matrix[i, :l] = df["low"].to_numpy().astype(np.float64)
+            signal_matrix[i, :l] = normalize_signal_array(raw_signals[i], l).astype(np.int32)
 
         # 3. Run Batch Calculation (Multi-scenario version)
         # We use calculate_batch_multi_price_fast because each scenario has its own prices
-        batch_metrics = MetricsCalculator.calculate_batch_multi_price_fast(  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        batch_metrics = MetricsCalculator.calculate_batch_multi_price_fast(
             close_matrix,
             high_matrix,
             low_matrix,
@@ -93,12 +93,12 @@ def run_scenarios_backtest(
             tp_pct
         )
 
-        results = []  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        for i in range(len(scenarios)):  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            total_return = float(batch_metrics[i, 0])  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            max_dd = float(batch_metrics[i, 1])  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            pf = float(batch_metrics[i, 2])  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            trade_count = int(batch_metrics[i, 3])  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        results = []
+        for i in range(len(scenarios)):
+            total_return = float(batch_metrics[i, 0])
+            max_dd = float(batch_metrics[i, 1])
+            pf = float(batch_metrics[i, 2])
+            trade_count = int(batch_metrics[i, 3])
 
             results.append({
                 "total_return": total_return,
@@ -112,7 +112,7 @@ def run_scenarios_backtest(
                     "trade_count": trade_count,
                 }
             })
-        return results  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return results
 
     # 1. Prepare Returns Matrix (S_scenarios x T_bars)
     # Assuming OHLCV format, we pre-calculate returns for all scenarios
@@ -123,7 +123,7 @@ def run_scenarios_backtest(
 
     # Handle variable lengths by padding with 0
     if not returns_list:
-        return []  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return []
 
     max_len = max(len(r) for r in returns_list)
     padded_returns = []
@@ -131,7 +131,7 @@ def run_scenarios_backtest(
     for r in returns_list:
         pad_width = max_len - len(r)
         if pad_width > 0:
-            padded_returns.append(np.pad(r, (0, pad_width), "constant", constant_values=0))  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            padded_returns.append(np.pad(r, (0, pad_width), "constant", constant_values=0))
         else:
             padded_returns.append(r)
 
@@ -157,8 +157,8 @@ def run_scenarios_backtest(
         for df in scenarios:
             try:
                 raw_signals.append(indicator.generate_signals(df))
-            except Exception:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                raw_signals.append(None)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            except Exception:
+                raw_signals.append(None)
     else:
         # Parallel execution
         if executor is None:
@@ -167,7 +167,7 @@ def run_scenarios_backtest(
             raw_signals = local_executor.map(_generate_signals_wrapper, tasks)
         else:
             # Use shared executor
-            raw_signals = executor.map(_generate_signals_wrapper, tasks)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            raw_signals = executor.map(_generate_signals_wrapper, tasks)
 
     for sigs in raw_signals:
         signal_list.append(normalize_signal_array(sigs, max_len))

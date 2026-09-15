@@ -31,7 +31,7 @@ class ParquetStorage:
             base_dir: Base directory for data storage.
         """
         if base_dir is None:
-            base_dir = os.getenv("MONTE_NEO_DATA_DIR", "./data")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            base_dir = os.getenv("MONTE_NEO_DATA_DIR", "./data")
         self.base_dir = Path(base_dir)
         self._ensure_directories()
 
@@ -116,7 +116,7 @@ class ParquetStorage:
         path = self._get_path(symbol, timeframe, category)
 
         if not path.exists():
-            raise FileNotFoundError(f"Data file not found: {path}")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            raise FileNotFoundError(f"Data file not found: {path}")
 
         df = pq.read_table(path, columns=columns).to_pandas()
         logger.info(f"Loaded {len(df)} rows from {path}")
@@ -187,7 +187,7 @@ class ParquetStorage:
             path.unlink()
             logger.info(f"Deleted {path}")
             return True
-        return False  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return False
 
     def get_info(
         self,
@@ -208,7 +208,7 @@ class ParquetStorage:
         path = self._get_path(symbol, timeframe, category)
 
         if not path.exists():
-            return None  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return None
 
         parquet_file = pq.ParquetFile(path)
         metadata = parquet_file.metadata
@@ -244,8 +244,8 @@ class ParquetStorage:
                 if min_vals and max_vals:
                     start_date = min(min_vals)
                     end_date = max(max_vals)
-        except Exception as e:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            logger.debug(f"Could not extract date range from metadata: {e}")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        except Exception as e:
+            logger.debug(f"Could not extract date range from metadata: {e}")
 
         return {
             "path": path,

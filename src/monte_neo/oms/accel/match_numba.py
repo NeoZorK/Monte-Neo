@@ -49,15 +49,15 @@ def batch_terminal_long_flat(
                 notional = cash * size_fraction
                 entry = fill_px * (1.0 + slip_rate)
                 if entry <= 0.0 or notional <= 0.0:
-                    continue  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                    continue
                 qty = notional / entry
                 fee = abs(qty * entry) * fee_rate
                 cash -= qty * entry + fee
                 position = 1
         if position != 0 and qty != 0.0:
-            exit_px = close[n - 1] * (1.0 - slip_rate)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            proceeds = qty * exit_px  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            fee = abs(proceeds) * fee_rate  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            cash += proceeds - fee  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            exit_px = close[n - 1] * (1.0 - slip_rate)
+            proceeds = qty * exit_px
+            fee = abs(proceeds) * fee_rate
+            cash += proceeds - fee
         out[j] = cash / initial_cash - 1.0
     return out

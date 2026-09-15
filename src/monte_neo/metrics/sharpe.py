@@ -43,7 +43,7 @@ class SharpeRatioMetric:
             Annualized Sharpe ratio.
         """
         if not len(returns):
-            return 0.0  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return 0.0
 
         returns = np.array(returns)
 
@@ -77,7 +77,7 @@ class SharpeRatioMetric:
             Array of rolling Sharpe ratios.
         """
         if len(returns) < window:
-            return np.array([self.calculate(returns)])  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return np.array([self.calculate(returns)])
 
         returns = np.array(returns)
         rolling_sharpe = []
@@ -120,7 +120,7 @@ class SortinoRatioMetric:
             Annualized Sortino ratio.
         """
         if not len(returns):
-            return 0.0  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return 0.0
 
         returns = np.array(returns)
 
@@ -139,7 +139,7 @@ class SortinoRatioMetric:
         downside_std = np.std(downside_returns, ddof=1)
 
         if downside_std == 0:
-            return float("inf") if mean_excess > 0 else 0.0  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return float("inf") if mean_excess > 0 else 0.0
 
         # Annualize
         sortino = (mean_excess / downside_std) * np.sqrt(self.periods_per_year)
@@ -166,4 +166,4 @@ class SortinoRatioMetric:
         if len(below_target) < 2:
             return 0.0
 
-        return float(np.std(below_target, ddof=1))  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return float(np.std(below_target, ddof=1))

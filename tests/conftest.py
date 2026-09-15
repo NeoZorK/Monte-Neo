@@ -1,12 +1,5 @@
 """Pytest configuration."""
 
-from __future__ import annotations
-
-import os
-
-# Prefer Python bytecode coverage of @njit bodies (set before numba import).
-os.environ.setdefault("NUMBA_DISABLE_JIT", "1")
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -40,25 +33,3 @@ def sample_signals(sample_ohlcv):
     signals.iloc[30, 0] = 1  # Buy
     signals.iloc[40, 0] = -1  # Sell
     return signals
-
-
-def pytest_collection_modifyitems(config, items):
-    """Skip Apple-Silicon / real-MLX integration tests on non-Darwin hosts."""
-    import sys
-
-    if sys.platform == "darwin":
-        return
-    skip_mlx = pytest.mark.skip(reason="requires real MLX/Metal on Apple Silicon")
-    keywords = (
-        "test_gpu_",
-        "test_mlx_engine",
-        "GpuAcceleration",
-        "GpuCore",
-        "gpu_lazy",
-        "gpu_scenarios",
-        "gpu_engine_parallel",
-    )
-    for item in items:
-        node = item.nodeid
-        if any(k in node for k in keywords):
-            item.add_marker(skip_mlx)

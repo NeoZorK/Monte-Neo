@@ -19,9 +19,9 @@ class MatchConfig:
 
     def __post_init__(self) -> None:
         if min(self.commission_bps, self.slippage_bps) < 0.0:
-            raise ValueError("bps must be non-negative")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            raise ValueError("bps must be non-negative")
         if self.max_fill_qty < 0.0:
-            raise ValueError("max_fill_qty must be non-negative")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            raise ValueError("max_fill_qty must be non-negative")
         if self.fill_policy not in {"next_bar_open", "same_bar_close"}:
             raise ValueError("unsupported fill_policy")
 
@@ -46,12 +46,12 @@ def try_match_market(
 ) -> tuple[float, float, float] | None:
     """Return (fill_px, fee, fill_qty) or None if rejected."""
     if order.order_type != OrderType.MARKET or order.remaining <= 0.0:
-        return None  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return None
     if raw_px <= 0.0:
-        return None  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return None
     qty = _fill_qty(order, cfg)
     if qty <= 0.0:
-        return None  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return None
     px = _slip_px(raw_px, order.side, cfg.slippage_bps)
     fee = abs(qty * px) * (cfg.commission_bps * 1e-4)
     return px, fee, qty
@@ -66,17 +66,17 @@ def try_match_limit(
 ) -> tuple[float, float, float] | None:
     """Limit fill if bar range reaches limit; optional partial via max_fill_qty."""
     if order.order_type != OrderType.LIMIT or order.remaining <= 0.0:
-        return None  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return None
     hit = False
     if order.side == OrderSide.BUY and low <= order.limit_px:
         hit = True
     if order.side == OrderSide.SELL and high >= order.limit_px:
-        hit = True  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        hit = True
     if not hit:
         return None
     qty = _fill_qty(order, cfg)
     if qty <= 0.0:
-        return None  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return None
     px = _slip_px(order.limit_px, order.side, cfg.slippage_bps)
     fee = abs(qty * px) * (cfg.commission_bps * 1e-4)
     return px, fee, qty
@@ -102,5 +102,5 @@ def apply_tif_after_match(order: Order) -> None:
     """IOC cancels any remainder after a match attempt that left qty."""
     if order.tif != TimeInForce.IOC:
         return
-    if order.status == OrderStatus.PARTIAL:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        order.status = OrderStatus.CANCELED  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+    if order.status == OrderStatus.PARTIAL:
+        order.status = OrderStatus.CANCELED

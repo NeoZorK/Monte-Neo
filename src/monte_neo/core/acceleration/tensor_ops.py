@@ -4,8 +4,8 @@ Tensor operations for MLX-based acceleration.
 
 try:
     import mlx.core as mx
-except ImportError:  # optional: pip install "monte-neo[apple]"  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-    mx = None  # type: ignore[assignment]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+except ImportError:  # optional: pip install "monte-neo[apple]"
+    mx = None  # type: ignore[assignment]
 import numpy as np
 import pandas as pd
 
@@ -31,7 +31,7 @@ class TensorOps:
         Uses a sliding window approach with convolution.
         """
         if period <= 1:
-            return data  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return data
             
         # MLX conv1d default: input (N, L, C), weight (O, K, I)
         # N: batch, L: length, C: channels
@@ -43,7 +43,7 @@ class TensorOps:
             x = data[None, :, None]
         else:
             # (N, T, 1)
-            x = data[:, :, None]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            x = data[:, :, None]
             
         # Pad to keep same length
         # Padding for 'same' with causal behavior (pad left)
@@ -56,10 +56,10 @@ class TensorOps:
         
         out = mx.conv1d(x_padded, kernel)
         
-        if is_1d:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            return out.reshape(-1)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        if is_1d:
+            return out.reshape(-1)
         else:
-            return out.reshape(data.shape)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return out.reshape(data.shape)
 
     @staticmethod
     def generate_shuffle_scenarios(
@@ -75,15 +75,15 @@ class TensorOps:
         indices = mx.random.randint(0, time_steps-1, (n_scenarios, time_steps-1), key=key)
         
         shuffled_returns = returns[indices]
-        cum_returns = mx.cumprod(1 + shuffled_returns, axis=1)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        cum_returns = mx.cumprod(1 + shuffled_returns, axis=1)
         
-        ones = mx.ones((n_scenarios, 1))  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        factors = mx.concatenate([ones, cum_returns], axis=1)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        ones = mx.ones((n_scenarios, 1))
+        factors = mx.concatenate([ones, cum_returns], axis=1)
         
-        start_price = close[0]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        scenarios = start_price * factors  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        start_price = close[0]
+        scenarios = start_price * factors
         
-        return scenarios  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return scenarios
 
     @staticmethod
     def generate_noise_scenarios(
@@ -92,24 +92,24 @@ class TensorOps:
         """
         Generate scenarios with Gaussian noise injected into returns.
         """
-        time_steps = close.shape[0]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        returns = (close[1:] / close[:-1]) - 1.0  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        time_steps = close.shape[0]
+        returns = (close[1:] / close[:-1]) - 1.0
         
-        base_returns = mx.broadcast_to(returns, (n_scenarios, time_steps-1))  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        base_returns = mx.broadcast_to(returns, (n_scenarios, time_steps-1))
         
-        key = mx.random.key(seed)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        noise = mx.random.normal((n_scenarios, time_steps-1), scale=std_dev, key=key)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        key = mx.random.key(seed)
+        noise = mx.random.normal((n_scenarios, time_steps-1), scale=std_dev, key=key)
         
-        noisy_returns = base_returns + noise  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        noisy_returns = base_returns + noise
         
-        cum_returns = mx.cumprod(1 + noisy_returns, axis=1)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        ones = mx.ones((n_scenarios, 1))  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        factors = mx.concatenate([ones, cum_returns], axis=1)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        cum_returns = mx.cumprod(1 + noisy_returns, axis=1)
+        ones = mx.ones((n_scenarios, 1))
+        factors = mx.concatenate([ones, cum_returns], axis=1)
         
-        start_price = close[0]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        scenarios = start_price * factors  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        start_price = close[0]
+        scenarios = start_price * factors
         
-        return scenarios  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return scenarios
 
 
 # Maintain backward compatibility for functional imports if needed

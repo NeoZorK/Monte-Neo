@@ -118,12 +118,12 @@ class MonteNeoCLI:
 
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
+    parser = argparse.ArgumentParser(
         prog="monte-neo",
         description="Monte Carlo Indicator Generator Framework",
     )
 
-    parser.add_argument(  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
+    parser.add_argument(
         "--interactive",
         "-i",
         action="store_true",
@@ -131,32 +131,32 @@ def parse_args() -> argparse.Namespace:
         help="Run in interactive mode (default)",
     )
 
-    parser.add_argument(  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
+    parser.add_argument(
         "--config",
         "-c",
         type=str,
         help="Path to YAML config file (for headless mode)",
     )
 
-    parser.add_argument(  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
+    parser.add_argument(
         "--headless",
         action="store_true",
         help="Run in headless mode with config file",
     )
 
-    parser.add_argument(  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
+    parser.add_argument(
         "--export",
         type=str,
         help="Path to indicator JSON to export to C++",
     )
 
-    parser.add_argument(  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
+    parser.add_argument(
         "--evolve",
         type=str,
         help="Symbol to run AI evolution for (e.g. BTCUSDT)",
     )
 
-    parser.add_argument(  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
+    parser.add_argument(
         "--log-level",
         type=str,
         default="INFO",
@@ -164,14 +164,14 @@ def parse_args() -> argparse.Namespace:
         help="Log level",
     )
 
-    parser.add_argument(  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
+    parser.add_argument(
         "--version",
         "-v",
         action="version",
         version=f"monte-neo {__version__}",
     )
 
-    return parser.parse_args()  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
+    return parser.parse_args()
 
 
 def main() -> int:
@@ -194,8 +194,8 @@ def main() -> int:
             return app.run(interactive=args.interactive)
 
     except KeyboardInterrupt:
-        console.print("\n[yellow]Interrupted by user[/]")  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
-        sys.exit(0)  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
+        console.print("\n[yellow]Interrupted by user[/]")
+        sys.exit(0)
 
     except Exception as e:
         print_error(f"Error: {e}")
