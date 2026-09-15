@@ -16,7 +16,18 @@
   <img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+"/>
 </p>
 
-> Current: **v0.13.0** · [Changelog](docs/project/CHANGELOG.md) · [Docs index](docs/INDEX.md)
+> Current: **v0.14.0** · [Changelog](docs/project/CHANGELOG.md) · [Docs index](docs/INDEX.md)
+
+## What this is (and is not)
+
+**Job:** on Apple Silicon macOS, build and verify trading-domain strategies **very quickly**
+with fee-aware next-bar economics you can re-check (export + golden vectors).
+
+**Lanes:** research bar (primary speed path) · Monte Carlo research · paper OMS (validation).
+
+**Not a goal:** replace full event-driven production / live-bot platforms. Use each lane for
+its semantics — research sweep throughput is not an OMS event-loop claim.
+
 
 ## What it is
 
