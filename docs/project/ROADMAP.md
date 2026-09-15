@@ -1,4 +1,8 @@
-# Monte-Neo Roadmap (v0.14.0)
+# Monte-Neo Roadmap (v0.14.1)
+
+## v0.14.1
+- [x] No-hang Metal/MLX size gate → `cpu_numba` fallback
+- [x] README marketing pass + FAQ
 
 ## Project rules
 - [x] Silence / Evidence permission-gate / version sync / Swiss-watch quality
