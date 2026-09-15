@@ -3,6 +3,23 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.15.0] — 2026-09-15
+
+### Packaging / PyPI prep
+- `mlx` + PyObjC Metal moved to optional extra **`monte-neo[apple]`** (Linux/CI-friendly wheels)
+- Hatch version pattern strips leading `v` for PEP 440 distribution version
+- Richer `project` metadata: description, keywords, classifiers, `project.urls`
+- `docs/project/PACKAGING.md` — free-only PyPI / TestPyPI checklist
+
+### Docs / examples
+- Demo assets: `docs/assets/demo_sma_sweep.png`, `docs/assets/demo_memory_plan.png`
+- `examples/export_sma_sweep_quickstart.py` + examples README
+- README install notes for `[apple]` and git install
+
+### Notes
+- First PyPI upload still gated on TestPyPI + maintainer OK (see PACKAGING.md)
+- License remains **MIT**. No peer product names in this tree.
+
 ## [v0.14.1] — 2026-09-15
 
 ### Fixed

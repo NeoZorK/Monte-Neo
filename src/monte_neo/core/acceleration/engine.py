@@ -5,7 +5,10 @@ GPU Acceleration Engine (MLX).
 import time
 from typing import Any
 
-import mlx.core as mx
+try:
+    import mlx.core as mx
+except ImportError:  # optional: pip install "monte-neo[apple]"
+    mx = None  # type: ignore[assignment]
 import numpy as np
 import pandas as pd
 

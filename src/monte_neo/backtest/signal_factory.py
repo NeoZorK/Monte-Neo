@@ -51,7 +51,10 @@ def _sma_cross_grid_mlx(
     close: np.ndarray, fasts: np.ndarray, slows: np.ndarray
 ) -> np.ndarray:
     """MLX-accelerated SMA cross grid (float32). Falls back to Numba on error."""
-    import mlx.core as mx
+    try:
+        import mlx.core as mx
+    except ImportError:  # optional: pip install "monte-neo[apple]"
+        raise ImportError("mlx is required for the MLX signal path; pip install monte-neo[apple]") from None
 
     c_np = np.asarray(close, dtype=np.float32)
     n = c_np.shape[0]

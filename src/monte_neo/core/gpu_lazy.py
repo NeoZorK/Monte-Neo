@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import mlx.core as mx
+try:
+    import mlx.core as mx
+except ImportError:  # optional: pip install "monte-neo[apple]"
+    mx = None  # type: ignore[assignment]
 import numpy as np
 
 from monte_neo.metrics.calculator import MetricsCalculator
