@@ -146,3 +146,6 @@ A simplified guide to the Monte-Neo file structure.
 ### Utility Scripts (scripts/)
 - scripts/run_full_test_suite.sh - Master verification script (uv + docker)
 - scripts/check_system.py - Native verification of Genetic Algorithms & Dynamic Indicators
+
+- [FAQ](guides/FAQ.md) — Metal vs Numba, install, no-hang gate
+

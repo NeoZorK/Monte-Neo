@@ -5,8 +5,9 @@
 </p>
 
 <p align="center">
-  <strong>Monte Carlo indicator research</strong> and a fee-aware bar backtest engine<br/>
-  MIT · Python 3.11+ · Apple Silicon (Metal / MLX) friendly
+  <strong>Fast local research</strong> for trading strategies on Apple Silicon<br/>
+  Fee-aware next-bar economics · Monte Carlo · paper OMS<br/>
+  MIT · Python 3.11+ · Metal / MLX / Numba
 </p>
 
 <p align="center">
@@ -14,33 +15,48 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"/></a>
   <a href="https://github.com/NeoZorK/Monte-Neo/releases/latest"><img src="https://img.shields.io/github/v/release/NeoZorK/Monte-Neo?label=release" alt="Latest release"/></a>
   <img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+"/>
+  <img src="https://img.shields.io/badge/macOS-Apple%20Silicon-black.svg" alt="macOS Apple Silicon"/>
 </p>
 
-> Current: **v0.14.0** · [Changelog](docs/project/CHANGELOG.md) · [Docs index](docs/INDEX.md)
+> Current: **v0.14.1** · [Changelog](docs/project/CHANGELOG.md) · [Docs index](docs/INDEX.md) · [FAQ](docs/guides/FAQ.md)
 
 ## What this is (and is not)
 
 **Job:** on Apple Silicon macOS, build and verify trading-domain strategies **very quickly**
-with fee-aware next-bar economics you can re-check (export + golden vectors).
+with fee-aware next-bar economics you can re-check (export API + golden vectors).
 
 **Lanes:** research bar (primary speed path) · Monte Carlo research · paper OMS (validation).
 
-**Not a goal:** replace full event-driven production / live-bot platforms. Use each lane for
-its semantics — research sweep throughput is not an OMS event-loop claim.
+**Not a goal:** replace full event-driven production / live-bot platforms. Research sweep
+throughput is not an OMS event-loop claim.
 
+## Why Monte-Neo
 
-## What it is
+| Advantage | What you get |
+|-----------|----------------|
+| Local Apple Silicon speed | Metal economics + Numba (MLX optional for signals) |
+| Fee-aware research bar | Next-bar fills, costs (bps), SL/TP/trail, funding, sessions |
+| Honest export API | `export_single` / `export_batch` / `export_sma_sweep` + golden vectors |
+| 16GB-class memory planner | `plan_research_bytes` + **no-hang** Metal size gate → `cpu_numba` fallback |
+| Clear non-goals | macOS research tool first; paper OMS is a separate lane |
+| MIT | Use, fork, and ship without drama |
 
-- **Monte Carlo research tooling** for trading indicators (noise, shuffle, sensitivity, walk-forward helpers).
-- **Interactive CLI** for data download (Binance), generation workflows, and charts.
-- **Fee-aware research bar engine** (`monte_neo.backtest`): next-bar fills, costs (bps), SL/TP/trail, funding, leverage, sessions, batch sweeps, shared-cash portfolio, journal.
-- **Paper OMS lane** (`monte_neo.oms`): bar + tick/L2 matching, venue adapters (paper default; live env-gated dry-run).
-- Optional **Metal / MLX** acceleration on Apple Silicon (16GB-class hosts first).
+## Install
 
-## What it is not
+Until the package is on PyPI (planned after docs/API polish):
 
-- Not a funded live trading bot by default (live adapters require explicit env flags and stay dry-run unless carefully enabled).
-- Not a claim that research-bar batch throughput equals full OMS event-loop cost — use each lane for its semantics.
+```bash
+# pip
+pip install "git+https://github.com/NeoZorK/Monte-Neo.git"
+
+# or uv (recommended in-repo)
+git clone https://github.com/NeoZorK/Monte-Neo.git
+cd Monte-Neo
+uv sync
+```
+
+**Requirements:** Python **3.11+**. Best experience on **Apple Silicon** macOS. Numba CPU
+paths work more broadly; Metal/MLX need macOS + Apple GPU.
 
 ## Quick start
 
@@ -50,7 +66,27 @@ uv run monte-neo
 uv run pytest tests -n auto
 ```
 
-### Bar backtest (minimal)
+### Research export (recommended)
+
+```python
+from monte_neo.backtest import (
+    ExecutionModel,
+    export_sma_sweep,
+    synthetic_ohlcv,
+)
+
+ohlc = synthetic_ohlcv(100_000, seed=42)
+model = ExecutionModel(commission_bps=5.0, slippage_bps=5.0, warmup_bars=50)
+out = export_sma_sweep(
+    ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"],
+    combos=16,
+    model=model,
+    device="auto",  # Metal when safe; else cpu_numba (see fallback_reason)
+)
+print(out["device"], out.get("fallback_reason"), out["combos"])
+```
+
+### Single bar backtest
 
 ```python
 from monte_neo.backtest import (
@@ -76,21 +112,19 @@ out = run_bar_backtest(
 print(out["total_return"], out["metrics"]["max_drawdown"], len(out["trades"]))
 ```
 
-Details: [docs/project/backtest_engine.md](docs/project/backtest_engine.md).
+More: [docs/guides/quick-start.md](docs/guides/quick-start.md) · [backtest engine](docs/project/backtest_engine.md) · [FAQ](docs/guides/FAQ.md)
 
-### Paper OMS (minimal)
+## How to use (research workflow)
 
-```python
-from monte_neo.oms import SignalStrategy, run_oms_bar_backtest
+1. Load or synthesize OHLCV (`synthetic_ohlcv` / your frame → `frame_to_ohlc`).
+2. Set an `ExecutionModel` (fees, SL/TP, sessions, side mode).
+3. Sweep with `export_sma_sweep` / `export_batch`, or a single `export_single`.
+4. Check `device`, `signal_device`, and `fallback_reason` when using `auto`.
+5. Optional depth: `equity_stride`, journal, `plan_research_bytes` / `memory` on exports.
+6. Paper OMS (`monte_neo.oms`) only when you need event-lane validation — not for sweep cps claims.
 
-out = run_oms_bar_backtest(
-    open_, high, low, close,
-    SignalStrategy(signal, size_fraction=0.25),
-    device="cpu_numba",
-)
-```
-
-Details: [docs/project/oms_engine.md](docs/project/oms_engine.md).
+**Devices:** `auto` · `metal` · `cpu_numba` (and MLX where signal paths allow). Oversized Metal
+jobs demote to Numba instead of hanging (v0.14.1+).
 
 ## Features (honest)
 
@@ -98,7 +132,9 @@ Details: [docs/project/oms_engine.md](docs/project/oms_engine.md).
 |------|--------|
 | MC indicator / robustness workflows | Available via CLI and library |
 | Fee-aware research bar engine | `monte_neo.backtest` |
-| Paper OMS + venue adapters | `monte_neo.oms` (v0.5.0+) |
+| Research export + golden vectors | `export_*` / `verify_golden_vectors` |
+| Memory / no-hang accelerator gate | `plan_research_bytes` / `decide_research_accelerator` |
+| Paper OMS + venue adapters | `monte_neo.oms` |
 | Metal / MLX / Numba device select | Best-effort on Apple Silicon; CPU fallbacks |
 | Docker | Supported for headless/CI-style runs |
 
@@ -107,7 +143,7 @@ Details: [docs/project/oms_engine.md](docs/project/oms_engine.md).
 ```
 Monte-Neo/
 ├── src/monte_neo/
-│   ├── backtest/      # Research bar engine
+│   ├── backtest/      # Research bar engine + export
 │   ├── oms/           # Paper OMS + accel
 │   ├── core/          # Generator / Metal bridges
 │   ├── data/          # Market data downloaders
@@ -120,10 +156,10 @@ Monte-Neo/
 └── docker/
 ```
 
-## Requirements
+## Screenshots / demos
 
-- Python **3.11+**
-- Dependencies: see `pyproject.toml` (`uv sync`)
+Screenshots and a short demo GIF will live under `docs/assets/` (CLI help, sweep table,
+equity snippet, memory plan). Open an issue if you want a particular view prioritized.
 
 ## License
 
