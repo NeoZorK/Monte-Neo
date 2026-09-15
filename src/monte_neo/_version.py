@@ -1,4 +1,4 @@
 # Single source of truth for the project version.
-# Pattern: v0.0.1 -> v0.0.2 -> ... (leading "v" required).
-# Git tags and GitHub Releases must match this string exactly.
-__version__ = "v0.14.1"
+# Pattern: v0.0.1 -> v0.0.2 -> ... (leading "v" required for git tags / Releases).
+# Hatch strips the leading "v" for the PyPI/PEP 440 distribution version.
+__version__ = "v0.15.0"

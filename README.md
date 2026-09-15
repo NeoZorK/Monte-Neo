@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/macOS-Apple%20Silicon-black.svg" alt="macOS Apple Silicon"/>
 </p>
 
-> Current: **v0.14.1** · [Changelog](docs/project/CHANGELOG.md) · [Docs index](docs/INDEX.md) · [FAQ](docs/guides/FAQ.md)
+> Current: **v0.15.0** · [Changelog](docs/project/CHANGELOG.md) · [Docs index](docs/INDEX.md) · [FAQ](docs/guides/FAQ.md)
 
 ## What this is (and is not)
 
@@ -43,20 +43,27 @@ throughput is not an OMS event-loop claim.
 
 ## Install
 
-Until the package is on PyPI (planned after docs/API polish):
+**From git (today — free):**
 
 ```bash
-# pip
 pip install "git+https://github.com/NeoZorK/Monte-Neo.git"
-
-# or uv (recommended in-repo)
-git clone https://github.com/NeoZorK/Monte-Neo.git
-cd Monte-Neo
-uv sync
+# Apple Silicon Metal / MLX:
+pip install "monte-neo[apple] @ git+https://github.com/NeoZorK/Monte-Neo.git"
 ```
 
+**In-repo (recommended for contributors):**
+
+```bash
+git clone https://github.com/NeoZorK/Monte-Neo.git
+cd Monte-Neo
+uv sync --extra apple   # on Apple Silicon; omit --extra apple on Linux/CI
+```
+
+**PyPI:** packaging is prepared (`[apple]` extras, PEP 440 wheel version). First upload
+waits on TestPyPI + maintainer OK — see [PACKAGING.md](docs/project/PACKAGING.md).
+
 **Requirements:** Python **3.11+**. Best experience on **Apple Silicon** macOS. Numba CPU
-paths work more broadly; Metal/MLX need macOS + Apple GPU.
+paths work more broadly; Metal/MLX are the `[apple]` extra.
 
 ## Quick start
 
@@ -158,8 +165,14 @@ Monte-Neo/
 
 ## Screenshots / demos
 
-Screenshots and a short demo GIF will live under `docs/assets/` (CLI help, sweep table,
-equity snippet, memory plan). Open an issue if you want a particular view prioritized.
+<p align="center">
+  <img src="docs/assets/demo_sma_sweep.png" alt="SMA sweep demo" width="720"/>
+</p>
+<p align="center">
+  <img src="docs/assets/demo_memory_plan.png" alt="Memory plan demo" width="720"/>
+</p>
+
+More under `docs/assets/`. Runnable script: [`examples/export_sma_sweep_quickstart.py`](examples/export_sma_sweep_quickstart.py).
 
 ## License
 

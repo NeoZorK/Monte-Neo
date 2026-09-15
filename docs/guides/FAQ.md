@@ -2,7 +2,7 @@
 
 ## Does Monte-Neo hang on very large bars (e.g. 10M)?
 
-No (as of **v0.14.1**). `device="auto"` estimates Metal/MLX shared and host budgets before dispatch. If the job is too large for a safe Metal path on a 16GB-class Mac, it **falls back to `cpu_numba`** and sets `fallback_reason` (for example `metal_max_bars_exceeded`). You should never see an unbounded GPU wait.
+No (as of **v0.14.1+**). `device="auto"` estimates Metal/MLX shared and host budgets before dispatch. If the job is too large for a safe Metal path on a 16GB-class Mac, it **falls back to `cpu_numba`** and sets `fallback_reason` (for example `metal_max_bars_exceeded`). You should never see an unbounded GPU wait.
 
 Override budgets with:
 
@@ -26,11 +26,13 @@ No. The primary job is **fast local research** on macOS (fee-aware next-bar econ
 
 ```bash
 pip install "git+https://github.com/NeoZorK/Monte-Neo.git"
-# or with uv:
-uv pip install "git+https://github.com/NeoZorK/Monte-Neo.git"
+# Metal/MLX on Apple Silicon:
+pip install "monte-neo[apple] @ git+https://github.com/NeoZorK/Monte-Neo.git"
 ```
 
-Or clone and `uv sync` / editable install from the repo root.
+Or clone and `uv sync --extra apple` from the repo root.
+
+PyPI upload is prepared but not required — see `docs/project/PACKAGING.md`.
 
 ## Python / hardware?
 
