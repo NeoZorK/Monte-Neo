@@ -32,25 +32,25 @@ class ConditionRule:
         val2 = self._get_value(data, self.indicator2)
 
         if self.operator == ">":
-            return val1 > val2  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return val1 > val2
         elif self.operator == "<":
-            return val1 < val2  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return val1 < val2
         elif self.operator == ">=":
-            return val1 >= val2  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return val1 >= val2
         elif self.operator == "<=":
-            return val1 <= val2  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return val1 <= val2
         elif self.operator == "==":
-            return val1 == val2  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return val1 == val2
         elif self.operator == "crosses_above":
             return (val1 > val2) & (val1.shift(1) <= val2.shift(1))
         elif self.operator == "crosses_below":
             return (val1 < val2) & (val1.shift(1) >= val2.shift(1))
         else:
-            raise ValueError(f"Unknown operator: {self.operator}")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            raise ValueError(f"Unknown operator: {self.operator}")
 
     def _get_value(self, data: pd.DataFrame, indicator: str | float) -> pd.Series:
         if isinstance(indicator, (int, float)):
-            return pd.Series(indicator, index=data.index)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return pd.Series(indicator, index=data.index)
         return data[indicator]
 
 
@@ -71,15 +71,15 @@ class CustomIndicatorBuilder:
 
     def add_ema(self, name: str, period: int) -> CustomIndicatorBuilder:
         """Add EMA component."""
-        self._components.append((name, TechnicalIndicators.ema, {"period": period}))  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        self._parameters[f"{name}_period"] = period  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        return self  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        self._components.append((name, TechnicalIndicators.ema, {"period": period}))
+        self._parameters[f"{name}_period"] = period
+        return self
 
     def add_rsi(self, name: str, period: int = 14) -> CustomIndicatorBuilder:
         """Add RSI component."""
-        self._components.append((name, TechnicalIndicators.rsi, {"period": period}))  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        self._parameters[f"{name}_period"] = period  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        return self  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        self._components.append((name, TechnicalIndicators.rsi, {"period": period}))
+        self._parameters[f"{name}_period"] = period
+        return self
 
     def add_entry_rule(
         self,
@@ -161,8 +161,8 @@ class CustomIndicator(BaseIndicator):
         return signals
 
     def get_min_periods(self) -> int:
-        max_period = 1  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        for _, _, params in self._components:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            period = params.get("period", 1)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            max_period = max(max_period, period)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        return max_period  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        max_period = 1
+        for _, _, params in self._components:
+            period = params.get("period", 1)
+            max_period = max(max_period, period)
+        return max_period

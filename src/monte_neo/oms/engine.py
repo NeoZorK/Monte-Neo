@@ -75,9 +75,9 @@ class OmsEngine:
             order.qty = max(self.account.cash * frac, 0.0)
             order.tag = "enter"
         if order.qty <= 0.0 and order.tag != "enter":
-            order.status = OrderStatus.REJECTED  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            self.blotter.record_order(order)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            return order  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            order.status = OrderStatus.REJECTED
+            self.blotter.record_order(order)
+            return order
         self.blotter.record_order(order)
         self._working.append(order)
         return order
@@ -88,15 +88,15 @@ class OmsEngine:
         return gid
 
     def submit_bracket(self, **kwargs):  # thin alias
-        from monte_neo.oms.bracket import submit_bracket as _sb  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        from monte_neo.oms.bracket import submit_bracket as _sb
 
-        return _sb(self, **kwargs)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return _sb(self, **kwargs)
 
     def cancel(self, order_id: int) -> bool:
-        for o in self._working:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            if o.order_id == order_id and cancel_order(o):  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                return True  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        return False  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        for o in self._working:
+            if o.order_id == order_id and cancel_order(o):
+                return True
+        return False
 
     def _cancel_oco_siblings(self, filled: Order) -> None:
         if filled.oco_group <= 0:
@@ -112,7 +112,7 @@ class OmsEngine:
     ) -> float:
         if self.match.fill_policy == "next_bar_open":
             if i + 1 >= open_.shape[0]:
-                return float(close[i])  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                return float(close[i])
             return float(open_[i + 1])
         return float(close[i])
 
@@ -126,14 +126,14 @@ class OmsEngine:
         low: float,
     ) -> None:
         if order.status in {OrderStatus.FILLED, OrderStatus.CANCELED, OrderStatus.REJECTED}:
-            return  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return
         matched = None
         if order.order_type == OrderType.MARKET:
             if order.tag == "enter" and order.filled_qty == 0.0:
                 px_est = _slip_est(fill_raw, order.side, self.match.slippage_bps)
                 if px_est <= 0.0 or self.account.cash <= 0.0:
-                    order.status = OrderStatus.REJECTED  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    return  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                    order.status = OrderStatus.REJECTED
+                    return
                 notional = min(order.qty, self.account.cash)
                 order.qty = notional / px_est
                 order.tag = "enter_sized"
@@ -179,7 +179,7 @@ class OmsEngine:
         c = np.asarray(close, dtype=np.float64)
         n = c.shape[0]
         if not (o.shape == h.shape == l.shape == c.shape) or n < 2:
-            raise ValueError("OHLC must be equal-length 1-D with >= 2 bars")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            raise ValueError("OHLC must be equal-length 1-D with >= 2 bars")
         equity = np.empty(n, dtype=np.float64)
         peak = self.account.initial_cash
         max_dd = 0.0
@@ -191,7 +191,7 @@ class OmsEngine:
             still: list[Order] = []
             for order in self._working:
                 if order.status == OrderStatus.CANCELED:
-                    continue  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                    continue
                 if order.order_type == OrderType.MARKET and order.created_i == i - 1:
                     self._execute_order(
                         order, i=i - 1, fill_raw=float(o[i]), high=float(h[i]), low=float(l[i])

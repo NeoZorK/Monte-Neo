@@ -15,7 +15,7 @@ logger = get_logger(__name__)
 
 def rsi(data, period=14):
     if isinstance(data, dict):
-        close = pd.Series(data['close'])  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        close = pd.Series(data['close'])
     else:
         close = data['close'] if hasattr(data, 'close') else data
     delta = close.diff()
@@ -26,7 +26,7 @@ def rsi(data, period=14):
 
 def sma(data, period=20):
     if isinstance(data, dict):
-        close = pd.Series(data['close'])  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        close = pd.Series(data['close'])
     else:
         close = data['close'] if hasattr(data, 'close') else data
     return close.rolling(window=period).mean()
@@ -77,7 +77,7 @@ def evaluate_fast_signals(compiled_code: Callable, data: pd.DataFrame | np.ndarr
         # If it's a numpy array, check dimensions
         if data.ndim == 1:
             # Only close prices provided (typical for MC scenarios)
-            fast_data = {  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            fast_data = {
                 "open": pd.Series(data),
                 "high": pd.Series(data),
                 "low": pd.Series(data),
@@ -103,14 +103,14 @@ def evaluate_fast_signals(compiled_code: Callable, data: pd.DataFrame | np.ndarr
         
         # Ensure vals is a numpy array and has dimensions
         if not isinstance(vals, np.ndarray):
-            vals = np.asarray([vals] * n_rows)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            vals = np.asarray([vals] * n_rows)
         elif vals.ndim == 0:
-            vals = np.full(n_rows, vals)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            vals = np.full(n_rows, vals)
         elif len(vals) != n_rows:
             # Handle mismatch (e.g. from rolling)
-            new_vals = np.full(n_rows, np.nan)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            new_vals[-len(vals):] = vals  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            vals = new_vals  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            new_vals = np.full(n_rows, np.nan)
+            new_vals[-len(vals):] = vals
+            vals = new_vals
 
         sig_vals = np.zeros(n_rows, dtype=np.float32)
         
@@ -126,6 +126,6 @@ def evaluate_fast_signals(compiled_code: Callable, data: pd.DataFrame | np.ndarr
         sig_vals[mask_pos] = 1.0
         sig_vals[mask_neg] = -1.0
         return sig_vals
-    except Exception as e:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        logger.debug(f"Error in fast evaluation: {e}")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        return np.zeros(n_rows, dtype=np.float32)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+    except Exception as e:
+        logger.debug(f"Error in fast evaluation: {e}")
+        return np.zeros(n_rows, dtype=np.float32)

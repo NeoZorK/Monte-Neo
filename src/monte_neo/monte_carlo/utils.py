@@ -15,7 +15,7 @@ def summarize_metrics(results: list[dict]) -> dict:
         Summary statistics.
     """
     if not results:
-        return {}  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return {}
 
     # Collect all metric values
     metric_values: dict[str, list] = {}
@@ -34,11 +34,11 @@ def summarize_metrics(results: list[dict]) -> dict:
         # We replace inf with nan and use nan-aware functions
         is_inf = np.isinf(arr)
         if np.any(is_inf):
-            arr[is_inf] = np.nan  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            arr[is_inf] = np.nan
 
         # Check if we have any valid data left
         if np.all(np.isnan(arr)):
-            summary[name] = {  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            summary[name] = {
                 "mean": 0.0,
                 "std": 0.0,
                 "min": 0.0,
@@ -47,7 +47,7 @@ def summarize_metrics(results: list[dict]) -> dict:
                 "p5": 0.0,
                 "p95": 0.0,
             }
-            continue  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            continue
 
         summary[name] = {
             "mean": float(np.nanmean(arr)),

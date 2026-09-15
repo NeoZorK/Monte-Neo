@@ -49,7 +49,7 @@ class MACDIndicator(BaseIndicator):
         if isinstance(data, pd.DataFrame):
             close = data["close"].to_numpy()
         else:
-            close = data[:, 3] if data.ndim > 1 else data  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            close = data[:, 3] if data.ndim > 1 else data
 
         fast_p = int(round(self._parameters["fast"]))
         slow_p = int(round(self._parameters["slow"]))

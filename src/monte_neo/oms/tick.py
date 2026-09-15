@@ -48,7 +48,7 @@ def ticks_to_ohlc(ticks: np.ndarray, *, bars: int) -> dict[str, np.ndarray]:
     """Downsample ticks into equal-count OHLC bars."""
     n = int(ticks.shape[0])
     if bars < 1 or n < bars:
-        raise ValueError("need n_ticks >= bars >= 1")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        raise ValueError("need n_ticks >= bars >= 1")
     chunk = n // bars
     open_ = np.empty(bars, dtype=np.float64)
     high = np.empty(bars, dtype=np.float64)

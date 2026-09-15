@@ -49,7 +49,7 @@ class BinanceWebsocketStreamer:
         """
         self._callbacks: list[Callable[[dict], None]] = []
         if callback:
-            self._callbacks.append(callback)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            self._callbacks.append(callback)
         self._client = WebsocketClient(
             stream_url=stream_url or "wss://stream.binance.com:9443",
             on_message=self._dispatch_message,
@@ -85,8 +85,8 @@ class BinanceWebsocketStreamer:
             try:
                 self._started = False  # Set flag first to prevent auto-reconnect
                 self._client.stop()
-            except Exception as exc:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                logger.error("Error stopping WebSocket: %s", exc)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            except Exception as exc:
+                logger.error("Error stopping WebSocket: %s", exc)
 
     def subscribe_kline(
         self,
@@ -148,36 +148,36 @@ class BinanceWebsocketStreamer:
             callback: Handler for incoming messages.
             stream_id: Client message id.
         """
-        normalized_streams = self._normalize_streams(streams)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        for stream in normalized_streams:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            self._active_streams.add(stream)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        normalized_streams = self._normalize_streams(streams)
+        for stream in normalized_streams:
+            self._active_streams.add(stream)
 
-        self.start()  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        self._register_callback(callback)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        self._client.subscribe(stream=normalized_streams, id=stream_id)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        self.start()
+        self._register_callback(callback)
+        self._client.subscribe(stream=normalized_streams, id=stream_id)
 
     def _normalize_symbol(self, symbol: str) -> str:
         normalized = symbol.strip()
         if not normalized:
-            raise ValueError("Symbol must be non-empty")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            raise ValueError("Symbol must be non-empty")
         return normalized.lower()
 
     def _normalize_interval(self, interval: str) -> str:
         normalized = interval.strip()
         if normalized in self._UPPER_INTERVALS:
-            return normalized  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return normalized
         lower = normalized.lower()
         if lower in self._LOWER_INTERVALS:
             return lower
         raise ValueError(f"Unsupported interval: {interval}")
 
     def _normalize_streams(self, streams: list[str]) -> list[str]:
-        if not streams:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            raise ValueError("Streams list must be non-empty")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        normalized = [stream.strip() for stream in streams]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        if any(not stream for stream in normalized):  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            raise ValueError("Streams list contains empty stream")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        return normalized  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        if not streams:
+            raise ValueError("Streams list must be non-empty")
+        normalized = [stream.strip() for stream in streams]
+        if any(not stream for stream in normalized):
+            raise ValueError("Streams list contains empty stream")
+        return normalized
 
     def _register_callback(self, callback: Callable[[dict], None]) -> None:
         if callback not in self._callbacks:
@@ -185,23 +185,23 @@ class BinanceWebsocketStreamer:
 
     def _dispatch_message(self, _, message: Any) -> None:
         if not self._callbacks:
-            return  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return
         if isinstance(message, str):
-            import json  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            try:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                payload = json.loads(message)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            except Exception:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                payload = {"message": message}  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            import json
+            try:
+                payload = json.loads(message)
+            except Exception:
+                payload = {"message": message}
         elif isinstance(message, dict):
             payload = message
         else:
-            payload = {"message": message}  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            payload = {"message": message}
             
         for callback in self._callbacks:
             try:
                 callback(payload)
-            except Exception as exc:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                logger.exception("WebSocket callback error: %s", exc)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            except Exception as exc:
+                logger.exception("WebSocket callback error: %s", exc)
 
     def _handle_error(self, error: Any) -> None:
         logger.error("WebSocket error: %s", error)
@@ -209,23 +209,23 @@ class BinanceWebsocketStreamer:
 
     def _handle_close(self, *args) -> None:
         """Handle WebSocket close event."""
-        logger.info("WebSocket connection closed")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        if self._started:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            logger.warning("Unexpected close, attempting reconnect...")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            self._attempt_reconnect()  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        logger.info("WebSocket connection closed")
+        if self._started:
+            logger.warning("Unexpected close, attempting reconnect...")
+            self._attempt_reconnect()
 
     def _attempt_reconnect(self) -> None:
         """Attempt to reconnect to WebSocket stream with backoff."""
         if not self._started:
-            return  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return
 
         if self._reconnect_attempts >= self._max_reconnect_attempts:
-            logger.error(  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            logger.error(
                 "Max reconnect attempts (%d) reached. Giving up.",
                 self._max_reconnect_attempts,
             )
-            self._started = False  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            return  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            self._started = False
+            return
 
         self._reconnect_attempts += 1
         delay = min(2**self._reconnect_attempts, 60)  # Exponential backoff
@@ -242,7 +242,7 @@ class BinanceWebsocketStreamer:
             # Force stop old connection to be safe
             try:
                 self._client.stop()
-            except Exception:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            except Exception:
                 pass
 
             self._client.start()
@@ -254,7 +254,7 @@ class BinanceWebsocketStreamer:
 
             logger.info("Reconnect successful")
 
-        except Exception as exc:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            logger.error("Reconnect failed: %s", exc)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        except Exception as exc:
+            logger.error("Reconnect failed: %s", exc)
             # If immediate reconnect failed, try again recursively
-            self._attempt_reconnect()  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            self._attempt_reconnect()

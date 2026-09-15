@@ -85,13 +85,13 @@ def _merge_yaml_config(config: Config, path: Path) -> Config:
     if "data" in yaml_config:
         data = yaml_config["data"]
         if "dir" in data:
-            config.data_dir = Path(data["dir"])  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            config.data_dir = Path(data["dir"])
         if "symbol" in data:
             config.default_symbol = data["symbol"]
         if "timeframe" in data:
             config.default_timeframe = data["timeframe"]
         if "auto_download" in data:
-            config.auto_download_data = data["auto_download"]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            config.auto_download_data = data["auto_download"]
 
     # Metrics settings
     if "metrics" in yaml_config:
@@ -101,30 +101,30 @@ def _merge_yaml_config(config: Config, path: Path) -> Config:
         if "sharpe_ratio" in metrics:
             config.target_sharpe_ratio = metrics["sharpe_ratio"]
         if "max_drawdown" in metrics:
-            config.target_max_drawdown = metrics["max_drawdown"]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            config.target_max_drawdown = metrics["max_drawdown"]
 
     # Monte Carlo settings
     if "monte_carlo" in yaml_config:
-        mc = yaml_config["monte_carlo"]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        if "iterations" in mc:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            config.mc_iterations = mc["iterations"]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        mc = yaml_config["monte_carlo"]
+        if "iterations" in mc:
+            config.mc_iterations = mc["iterations"]
 
     # Hardware settings
     if "hardware" in yaml_config:
-        hw = yaml_config["hardware"]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        if "use_gpu" in hw:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            config.use_gpu = hw["use_gpu"]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        if "gpu_precision" in hw:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            config.gpu_precision = hw["gpu_precision"]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        if "metal_driver" in hw:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            config.metal_driver = hw["metal_driver"]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        hw = yaml_config["hardware"]
+        if "use_gpu" in hw:
+            config.use_gpu = hw["use_gpu"]
+        if "gpu_precision" in hw:
+            config.gpu_precision = hw["gpu_precision"]
+        if "metal_driver" in hw:
+            config.metal_driver = hw["metal_driver"]
 
     return config
 
 
 def save_config(config: Config, path: str | Path) -> None:
     """Save configuration to YAML file."""
-    data = {  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+    data = {
         "data": {
             "dir": str(config.data_dir),
             "symbol": config.default_symbol,
@@ -148,5 +148,5 @@ def save_config(config: Config, path: str | Path) -> None:
         },
     }
 
-    with open(path, "w") as f:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        yaml.dump(data, f, default_flow_style=False)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+    with open(path, "w") as f:
+        yaml.dump(data, f, default_flow_style=False)

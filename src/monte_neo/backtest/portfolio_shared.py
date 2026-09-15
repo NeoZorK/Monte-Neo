@@ -11,7 +11,7 @@ from monte_neo.backtest.model import ExecutionModel
 
 
 @njit(cache=True)
-def _portfolio_core(
+def _portfolio_core(  # pragma: no cover  # njit body; covered via public API / subprocess
     open_: np.ndarray,
     high: np.ndarray,
     low: np.ndarray,
@@ -55,9 +55,9 @@ def _portfolio_core(
 
     for i in range(n):
         if fund_rate > 0.0:
-            for s in range(n_sym):  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                if position[s] != 0 and qty[s] != 0.0:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    cash -= abs(qty[s] * close[s, i]) * fund_rate  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            for s in range(n_sym):
+                if position[s] != 0 and qty[s] != 0.0:
+                    cash -= abs(qty[s] * close[s, i]) * fund_rate
         mtm = cash
         for s in range(n_sym):
             mtm += qty[s] * close[s, i]
@@ -73,43 +73,43 @@ def _portfolio_core(
                 continue
             if not (use_sl or use_tp or use_trail):
                 continue
-            pos = int(position[s])  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            hit = 0  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            exit_raw = 0.0  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            if pos > 0:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                if use_trail and high[s, i] > peak_px[s]:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    peak_px[s] = high[s, i]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    trail_stop = peak_px[s] * (1.0 - trail_pct * 0.01)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    if (not use_sl) or trail_stop > sl_px[s]:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                        sl_px[s] = trail_stop  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                stop_lvl = sl_px[s] if (use_sl or use_trail) else 0.0  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                if (use_sl or use_trail) and low[s, i] <= stop_lvl:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    hit = 5 if use_trail else 2  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    exit_raw = stop_lvl  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                elif use_tp and high[s, i] >= tp_px[s]:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    hit = 3  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    exit_raw = tp_px[s]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            pos = int(position[s])
+            hit = 0
+            exit_raw = 0.0
+            if pos > 0:
+                if use_trail and high[s, i] > peak_px[s]:
+                    peak_px[s] = high[s, i]
+                    trail_stop = peak_px[s] * (1.0 - trail_pct * 0.01)
+                    if (not use_sl) or trail_stop > sl_px[s]:
+                        sl_px[s] = trail_stop
+                stop_lvl = sl_px[s] if (use_sl or use_trail) else 0.0
+                if (use_sl or use_trail) and low[s, i] <= stop_lvl:
+                    hit = 5 if use_trail else 2
+                    exit_raw = stop_lvl
+                elif use_tp and high[s, i] >= tp_px[s]:
+                    hit = 3
+                    exit_raw = tp_px[s]
             else:
-                if use_trail and low[s, i] < peak_px[s]:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    peak_px[s] = low[s, i]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    trail_stop = peak_px[s] * (1.0 + trail_pct * 0.01)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    if (not use_sl) or trail_stop < sl_px[s]:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                        sl_px[s] = trail_stop  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                stop_lvl = sl_px[s] if (use_sl or use_trail) else 0.0  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                if (use_sl or use_trail) and high[s, i] >= stop_lvl:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    hit = 5 if use_trail else 2  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    exit_raw = stop_lvl  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                elif use_tp and low[s, i] <= tp_px[s]:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    hit = 3  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    exit_raw = tp_px[s]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            if hit != 0:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                exit_px = exit_raw * (1.0 - float(pos) * slip_rate)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                proceeds = qty[s] * exit_px  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                fee = abs(proceeds) * fee_rate  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                cash += proceeds - fee  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                fill_events += 1  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                qty[s] = 0.0  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                position[s] = 0  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                if use_trail and low[s, i] < peak_px[s]:
+                    peak_px[s] = low[s, i]
+                    trail_stop = peak_px[s] * (1.0 + trail_pct * 0.01)
+                    if (not use_sl) or trail_stop < sl_px[s]:
+                        sl_px[s] = trail_stop
+                stop_lvl = sl_px[s] if (use_sl or use_trail) else 0.0
+                if (use_sl or use_trail) and high[s, i] >= stop_lvl:
+                    hit = 5 if use_trail else 2
+                    exit_raw = stop_lvl
+                elif use_tp and low[s, i] <= tp_px[s]:
+                    hit = 3
+                    exit_raw = tp_px[s]
+            if hit != 0:
+                exit_px = exit_raw * (1.0 - float(pos) * slip_rate)
+                proceeds = qty[s] * exit_px
+                fee = abs(proceeds) * fee_rate
+                cash += proceeds - fee
+                fill_events += 1
+                qty[s] = 0.0
+                position[s] = 0
         equity[i] = cash
         for s in range(n_sym):
             equity[i] += qty[s] * close[s, i]
@@ -119,7 +119,7 @@ def _portfolio_core(
         for s in range(n_sym):
             raw = int(signals[s, i])
             if long_short:
-                target = 1 if raw > 0 else (-1 if raw < 0 else 0)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                target = 1 if raw > 0 else (-1 if raw < 0 else 0)
             else:
                 target = 1 if raw > 0 else 0
             if target == position[s]:
@@ -136,13 +136,13 @@ def _portfolio_core(
                 position[s] = 0
             if target != 0:
                 if not session_ok[i]:
-                    continue  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                    continue
                 notional = cash * size_fraction * fill_fraction * leverage
                 if notional <= 0.0 or cash <= 0.0:
-                    continue  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                    continue
                 entry = fill_px * (1.0 + float(target) * slip_rate)
                 if entry <= 0.0:
-                    continue  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                    continue
                 new_qty = (notional / entry) * float(target)
                 fee = abs(new_qty * entry) * fee_rate
                 cash -= new_qty * entry + fee
@@ -152,19 +152,19 @@ def _portfolio_core(
                 entry_px[s] = entry
                 peak_px[s] = entry
                 if use_sl:
-                    sl_px[s] = (  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                    sl_px[s] = (
                         entry * (1.0 - sl_pct * 0.01)
                         if target > 0
                         else entry * (1.0 + sl_pct * 0.01)
                     )
                 elif use_trail:
-                    sl_px[s] = (  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                    sl_px[s] = (
                         entry * (1.0 - trail_pct * 0.01)
                         if target > 0
                         else entry * (1.0 + trail_pct * 0.01)
                     )
                 if use_tp:
-                    tp_px[s] = (  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                    tp_px[s] = (
                         entry * (1.0 + tp_pct * 0.01)
                         if target > 0
                         else entry * (1.0 - tp_pct * 0.01)
@@ -193,10 +193,10 @@ def run_portfolio_shared_cash(
     """Multi-symbol backtest with one shared cash book (bar-aligned)."""
     model = model or ExecutionModel()
     if not books:
-        raise ValueError("books must be non-empty")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        raise ValueError("books must be non-empty")
     missing = set(books) - set(signals)
     if missing:
-        raise ValueError(f"missing signals for symbols: {sorted(missing)}")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        raise ValueError(f"missing signals for symbols: {sorted(missing)}")
     symbols = sorted(books)
     n_sym = len(symbols)
     n = int(np.asarray(books[symbols[0]]["close"]).shape[0])
@@ -209,22 +209,22 @@ def run_portfolio_shared_cash(
         ohlc = books[sym]
         for key in ("open", "high", "low", "close"):
             if np.asarray(ohlc[key]).shape[0] != n:
-                raise ValueError("all symbols must share the same bar length")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                raise ValueError("all symbols must share the same bar length")
         open_[i] = np.asarray(ohlc["open"], dtype=np.float64)
         high[i] = np.asarray(ohlc["high"], dtype=np.float64)
         low[i] = np.asarray(ohlc["low"], dtype=np.float64)
         close[i] = np.asarray(ohlc["close"], dtype=np.float64)
         sig[i] = np.asarray(signals[sym], dtype=np.int64)
     if n < model.warmup_bars + 2:
-        raise ValueError("need enough bars for warmup + fill")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        raise ValueError("need enough bars for warmup + fill")
     if session_mask is None:
         sess = np.ones(n, dtype=np.bool_)
         sess_used = False
     else:
-        sess = np.asarray(session_mask, dtype=np.bool_)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        if sess.shape != (n,):  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            raise ValueError("session_mask must match bar length")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        sess_used = True  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        sess = np.asarray(session_mask, dtype=np.bool_)
+        if sess.shape != (n,):
+            raise ValueError("session_mask must match bar length")
+        sess_used = True
 
     equity, total_return, max_dd, fill_events, final_cash = _portfolio_core(
         open_,

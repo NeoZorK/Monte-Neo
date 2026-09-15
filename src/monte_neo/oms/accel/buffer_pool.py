@@ -15,7 +15,7 @@ class BufferPool:
 
     def acquire(self, nbytes: int) -> bytearray:
         if nbytes < 0:
-            raise ValueError("nbytes must be non-negative")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            raise ValueError("nbytes must be non-negative")
         for i, buf in enumerate(self._free):
             if len(buf) >= nbytes:
                 self._free.pop(i)
@@ -27,7 +27,7 @@ class BufferPool:
     def release(self, buf: bytearray) -> None:
         self._live = max(0, self._live - 1)
         if len(self._free) >= self.max_slabs:
-            return  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return
         self._free.append(buf)
 
     def stats(self) -> dict[str, int]:

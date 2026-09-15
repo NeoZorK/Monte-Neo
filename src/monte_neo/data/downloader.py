@@ -93,7 +93,7 @@ class BinanceDownloader:
                     limit=1000,
                 )
                 if not batch:
-                    break  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                    break
                 klines.extend(batch)
                 last_close = int(batch[-1][6])
                 next_start = last_close + 1

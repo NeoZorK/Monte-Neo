@@ -75,22 +75,22 @@ class MetalOmsEngine:
         self._Metal = Metal
         self.device = Metal.MTLCreateSystemDefaultDevice()
         if self.device is None:
-            raise RuntimeError("No Metal device")  # pragma: no cover  # Metal hardware-absent arm after mocks
+            raise RuntimeError("No Metal device")
         self.queue = self.device.newCommandQueue()
         lib, err = self.device.newLibraryWithSource_options_error_(
             _BATCH_KERNEL, None, None
         )
-        if lib is None:  # pragma: no cover  # Metal hardware-absent arm after mocks
-            raise RuntimeError(f"Metal shader compile failed: {err}")  # pragma: no cover  # Metal hardware-absent arm after mocks
-        fn = lib.newFunctionWithName_("oms_batch_long_flat_flat")  # pragma: no cover  # Metal hardware-absent arm after mocks
-        pipe, err = self.device.newComputePipelineStateWithFunction_error_(fn, None)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        if pipe is None:  # pragma: no cover  # Metal hardware-absent arm after mocks
-            raise RuntimeError(f"Metal pipeline failed: {err}")  # pragma: no cover  # Metal hardware-absent arm after mocks
-        self.pipe = pipe  # pragma: no cover  # Metal hardware-absent arm after mocks
-        self._shared = Metal.MTLResourceStorageModeShared  # pragma: no cover  # Metal hardware-absent arm after mocks
+        if lib is None:
+            raise RuntimeError(f"Metal shader compile failed: {err}")
+        fn = lib.newFunctionWithName_("oms_batch_long_flat_flat")
+        pipe, err = self.device.newComputePipelineStateWithFunction_error_(fn, None)
+        if pipe is None:
+            raise RuntimeError(f"Metal pipeline failed: {err}")
+        self.pipe = pipe
+        self._shared = Metal.MTLResourceStorageModeShared
 
     def _buf_bytes(self, arr: np.ndarray):
-        return self.device.newBufferWithBytes_length_options_(  # pragma: no cover  # Metal hardware-absent arm after mocks
+        return self.device.newBufferWithBytes_length_options_(
             arr.tobytes(), arr.nbytes, self._shared
         )
 
@@ -105,11 +105,11 @@ class MetalOmsEngine:
         size_fraction: float,
         warmup: int,
     ) -> np.ndarray:
-        open_f = np.ascontiguousarray(open_, dtype=np.float32)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        close_f = np.ascontiguousarray(close, dtype=np.float32)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        sig = np.ascontiguousarray(signals, dtype=np.int32)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        n_combo, n_bars = int(sig.shape[0]), int(sig.shape[1])  # pragma: no cover  # Metal hardware-absent arm after mocks
-        params = np.array(  # pragma: no cover  # Metal hardware-absent arm after mocks
+        open_f = np.ascontiguousarray(open_, dtype=np.float32)
+        close_f = np.ascontiguousarray(close, dtype=np.float32)
+        sig = np.ascontiguousarray(signals, dtype=np.int32)
+        n_combo, n_bars = int(sig.shape[0]), int(sig.shape[1])
+        params = np.array(
             [
                 float(n_bars),
                 float(commission_bps),
@@ -120,28 +120,28 @@ class MetalOmsEngine:
             ],
             dtype=np.float32,
         )
-        b_open = self._buf_bytes(open_f)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        b_close = self._buf_bytes(close_f)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        b_sig = self._buf_bytes(sig.reshape(-1))  # pragma: no cover  # Metal hardware-absent arm after mocks
-        b_out = self.device.newBufferWithLength_options_(n_combo * 4, self._shared)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        b_params = self._buf_bytes(params)  # pragma: no cover  # Metal hardware-absent arm after mocks
+        b_open = self._buf_bytes(open_f)
+        b_close = self._buf_bytes(close_f)
+        b_sig = self._buf_bytes(sig.reshape(-1))
+        b_out = self.device.newBufferWithLength_options_(n_combo * 4, self._shared)
+        b_params = self._buf_bytes(params)
 
-        cmd = self.queue.commandBuffer()  # pragma: no cover  # Metal hardware-absent arm after mocks
-        enc = cmd.computeCommandEncoder()  # pragma: no cover  # Metal hardware-absent arm after mocks
-        enc.setComputePipelineState_(self.pipe)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        enc.setBuffer_offset_atIndex_(b_open, 0, 0)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        enc.setBuffer_offset_atIndex_(b_close, 0, 1)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        enc.setBuffer_offset_atIndex_(b_sig, 0, 2)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        enc.setBuffer_offset_atIndex_(b_out, 0, 3)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        enc.setBuffer_offset_atIndex_(b_params, 0, 4)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        tpt = int(self.pipe.maxTotalThreadsPerThreadgroup())  # pragma: no cover  # Metal hardware-absent arm after mocks
-        tg = max(1, (n_combo + tpt - 1) // tpt)  # pragma: no cover  # Metal hardware-absent arm after mocks
-        enc.dispatchThreadgroups_threadsPerThreadgroup_((tg, 1, 1), (tpt, 1, 1))  # pragma: no cover  # Metal hardware-absent arm after mocks
-        enc.endEncoding()  # pragma: no cover  # Metal hardware-absent arm after mocks
-        cmd.commit()  # pragma: no cover  # Metal hardware-absent arm after mocks
-        cmd.waitUntilCompleted()  # pragma: no cover  # Metal hardware-absent arm after mocks
-        out = np.frombuffer(b_out.contents().as_buffer(n_combo * 4), dtype=np.float32).copy()  # pragma: no cover  # Metal hardware-absent arm after mocks
-        return out.astype(np.float64)  # pragma: no cover  # Metal hardware-absent arm after mocks
+        cmd = self.queue.commandBuffer()
+        enc = cmd.computeCommandEncoder()
+        enc.setComputePipelineState_(self.pipe)
+        enc.setBuffer_offset_atIndex_(b_open, 0, 0)
+        enc.setBuffer_offset_atIndex_(b_close, 0, 1)
+        enc.setBuffer_offset_atIndex_(b_sig, 0, 2)
+        enc.setBuffer_offset_atIndex_(b_out, 0, 3)
+        enc.setBuffer_offset_atIndex_(b_params, 0, 4)
+        tpt = int(self.pipe.maxTotalThreadsPerThreadgroup())
+        tg = max(1, (n_combo + tpt - 1) // tpt)
+        enc.dispatchThreadgroups_threadsPerThreadgroup_((tg, 1, 1), (tpt, 1, 1))
+        enc.endEncoding()
+        cmd.commit()
+        cmd.waitUntilCompleted()
+        out = np.frombuffer(b_out.contents().as_buffer(n_combo * 4), dtype=np.float32).copy()
+        return out.astype(np.float64)
 
 
 _metal_engine: MetalOmsEngine | None | bool = False
@@ -174,9 +174,9 @@ def run_batch_terminal(
 
     want = resolve_device(device)
     if want == "metal":
-        eng = get_metal_oms_engine()  # pragma: no cover  # Metal hardware-absent arm after mocks
-        if eng is not None:  # pragma: no cover  # Metal hardware-absent arm after mocks
-            rets = eng.batch_terminal_long_flat(  # pragma: no cover  # Metal hardware-absent arm after mocks
+        eng = get_metal_oms_engine()
+        if eng is not None:
+            rets = eng.batch_terminal_long_flat(
                 open_,
                 close,
                 signals,
@@ -186,7 +186,7 @@ def run_batch_terminal(
                 size_fraction,
                 warmup,
             )
-            return {"returns": rets, "device_used": "metal", "ok": True}  # pragma: no cover  # Metal hardware-absent arm after mocks
+            return {"returns": rets, "device_used": "metal", "ok": True}
     rets = batch_terminal_long_flat(
         np.asarray(open_, dtype=np.float64),
         np.asarray(close, dtype=np.float64),

@@ -18,56 +18,56 @@ def try_auto_compile_metal():
             "acceleration/cpp_metal/compile.sh",
         )
         if os.path.exists(script_path):
-            env = os.environ.copy()  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-            env["PYTHON"] = sys.executable  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-            result = subprocess.run(  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
+            env = os.environ.copy()
+            env["PYTHON"] = sys.executable
+            result = subprocess.run(
                 ["bash", script_path],
                 capture_output=True,
                 text=True,
                 env=env,
             )
-            if result.returncode == 0:  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-                logger.info("✅ Metal extension compiled successfully.")  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-                return True  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
+            if result.returncode == 0:
+                logger.info("✅ Metal extension compiled successfully.")
+                return True
             else:
-                logger.warning(f"❌ Auto-compilation failed: {result.stderr}")  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
+                logger.warning(f"❌ Auto-compilation failed: {result.stderr}")
         return False
-    except Exception as e:  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-        logger.warning(f"⚠️ Failed to auto-compile Metal extension: {e}")  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-        return False  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
+    except Exception as e:
+        logger.warning(f"⚠️ Failed to auto-compile Metal extension: {e}")
+        return False
 
 def select_best_metal_driver(metal_extension_available: bool, native_bridge_class) -> str:
     """Run a micro-benchmark to select the best Metal driver."""
-    if not metal_extension_available:  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-        return "cpp"  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
+    if not metal_extension_available:
+        return "cpp"
         
-    cached_driver = load_cache("best_metal_driver.json")  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-    if cached_driver:  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-        return cached_driver  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
+    cached_driver = load_cache("best_metal_driver.json")
+    if cached_driver:
+        return cached_driver
         
-    logger.info("🔍 Running micro-benchmark to select best Metal driver...")  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-    from monte_neo.core.acceleration.cpp_metal.metal_engine import Candle, Driver  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
+    logger.info("🔍 Running micro-benchmark to select best Metal driver...")
+    from monte_neo.core.acceleration.cpp_metal.metal_engine import Candle, Driver
     
-    candles = [Candle(100.0, 101.0, 99.0, 100.0, 1000.0) for _ in range(1000)]  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-    params = [14.0, 14.0, 1.5, 3.0, 2.0] * 10000  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-    n_scenarios = 10000  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
+    candles = [Candle(100.0, 101.0, 99.0, 100.0, 1000.0) for _ in range(1000)]
+    params = [14.0, 14.0, 1.5, 3.0, 2.0] * 10000
+    n_scenarios = 10000
     
-    best_driver = "cpp"  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-    min_time = float('inf')  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
+    best_driver = "cpp"
+    min_time = float('inf')
     
-    for d_name, d_enum in [("cpp", Driver.CPP), ("objc", Driver.OBJC), ("swift", Driver.SWIFT)]:  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-        try:  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-            bridge = native_bridge_class(d_enum)  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-            if bridge.init():  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-                bridge.run_backtest(candles, params, 1000)  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-                start = time.perf_counter()  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-                bridge.run_backtest(candles, params, n_scenarios)  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-                duration = time.perf_counter() - start  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-                if duration < min_time:  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-                    min_time = duration  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-                    best_driver = d_name  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-        except Exception:  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
+    for d_name, d_enum in [("cpp", Driver.CPP), ("objc", Driver.OBJC), ("swift", Driver.SWIFT)]:
+        try:
+            bridge = native_bridge_class(d_enum)
+            if bridge.init():
+                bridge.run_backtest(candles, params, 1000)
+                start = time.perf_counter()
+                bridge.run_backtest(candles, params, n_scenarios)
+                duration = time.perf_counter() - start
+                if duration < min_time:
+                    min_time = duration
+                    best_driver = d_name
+        except Exception:
             pass
             
-    save_cache("best_metal_driver.json", best_driver)  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
-    return best_driver  # pragma: no cover  # MLX hardware/driver path absent on Linux CI after mocks
+    save_cache("best_metal_driver.json", best_driver)
+    return best_driver

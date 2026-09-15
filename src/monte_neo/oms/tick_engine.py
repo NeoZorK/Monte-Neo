@@ -85,7 +85,7 @@ class TickL2Engine:
                 order.status = OrderStatus.FILLED
                 order.filled_qty = order.qty
             else:
-                order.status = OrderStatus.PARTIAL  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                order.status = OrderStatus.PARTIAL
             fill = Fill(
                 fill_id=self._next_fill_id,
                 order_id=order.order_id,
@@ -103,7 +103,7 @@ class TickL2Engine:
 
     def _match_one(self, order: Order, book: OrderBook, tick_i: int) -> None:
         if order.status in {OrderStatus.FILLED, OrderStatus.CANCELED, OrderStatus.REJECTED}:
-            return  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return
         if self.use_numba_walk and order.order_type == OrderType.MARKET:
             bid_px, bid_sz, ask_px, ask_sz = book.to_arrays(self.l2.max_levels)
             from monte_neo.oms.accel.metal_dispatch import run_l2_walk
@@ -123,7 +123,7 @@ class TickL2Engine:
             vwap = float(walked["vwap"])
             fee = float(walked["fee"])
             if filled <= 0.0:
-                return  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                return
             self._apply_slices(
                 order, [L2FillSlice(qty=filled, price=vwap, fee=fee)], tick_i
             )
@@ -134,11 +134,11 @@ class TickL2Engine:
             else match_limit_l2(order, book, self.l2)
         )
         if slices:
-            self._apply_slices(order, slices, tick_i)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            self._apply_slices(order, slices, tick_i)
 
     def run_ticks(self, ticks: np.ndarray) -> dict[str, Any]:
         if ticks.dtype.names is None or "price" not in ticks.dtype.names:
-            raise ValueError("ticks must be structured with price field")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            raise ValueError("ticks must be structured with price field")
         n = int(ticks.shape[0])
         equity = np.empty(n, dtype=np.float64)
         peak = self.account.initial_cash
@@ -161,7 +161,7 @@ class TickL2Engine:
             eq = self.account.equity({self.symbol: mid})
             equity[i] = eq
             if eq > peak:
-                peak = eq  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                peak = eq
             dd = (peak - eq) / peak if peak > 0 else 0.0
             if dd > max_dd:
                 max_dd = dd

@@ -37,9 +37,9 @@ class MCDispatchPlan:
 def _itemsize_for_precision(precision: str) -> int:
     p = (precision or "float32").lower()
     if p in {"float64", "f64"}:
-        return 8  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return 8
     if p in {"float16", "f16", "float8", "f8"}:
-        return 2  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return 2
     return 4
 
 
@@ -129,8 +129,8 @@ def plan_mc_run(
                 budget=budget,
                 reason="metal_primary_with_native_params",
             )
-        if has_mlx_repr:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            return MCDispatchPlan(  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        if has_mlx_repr:
+            return MCDispatchPlan(
                 requested_device=config.compute_device,
                 resolved_device=resolved,
                 backend="mlx",
@@ -141,7 +141,7 @@ def plan_mc_run(
                 budget=budget,
                 reason="metal_resolved_mlx_fallback_batch",
             )
-        return _cpu_plan(  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return _cpu_plan(
             config,
             resolved=resolved,
             budget=budget,
@@ -149,4 +149,4 @@ def plan_mc_run(
             device_allows_accel=device_ok,
         )
 
-    return _cpu_plan(config, resolved=resolved, budget=budget, reason="fallback_cpu")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+    return _cpu_plan(config, resolved=resolved, budget=budget, reason="fallback_cpu")

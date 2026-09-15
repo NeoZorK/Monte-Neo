@@ -40,11 +40,11 @@ class SmartPipelineOptimizer:
     def _log(self, msg: str):
         """Internal helper to log to callback or console."""
         if self.log_callback:
-            try:  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
-                self.log_callback(msg)  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
-            except KeyboardInterrupt:  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
-                raise  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
-            except Exception:  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
+            try:
+                self.log_callback(msg)
+            except KeyboardInterrupt:
+                raise
+            except Exception:
                 pass
         else:
             console.print(msg)
@@ -108,18 +108,18 @@ class SmartPipelineOptimizer:
         """Checks for local data and downloads if missing and auto-download is enabled."""
         cache_key = (symbol, timeframe)
         if cache_key in self._data_cache:
-            return self._data_cache[cache_key]  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
+            return self._data_cache[cache_key]
 
         try:
             data = self.menu.storage.load(symbol, timeframe=timeframe)
             if data is not None and not data.empty:
-                self._data_cache[cache_key] = data  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
-                return data  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
-        except FileNotFoundError:  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
+                self._data_cache[cache_key] = data
+                return data
+        except FileNotFoundError:
             pass
 
         if not self.menu.config.auto_download_data:
-            return None  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
+            return None
 
         self._log(f"[yellow]Data for {symbol} {timeframe} missing. Auto-downloading from Binance...[/]")
         try:
@@ -140,21 +140,21 @@ class SmartPipelineOptimizer:
                 self._data_cache[cache_key] = data
                 self._log(f"[green]✓ Successfully downloaded and saved {len(data)} candles.[/]")
                 return data
-        except Exception as e:  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
+        except Exception as e:
             # self.menu.progress.stop()
-            self._log(f"[red]✗ Auto-download failed: {e}[/]")  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
-            logger.error(f"Auto-download failed for {symbol} {timeframe}: {e}")  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
+            self._log(f"[red]✗ Auto-download failed: {e}[/]")
+            logger.error(f"Auto-download failed for {symbol} {timeframe}: {e}")
         
-        return None  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
+        return None
 
     def print_report(self):
         """Prints a brainstorm report to the console."""
-        report = Table.grid(padding=(0, 1))  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
-        report.add_column(style="bold cyan")  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
-        report.add_column()  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
-        report.add_row("Iteration:", f"#{self.iteration}")  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
-        report.add_row("Last Fail:", f"[yellow]{self.last_failure_reason}[/]")  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
-        report.add_row("Best Score:", f"[green]{self.best_score_ever:.2f}/100[/]")  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
-        adj_str = ", ".join(self.adjustments_made) if self.adjustments_made else "None"  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
-        report.add_row("Adjustments:", f"[dim]{adj_str}[/]")  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
-        console.print(Panel(report, title="[bold magenta]🧠 Smart Search Brainstorm[/]", border_style="magenta"))  # pragma: no cover  # interactive TTY / prompt_toolkit; exercised via mocked app/styles tests
+        report = Table.grid(padding=(0, 1))
+        report.add_column(style="bold cyan")
+        report.add_column()
+        report.add_row("Iteration:", f"#{self.iteration}")
+        report.add_row("Last Fail:", f"[yellow]{self.last_failure_reason}[/]")
+        report.add_row("Best Score:", f"[green]{self.best_score_ever:.2f}/100[/]")
+        adj_str = ", ".join(self.adjustments_made) if self.adjustments_made else "None"
+        report.add_row("Adjustments:", f"[dim]{adj_str}[/]")
+        console.print(Panel(report, title="[bold magenta]🧠 Smart Search Brainstorm[/]", border_style="magenta"))

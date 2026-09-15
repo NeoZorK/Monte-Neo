@@ -58,17 +58,17 @@ class ParallelExecutor:
             if hasattr(self._pool, "_pending_work_items"): # ProcessPoolExecutor internal
                 try:
                     for future in list(self._pool._pending_work_items.values()):
-                        future.cancel()  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                except Exception:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                        future.cancel()
+                except Exception:
                     pass
 
             # Use wait=False to avoid hanging on exit
             # cancel_futures=True is supported in Python 3.9+
             try:
                 self._pool.shutdown(wait=False, cancel_futures=True)
-            except TypeError:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            except TypeError:
                 # Fallback for older Python versions
-                self._pool.shutdown(wait=False)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                self._pool.shutdown(wait=False)
 
             self._pool = None
 
@@ -114,9 +114,9 @@ class ParallelExecutor:
             while pending:
                 if getattr(self, "_shutdown_requested", False):
                     # Cancel all remaining if shutdown requested
-                    for f in pending:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                        f.cancel()  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    break  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                    for f in pending:
+                        f.cancel()
+                    break
 
                 # Wait for some futures to complete with a small timeout to allow checking _shutdown_requested
                 done, pending = as_completed_with_timeout(pending, timeout=0.1)
@@ -132,22 +132,22 @@ class ParallelExecutor:
                             logger.error(f"Error processing item {idx}: {e}")
                         results.append((idx, None))
 
-        except (KeyboardInterrupt, SystemExit):  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            self._shutdown_requested = True  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        except (KeyboardInterrupt, SystemExit):
+            self._shutdown_requested = True
             # Kill workers immediately
-            if executor:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                try:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    executor.shutdown(wait=False, cancel_futures=True)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                except (TypeError, Exception):  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    executor.shutdown(wait=False)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            raise  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            if executor:
+                try:
+                    executor.shutdown(wait=False, cancel_futures=True)
+                except (TypeError, Exception):
+                    executor.shutdown(wait=False)
+            raise
         finally:
             # Clean up properly if it was a temp pool
             if is_temp_pool and executor:
                 try:
                     executor.shutdown(wait=False, cancel_futures=True)
-                except (TypeError, Exception):  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    executor.shutdown(wait=False)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                except (TypeError, Exception):
+                    executor.shutdown(wait=False)
 
         # Sort by original order
         results.sort(key=lambda x: x[0])
@@ -191,17 +191,17 @@ class ParallelExecutor:
         Returns:
             Reduced result.
         """
-        mapped = self.map(map_func, items)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        mapped = self.map(map_func, items)
 
-        result = initial  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        for item in mapped:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            if item is not None:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                if result is None:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    result = item  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        result = initial
+        for item in mapped:
+            if item is not None:
+                if result is None:
+                    result = item
                 else:
-                    result = reduce_func(result, item)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                    result = reduce_func(result, item)
 
-        return result  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return result
 
 
 def as_completed_with_timeout(fs, timeout=None):

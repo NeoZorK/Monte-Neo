@@ -89,19 +89,19 @@ def run_bar_backtest_batch(
     c = np.asarray(close, dtype=np.float64)
     sig = np.asarray(signals, dtype=np.int64)
     if sig.ndim != 2:
-        raise ValueError("signals must be 2-D (n_combos, n_bars)")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        raise ValueError("signals must be 2-D (n_combos, n_bars)")
     if sig.shape[1] != o.shape[0]:
-        raise ValueError("signals second dim must match OHLC length")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        raise ValueError("signals second dim must match OHLC length")
     if o.ndim != 1 or o.size < model.warmup_bars + 2:
-        raise ValueError("need 1-D series with enough bars for warmup + fill")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        raise ValueError("need 1-D series with enough bars for warmup + fill")
     if session_mask is None:
         sess = np.ones(o.size, dtype=np.bool_)
         sess_used = False
     else:
-        sess = np.asarray(session_mask, dtype=np.bool_)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        if sess.shape != (o.size,):  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            raise ValueError("session_mask must match bar length")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        sess_used = True  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        sess = np.asarray(session_mask, dtype=np.bool_)
+        if sess.shape != (o.size,):
+            raise ValueError("session_mask must match bar length")
+        sess_used = True
 
     fallback_reason: str | None = None
     if metal_economics_eligible(model, sess if sess_used else None):
@@ -109,8 +109,8 @@ def run_bar_backtest_batch(
             n_bars=int(o.shape[0]), n_combos=int(sig.shape[0]), device=device
         )
         if decision["use_metal"]:
-            t0 = time.perf_counter()  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            metal_out = try_metal_batch_returns(  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            t0 = time.perf_counter()
+            metal_out = try_metal_batch_returns(
                 o,
                 h,
                 l,
@@ -121,11 +121,11 @@ def run_bar_backtest_batch(
                 device=device,
                 tile_combos=decision.get("metal_tile_combos"),
             )
-            elapsed = time.perf_counter() - t0  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            if metal_out is not None and metal_out.get("ok") and metal_out.get("returns") is not None:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                rets = metal_out["returns"]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                n = int(sig.shape[0])  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                out = {  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            elapsed = time.perf_counter() - t0
+            if metal_out is not None and metal_out.get("ok") and metal_out.get("returns") is not None:
+                rets = metal_out["returns"]
+                n = int(sig.shape[0])
+                out = {
                     "ok": True,
                     "engine": "monte_neo.backtest.batch",
                     "device": "metal",
@@ -137,11 +137,11 @@ def run_bar_backtest_batch(
                     "total_returns": rets,
                     "best_return": float(np.max(rets)) if n else 0.0,
                 }
-                if metal_out.get("tiles", 1) > 1:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    out["metal_tiles"] = int(metal_out["tiles"])  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    out["metal_tile_combos"] = int(metal_out.get("tile_combos") or 0)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                return out  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            fallback_reason = (  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                if metal_out.get("tiles", 1) > 1:
+                    out["metal_tiles"] = int(metal_out["tiles"])
+                    out["metal_tile_combos"] = int(metal_out.get("tile_combos") or 0)
+                return out
+            fallback_reason = (
                 (metal_out or {}).get("fallback_reason")
                 if isinstance(metal_out, dict)
                 else None

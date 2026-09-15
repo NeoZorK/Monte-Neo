@@ -27,7 +27,7 @@ class BybitAdapter:
     ) -> None:
         mode = str(mode).lower()
         if mode not in {"paper", "live"}:
-            raise ValueError("mode must be paper or live")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            raise ValueError("mode must be paper or live")
         self.mode = mode
         self._paper = PaperExchangeAdapter(
             initial_cash=initial_cash, mid=mid, commission_bps=commission_bps
@@ -43,13 +43,13 @@ class BybitAdapter:
                 raise RuntimeError("BYBIT_API_KEY/SECRET required for live mode")
 
     def set_mid(self, mid: float) -> None:
-        self._paper.set_mid(mid)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        self._paper.set_mid(mid)
 
     def submit(self, intent: OrderIntent) -> OrderReport:
-        if self.mode == "paper" or dry_run_enabled():  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            report = self._paper.submit(intent)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            if self.mode == "live":  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                self._live_dry.append(  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        if self.mode == "paper" or dry_run_enabled():
+            report = self._paper.submit(intent)
+            if self.mode == "live":
+                self._live_dry.append(
                     {
                         "action": "submit",
                         "dry_run": True,
@@ -59,31 +59,31 @@ class BybitAdapter:
                         "order_type": int(intent.order_type),
                     }
                 )
-                report.raw["dry_run"] = True  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                report.raw["venue"] = "bybit"  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            return report  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        raise RuntimeError(  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                report.raw["dry_run"] = True
+                report.raw["venue"] = "bybit"
+            return report
+        raise RuntimeError(
             "bybit live submit without dry-run is not enabled in this build"
         )
 
     def cancel(self, venue_order_id: str) -> bool:
-        if self.mode == "paper" or dry_run_enabled():  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            ok = self._paper.cancel(venue_order_id)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            if self.mode == "live":  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                self._live_dry.append(  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        if self.mode == "paper" or dry_run_enabled():
+            ok = self._paper.cancel(venue_order_id)
+            if self.mode == "live":
+                self._live_dry.append(
                     {"action": "cancel", "dry_run": True, "id": venue_order_id}
                 )
-            return ok  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        raise RuntimeError("bybit live cancel without dry-run not enabled")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return ok
+        raise RuntimeError("bybit live cancel without dry-run not enabled")
 
     def poll_fills(self) -> list[FillReport]:
-        return self._paper.poll_fills()  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return self._paper.poll_fills()
 
     def get_balances(self) -> dict[str, float]:
-        return self._paper.get_balances()  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return self._paper.get_balances()
 
     def get_positions(self) -> dict[str, float]:
-        return self._paper.get_positions()  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return self._paper.get_positions()
 
     def work_checklist(self) -> dict[str, bool]:
         return {
@@ -98,4 +98,4 @@ class BybitAdapter:
         }
 
     def dry_run_log(self) -> list[dict[str, Any]]:
-        return list(self._live_dry)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return list(self._live_dry)

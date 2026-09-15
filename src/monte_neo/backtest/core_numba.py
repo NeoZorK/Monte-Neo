@@ -13,7 +13,7 @@ REASON_TRAIL = 5
 
 
 @njit(cache=True)
-def _stop_hit(
+def _stop_hit(  # pragma: no cover  # njit body; covered via public API / subprocess
     position: int,
     high: float,
     low: float,
@@ -60,7 +60,7 @@ def _stop_hit(
 
 
 @njit(cache=True)
-def run_core_full(
+def run_core_full(  # pragma: no cover  # njit body; covered via public API / subprocess
     open_: np.ndarray,
     high: np.ndarray,
     low: np.ndarray,
@@ -188,10 +188,10 @@ def run_core_full(
                 continue
             notional = cash * size_fraction * fill_fraction * leverage
             if notional <= 0.0 or cash <= 0.0:
-                continue  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                continue
             entry = fill_px * (1.0 + float(target) * slip_rate)
             if entry <= 0.0:
-                continue  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                continue
             new_qty = (notional / entry) * float(target)
             fee = abs(new_qty * entry) * fee_rate
             cash -= new_qty * entry + fee
@@ -249,7 +249,7 @@ def run_core_full(
 
 
 @njit(cache=True)
-def run_terminal_return(
+def run_terminal_return(  # pragma: no cover  # njit body; covered via public API / subprocess
     open_: np.ndarray,
     high: np.ndarray,
     low: np.ndarray,

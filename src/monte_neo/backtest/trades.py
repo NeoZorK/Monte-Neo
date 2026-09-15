@@ -59,7 +59,7 @@ def pack_trades(
 def trade_stats(trades: list[dict[str, Any]]) -> dict[str, float]:
     """Win rate and profit factor from closed trades."""
     if not trades:
-        return {"win_rate": 0.0, "profit_factor": 0.0, "n_closed_trades": 0.0}  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return {"win_rate": 0.0, "profit_factor": 0.0, "n_closed_trades": 0.0}
     pnls = np.array([t["pnl"] for t in trades], dtype=np.float64)
     wins = pnls[pnls > 0.0]
     losses = pnls[pnls < 0.0]

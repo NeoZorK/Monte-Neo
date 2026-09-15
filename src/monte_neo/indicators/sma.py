@@ -49,7 +49,7 @@ class SMAIndicator(BaseIndicator):
             close = data["close"].to_numpy()
         else:
             # Assume 1D close prices or OHLC matrix (close is col 3)
-            close = data[:, 3] if data.ndim > 1 else data  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            close = data[:, 3] if data.ndim > 1 else data
 
         p1 = int(round(min(self._parameters["fast_period"], self._parameters["slow_period"])))
         p2 = int(round(max(self._parameters["fast_period"], self._parameters["slow_period"])))
@@ -91,5 +91,5 @@ class SMAIndicator(BaseIndicator):
             fast = int(self._parameters["fast_period"])
             slow = int(self._parameters["slow_period"])
             return MLXSMACrossStrategy(fast, slow)
-        except ImportError:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            return None  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        except ImportError:
+            return None

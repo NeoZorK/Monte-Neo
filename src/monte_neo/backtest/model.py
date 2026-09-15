@@ -38,19 +38,19 @@ class ExecutionModel:
         if self.size_fraction <= 0.0 or self.size_fraction > 1.0:
             raise ValueError("size_fraction must be in (0, 1]")
         if self.fill_fraction <= 0.0 or self.fill_fraction > 1.0:
-            raise ValueError("fill_fraction must be in (0, 1]")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            raise ValueError("fill_fraction must be in (0, 1]")
         if min(self.commission_bps, self.slippage_bps, self.impact_bps) < 0.0:
-            raise ValueError("bps costs must be non-negative")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            raise ValueError("bps costs must be non-negative")
         if self.funding_bps_per_bar < 0.0:
-            raise ValueError("funding_bps_per_bar must be non-negative")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            raise ValueError("funding_bps_per_bar must be non-negative")
         if self.leverage < 1.0:
             raise ValueError("leverage must be >= 1")
         if self.initial_cash <= 0.0:
-            raise ValueError("initial_cash must be positive")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            raise ValueError("initial_cash must be positive")
         if self.warmup_bars < 0:
-            raise ValueError("warmup_bars must be non-negative")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            raise ValueError("warmup_bars must be non-negative")
         if min(self.sl_pct, self.tp_pct, self.trail_pct) < 0.0:
-            raise ValueError("sl_pct/tp_pct/trail_pct must be non-negative")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            raise ValueError("sl_pct/tp_pct/trail_pct must be non-negative")
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

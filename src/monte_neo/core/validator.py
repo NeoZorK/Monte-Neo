@@ -64,7 +64,7 @@ class OverfitValidator:
 
         # 1. Non-repainting check
         if not self.check_non_repainting(indicator, data):
-            warnings.append("INDICATOR REPAINTS: Signals change when new data arrives!")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            warnings.append("INDICATOR REPAINTS: Signals change when new data arrives!")
 
         # In-sample / Out-of-sample split
         split_idx = int(len(data) * 0.7)
@@ -87,7 +87,7 @@ class OverfitValidator:
             )
 
         if oos_metrics.get("trade_count", 0) < self.min_trades // 3:
-            warnings.append("Insufficient out-of-sample trades")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            warnings.append("Insufficient out-of-sample trades")
 
         # Check OOS/IS ratio
         oos_ratio = self._calculate_oos_ratio(is_metrics, oos_metrics)
@@ -138,7 +138,7 @@ class OverfitValidator:
             True if non-repainting.
         """
         if len(data) < lookback + 10:
-            return True  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return True
 
         # 1. Generate signals for the full dataset
         full_signals = indicator.generate_signals(data)
@@ -157,8 +157,8 @@ class OverfitValidator:
             # but we are checking closed candles here)
             if not np.array_equal(full_signals[:i+1], partial_signals):
                 # Repainting detected!
-                logger.warning(f"Repainting detected at index {i}")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                return False  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                logger.warning(f"Repainting detected at index {i}")
+                return False
                 
         return True
 
@@ -176,7 +176,7 @@ class OverfitValidator:
         if is_val <= 0:
             return 0.0
 
-        return oos_val / is_val  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return oos_val / is_val
 
     def _cross_validate(
         self,
@@ -197,7 +197,7 @@ class OverfitValidator:
             test = data.iloc[test_start:test_end]
 
             if len(test) < 10:
-                continue  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                continue
 
             # Test on fold
             signals = indicator.generate_signals(test)
@@ -214,18 +214,18 @@ class OverfitValidator:
         """Check if metrics meet targets."""
         for name, target in targets.items():
             if name not in metrics:
-                continue  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                continue
 
             actual = metrics[name]
 
             if name in ["max_drawdown", "consecutive_losses"]:
-                if actual > target:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    return False  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                if actual > target:
+                    return False
             else:
                 if actual < target:
                     return False
 
-        return True  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return True
 
     def _calculate_overall_score(
         self,
@@ -249,7 +249,7 @@ class OverfitValidator:
 
         # Meets targets contribution (0.1)
         if meets_targets:
-            score += 0.1  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            score += 0.1
 
         return min(1.0, score)
 
@@ -274,14 +274,14 @@ class OverfitValidator:
 
         # Check minimum trades
         if metrics.get("trade_count", 0) < self.min_trades:
-            return False  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+            return False
 
         # Check profit factor
         if metrics.get("profit_factor", 0) < 1.0:
             return False
 
         # Check max drawdown
-        if metrics.get("max_drawdown", 1) > 0.5:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            return False  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        if metrics.get("max_drawdown", 1) > 0.5:
+            return False
 
-        return True  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        return True

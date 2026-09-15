@@ -34,7 +34,7 @@ def run_search(generator: IndicatorGenerator, data: pd.DataFrame) -> GeneratorRe
 
     # Initialize persistent executor
     if generator.config.use_sequential_mc:
-        generator.executor = ParallelExecutor(  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        generator.executor = ParallelExecutor(
             n_workers=1,
             use_processes=False,
             initializer=init_worker_data,
@@ -97,7 +97,7 @@ def run_search(generator: IndicatorGenerator, data: pd.DataFrame) -> GeneratorRe
                     continue
 
                 if metrics.get("trade_count", 0) < generator.config.min_trades:
-                    continue  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                    continue
 
                 # MC Validation
                 try:
@@ -134,8 +134,8 @@ def run_search(generator: IndicatorGenerator, data: pd.DataFrame) -> GeneratorRe
 
             # Early stopping
             if generator.config.early_stopping and best_mc_rate >= 0.95:
-                logger.info(f"Early stopping: found solution at iteration {batch_start + actual_batch_size}")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                break  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                logger.info(f"Early stopping: found solution at iteration {batch_start + actual_batch_size}")
+                break
 
             # Check for shutdown requested
             if generator.executor and getattr(generator.executor, "_shutdown_requested", False):
@@ -189,8 +189,8 @@ def _create_result(
         final_metrics = fallback_metrics
 
     if best_indicator and not final_metrics:
-        signals = best_indicator.generate_signals(data)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        final_metrics = generator.metrics_calc.calculate_all(  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        signals = best_indicator.generate_signals(data)
+        final_metrics = generator.metrics_calc.calculate_all(
             data, signals, use_sl_tp=generator.config.use_sl_tp,
             sl_pct=generator.config.stop_loss_pct, tp_pct=generator.config.take_profit_pct
         )
@@ -252,21 +252,21 @@ def _update_progress(generator: IndicatorGenerator, start_time: float, batch_sta
 
 def _run_evolution_phase(generator: IndicatorGenerator, data: pd.DataFrame, best_ind, best_rate, best_details):
     if "dynamic" in generator.config.indicator_types and len(generator._candidates) >= 2:
-        logger.info(f"Starting evolutionary optimization on {len(generator._candidates)} candidates...")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        try:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            dynamic_candidates = [c[0] for c in generator._candidates if isinstance(c[0], DynamicIndicator)]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            if len(dynamic_candidates) >= 2:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                evolved_best = generator._run_evolution(data, initial_population=dynamic_candidates)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                if evolved_best:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                    mc_result = generator._run_mc_validation(data, evolved_best)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+        logger.info(f"Starting evolutionary optimization on {len(generator._candidates)} candidates...")
+        try:
+            dynamic_candidates = [c[0] for c in generator._candidates if isinstance(c[0], DynamicIndicator)]
+            if len(dynamic_candidates) >= 2:
+                evolved_best = generator._run_evolution(data, initial_population=dynamic_candidates)
+                if evolved_best:
+                    mc_result = generator._run_mc_validation(data, evolved_best)
                     mc_rate = mc_result.pass_rate
 
-                    if mc_rate > 0:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                        generator._candidates.append((evolved_best, mc_rate))  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                    if mc_rate > 0:
+                        generator._candidates.append((evolved_best, mc_rate))
 
-                    if mc_rate > best_rate:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                        best_rate = mc_rate  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-                        best_ind = evolved_best  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                    if mc_rate > best_rate:
+                        best_rate = mc_rate
+                        best_ind = evolved_best
                         best_details = {
                             "step_results": [
                                 {"method": r.method_name, "passed": r.passed, "rate": r.pass_rate, "advice": r.advice}
@@ -274,7 +274,7 @@ def _run_evolution_phase(generator: IndicatorGenerator, data: pd.DataFrame, best
                             ],
                             "timing_stats": getattr(mc_result, "timing_stats", {})
                         }
-                        logger.info(f"Evolution found better indicator: {evolved_best.name} MC rate={mc_rate:.2%}")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-        except Exception as e:  # pragma: no cover  # defensive / unreachable after unit mocks on CI
-            logger.error(f"Evolutionary optimization failed: {e}")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
+                        logger.info(f"Evolution found better indicator: {evolved_best.name} MC rate={mc_rate:.2%}")
+        except Exception as e:
+            logger.error(f"Evolutionary optimization failed: {e}")
     return best_ind, best_rate, best_details
