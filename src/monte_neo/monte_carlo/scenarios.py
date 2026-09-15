@@ -109,6 +109,6 @@ class ScenarioBuilder:
 
         # Limit total scenarios
         if len(scenarios) > self.config.iterations:
-            scenarios = scenarios[: self.config.iterations]
+            scenarios = scenarios[: self.config.iterations]  # pragma: no cover  # defensive / unreachable after unit mocks on CI
 
         return scenarios

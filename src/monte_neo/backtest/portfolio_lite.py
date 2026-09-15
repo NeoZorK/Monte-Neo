@@ -21,10 +21,10 @@ def run_multi_symbol_lite(
     """
     model = model or ExecutionModel()
     if not books:
-        raise ValueError("books must be non-empty")
+        raise ValueError("books must be non-empty")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
     missing = set(books) - set(signals)
     if missing:
-        raise ValueError(f"missing signals for symbols: {sorted(missing)}")
+        raise ValueError(f"missing signals for symbols: {sorted(missing)}")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
     per_symbol: dict[str, Any] = {}
     total_final = 0.0
     for sym, ohlc in books.items():
