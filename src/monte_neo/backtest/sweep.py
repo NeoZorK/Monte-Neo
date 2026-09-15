@@ -8,6 +8,7 @@ import numpy as np
 
 from monte_neo.backtest.bar_engine import run_bar_backtest
 from monte_neo.backtest.batch import run_bar_backtest_batch
+from monte_neo.backtest.memory_plan import decide_research_accelerator
 from monte_neo.backtest.core_numba import run_terminal_return
 from monte_neo.backtest.model import ExecutionModel
 from monte_neo.backtest.signal_factory import build_sma_cross_grid
@@ -38,8 +39,16 @@ def run_sma_sweep(
         raise ValueError("run_sma_sweep currently supports long_flat only")
     pairs = _sma_pairs(combos)
     c = np.asarray(close, dtype=np.float64)
-    # Signal device: prefer MLX on Apple Silicon when batch device is auto/metal.
-    sig_device = "auto" if device in ("auto", "metal", "mlx") else "cpu_numba"
+    # Signal device: MLX only when explicitly requested and size gate allows.
+    accel = decide_research_accelerator(
+        n_bars=int(c.shape[0]), n_combos=len(pairs), device=device
+    )
+    if device == "mlx" and accel.get("use_mlx"):
+        sig_device = "mlx"
+    elif device in ("auto", "metal", "mlx"):
+        sig_device = "cpu_numba" if accel.get("fallback_reason") else "auto"
+    else:
+        sig_device = "cpu_numba"
     sig = build_sma_cross_grid(c, pairs, device=sig_device)
     signals = sig["signals"]
     batch = run_bar_backtest_batch(
@@ -47,7 +56,7 @@ def run_sma_sweep(
     )
     rets = batch["total_returns"]
     total_elapsed = float(sig["elapsed_s"]) + float(batch["elapsed_s"])
-    return {
+    out = {
         "ok": True,
         "engine": "monte_neo.backtest.sweep",
         "device": batch.get("device", "cpu_numba"),
@@ -70,6 +79,12 @@ def run_sma_sweep(
         ],
         "note": "SMA sweep: signal_factory + run_bar_backtest_batch (shared ExecutionModel)",
     }
+    reason = batch.get("fallback_reason") or (
+        accel.get("fallback_reason") if batch.get("device") == "cpu_numba" and device in ("auto", "metal", "mlx") else None
+    )
+    if reason and out["device"] == "cpu_numba" and device != "cpu_numba":
+        out["fallback_reason"] = reason
+    return out
 
 
 def sma_signal(close: np.ndarray, fast: int, slow: int) -> np.ndarray:

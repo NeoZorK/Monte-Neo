@@ -24,7 +24,7 @@ from monte_neo.backtest.golden import (
     golden_fixture,
     verify_golden_vectors,
 )
-from monte_neo.backtest.memory_plan import plan_research_bytes
+from monte_neo.backtest.memory_plan import decide_research_accelerator, plan_research_bytes
 from monte_neo.backtest.metal_economics import (
     get_metal_research_engine,
     metal_economics_eligible,
@@ -69,5 +69,6 @@ __all__ = [
     "verify_golden_vectors",
     "build_sma_cross_grid",
     "build_sma_cross_grid_numba_golden",
+    "decide_research_accelerator",
     "plan_research_bytes",
 ]
