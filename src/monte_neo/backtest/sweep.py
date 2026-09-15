@@ -8,8 +8,8 @@ import numpy as np
 
 from monte_neo.backtest.bar_engine import run_bar_backtest
 from monte_neo.backtest.batch import run_bar_backtest_batch
-from monte_neo.backtest.memory_plan import decide_research_accelerator
 from monte_neo.backtest.core_numba import run_terminal_return
+from monte_neo.backtest.memory_plan import decide_research_accelerator
 from monte_neo.backtest.model import ExecutionModel
 from monte_neo.backtest.signal_factory import build_sma_cross_grid
 from monte_neo.backtest.strategy import sma_signal_long_flat

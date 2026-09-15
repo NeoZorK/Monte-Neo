@@ -21,7 +21,6 @@ from monte_neo.backtest import (
 from monte_neo.backtest.memory_plan import (
     estimate_metal_shared_bytes,
     metal_max_bars,
-    metal_shared_bytes_budget,
 )
 
 
