@@ -9,6 +9,11 @@ import numpy as np
 from numba import njit, prange
 
 from monte_neo.backtest.core_numba import run_terminal_return
+from monte_neo.backtest.memory_plan import decide_research_accelerator
+from monte_neo.backtest.metal_economics import (
+    metal_economics_eligible,
+    try_metal_batch_returns,
+)
 from monte_neo.backtest.model import ExecutionModel
 
 
@@ -98,30 +103,51 @@ def run_bar_backtest_batch(
             raise ValueError("session_mask must match bar length")
         sess_used = True
 
-    from monte_neo.backtest.metal_economics import (
-        metal_economics_eligible,
-        try_metal_batch_returns,
-    )
-
+    fallback_reason: str | None = None
     if metal_economics_eligible(model, sess if sess_used else None):
-        t0 = time.perf_counter()
-        metal_out = try_metal_batch_returns(o, h, l, c, sig, model, session_ok=sess, device=device)
-        elapsed = time.perf_counter() - t0
-        if metal_out is not None:
-            rets = metal_out["returns"]
-            n = int(sig.shape[0])
-            return {
-                "ok": True,
-                "engine": "monte_neo.backtest.batch",
-                "device": "metal",
-                "model": model.to_dict(),
-                "work_checklist": model.work_checklist(session_mask_used=sess_used),
-                "combos": n,
-                "elapsed_s": elapsed,
-                "combos_per_s": n / elapsed if elapsed > 0 else float("inf"),
-                "total_returns": rets,
-                "best_return": float(np.max(rets)) if n else 0.0,
-            }
+        decision = decide_research_accelerator(
+            n_bars=int(o.shape[0]), n_combos=int(sig.shape[0]), device=device
+        )
+        if decision["use_metal"]:
+            t0 = time.perf_counter()
+            metal_out = try_metal_batch_returns(
+                o,
+                h,
+                l,
+                c,
+                sig,
+                model,
+                session_ok=sess,
+                device=device,
+                tile_combos=decision.get("metal_tile_combos"),
+            )
+            elapsed = time.perf_counter() - t0
+            if metal_out is not None and metal_out.get("ok") and metal_out.get("returns") is not None:
+                rets = metal_out["returns"]
+                n = int(sig.shape[0])
+                out = {
+                    "ok": True,
+                    "engine": "monte_neo.backtest.batch",
+                    "device": "metal",
+                    "model": model.to_dict(),
+                    "work_checklist": model.work_checklist(session_mask_used=sess_used),
+                    "combos": n,
+                    "elapsed_s": elapsed,
+                    "combos_per_s": n / elapsed if elapsed > 0 else float("inf"),
+                    "total_returns": rets,
+                    "best_return": float(np.max(rets)) if n else 0.0,
+                }
+                if metal_out.get("tiles", 1) > 1:
+                    out["metal_tiles"] = int(metal_out["tiles"])
+                    out["metal_tile_combos"] = int(metal_out.get("tile_combos") or 0)
+                return out
+            fallback_reason = (
+                (metal_out or {}).get("fallback_reason")
+                if isinstance(metal_out, dict)
+                else None
+            ) or "metal_unavailable_or_failed"
+        else:
+            fallback_reason = decision.get("fallback_reason")
 
     fill_open = model.fill_policy == "next_bar_open"
     long_short = model.side_mode == "long_short"
@@ -168,7 +194,7 @@ def run_bar_backtest_batch(
     rets = _batch_terminal_returns(o, h, l, c, sig, *args)
     elapsed = time.perf_counter() - t0
     n = int(sig.shape[0])
-    return {
+    out = {
         "ok": True,
         "engine": "monte_neo.backtest.batch",
         "device": "cpu_numba",
@@ -180,3 +206,6 @@ def run_bar_backtest_batch(
         "total_returns": rets,
         "best_return": float(np.max(rets)) if n else 0.0,
     }
+    if fallback_reason:
+        out["fallback_reason"] = fallback_reason
+    return out

@@ -114,6 +114,17 @@ def build_sma_cross_grid(
         # Numba parallel is the default fast+exact path; MLX is opt-in (float32).
         want = "cpu_numba"
 
+    fallback_reason = None
+    if want == "mlx":
+        from monte_neo.backtest.memory_plan import decide_research_accelerator
+
+        decision = decide_research_accelerator(
+            n_bars=int(c.shape[0]), n_combos=int(fasts.shape[0]), device="mlx"
+        )
+        if not decision.get("use_mlx"):
+            want = "cpu_numba"
+            fallback_reason = decision.get("fallback_reason") or "mlx_size_gate"
+
     t0 = time.perf_counter()
     used = "cpu_numba"
     if want == "mlx":
@@ -123,11 +134,12 @@ def build_sma_cross_grid(
         except Exception:
             signals = _sma_cross_grid_numba(c, fasts, slows)
             used = "cpu_numba"
+            fallback_reason = fallback_reason or "mlx_runtime_error"
     else:
         signals = _sma_cross_grid_numba(c, fasts, slows)
         used = "cpu_numba"
     elapsed = time.perf_counter() - t0
-    return {
+    out = {
         "signals": signals,
         "device": used,
         "elapsed_s": float(elapsed),
@@ -135,6 +147,9 @@ def build_sma_cross_grid(
         "bars": int(signals.shape[1]),
         "kind": "sma_cross",
     }
+    if fallback_reason and used == "cpu_numba":
+        out["fallback_reason"] = fallback_reason
+    return out
 
 
 def build_sma_cross_grid_numba_golden(
