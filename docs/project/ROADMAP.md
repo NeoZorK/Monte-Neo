@@ -1,9 +1,14 @@
-# Monte-Neo Roadmap (v0.13.0)
+# Monte-Neo Roadmap (v0.14.0)
 
 ## Project rules
 - [x] Silence / Evidence permission-gate / version sync / Swiss-watch quality
 
-## Version 0.13.0 - Research signal factory (Current)
+## Version 0.14.0 - 16GB packing + export depth + positioning (Current)
+- [x] `plan_research_bytes` soft budget / tile hints
+- [x] Export equity stride + journal + memory block
+- [x] README job / non-goals without rival names
+
+## Version 0.13.0 - Research signal factory
 - [x] Numba-parallel SMA cross signal grids (`build_sma_cross_grid`)
 - [x] Sweep/export split `signal_elapsed_s` / `economics_elapsed_s`
 - [x] Unit parity vs single-signal path
@@ -46,9 +51,7 @@
 - [x] Bar OMS + device select + Metal bar-match scaffold
 
 ## Next
-- [ ] 16GB research packing + perf budgets (v0.14)
-- [ ] Export journal/equity downsample (v0.15)
-- [ ] Positioning docs without rival names (v0.16)
 - [ ] Private P002/P003 (separate harness) — no Evidence without permission
+- [ ] Optional OMS hardening (not research speed claim)
 - [x] Metal SL/TP/trail research subset
-- [x] Release cut when green on main (v0.10.0 / v0.13.0 tagged)
+- [x] Release cut when green on main (v0.10.0 / v0.14.0 tagged)

@@ -15,6 +15,7 @@ from monte_neo._version import __version__
 from monte_neo.backtest.bar_engine import run_bar_backtest
 from monte_neo.backtest.batch import run_bar_backtest_batch
 from monte_neo.backtest.golden import verify_golden_vectors
+from monte_neo.backtest.memory_plan import plan_research_bytes
 from monte_neo.backtest.model import ExecutionModel
 from monte_neo.backtest.sweep import run_sma_sweep, sma_signal
 
@@ -50,6 +51,8 @@ def research_manifest() -> dict[str, Any]:
             "export_sma_sweep",
             "verify_export_golden",
             "research_manifest",
+            "plan_research_bytes",
+            "build_sma_cross_grid",
         ],
     }
 
@@ -72,6 +75,9 @@ def export_single(
     *,
     session_mask: np.ndarray | None = None,
     include_equity: bool = False,
+    equity_stride: int = 1,
+    include_journal: bool = False,
+    memory_plan: bool = False,
 ) -> dict[str, Any]:
     """Single-path research run with stable export schema + wall timer.
 
@@ -104,7 +110,18 @@ def export_single(
         "bars": int(np.asarray(close).shape[0]),
     }
     if include_equity:
-        out["equity"] = np.asarray(raw["equity"], dtype=np.float64)
+        eq = np.asarray(raw["equity"], dtype=np.float64)
+        stride = max(1, int(equity_stride))
+        out["equity"] = eq[::stride]
+        out["equity_stride"] = stride
+    if include_journal:
+        out["journal"] = list(raw.get("trades") or [])
+    if memory_plan:
+        out["memory"] = plan_research_bytes(
+            n_bars=int(np.asarray(close).shape[0]),
+            n_combos=1,
+            include_equity=include_equity,
+        )
     return out
 
 
@@ -154,6 +171,9 @@ def export_batch(
             "best_return": float(raw.get("best_return", float(np.max(rets)) if n else 0.0)),
         },
         "bars": int(np.asarray(close).shape[0]),
+        "memory": __import__("monte_neo.backtest.memory_plan", fromlist=["plan_research_bytes"]).plan_research_bytes(
+            n_bars=int(np.asarray(close).shape[0]), n_combos=n, include_signals=True
+        ),
     }
 
 
