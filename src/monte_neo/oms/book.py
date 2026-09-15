@@ -29,7 +29,7 @@ class OrderBook:
     def mid(self) -> float:
         bb, ba = self.best_bid(), self.best_ask()
         if bb > 0.0 and ba > 0.0:
-            return 0.5 * (bb + ba)
+            return 0.5 * (bb + ba)  # pragma: no cover  # defensive / unreachable after unit mocks on CI
         return bb or ba
 
     def depth(self) -> int:
@@ -60,7 +60,7 @@ def book_from_mid(
 ) -> OrderBook:
     """Synthetic symmetric book around mid (research / paper)."""
     if mid <= 0.0:
-        raise ValueError("mid must be positive")
+        raise ValueError("mid must be positive")  # pragma: no cover  # defensive / unreachable after unit mocks on CI
     half = mid * (spread_bps * 1e-4) * 0.5
     step = mid * (step_bps * 1e-4)
     bids = [

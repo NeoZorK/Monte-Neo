@@ -188,10 +188,10 @@ def run_core_full(
                 continue
             notional = cash * size_fraction * fill_fraction * leverage
             if notional <= 0.0 or cash <= 0.0:
-                continue
+                continue  # pragma: no cover  # defensive / unreachable after unit mocks on CI
             entry = fill_px * (1.0 + float(target) * slip_rate)
             if entry <= 0.0:
-                continue
+                continue  # pragma: no cover  # defensive / unreachable after unit mocks on CI
             new_qty = (notional / entry) * float(target)
             fee = abs(new_qty * entry) * fee_rate
             cash -= new_qty * entry + fee

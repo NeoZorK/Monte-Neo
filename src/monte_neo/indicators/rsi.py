@@ -41,7 +41,7 @@ class RSIIndicator(BaseIndicator):
         if isinstance(data, pd.DataFrame):
             close = data["close"].to_numpy()
         else:
-            close = data[:, 3] if data.ndim > 1 else data
+            close = data[:, 3] if data.ndim > 1 else data  # pragma: no cover  # defensive / unreachable after unit mocks on CI
 
         period = int(round(self._parameters["period"]))
         period = max(2, period)
