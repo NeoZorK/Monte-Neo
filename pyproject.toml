@@ -5,20 +5,27 @@ build-backend = "hatchling.build"
 [project]
 name = "monte-neo"
 dynamic = ["version"]
-description = "Monte Carlo Indicator Generator Framework"
+description = "Fast local research for trading strategies on Apple Silicon: fee-aware bar backtests, Monte Carlo, paper OMS (Metal/MLX/Numba)"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 authors = [
     { name = "Monte-Neo Team" }
 ]
-keywords = ["trading", "monte-carlo", "indicators", "backtesting"]
+keywords = ["trading", "monte-carlo", "backtesting", "apple-silicon", "metal", "research", "oms"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
     "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Office/Business :: Financial :: Investment",
+    "Topic :: Scientific/Engineering",
 ]
 
 dependencies = [
@@ -34,7 +41,6 @@ dependencies = [
     "mplfinance",
     "pyyaml>=6.0",
     "python-dotenv>=1.2.2",
-    "mlx>=0.11.0",
     "pybind11>=2.10.0",
     "binance-connector>=3.12.0",
     "seaborn>=0.13.2",
@@ -46,10 +52,38 @@ dependencies = [
     "statsmodels>=0.14.6",
     "fastapi>=0.138.2",
     "uvicorn>=0.49.0",
-    "pyobjc-framework-metal>=12.2.2",
-    "pyobjc-framework-cocoa>=12.2.2",
     "pillow>=12.3.0",
 ]
+
+
+[project.optional-dependencies]
+apple = [
+    "mlx>=0.11.0",
+    "pyobjc-framework-metal>=12.2.2",
+    "pyobjc-framework-cocoa>=12.2.2",
+]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-cov>=4.1",
+    "pytest-asyncio>=0.21",
+    "pytest-xdist>=3.3",
+    "mypy>=1.5",
+    "ruff>=0.1",
+    "black>=26.3.1",
+    "pre-commit>=3.4",
+    "pandas-stubs",
+    "types-PyYAML",
+    "setuptools>=75.0",
+    "build>=1.2",
+    "twine>=5.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/NeoZorK/Monte-Neo"
+Repository = "https://github.com/NeoZorK/Monte-Neo"
+Issues = "https://github.com/NeoZorK/Monte-Neo/issues"
+Changelog = "https://github.com/NeoZorK/Monte-Neo/blob/main/docs/project/CHANGELOG.md"
+Documentation = "https://github.com/NeoZorK/Monte-Neo/blob/main/docs/INDEX.md"
 
 [dependency-groups]
 dev = [
@@ -71,6 +105,7 @@ monte-neo = "monte_neo.cli.app:main"
 
 [tool.hatch.version]
 path = "src/monte_neo/_version.py"
+pattern = '__version__ = "v(?P<version>[^"]+)"'
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/monte_neo"]

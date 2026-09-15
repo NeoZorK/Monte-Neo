@@ -1,4 +1,9 @@
-# Monte-Neo Roadmap (v0.14.1)
+# Monte-Neo Roadmap (v0.15.0)
+
+## v0.15.0
+- [x] PyPI-ready packaging prep (`[apple]` extras, metadata, PACKAGING.md)
+- [x] Demo screenshots + examples quickstart
+- [ ] TestPyPI dry-run + first PyPI publish (maintainer OK)
 
 ## v0.14.1
 - [x] No-hang Metal/MLX size gate → `cpu_numba` fallback
