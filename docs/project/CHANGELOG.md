@@ -3,6 +3,19 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.15.1] — 2026-09-16
+
+### Fixed
+- Bare `pip install` without MLX (`from __future__ import annotations` on acceleration modules)
+- Quiet Metal-unavailable import noise (debug level)
+- Include `monte_neo.data` in wheels (`.gitignore` `/data/`)
+- CI: portable CLI subprocess cwd; ruff clean on coverage boosts
+- Coverage close-out for sequential advice + cli `__main__` pragma
+
+### Packaging
+- Ready for first TestPyPI / PyPI upload as PEP 440 `0.15.1`
+- GitHub tag `v0.15.0` predates these packaging/CI fixes — ship as **0.15.1**
+
 ## [v0.15.0] — 2026-09-15
 
 ### Fixed
