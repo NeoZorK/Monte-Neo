@@ -1,38 +1,36 @@
-# Monte-Neo — коммерческая модель (internal)
+# Monte-Neo — коммерческие заметки
 
-Версия **private**. Репозиторий **не публичный**. GitHub удалён.
+Публичное ядро Monte-Neo — **MIT open source** на GitHub:
+https://github.com/NeoZorK/Monte-Neo
 
-## Продукт
+## Продукт (публичный)
 
-Monte-Neo — framework генерации и валидации торговых индикаторов:
+Быстрый локальный research торговых стратегий на Apple Silicon:
 
-- Monte Carlo / walk-forward / robustness pipeline
-- MLX Tier-1 screen, Numba path-dependent metrics
-- Metal GPU acceleration (Apple Silicon): `metal_engine`, `MetalFloat8Engine`
+- Fee-aware next-bar economics (Metal / Numba; MLX опционально)
+- Monte Carlo research helpers
+- Paper OMS lane (семантика валидации, не claim «заменить production-бот»)
 
-## Дистрибуция
+Установка: `pip install monte-neo` (когда опубликовано) или `pip install "monte-neo[apple]"` на Apple Silicon.
 
-| Канал | Статус |
-|---|---|
-| GitHub | **удалён** — не open source |
-| NeoZorK gitserver | `/Users/rostsh/git-server/NeoZorK/Monte-Neo.git` |
-| LAN | `ssh://rost@2014/Users/rost/git-server/NeoZorK/Monte-Neo.git` |
+## Что остаётся коммерческим / private
 
-## Модели лицензирования
+Отдельно от MIT-дерева (не смешивать в публичные релизы):
 
-1. **Internal studio** — R&D внутри NeoZorK (Wave2, PHL, и др.)
-2. **Commercial license** — отдельное соглашение для внешних клиентов
-3. **OEM / white-label** — индикаторный генератор без Wave2
+- Private bake-off harness и peer-сравнения
+- Студийные ноутбуки и проприетарные стратегии
+- Платный support, кастомные интеграции, OEM / white-label
 
-## Vendoring (QWC_WAVE2)
+## Тиры (сервисы, не вторая лицензия на MIT-ядро)
 
-QWC_WAVE2 **не импортирует** `monte_neo` как pip dependency (ADR-0009).
-Разрешён vendoring фрагментов с docstring: путь gitserver + commit hash.
+1. **OSS / MIT** — свободно использовать и форкать публичный пакет
+2. **Support & consulting** — отдельное соглашение
+3. **OEM / white-label** — кастомная упаковка по контракту
 
-## Сборка native
+## Native Metal
 
 ```bash
-uv sync
+uv sync --extra apple
 uv run bash scripts/build_native.sh
 ```
 
