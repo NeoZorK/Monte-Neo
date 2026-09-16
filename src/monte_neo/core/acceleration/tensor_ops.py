@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Tensor operations for MLX-based acceleration.
 """
