@@ -11,7 +11,7 @@ from monte_neo.backtest.model import ExecutionModel
 
 
 @njit(cache=True)
-def _portfolio_core(
+def _portfolio_core(  # pragma: no cover  # njit body; covered via public API / subprocess
     open_: np.ndarray,
     high: np.ndarray,
     low: np.ndarray,

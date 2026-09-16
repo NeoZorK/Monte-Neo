@@ -1,6 +1,7 @@
 """
 Tensor operations for MLX-based acceleration.
 """
+from __future__ import annotations
 
 try:
     import mlx.core as mx

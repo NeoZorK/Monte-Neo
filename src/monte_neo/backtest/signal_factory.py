@@ -15,7 +15,7 @@ DeviceName = Literal["auto", "cpu_numba", "mlx"]
 
 
 @njit(cache=True)
-def _sma_cross_one(close: np.ndarray, fast: int, slow: int) -> np.ndarray:
+def _sma_cross_one(close: np.ndarray, fast: int, slow: int) -> np.ndarray:  # pragma: no cover  # njit body; covered via public API / subprocess
     n = close.shape[0]
     out = np.zeros(n, dtype=np.int64)
     if fast <= 0 or slow <= fast or slow > n:
@@ -36,7 +36,7 @@ def _sma_cross_one(close: np.ndarray, fast: int, slow: int) -> np.ndarray:
 
 
 @njit(parallel=True, cache=True)
-def _sma_cross_grid_numba(
+def _sma_cross_grid_numba(  # pragma: no cover  # njit body; covered via public API / subprocess
     close: np.ndarray, fasts: np.ndarray, slows: np.ndarray
 ) -> np.ndarray:
     n_bars = close.shape[0]

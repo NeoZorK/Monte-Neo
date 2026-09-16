@@ -1,32 +1,36 @@
-# Monte-Neo — commercial model (internal)
+# Monte-Neo — commercial notes
 
-**Private repository.** Not open source. GitHub distribution removed.
+Monte-Neo’s **public core** is **MIT open source** on GitHub:
+https://github.com/NeoZorK/Monte-Neo
 
-## Product
+## Product (public)
 
-Monte-Neo is a Monte Carlo indicator generator framework with MLX screening,
-Numba metrics, and Metal GPU acceleration on Apple Silicon.
+Fast local research for trading strategies on Apple Silicon:
 
-## Distribution
+- Fee-aware next-bar research economics (Metal / Numba; MLX optional)
+- Monte Carlo research helpers
+- Paper OMS lane (validation semantics, not a production-bot claim)
 
-- NeoZorK gitserver: `/Users/rostsh/git-server/NeoZorK/Monte-Neo.git`
-- LAN: `ssh://rost@2014/Users/rost/git-server/NeoZorK/Monte-Neo.git`
+Install: `pip install monte-neo` (when published) or `pip install "monte-neo[apple]"` on Apple Silicon.
 
-## Licensing tiers
+## What stays commercial / private
 
-1. Internal NeoZorK R&D
-2. Commercial license (written agreement)
-3. OEM / white-label indicator generator
+Separate from the MIT tree (do not mix into public releases):
 
-## Vendoring into QWC_WAVE2
+- Private bake-off harnesses and peer comparisons
+- Studio-only research notebooks and proprietary strategies
+- Paid support, custom integration, OEM / white-label engagements
 
-No pip dependency. Vendored snippets only with gitserver path and commit hash
-in docstrings.
+## Licensing tiers (services, not a second license for the MIT core)
 
-## Native build
+1. **OSS / MIT** — use, fork, ship the public package freely
+2. **Support & consulting** — written agreement
+3. **OEM / white-label** — custom packaging under a commercial contract
+
+## Native Metal extension
 
 ```bash
-uv sync
+uv sync --extra apple
 uv run bash scripts/build_native.sh
 ```
 

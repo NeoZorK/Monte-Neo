@@ -13,8 +13,8 @@ from monte_neo.visualization.trades import TradeVisualizer
 def test_price_chart(sample_ohlcv):
     # Mock plotext and mplfinance
     with (
-        patch("plotext.show") as mock_show_terminal,
-        patch("plotext.candlestick") as mock_candle,
+        patch("plotext.show", create=True) as mock_show_terminal,
+        patch("plotext.candlestick", create=True) as mock_candle,
         patch("mplfinance.plot") as mock_show_mpl,
     ):
         chart = ChartGenerator()

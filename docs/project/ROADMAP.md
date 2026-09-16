@@ -1,4 +1,8 @@
-# Monte-Neo Roadmap (v0.15.0)
+# Monte-Neo Roadmap (v0.15.1)
+
+## v0.15.1
+- [x] Packaging/CI fixes after v0.15.0 tag (bare install, data wheel, ruff/CI)
+- [ ] First TestPyPI + PyPI publish
 
 ## v0.15.0
 - [x] PyPI-ready packaging prep (`[apple]` extras, metadata, PACKAGING.md)

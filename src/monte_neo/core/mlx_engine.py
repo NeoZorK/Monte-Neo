@@ -31,7 +31,7 @@ except ImportError:
     if METAL_EXTENSION_AVAILABLE:
         from monte_neo.core.acceleration.cpp_metal.metal_engine import Driver, MetalBacktestBridge
     else:
-        logger.warning("❌ Metal extension unavailable.")
+        logger.debug("Metal extension unavailable (optional; Numba/MLX paths still work).")
         Driver = None
         MetalBacktestBridge = None
 

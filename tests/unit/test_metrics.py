@@ -9,8 +9,12 @@ def test_metrics_calculator_init():
 
 
 def test_calculate_all(sample_ohlcv, sample_signals):
+    from unittest.mock import patch
+
     calc = MetricsCalculator()
-    metrics = calc.calculate_all(sample_ohlcv, sample_signals)
+    # Pin Numba path: native .so trade counts can differ from the frozen fixture expectation.
+    with patch("monte_neo.metrics.calculator.HAS_NATIVE", False):
+        metrics = calc.calculate_all(sample_ohlcv, sample_signals)
 
     assert "profit_factor" in metrics
     assert "sharpe_ratio" in metrics

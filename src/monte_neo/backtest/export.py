@@ -231,10 +231,14 @@ def export_sma_sweep(
 def verify_export_golden(
     *,
     device: str = "cpu_numba",
-    rtol: float = 1e-12,
-    atol: float = 1e-14,
+    rtol: float | None = None,
+    atol: float | None = None,
 ) -> dict[str, Any]:
-    """Run golden vectors and wrap with export metadata."""
+    """Run golden vectors and wrap with export metadata.
+
+    Tolerances default inside :func:`verify_golden_vectors` (strict float64, or
+    Metal float32 band when the batch device resolves to Metal).
+    """
     report = verify_golden_vectors(device=device, rtol=rtol, atol=atol)
     return {
         "export_api_version": EXPORT_API_VERSION,
