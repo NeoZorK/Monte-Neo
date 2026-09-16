@@ -41,7 +41,7 @@ docs_dir: docs
 site_dir: site
 
 nav:
-  - Home: INDEX.md
+  - Home: index.md
   - FAQ: guides/FAQ.md
   - Setup:
       - Installation: setup/installation.md
