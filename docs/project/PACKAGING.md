@@ -27,7 +27,7 @@ broadly; Metal/MLX are an **`[apple]` extra** so Linux/CI wheels still install.
 - [x] Optional `[apple]` extras (mlx, pyobjc)
 - [x] `python -m build` + install wheel in a clean venv on Mac (with and without `[apple]`; Linux CI wheel install still recommended)
 - [x] TestPyPI dry-run (`twine upload --repository testpypi`) — 0.15.1
-- [ ] Trusted Publishing (OIDC) on GitHub → pypi.org (workflow `publish.yml` ready; pending publisher on pypi.org)
+- [x] Trusted Publishing (OIDC) on GitHub → pypi.org (workflow `publish.yml`; publisher active on PyPI + TestPyPI for NeoZorK/Monte-Neo env `pypi`)
 - [x] Name claim `monte-neo` still free on PyPI (checked 2026-09-16)
 - [x] Explicit “first publish” OK from maintainer — 0.15.1 on PyPI
 

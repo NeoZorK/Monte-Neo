@@ -30,6 +30,11 @@ jobs:
         run: pip install "mkdocs-material>=9.5"
       - name: Build
         run: mkdocs build --strict
+      - name: Ensure lowercase index.html for GitHub Pages
+        run: |
+          if [ -f site/INDEX.html ] && [ ! -f site/index.html ]; then
+            cp site/INDEX.html site/index.html
+          fi
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
