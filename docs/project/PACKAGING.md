@@ -25,10 +25,10 @@ broadly; Metal/MLX are an **`[apple]` extra** so Linux/CI wheels still install.
 - [x] `project.urls`, classifiers, keywords
 - [x] Hatch PEP 440 version (leading `v` stripped for the wheel)
 - [x] Optional `[apple]` extras (mlx, pyobjc)
-- [x] `python -m build` + install wheel in a clean venv on Mac (Linux CI wheel install still recommended)
+- [x] `python -m build` + install wheel in a clean venv on Mac (with and without `[apple]`; Linux CI wheel install still recommended)
 - [ ] TestPyPI dry-run (`twine upload --repository testpypi`)
 - [ ] Trusted Publishing (OIDC) on GitHub → pypi.org
-- [ ] Name claim `monte-neo` still free on PyPI
+- [x] Name claim `monte-neo` still free on PyPI (checked 2026-09-16)
 - [ ] Explicit “first publish” OK from maintainer
 
 ## Free channels only
@@ -52,6 +52,11 @@ uv run --with 'twine>=6' --with 'packaging>=24.2' twine check dist/*
 ```
 
 Note: wheels may declare Metadata-Version 2.5; use `packaging>=24.2` with twine.
+
+
+## Import without `[apple]`
+
+Base install must import without MLX/Metal. Acceleration modules use `from __future__ import annotations` so `mx.array` annotations are not evaluated when `mlx` is absent. Metal C++ extension absence is logged at `debug`, not warning.
 
 ## Wheel contents smoke
 
