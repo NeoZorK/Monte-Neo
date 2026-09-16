@@ -110,6 +110,7 @@ pattern = '__version__ = "v(?P<version>[^"]+)"'
 [tool.hatch.build.targets.wheel]
 packages = ["src/monte_neo"]
 
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]

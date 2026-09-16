@@ -94,7 +94,8 @@ celerybeat-schedule
  venv.bak/
  
  # Results and Images
-data/
+# Project data dirs (not the monte_neo.data package)
+/data/
 results/
 exports/
 *.png
