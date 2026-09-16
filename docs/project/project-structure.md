@@ -26,4 +26,4 @@ Monte-Neo/
 └── uv.lock            # Lockfile for consistent environments
 ```
 
-See [docs/INDEX.md](../index.md) for a detailed file-by-file description.
+See [docs/INDEX.md](../INDEX.md) for a detailed file-by-file description.
