@@ -26,10 +26,10 @@ broadly; Metal/MLX are an **`[apple]` extra** so Linux/CI wheels still install.
 - [x] Hatch PEP 440 version (leading `v` stripped for the wheel)
 - [x] Optional `[apple]` extras (mlx, pyobjc)
 - [x] `python -m build` + install wheel in a clean venv on Mac (with and without `[apple]`; Linux CI wheel install still recommended)
-- [ ] TestPyPI dry-run (`twine upload --repository testpypi`)
-- [ ] Trusted Publishing (OIDC) on GitHub → pypi.org
+- [x] TestPyPI dry-run (`twine upload --repository testpypi`) — 0.15.1
+- [ ] Trusted Publishing (OIDC) on GitHub → pypi.org (workflow `publish.yml` ready; pending publisher on pypi.org)
 - [x] Name claim `monte-neo` still free on PyPI (checked 2026-09-16)
-- [ ] Explicit “first publish” OK from maintainer
+- [x] Explicit “first publish” OK from maintainer — 0.15.1 on PyPI
 
 ## Free channels only
 
@@ -68,3 +68,34 @@ Use ``/data/`` (repo-root only) in ``.gitignore``.
 unzip -l dist/*.whl | grep monte_neo/data/
 python -c "from monte_neo.data.sampler import DataSampler; print(DataSampler)"
 ```
+
+
+## First published
+
+- **0.15.1** on TestPyPI: https://test.pypi.org/project/monte-neo/0.15.1/
+- **0.15.1** on PyPI: https://pypi.org/project/monte-neo/0.15.1/
+
+
+## GitHub Pages
+
+Docs site: https://neozork.github.io/Monte-Neo/ (MkDocs Material).
+
+- Config: `mkdocs.yml`
+- Workflow: `.github/workflows/docs.yml` (deploys on push to `main` when `docs/` changes)
+- Enable once: GitHub → Settings → Pages → Source **GitHub Actions**
+
+## Trusted Publishing (OIDC)
+
+Workflow: `.github/workflows/publish.yml` (on GitHub Release).
+
+On https://pypi.org/manage/account/publishing/ add a pending publisher:
+
+| Field | Value |
+|-------|--------|
+| PyPI Project | `monte-neo` |
+| Owner | `NeoZorK` |
+| Repository | `Monte-Neo` |
+| Workflow | `publish.yml` |
+| Environment | `pypi` |
+
+Create a GitHub Environment named `pypi` (optional protection rules). After the first OIDC upload, long-lived API tokens can be rotated away.
