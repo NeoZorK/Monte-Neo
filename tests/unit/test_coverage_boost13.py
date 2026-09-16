@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -52,14 +53,16 @@ def test_memory_plan_unknown_want_fallthrough():
 
 def test_cli_app_main_subprocess():
     # Cover `if __name__ == "__main__": sys.exit(main())`
+    root = Path(__file__).resolve().parents[2]
+    env = {**__import__("os").environ, "PYTHONPATH": str(root / "src")}
     r = subprocess.run(
         [sys.executable, "-m", "monte_neo.cli.app", "--version"],
-        cwd="/Users/rostsh/Documents/DIS/REPO/Monte-Neo",
+        cwd=root,
         capture_output=True,
         text=True,
-        env={**dict(**{k: v for k, v in __import__("os").environ.items()}), "PYTHONPATH": "src"},
+        env=env,
     )
-    assert r.returncode == 0
+    assert r.returncode == 0, (r.stdout, r.stderr)
 
 
 def test_evolution_progress_callback_in_loop(sample_ohlcv):
