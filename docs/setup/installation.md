@@ -1,29 +1,59 @@
 # Installation
 
-## Standard Installation (private gitserver)
+## From PyPI (recommended)
 
 ```bash
-git clone /Users/rostsh/git-server/NeoZorK/Monte-Neo.git
+pip install monte-neo
+```
+
+Apple Silicon extras (MLX + Metal Objective‑C bindings):
+
+```bash
+pip install "monte-neo[apple]"
+```
+
+Isolated CLI via pipx:
+
+```bash
+brew install pipx
+pipx install "monte-neo[apple]"
+```
+
+Check:
+
+```bash
+monte-neo --version
+python -c "import monte_neo; print(monte_neo.__version__)"
+```
+
+Current release: **v0.15.1** on [PyPI](https://pypi.org/project/monte-neo/).
+
+## From source (developers)
+
+```bash
+git clone https://github.com/NeoZorK/Monte-Neo.git
 cd Monte-Neo
 uv sync
+# optional native Metal extension:
 uv run bash scripts/build_native.sh
 ```
 
-LAN clone:
-
-```bash
-git clone ssh://rost@2014/Users/rost/git-server/NeoZorK/Monte-Neo.git
-```
-
-## Docker Installation
-
-```bash
-docker-compose -f docker/docker-compose.yml up -d
-docker-compose -f docker/docker-compose.yml exec monte-neo monte-neo
-```
+See [Development setup](development-setup.md) and [Metal native build](../METAL_NATIVE_BUILD.md).
 
 ## Requirements
 
-- **Operating System**: macOS (Metal), Linux, or Windows (WSL2)
+- **OS**: macOS Apple Silicon recommended for Metal; Linux/Windows OK for `cpu_numba` research path
 - **Python**: 3.11+
-- **Memory**: 4GB+ recommended for large MC simulations
+- **Memory**: 8–16GB class hosts are the design center for large sweeps
+
+## TestPyPI (maintainers only)
+
+TestPyPI can contain stub packages that poison `--extra-index-url`. Prefer:
+
+```bash
+pip download --no-deps -d /tmp/mn-wheels --index-url https://test.pypi.org/simple/ monte-neo==0.15.1
+pip install /tmp/mn-wheels/monte_neo-*.whl
+# then install runtime deps from PyPI as needed, or use the real PyPI package
+```
+
+For everyday use, install from **PyPI**, not TestPyPI.

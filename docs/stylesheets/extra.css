@@ -1,0 +1,58 @@
+/* Compact hero + badges — avoid giant README-style images on Pages */
+.mn-hero-logo {
+  text-align: center;
+  margin: 0.5rem 0 0.25rem;
+}
+.mn-hero-logo img {
+  max-width: 96px !important;
+  height: auto !important;
+  margin: 0 auto;
+  display: block;
+}
+.mn-tagline {
+  text-align: center;
+  font-size: 1.05rem;
+  margin: 0.25rem 0 0.75rem;
+  color: var(--md-default-fg-color--light);
+}
+.mn-badges {
+  text-align: center;
+  margin: 0.5rem 0 1.25rem;
+  line-height: 1.8;
+}
+.mn-badges img,
+.mn-badges a img {
+  height: 20px !important;
+  width: auto !important;
+  max-height: 20px !important;
+  vertical-align: middle;
+  margin: 0 2px;
+}
+.mn-gallery {
+  display: grid;
+  gap: 1rem;
+  margin: 1rem 0 1.5rem;
+}
+@media (min-width: 960px) {
+  .mn-gallery {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.mn-gallery img {
+  border-radius: 0.4rem;
+  box-shadow: var(--md-shadow-z1);
+  max-width: 100% !important;
+  height: auto !important;
+}
+/* Soften default content images (logo mentions in other pages) */
+.md-typeset img[src*="monteneo-logo"] {
+  max-width: 120px !important;
+  height: auto !important;
+}
+.md-typeset img[src*="shields.io"],
+.md-typeset img[src*="badge.svg"],
+.md-typeset img[src*="badge/"] {
+  height: 20px !important;
+  width: auto !important;
+  max-height: 20px !important;
+}

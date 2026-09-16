@@ -1,7 +1,7 @@
 # Monte-Neo
 
 <p align="center">
-  <img src="docs/assets/monteneo-logo.png" alt="Monte-Neo logo" width="220"/>
+  <img src="docs/assets/monteneo-logo.png" alt="Monte-Neo logo" width="120"/>
 </p>
 
 <p align="center">

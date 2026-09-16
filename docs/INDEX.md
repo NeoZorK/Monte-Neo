@@ -5,6 +5,10 @@ A simplified guide to the Monte-Neo file structure.
 ## Format: [file path] - [description]
 
 ### Root Configuration
+- docs/home.md - Public docs site landing page (MkDocs Home)
+- docs/stylesheets/extra.css - MkDocs Material extras (compact badges/logo)
+- docs/assets/logo-mark.png - Compact theme logo / favicon (96px)
+- docs/assets/logo-header.png - Compact header logo (128px)
 - README.md - Main project documentation
 - pyproject.toml - Python package configuration and dependencies
 - uv.lock - Lockfile for consistent environment management

@@ -32,14 +32,17 @@ jobs:
         run: mkdocs build --strict
       - name: Ensure root index.html for GitHub Pages
         run: |
-          # MkDocs turns docs/INDEX.md into site/INDEX/index.html on Linux.
-          # GitHub Pages needs site/index.html at the artifact root.
-          if [ -f site/INDEX/index.html ]; then
-            cp site/INDEX/index.html site/index.html
+          # Prefer product landing (docs/home.md → site/home/). Rewrite ../ → ./ so
+          # assets/CSS work at site root (cannot use docs/index.md next to INDEX.md on macOS).
+          if [ -f site/home/index.html ]; then
+            sed -E 's/(href|src)="\.\.\//\1="/g' site/home/index.html > site/index.html
+          elif [ -f site/INDEX/index.html ]; then
+            sed -E 's/(href|src)="\.\.\//\1="/g' site/INDEX/index.html > site/index.html
           elif [ -f site/INDEX.html ] && [ ! -f site/index.html ]; then
             cp site/INDEX.html site/index.html
           fi
           test -f site/index.html
+          grep -q 'stylesheets/extra.css' site/index.html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
