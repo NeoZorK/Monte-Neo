@@ -432,7 +432,7 @@ def test_metal_dispatch_engine_errors_and_cache():
             raise RuntimeError("x")
 
     # Don't subclass if MetalOmsEngine init always imports Metal - just set None
-    md._metal_engine = None  # type: ignore[attr-defined]
+    md._metal_engine = False  # type: ignore[attr-defined]  # re-arm lazy init
 
 
 def test_evolution_ai_interrupt_and_gpu_fallback(sample_ohlcv):
