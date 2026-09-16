@@ -4,35 +4,61 @@ site_url: https://neozork.github.io/Monte-Neo/
 repo_url: https://github.com/NeoZorK/Monte-Neo
 repo_name: NeoZorK/Monte-Neo
 edit_uri: edit/main/docs/
+copyright: Copyright &copy; NeoZorK — MIT License
 
 theme:
   name: material
+  logo: assets/logo-mark.png
+  favicon: assets/logo-mark.png
   palette:
-    - scheme: default
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
       primary: indigo
       accent: indigo
       toggle:
         icon: material/brightness-7
         name: Dark mode
-    - scheme: slate
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
       primary: indigo
       accent: indigo
       toggle:
         icon: material/brightness-4
         name: Light mode
   features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
     - navigation.sections
     - navigation.top
+    - navigation.footer
     - search.suggest
+    - search.highlight
     - content.code.copy
+    - content.tabs.link
+    - toc.follow
 
 plugins:
   - search
 
+extra_css:
+  - stylesheets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/NeoZorK/Monte-Neo
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/monte-neo/
+
 markdown_extensions:
   - admonition
+  - attr_list
+  - md_in_html
   - pymdownx.details
   - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
   - tables
   - toc:
       permalink: true
@@ -41,14 +67,15 @@ docs_dir: docs
 site_dir: site
 
 nav:
-  - Home: INDEX.md
-  - FAQ: guides/FAQ.md
-  - Setup:
-      - Installation: setup/installation.md
-      - Development: setup/development-setup.md
+  - Home: home.md
+  - Get started:
+      - Install: setup/installation.md
+      - Quick start: guides/quick-start.md
+      - FAQ: guides/FAQ.md
   - Project:
       - Changelog: project/CHANGELOG.md
       - Roadmap: project/ROADMAP.md
       - Packaging: project/PACKAGING.md
       - Branching: project/BRANCHING.md
+      - Docs map: INDEX.md
   - Commercial: en/COMMERCIAL.md
