@@ -1,3 +1,4 @@
+# ruff: noqa: N806
 """Tenth coverage boost: mop remaining small gaps toward 100%."""
 
 from __future__ import annotations
@@ -205,7 +206,8 @@ def test_ast_utils_edges():
 
 
 def test_mc_utils_dispatch_sensitivity_logger():
-    from monte_neo.monte_carlo import dispatch, sensitivity, utils as mcu
+    from monte_neo.monte_carlo import dispatch, sensitivity
+    from monte_neo.monte_carlo import utils as mcu
     from monte_neo.utils import logger as logmod
 
     # summarize empty / weird
@@ -304,7 +306,8 @@ def test_generator_worker_and_cli_app_edges(tmp_path):
 
 
 def test_device_metal_ladder_and_shader_buffer():
-    from monte_neo.oms.accel import buffer_pool, device as dev, shader_catalog
+    from monte_neo.oms.accel import buffer_pool, shader_catalog
+    from monte_neo.oms.accel import device as dev
 
     # metal_available first except + cpp fail
     fake = MagicMock()
@@ -344,12 +347,12 @@ def test_adapters_init_errors():
 
 
 def test_metal_parser_and_indicators_edges(sample_ohlcv):
+    from monte_neo.indicators.base import IndicatorConfig
+    from monte_neo.indicators.dynamic import DynamicIndicator
     from monte_neo.indicators.macd import MACDIndicator
     from monte_neo.indicators.metal_parser import parse_metal_params
     from monte_neo.indicators.rsi import RSIIndicator
     from monte_neo.indicators.sma import SMAIndicator
-    from monte_neo.indicators.base import IndicatorConfig
-    from monte_neo.indicators.dynamic import DynamicIndicator
 
     parse_metal_params(
         "data['close'] > data['close'].rolling(20).mean() + 2 * data['close'].rolling(20).std()"

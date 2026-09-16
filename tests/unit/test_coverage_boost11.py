@@ -1,14 +1,13 @@
+# ruff: noqa: N806
 """Eleventh coverage boost: precise remaining lines."""
 
 from __future__ import annotations
 
-from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pandas as pd
 import pytest
-
 
 
 def test_bar_engine_and_strategy_errors():
@@ -143,6 +142,7 @@ def test_sequential_advice_and_target_branches(sample_ohlcv):
     src = runner._generate_advice.__func__.__code__  # keep import side effects
     # recreate the target-check loop inline against private method by reading source for method name
     import inspect
+
     import monte_neo.monte_carlo.sequential as seq
 
     text = inspect.getsource(seq.SequentialMCRunner)
@@ -480,7 +480,7 @@ def test_misc_remaining_small(sample_ohlcv):
     from monte_neo.indicators.metal_parser import parse_metal_params
     from monte_neo.indicators.sma import SMAIndicator
     from monte_neo.metrics.sharpe import SortinoRatioMetric
-    from monte_neo.oms.matching import MatchConfig, try_match_limit, try_match_market
+    from monte_neo.oms.matching import MatchConfig, try_match_limit
     from monte_neo.oms.strategy import SignalStrategy
     from monte_neo.oms.types import Order, OrderSide, OrderType
     from monte_neo.visualization.charts import ChartGenerator

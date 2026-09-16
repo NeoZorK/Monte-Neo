@@ -5,6 +5,11 @@ Version source of truth: `src/monte_neo/_version.py`.
 
 ## [v0.15.0] — 2026-09-15
 
+### Fixed
+- `verify_export_golden` / `verify_golden_vectors`: auto Metal float32 tolerance band when batch resolves to Metal
+- Unit metrics: pin Numba path for deterministic `trade_count`; native extract stub via `_get_native`
+- Build: pin `hatchling>=1.24,<1.26` so wheels emit Metadata 2.3 (twine-check friendly)
+
 ### Packaging / PyPI prep
 - `mlx` + PyObjC Metal moved to optional extra **`monte-neo[apple]`** (Linux/CI-friendly wheels)
 - Hatch version pattern strips leading `v` for PEP 440 distribution version

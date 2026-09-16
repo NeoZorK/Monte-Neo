@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.24,<1.26"]
 build-backend = "hatchling.build"
 
 [project]
@@ -7,7 +7,7 @@ name = "monte-neo"
 dynamic = ["version"]
 description = "Fast local research for trading strategies on Apple Silicon: fee-aware bar backtests, Monte Carlo, paper OMS (Metal/MLX/Numba)"
 readme = "README.md"
-license = "MIT"
+license = { text = "MIT" }
 requires-python = ">=3.11"
 authors = [
     { name = "Monte-Neo Team" }

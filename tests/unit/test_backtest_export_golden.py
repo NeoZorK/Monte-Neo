@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from monte_neo.backtest import (
     EXPORT_API_VERSION,
@@ -119,3 +120,16 @@ def test_export_sma_sweep_discloses_signal_build() -> None:
     assert out["timing"]["includes_signal_build"] is True
     assert out["combos"] == 8
     assert out["work_checklist"]["next_bar_fill"] is True
+
+
+def test_verify_export_golden_metal_uses_float32_band() -> None:
+    """Metal float32 batch must pass with auto-widened tolerances."""
+    from monte_neo.oms.accel.device import metal_available
+
+    if not metal_available():
+        pytest.skip("Metal unavailable")
+    report = verify_export_golden(device="metal")
+    assert report["ok"] is True
+    assert report.get("device") == "metal"
+    assert report.get("atol") == pytest.approx(1e-5)
+    assert report["checks"]["batch_returns"] is True

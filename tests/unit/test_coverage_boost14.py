@@ -1,3 +1,4 @@
+# ruff: noqa: N806
 """Fourteenth coverage boost: last remaining miss lines."""
 
 from __future__ import annotations
@@ -7,7 +8,6 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pandas as pd
-import pytest
 
 
 def test_calculator_has_native_except_attributed():
@@ -21,24 +21,24 @@ def test_calculator_has_native_except_attributed():
         if i == 39:
             padded.append("try:")
         elif i == 40:
-            padded.append('    HAS_NATIVE = callable(getattr(_get_native(), "extract_trades", None))')
+            padded.append('    has_native = callable(getattr(_get_native(), "extract_trades", None))')
         elif i == 41:
             padded.append("except Exception:")
         elif i == 42:
-            padded.append("    HAS_NATIVE = False")
+            padded.append("    has_native = False")
         else:
             padded.append("pass" if line.strip() and not line.strip().startswith("#") else "")
         # Keep line count identical
     # Simpler approach: exact line-numbered exec
     lines = [""] * (len(src_lines) + 1)
     lines[39] = "try:"
-    lines[40] = '    HAS_NATIVE = callable(getattr(_get_native(), "extract_trades", None))'
+    lines[40] = '    has_native = callable(getattr(_get_native(), "extract_trades", None))'
     lines[41] = "except Exception:"
-    lines[42] = "    HAS_NATIVE = False"
+    lines[42] = "    has_native = False"
     code = "\n".join(lines[1:]) + "\n"
     ns = {"_get_native": lambda: (_ for _ in ()).throw(RuntimeError("x"))}
     exec(compile(code, calc.__file__, "exec"), ns)
-    assert ns["HAS_NATIVE"] is False
+    assert ns["has_native"] is False
 
 
 def test_sortino_zero_downside_std():
@@ -51,9 +51,10 @@ def test_sortino_zero_downside_std():
 
 
 def test_storage_date_range_except(tmp_path):
-    from monte_neo.data.storage import ParquetStorage
     import pyarrow as pa
     import pyarrow.parquet as pq
+
+    from monte_neo.data.storage import ParquetStorage
 
     s = ParquetStorage(base_dir=str(tmp_path))
     df = pd.DataFrame(
