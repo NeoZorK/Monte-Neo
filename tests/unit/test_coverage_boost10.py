@@ -537,7 +537,7 @@ def test_misc_one_liners(sample_ohlcv, tmp_path):
     with patch.dict("sys.modules", {"Metal": fake}):
         with pytest.raises(RuntimeError):
             me.MetalResearchEngine()
-    me._metal_research = None
+    me._metal_research = False  # re-arm lazy init
 
     # validator repaint true detect
     from monte_neo.core.validator import OverfitValidator

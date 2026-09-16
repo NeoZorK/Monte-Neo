@@ -81,7 +81,7 @@ def test_metal_l2_dispatch_cpu_and_batch():
         assert batch2["device_used"] == "metal"
 
     # force cached miss without replacing MetalL2Engine type (isinstance needs real class)
-    ml2._metal_l2 = None  # type: ignore[attr-defined]
+    ml2._metal_l2 = False  # type: ignore[attr-defined]  # re-arm lazy init
 
 
 def test_metal_l2_engine_error_branches():
@@ -306,7 +306,7 @@ def test_metal_economics_try_batch(sample_ohlcv):
         assert out2 and out2.get("ok") is True
     import monte_neo.backtest.metal_economics as me
 
-    me._metal_research = None
+    me._metal_research = False  # re-arm lazy init
 
 
 def test_sequential_advice_and_steps(sample_ohlcv):
