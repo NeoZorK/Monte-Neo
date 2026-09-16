@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import matplotlib
@@ -12,10 +11,9 @@ import matplotlib.pyplot as plt
 
 plt.show = lambda *a, **k: None
 
-import numpy as np
-import pandas as pd
-import pytest
-
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
+import pytest  # noqa: E402
 
 
 def test_walk_forward_helpers(sample_ohlcv):
@@ -172,8 +170,8 @@ def test_cli_parse_and_headless(tmp_path):
         pass
     # main interactive false
     with patch("sys.argv", ["monte-neo", "--headless", str(cfg)]):
-        with patch.object(cli_app, "MonteNeoCLI") as MC:
-            inst = MC.return_value
+        with patch.object(cli_app, "MonteNeoCLI") as mc_mock:
+            inst = mc_mock.return_value
             inst.run.return_value = 0
             try:
                 cli_app.main()

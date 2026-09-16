@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -88,8 +87,8 @@ def test_run_search_sequential_executor_and_early_stop(sample_ohlcv):
     ), patch.object(gs, "_run_evolution_phase", side_effect=lambda g, d, bi, br, bd: (bi, br, bd)):
         # force early stop after first good mc
         # Patch ParallelExecutor to no-op context
-        with patch("monte_neo.core.generator_search.ParallelExecutor") as PE:
-            pe = PE.return_value
+        with patch("monte_neo.core.generator_search.ParallelExecutor") as production_exporter:
+            pe = production_exporter.return_value
             pe.__enter__.return_value = pe
             pe.__exit__.return_value = None
             # also need early stop attribute check in loop - read source
@@ -98,8 +97,8 @@ def test_run_search_sequential_executor_and_early_stop(sample_ohlcv):
             except Exception:
                 pass
     # ensure sequential branch constructed ParallelExecutor with n_workers=1
-    with patch("monte_neo.core.generator_search.ParallelExecutor") as PE:
-        pe = PE.return_value
+    with patch("monte_neo.core.generator_search.ParallelExecutor") as production_exporter:
+        pe = production_exporter.return_value
         pe.__enter__.return_value = pe
         pe.__exit__.return_value = None
         gen2 = MagicMock()
@@ -117,8 +116,8 @@ def test_run_search_sequential_executor_and_early_stop(sample_ohlcv):
             except Exception:
                 pass
         # called with n_workers=1 for sequential
-        assert PE.called
-        kwargs = PE.call_args.kwargs if PE.call_args else {}
+        assert production_exporter.called
+        kwargs = production_exporter.call_args.kwargs if production_exporter.call_args else {}
         if "n_workers" in kwargs:
             assert kwargs["n_workers"] == 1
 
@@ -189,10 +188,10 @@ def test_backtest_data_edges():
 
 
 def test_charts_without_mplfinance(sample_ohlcv, tmp_path):
-    from monte_neo.visualization.charts import ChartGenerator
-
     # Force ImportError branch in __init__
     import builtins
+
+    from monte_neo.visualization.charts import ChartGenerator
 
     real_import = builtins.__import__
 
@@ -242,8 +241,8 @@ def test_charts_without_mplfinance(sample_ohlcv, tmp_path):
 
 
 def test_binance_live_paths(monkeypatch):
-    from monte_neo.oms.adapters.binance import BinanceAdapter
     from monte_neo.oms.adapters.base import OrderIntent
+    from monte_neo.oms.adapters.binance import BinanceAdapter
     from monte_neo.oms.types import OrderSide, OrderType
 
     with pytest.raises(ValueError):
@@ -328,10 +327,15 @@ def test_evaluator_dict_and_length_mismatch():
             "volume": np.ones(50),
         }
     )
-    short = lambda data, np, pd: np.array([1.0, 2.0, 3.0])
+    def short(data, np, pd):
+        return np.array([1.0, 2.0, 3.0])
+
     out = evaluate_fast_signals(short, df.head(20))
     assert len(out) == 20
-    scalar = lambda data, np, pd: np.array(1.0)
+
+    def scalar(data, np, pd):
+        return np.array(1.0)
+
     out2 = evaluate_fast_signals(scalar, df.head(10))
     assert len(out2) == 10
 

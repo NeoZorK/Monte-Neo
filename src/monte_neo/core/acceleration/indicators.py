@@ -1,8 +1,7 @@
-from __future__ import annotations
-
 """
 MLX-accelerated indicators.
 """
+from __future__ import annotations
 
 from typing import Any
 

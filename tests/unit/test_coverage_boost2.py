@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import os
+
 os.environ.setdefault("MPLBACKEND", "Agg")
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import numpy as np
-import pytest
 
 
 def test_optimizer_public_methods():
@@ -45,9 +45,9 @@ def test_optimizer_public_methods():
 def test_visualization_with_agg(tmp_path):
     import matplotlib
     matplotlib.use("Agg")
+    import monte_neo.visualization.charts as vc
     import monte_neo.visualization.metrics as vm
     import monte_neo.visualization.trades as vt
-    import monte_neo.visualization.charts as vc
     eq = list(np.cumprod(1 + np.random.default_rng(0).normal(0, 0.01, 100)))
     for mod in (vm, vt, vc):
         for name in dir(mod):
@@ -110,8 +110,8 @@ def test_websocket_offline_paths():
 
 
 def test_dynamic_indicator_and_custom():
-    from monte_neo.indicators.dynamic import DynamicIndicator
     from monte_neo.indicators.custom import CustomIndicator
+    from monte_neo.indicators.dynamic import DynamicIndicator
     close = np.linspace(100, 110, 50)
     for cls, args in (
         (DynamicIndicator, ("x", "close")),
@@ -141,8 +141,8 @@ def test_dynamic_indicator_and_custom():
 
 
 def test_bybit_binance_paper_methods():
-    from monte_neo.oms.adapters.bybit import BybitAdapter
     from monte_neo.oms.adapters.binance import BinanceAdapter
+    from monte_neo.oms.adapters.bybit import BybitAdapter
     from monte_neo.oms.adapters.paper_exchange import PaperExchangeAdapter
     for cls in (BybitAdapter, BinanceAdapter, PaperExchangeAdapter):
         try:
@@ -196,7 +196,7 @@ def test_l2_match_and_device():
 
 
 def test_config_logger_cache_edges(tmp_path, monkeypatch):
-    from monte_neo.utils import config, logger, cache
+    from monte_neo.utils import cache, config, logger
     monkeypatch.setenv("MONTE_NEO_LOG_LEVEL", "DEBUG")
     try:
         config.load_config()

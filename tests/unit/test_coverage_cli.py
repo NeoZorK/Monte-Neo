@@ -6,7 +6,6 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
-import pytest
 
 
 def test_styles_progress_pure():
@@ -39,34 +38,34 @@ def test_app_monte_neo_cli(tmp_path):
 
     with patch("monte_neo.cli.app.load_config", return_value=MagicMock()), patch(
         "monte_neo.cli.app.InteractiveMenu"
-    ) as IM, patch("monte_neo.cli.app.print_banner"), patch("monte_neo.cli.app.console"), patch(
+    ) as interactive_menu, patch("monte_neo.cli.app.print_banner"), patch("monte_neo.cli.app.console"), patch(
         "monte_neo.cli.app.setup_logging"
     ), patch("monte_neo.cli.app.print_error"):
-        IM.return_value.run.return_value = 0
+        interactive_menu.return_value.run.return_value = 0
         cli = app.MonteNeoCLI()
         assert cli.run(True) == 0
         assert cli.run(False) == 1
         with patch("json.load", return_value={"formula": "x"}), patch("builtins.open", create=True), patch(
             "monte_neo.indicators.dynamic.DynamicIndicator"
-        ), patch("monte_neo.core.optimization.production_exporter.ProductionExporter") as PE:
-            PE.return_value.export.return_value = str(tmp_path / "out")
+        ), patch("monte_neo.core.optimization.production_exporter.ProductionExporter") as production_exporter:
+            production_exporter.return_value.export.return_value = str(tmp_path / "out")
             assert cli.run_export("x.json") == 0
         with patch(
             "monte_neo.core.optimization.production_exporter.ProductionExporter", side_effect=Exception("e")
         ):
             assert cli.run_export("x.json") == 1
-        with patch("monte_neo.data.storage.ParquetStorage") as PS, patch("monte_neo.utils.config.Config") as C, patch(
+        with patch("monte_neo.data.storage.ParquetStorage") as parquet_storage, patch("monte_neo.utils.config.Config") as config_cls, patch(
             "monte_neo.core.evolution_ai.AIEvolutionEngine"
-        ) as E:
-            C.return_value.data_dir = tmp_path
-            C.return_value.default_timeframe = "1h"
-            PS.return_value.load.return_value = pd.DataFrame({"close": [1.0, 2.0]})
-            E.return_value.evolve.return_value = MagicMock(get_formula=lambda: "f")
+        ) as evolution_engine:
+            config_cls.return_value.data_dir = tmp_path
+            config_cls.return_value.default_timeframe = "1h"
+            parquet_storage.return_value.load.return_value = pd.DataFrame({"close": [1.0, 2.0]})
+            evolution_engine.return_value.evolve.return_value = MagicMock(get_formula=lambda: "f")
             assert cli.run_evolve("BTCUSDT") == 0
-            PS.return_value.load.return_value = None
+            parquet_storage.return_value.load.return_value = None
             assert cli.run_evolve("BTCUSDT") == 1
-            E.return_value.evolve.side_effect = Exception("e")
-            PS.return_value.load.return_value = pd.DataFrame({"close": [1.0]})
+            evolution_engine.return_value.evolve.side_effect = Exception("e")
+            parquet_storage.return_value.load.return_value = pd.DataFrame({"close": [1.0]})
             assert cli.run_evolve("BTCUSDT") == 1
         headless_mod = MagicMock()
         headless_mod.run_headless_generation.return_value = 0

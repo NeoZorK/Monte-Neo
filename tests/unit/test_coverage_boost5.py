@@ -90,7 +90,6 @@ def test_optimizer_genetic_loop_body(sample_ohlcv):
         # Monkeypatch population_size inside by replacing _genetic_search with a copy
         # that uses population_size=4 — duplicate the real loop by calling helpers
         # then invoke REAL method after patching module-level constants via types
-        import monte_neo.core.optimizer as optmod
 
         real = opt2._genetic_search
 
@@ -281,8 +280,9 @@ def test_cache_error_paths(tmp_path, monkeypatch):
 
 
 def test_progress_eta_and_stop():
-    from monte_neo.cli.progress import ProgressTracker, estimate_generation_time
     import time as _t
+
+    from monte_neo.cli.progress import ProgressTracker, estimate_generation_time
 
     pt = ProgressTracker()
     pt.start(100, "t")
