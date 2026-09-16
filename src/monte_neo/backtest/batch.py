@@ -18,7 +18,7 @@ from monte_neo.backtest.model import ExecutionModel
 
 
 @njit(cache=True, parallel=True)
-def _batch_terminal_returns(
+def _batch_terminal_returns(  # pragma: no cover  # njit body; covered via NUMBA_DISABLE_JIT subprocess
     open_: np.ndarray,
     high: np.ndarray,
     low: np.ndarray,

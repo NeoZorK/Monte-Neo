@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pandas as pd
@@ -124,9 +124,11 @@ def test_has_native_type():
     assert isinstance(calc_mod.HAS_NATIVE, bool)
 
 def test_extract_trades_native_path(calculator, sample_data, sample_signals):
-    # Force HAS_NATIVE to True and test the native path
-    with patch("monte_neo.metrics.calculator.HAS_NATIVE", True):
-        with patch("monte_neo.core.native_metrics.extract_trades") as mock_native:
-            mock_native.return_value = []
-            calculator._extract_trades(sample_data, sample_signals)
-            assert mock_native.called
+    # Force HAS_NATIVE + stub native module (extension .so is awkward to patch in-place)
+    mock_native = MagicMock(return_value=[])
+    stub = MagicMock(extract_trades=mock_native)
+    with patch("monte_neo.metrics.calculator.HAS_NATIVE", True), patch(
+        "monte_neo.metrics.calculator._get_native", return_value=stub
+    ):
+        calculator._extract_trades(sample_data, sample_signals)
+        assert mock_native.called

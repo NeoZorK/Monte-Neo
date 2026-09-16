@@ -1,17 +1,23 @@
 [run]
-source = src/monte_neo
+source = monte_neo
 omit =
-    */tests/*
-    */__init__.py
+    */monte_neo/cli/menu/*
+    */monte_neo/core/native/metal_engine.py
+    */monte_neo/core/mlx_*.py
+    */monte_neo/core/gpu_lazy.py
+    */monte_neo/core/gpu_scenarios.py
+    */monte_neo/core/acceleration/*
+
+    */monte_neo/metrics/numba_funcs.py
+    */monte_neo/indicators/numba_funcs.py
+    */monte_neo/backtest/core_numba.py
+    */monte_neo/oms/accel/match_numba.py
+    */monte_neo/oms/accel/match_l2_numba.py
 
 [report]
+fail_under = 100
+show_missing = true
 exclude_lines =
     pragma: no cover
-    def __repr__
-    if self.debug:
     if TYPE_CHECKING:
-    raise AssertionError
     raise NotImplementedError
-    if __name__ == .__main__.:
-    pass
-    raise ImportError

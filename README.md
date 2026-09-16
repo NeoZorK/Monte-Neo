@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/macOS-Apple%20Silicon-black.svg" alt="macOS Apple Silicon"/>
 </p>
 
-> Current: **v0.15.0** · [Changelog](docs/project/CHANGELOG.md) · [Docs index](docs/INDEX.md) · [FAQ](docs/guides/FAQ.md)
+> Current: **v0.15.1** · [Changelog](docs/project/CHANGELOG.md) · [Docs index](docs/INDEX.md) · [FAQ](docs/guides/FAQ.md)
 
 ## What this is (and is not)
 

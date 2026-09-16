@@ -94,7 +94,7 @@ def test_license_and_docs_version_sync():
     assert license_text.startswith("MIT License"), "LICENSE must be MIT"
 
     pyproject = (root_dir / "pyproject.toml").read_text(encoding="utf-8")
-    assert 'license = "MIT"' in pyproject, "pyproject.toml license must be MIT"
+    assert ('license = "MIT"' in pyproject) or ('text = "MIT"' in pyproject), "pyproject.toml license must be MIT"
 
     index = (root_dir / "docs" / "INDEX.md").read_text(encoding="utf-8")
     assert version in index, f"docs/INDEX.md must mention {version}"
