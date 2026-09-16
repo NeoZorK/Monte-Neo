@@ -5,9 +5,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import numpy as np
-import pandas as pd
 import pytest
-
 
 
 def test_create_result_and_evolution_phase_success(sample_ohlcv):
@@ -47,11 +45,12 @@ def test_create_result_and_evolution_phase_success(sample_ohlcv):
 
 
 def test_small_oms_and_adapters():
-    from monte_neo.oms import book, bracket, clock, portfolio, strategy, types as ot
     from monte_neo.oms import adapters as adp
+    from monte_neo.oms import bracket, clock, portfolio, strategy
+    from monte_neo.oms import types as ot
     from monte_neo.oms.adapters import binance as bn
-    from monte_neo.oms.l2_match import L2MatchConfig, match_limit_l2
     from monte_neo.oms.book import BookLevel, OrderBook, book_from_mid
+    from monte_neo.oms.l2_match import L2MatchConfig, match_limit_l2
     from monte_neo.oms.types import Order, OrderSide, OrderType
 
     b = book_from_mid(100.0, depth=3)
@@ -91,16 +90,16 @@ def test_small_oms_and_adapters():
     assert pos.side_sign == 1
     assert ot.Position(symbol="X", qty=-1.0, avg_px=100.0).side_sign == -1
     assert ot.Position(symbol="X", qty=0.0, avg_px=100.0).side_sign == 0
-    book = OrderBook(bids=[BookLevel(99.0, 1.0)], asks=[BookLevel(101.0, 1.0)])
+    order_book = OrderBook(bids=[BookLevel(99.0, 1.0)], asks=[BookLevel(101.0, 1.0)])
     cfg = L2MatchConfig()
     match_limit_l2(
         Order(order_id=1, symbol="X", side=OrderSide.BUY, order_type=OrderType.LIMIT, qty=2.0, limit_px=101.0),
-        book,
+        order_book,
         cfg,
     )
     match_limit_l2(
         Order(order_id=2, symbol="X", side=OrderSide.SELL, order_type=OrderType.LIMIT, qty=2.0, limit_px=99.0),
-        book,
+        order_book,
         cfg,
     )
     match_limit_l2(
@@ -196,7 +195,8 @@ def test_shader_catalog_and_buffer_pool():
 
 
 def test_mc_utils_dispatch_sensitivity():
-    from monte_neo.monte_carlo import dispatch, sensitivity, utils as mcu
+    from monte_neo.monte_carlo import dispatch, sensitivity
+    from monte_neo.monte_carlo import utils as mcu
 
     for mod in (dispatch, sensitivity, mcu):
         for name, obj in list(vars(mod).items()):
@@ -220,7 +220,8 @@ def test_ast_logger_progress_matching_edges():
     from monte_neo.cli.progress import ProgressTracker
     from monte_neo.oms.matching import MatchConfig, try_match_limit, try_match_market
     from monte_neo.oms.types import Order, OrderSide, OrderType
-    from monte_neo.utils import ast_utils, logger as logmod
+    from monte_neo.utils import ast_utils
+    from monte_neo.utils import logger as logmod
 
     logmod.get_logger("t")
     try:

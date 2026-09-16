@@ -11,9 +11,9 @@ import matplotlib.pyplot as plt
 
 plt.show = lambda *a, **k: None
 
-import numpy as np
-import pandas as pd
-import pytest
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
+import pytest  # noqa: E402
 
 
 def test_metal_l2_dispatch_cpu_and_batch():
@@ -255,7 +255,6 @@ def test_evolution_run_tiny(sample_ohlcv):
 
 def test_metal_economics_try_batch(sample_ohlcv):
     from monte_neo.backtest.metal_economics import (
-        get_metal_research_engine,
         metal_economics_eligible,
         try_metal_batch_returns,
     )
@@ -310,10 +309,10 @@ def test_metal_economics_try_batch(sample_ohlcv):
 
 
 def test_sequential_advice_and_steps(sample_ohlcv):
-    from monte_neo.monte_carlo.sequential import SequentialMCRunner
     from monte_neo.indicators.base import IndicatorConfig
     from monte_neo.indicators.sma import SMAIndicator
     from monte_neo.metrics.calculator import MetricsCalculator
+    from monte_neo.monte_carlo.sequential import SequentialMCRunner
 
     # Build with mocked engine config
     engine = MagicMock()
@@ -336,8 +335,8 @@ def test_sequential_advice_and_steps(sample_ohlcv):
     sma = SMAIndicator(IndicatorConfig(name="sma", parameters={"period": 5}))
     calc = MetricsCalculator()
     # sensitivity step mocked
-    with patch("monte_neo.monte_carlo.sensitivity.SensitivityAnalyzer") as SA:
-        inst = SA.return_value
+    with patch("monte_neo.monte_carlo.sensitivity.SensitivityAnalyzer") as signal_adapter:
+        inst = signal_adapter.return_value
         inst.analyze_all_parameters.return_value = [{"ok": True}]
         inst.get_stability_report.return_value = {
             "average_stability": 0.8,

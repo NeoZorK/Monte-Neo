@@ -1,8 +1,7 @@
-from __future__ import annotations
-
 """
 GPU Acceleration Engine (MLX).
 """
+from __future__ import annotations
 
 import time
 from typing import Any

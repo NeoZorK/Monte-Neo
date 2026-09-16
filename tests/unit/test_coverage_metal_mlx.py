@@ -5,9 +5,6 @@ from __future__ import annotations
 import importlib
 from unittest.mock import MagicMock, patch
 
-import numpy as np
-
-
 MODULES = [
     "monte_neo.core.native.metal_engine",
     "monte_neo.core.mlx_3d_engine",

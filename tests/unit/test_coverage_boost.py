@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import numpy as np
-import pytest
 
 from monte_neo.backtest.memory_plan import (
     decide_research_accelerator,
@@ -31,7 +30,8 @@ def _ohlc(n=500, seed=0):
     except Exception:
         rng = np.random.default_rng(seed)
         c = 100 + np.cumsum(rng.normal(0, 0.4, n))
-        o = np.roll(c, 1); o[0] = c[0]
+        o = np.roll(c, 1)
+        o[0] = c[0]
         return {"open": o, "high": np.maximum(o, c) + 0.2, "low": np.minimum(o, c) - 0.2, "close": c}
 
 
@@ -97,7 +97,7 @@ def test_oms_device_and_adapters_smoke():
                 pass
             except Exception:
                 pass
-    from monte_neo.oms.adapters import bybit, binance
+    from monte_neo.oms.adapters import binance, bybit
     for mod in (bybit, binance):
         for name in dir(mod):
             if name[:1].isupper() and "Adapter" in name:
@@ -156,8 +156,9 @@ def test_visualization_metrics_trades(tmp_path):
 
 
 def test_parallel_executor_branches():
-    from monte_neo.utils.parallel import ParallelExecutor
     import inspect
+
+    from monte_neo.utils.parallel import ParallelExecutor
     def work(x):
         return x * 2
     sig = inspect.signature(ParallelExecutor.__init__)
