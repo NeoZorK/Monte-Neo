@@ -83,6 +83,7 @@ Docs site: https://neozork.github.io/Monte-Neo/ (MkDocs Material).
 - Config: `mkdocs.yml`
 - Workflow: `.github/workflows/docs.yml` (deploys on push to `main` when `docs/` changes)
 - Enable once: GitHub → Settings → Pages → Source **GitHub Actions**
+- Home page source is `docs/INDEX.md` (kept for maintenance tests). On Linux MkDocs emits `site/INDEX/index.html`; the workflow copies it to `site/index.html` so the site root is not a soft 404.
 
 ## Trusted Publishing (OIDC)
 
