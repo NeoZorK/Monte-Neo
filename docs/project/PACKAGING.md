@@ -53,3 +53,13 @@ uv run --with 'twine>=6' --with 'packaging>=24.2' twine check dist/*
 
 Note: wheels may declare Metadata-Version 2.5; use `packaging>=24.2` with twine.
 
+## Wheel contents smoke
+
+After `python -m build`, confirm the wheel includes ``monte_neo/data/``.
+A root ``data/`` gitignore pattern historically dropped that package from Hatch builds.
+Use ``/data/`` (repo-root only) in ``.gitignore``.
+
+```bash
+unzip -l dist/*.whl | grep monte_neo/data/
+python -c "from monte_neo.data.sampler import DataSampler; print(DataSampler)"
+```
