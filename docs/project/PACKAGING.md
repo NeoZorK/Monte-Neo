@@ -25,7 +25,7 @@ broadly; Metal/MLX are an **`[apple]` extra** so Linux/CI wheels still install.
 - [x] `project.urls`, classifiers, keywords
 - [x] Hatch PEP 440 version (leading `v` stripped for the wheel)
 - [x] Optional `[apple]` extras (mlx, pyobjc)
-- [ ] `python -m build` + install wheel in a clean venv on Mac and Linux
+- [x] `python -m build` + install wheel in a clean venv on Mac (Linux CI wheel install still recommended)
 - [ ] TestPyPI dry-run (`twine upload --repository testpypi`)
 - [ ] Trusted Publishing (OIDC) on GitHub → pypi.org
 - [ ] Name claim `monte-neo` still free on PyPI

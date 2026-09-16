@@ -74,13 +74,23 @@ def golden_fixture() -> dict[str, Any]:
     }
 
 
+# Metal economics use float32; match documented parity band (see research_manifest).
+METAL_GOLDEN_RTOL = 1e-4
+METAL_GOLDEN_ATOL = 1e-5
+
+
 def verify_golden_vectors(
     *,
     device: str = "cpu_numba",
-    rtol: float = 1e-12,
-    atol: float = 1e-14,
+    rtol: float | None = None,
+    atol: float | None = None,
 ) -> dict[str, Any]:
     """Re-run frozen fixture and compare to precomputed Numba reference.
+
+    Default tolerances are float64-strict (``1e-12`` / ``1e-14``). When the batch
+    path resolves to Metal (float32), unspecified tolerances widen to the
+    documented Metal parity band (``1e-4`` / ``1e-5``). Explicit ``rtol``/``atol``
+    always win.
 
     Returns a structured report; raises nothing — callers decide fail policy.
     """
@@ -108,6 +118,15 @@ def verify_golden_vectors(
         model=fee,
         device=device,
     )
+
+    resolved = str(batch.get("device", device) or device)
+    if rtol is None or atol is None:
+        if resolved == "metal":
+            rtol = METAL_GOLDEN_RTOL if rtol is None else rtol
+            atol = METAL_GOLDEN_ATOL if atol is None else atol
+        else:
+            rtol = 1e-12 if rtol is None else rtol
+            atol = 1e-14 if atol is None else atol
 
     checks: dict[str, bool] = {}
     checks["zero_return"] = np.isclose(
@@ -141,6 +160,8 @@ def verify_golden_vectors(
         "ok": all(checks.values()),
         "checks": checks,
         "device": batch.get("device", device),
+        "rtol": float(rtol),
+        "atol": float(atol),
         "observed": {
             "zero_return": float(z["total_return"]),
             "fee_return": float(f["total_return"]),
@@ -155,6 +176,8 @@ def verify_golden_vectors(
 
 
 __all__ = [
+    "METAL_GOLDEN_RTOL",
+    "METAL_GOLDEN_ATOL",
     "GOLDEN_SEED",
     "GOLDEN_BARS",
     "GOLDEN_BATCH_RETURNS",

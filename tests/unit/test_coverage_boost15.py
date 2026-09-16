@@ -1,3 +1,4 @@
+# ruff: noqa: N806
 """Fifteenth coverage boost: sequential sharpe-fail + validator CV variance."""
 
 from __future__ import annotations
@@ -6,7 +7,6 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pandas as pd
-import pytest
 
 
 def test_sequential_sharpe_below_target_break(sample_ohlcv):

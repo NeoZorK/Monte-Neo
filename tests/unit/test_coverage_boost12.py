@@ -1,17 +1,15 @@
+# ruff: noqa: N806
 """Twelfth coverage boost: close remaining miss lines toward 100%."""
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import ast
-import runpy
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import numpy as np
-import pandas as pd
 import pytest
 
 
@@ -611,6 +609,7 @@ def test_walk_forward_empty_and_nonfinite(sample_ohlcv):
 
 def test_scenarios_line():
     import inspect
+
     from monte_neo.monte_carlo import scenarios as sc
 
     # Hit line 112 if it's a simple branch

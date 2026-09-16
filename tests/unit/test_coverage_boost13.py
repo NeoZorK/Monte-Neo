@@ -1,8 +1,8 @@
+# ruff: noqa: N806
 """Thirteenth coverage boost: last ~28 miss lines to 100%."""
 
 from __future__ import annotations
 
-import importlib
 import subprocess
 import sys
 from types import ModuleType, SimpleNamespace
@@ -10,7 +10,6 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pandas as pd
-import pytest
 
 
 def test_export_batch_fallback_reason():
@@ -106,8 +105,8 @@ def test_evolution_progress_callback_in_loop(sample_ohlcv):
     evo3 = AIEvolutionEngine(population_size=2, progress_callback=cb, use_gpu=False)
     with patch.object(evo3, "metrics_calc", MagicMock()), patch(
         "monte_neo.core.evolution_ai.CodeGenerator"
-    ) as CG:
-        CG.return_value.generate.return_value = "class X: pass"
+    ) as cg:
+        cg.return_value.generate.return_value = "class X: pass"
         # If evolve is too heavy, inject into the module line via run of real method
         # with KeyboardInterrupt after callback — patch fitness eval
         try:
@@ -385,10 +384,10 @@ def test_calculator_has_native_except():
     with patch.object(calc, "_get_native", side_effect=RuntimeError("x")):
         # Re-exec the try/except block
         try:
-            HAS_NATIVE = callable(getattr(calc._get_native(), "extract_trades", None))
+            has_native = callable(getattr(calc._get_native(), "extract_trades", None))
         except Exception:
-            HAS_NATIVE = False
-        assert HAS_NATIVE is False
+            has_native = False
+        assert has_native is False
 
 
 def test_drawdown_sharpe_pf_edges():
@@ -456,10 +455,10 @@ def test_walk_forward_empty_window_continue(sample_ohlcv):
 
     w = WalkForwardAnalyzer(MagicMock())
     # craft empty windows
-    Window = SimpleNamespace
+    win_ns = SimpleNamespace
     windows = [
-        Window(train_start=0, train_end=0, test_start=0, test_end=0),  # empty
-        Window(train_start=0, train_end=10, test_start=10, test_end=20),
+        win_ns(train_start=0, train_end=0, test_start=0, test_end=0),  # empty
+        win_ns(train_start=0, train_end=10, test_start=10, test_end=20),
     ]
     ind = MagicMock()
     ind.generate_signals.return_value = pd.DataFrame({"signal": np.zeros(10)})
