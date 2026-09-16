@@ -12,13 +12,14 @@
 
 <p align="center">
   <a href="https://github.com/NeoZorK/Monte-Neo/actions/workflows/ci.yml"><img src="https://github.com/NeoZorK/Monte-Neo/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
+  <a href="https://pypi.org/project/monte-neo/"><img src="https://img.shields.io/pypi/v/monte-neo.svg" alt="PyPI"/></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"/></a>
   <a href="https://github.com/NeoZorK/Monte-Neo/releases/latest"><img src="https://img.shields.io/github/v/release/NeoZorK/Monte-Neo?label=release" alt="Latest release"/></a>
   <img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+"/>
   <img src="https://img.shields.io/badge/macOS-Apple%20Silicon-black.svg" alt="macOS Apple Silicon"/>
 </p>
 
-> Current: **v0.15.1** · [Changelog](docs/project/CHANGELOG.md) · [Docs index](docs/INDEX.md) · [FAQ](docs/guides/FAQ.md)
+> Current: **v0.15.1** · [Docs site](https://neozork.github.io/Monte-Neo/) · [Changelog](docs/project/CHANGELOG.md) · [FAQ](docs/guides/FAQ.md)
 
 ## What this is (and is not)
 
@@ -43,15 +44,22 @@ throughput is not an OMS event-loop claim.
 
 ## Install
 
-**From git (today — free):**
+**From PyPI (recommended):**
+
+```bash
+pip install monte-neo
+# Apple Silicon Metal / MLX:
+pip install "monte-neo[apple]"
+```
+
+**From git:**
 
 ```bash
 pip install "git+https://github.com/NeoZorK/Monte-Neo.git"
-# Apple Silicon Metal / MLX:
 pip install "monte-neo[apple] @ git+https://github.com/NeoZorK/Monte-Neo.git"
 ```
 
-**In-repo (recommended for contributors):**
+**In-repo (contributors):**
 
 ```bash
 git clone https://github.com/NeoZorK/Monte-Neo.git
@@ -59,8 +67,7 @@ cd Monte-Neo
 uv sync --extra apple   # on Apple Silicon; omit --extra apple on Linux/CI
 ```
 
-**PyPI:** packaging is prepared (`[apple]` extras, PEP 440 wheel version). First upload
-waits on TestPyPI + maintainer OK — see [PACKAGING.md](docs/project/PACKAGING.md).
+See [PACKAGING.md](docs/project/PACKAGING.md).
 
 **Requirements:** Python **3.11+**. Best experience on **Apple Silicon** macOS. Numba CPU
 paths work more broadly; Metal/MLX are the `[apple]` extra.

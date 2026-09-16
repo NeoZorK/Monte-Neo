@@ -147,3 +147,4 @@ data/results/
 # LLM Integration (local wrapper)
 local_ai_wrapper.py
 __pycache__/
+site/
