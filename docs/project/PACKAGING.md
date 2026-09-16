@@ -26,10 +26,10 @@ broadly; Metal/MLX are an **`[apple]` extra** so Linux/CI wheels still install.
 - [x] Hatch PEP 440 version (leading `v` stripped for the wheel)
 - [x] Optional `[apple]` extras (mlx, pyobjc)
 - [x] `python -m build` + install wheel in a clean venv on Mac (with and without `[apple]`; Linux CI wheel install still recommended)
-- [ ] TestPyPI dry-run (`twine upload --repository testpypi`)
+- [x] TestPyPI dry-run (`twine upload --repository testpypi`) — 0.15.1
 - [ ] Trusted Publishing (OIDC) on GitHub → pypi.org
 - [x] Name claim `monte-neo` still free on PyPI (checked 2026-09-16)
-- [ ] Explicit “first publish” OK from maintainer
+- [x] Explicit “first publish” OK from maintainer — 0.15.1 on PyPI
 
 ## Free channels only
 
@@ -68,3 +68,9 @@ Use ``/data/`` (repo-root only) in ``.gitignore``.
 unzip -l dist/*.whl | grep monte_neo/data/
 python -c "from monte_neo.data.sampler import DataSampler; print(DataSampler)"
 ```
+
+
+## First published
+
+- **0.15.1** on TestPyPI: https://test.pypi.org/project/monte-neo/0.15.1/
+- **0.15.1** on PyPI: https://pypi.org/project/monte-neo/0.15.1/

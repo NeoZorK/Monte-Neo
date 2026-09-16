@@ -43,15 +43,22 @@ throughput is not an OMS event-loop claim.
 
 ## Install
 
-**From git (today — free):**
+**From PyPI (recommended):**
+
+```bash
+pip install monte-neo
+# Apple Silicon Metal / MLX:
+pip install "monte-neo[apple]"
+```
+
+**From git:**
 
 ```bash
 pip install "git+https://github.com/NeoZorK/Monte-Neo.git"
-# Apple Silicon Metal / MLX:
 pip install "monte-neo[apple] @ git+https://github.com/NeoZorK/Monte-Neo.git"
 ```
 
-**In-repo (recommended for contributors):**
+**In-repo (contributors):**
 
 ```bash
 git clone https://github.com/NeoZorK/Monte-Neo.git
@@ -59,8 +66,7 @@ cd Monte-Neo
 uv sync --extra apple   # on Apple Silicon; omit --extra apple on Linux/CI
 ```
 
-**PyPI:** packaging is prepared (`[apple]` extras, PEP 440 wheel version). First upload
-waits on TestPyPI + maintainer OK — see [PACKAGING.md](docs/project/PACKAGING.md).
+See [PACKAGING.md](docs/project/PACKAGING.md).
 
 **Requirements:** Python **3.11+**. Best experience on **Apple Silicon** macOS. Numba CPU
 paths work more broadly; Metal/MLX are the `[apple]` extra.

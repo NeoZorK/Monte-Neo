@@ -22,17 +22,15 @@ Signal grids default to Numba for exact parity; MLX signal remains opt-in.
 
 No. The primary job is **fast local research** on macOS (fee-aware next-bar economics). The paper OMS lane is for validation semantics, not a “replace my production stack” claim.
 
-## How do I install without PyPI yet?
+## How do I install?
 
 ```bash
-pip install "git+https://github.com/NeoZorK/Monte-Neo.git"
+pip install monte-neo
 # Metal/MLX on Apple Silicon:
-pip install "monte-neo[apple] @ git+https://github.com/NeoZorK/Monte-Neo.git"
+pip install "monte-neo[apple]"
 ```
 
-Or clone and `uv sync --extra apple` from the repo root.
-
-PyPI upload is prepared but not required — see `docs/project/PACKAGING.md`.
+Or from git / clone + `uv sync --extra apple`. See `docs/project/PACKAGING.md`.
 
 ## Python / hardware?
 
