@@ -1,7 +1,7 @@
 # Project Vision
 
 1) **Professional Development Setup**: Act as an experienced senior developer, architect, and vibecoding specialist. Use best architectural practices:
-    - Create `INDEX.md` (list of all files with paths and assignments), `CLAUDE.md`, `README.md`, `ROADMAP.md`, etc.
+    - Create `docs-map.md` (list of all files with paths and assignments), `CLAUDE.md`, `README.md`, `ROADMAP.md`, etc.
     - Architecture: Organized structure with `src/`, `docs/`, `tests/`, `scripts/` folders and clear subfolders.
     - File constraints: Each file must be less than 300 lines (refactor if exceeded).
 
@@ -48,4 +48,4 @@
     - Organize files properly (e.g., `docker/` for Docker files, `docs/` for documentation).
     - Only essential files in the root directory.
     - Version number should be manageable from a single location.
-    - Always update `INDEX.md` with every file change.
+    - Always update `docs-map.md` with every file change.

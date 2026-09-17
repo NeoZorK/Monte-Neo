@@ -9,7 +9,7 @@
 
 ## Documentation
 
-- Always update `docs/INDEX.md` when adding, moving, or removing files. **This is mandatory.**
+- Always update `docs/docs-map.md` when adding, moving, or removing files. **This is mandatory.**
 - Keep `ROADMAP.md` up to date with completed tasks.
 - Document complex mathematical logic in the code and `docs/api-documentation.md`.
 

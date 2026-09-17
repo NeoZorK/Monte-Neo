@@ -1,11 +1,12 @@
-# Monte-Neo v0.17.6
+# Monte-Neo v0.17.7
 
 A simplified guide to the Monte-Neo file structure.
 
 ## Format: [file path] - [description]
 
 ### Root Configuration
-- docs/home.md - Public docs site landing page (MkDocs Home)
+- docs/index.md - Public docs site landing page (MkDocs Home / site root)
+- docs/docs-map.md - Docs file map (maintenance index)
 - docs/stylesheets/extra.css - MkDocs Material extras (compact badges/logo)
 - docs/assets/logo-mark.png - Compact theme logo / favicon (96px)
 - docs/assets/logo-header.png - Compact header logo (128px)
@@ -26,8 +27,8 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/project-structure.md - Deep dive into physical directory layout
 - docs/project/features.md - Detailed overview of framework features
 - docs/project/dynamic_indicators.md - Explanation of dynamic indicator generation
-- docs/project/ROADMAP.md - Development roadmap and milestones (v0.17.6)
-- docs/project/CHANGELOG.md - Release changelog (current: v0.17.6)
+- docs/project/ROADMAP.md - Development roadmap and milestones (v0.17.7)
+- docs/project/CHANGELOG.md - Release changelog (current: v0.17.7)
 - docs/project/backtest_engine.md - Fee-aware research bar engine
 - docs/project/oms_engine.md - Paper OMS (bar + tick/L2) + venue adapters
 - docs/assets/monteneo-logo.png - Project logo
@@ -64,7 +65,7 @@ A simplified guide to the Monte-Neo file structure.
 - docker/docker-compose.yml - Docker Compose service definitions
 
 ### Source Code (src/monte_neo/)
-- src/monte_neo/_version.py - Central version management (v0.17.6)
+- src/monte_neo/_version.py - Central version management (v0.17.7)
 - src/monte_neo/policy/ - HeuristicPolicy A (ResearchState + triage)
 - src/monte_neo/backtest/holdout.py - Train/holdout SMA helper
 - docs/api/holdout.md - Holdout API
