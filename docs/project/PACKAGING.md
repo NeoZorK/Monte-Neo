@@ -74,6 +74,8 @@ python -c "from monte_neo.data.sampler import DataSampler; print(DataSampler)"
 
 - **0.15.1** on TestPyPI: https://test.pypi.org/project/monte-neo/0.15.1/
 - **0.15.1** on PyPI: https://pypi.org/project/monte-neo/0.15.1/
+- **0.16.0** / **0.17.0** on PyPI: https://pypi.org/project/monte-neo/
+- Prefer PyPI for users; TestPyPI only with `--no-deps` wheel download (see Installation)
 
 
 ## GitHub Pages

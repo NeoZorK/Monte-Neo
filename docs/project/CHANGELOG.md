@@ -3,6 +3,21 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.17.1] — 2026-09-17
+
+### Added
+- CONTRIBUTING + GitHub issue/PR templates
+- Install audit docs: pipx, extras matrix, safe TestPyPI `--no-deps` recipe
+- FAQ: TestPyPI poison, extras ImportError, policy/holdout CLI pointers
+
+### Changed
+- Installation page current release → 0.17.x; docs site link in install/FAQ
+- MkDocs nav: Contributing
+
+### Notes
+- Docs/OSS friction only — no runtime API break vs 0.17.0.
+- License remains **MIT**.
+
 ## [v0.17.0] — 2026-09-17
 
 ### Added

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Docs site
+    url: https://neozork.github.io/Monte-Neo/
+    about: Install, quickstart, export / policy / holdout API
+  - name: PyPI
+    url: https://pypi.org/project/monte-neo/
+    about: Current package releases

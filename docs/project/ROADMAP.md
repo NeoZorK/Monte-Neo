@@ -1,9 +1,13 @@
-# Monte-Neo Roadmap (v0.17.0)
+# Monte-Neo Roadmap (v0.17.1)
+
+## v0.17.1
+- [x] Install audit (pipx, TestPyPI recipe, FAQ)
+- [x] CONTRIBUTING + issue/PR templates
 
 ## v0.17.0
 - [x] Holdout / walk-forward helper around export (`holdout_sma_sweep`)
 - [ ] LocalScorer B — only if A proves useful
-- [ ] Install audit / CONTRIBUTING (tier 2)
+- [x] Install audit / CONTRIBUTING (tier 2) — v0.17.1
 
 ## v0.16.0
 - [x] Slim default deps + optional extras (`apple` darwin markers, `plot`, `data`, `ml`, `server`, `full`)

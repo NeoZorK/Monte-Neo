@@ -19,7 +19,7 @@
   <img src="https://img.shields.io/badge/macOS-Apple%20Silicon-black.svg" alt="macOS Apple Silicon"/>
 </p>
 
-> Current: **v0.17.0** · [Docs site](https://neozork.github.io/Monte-Neo/) · [Changelog](docs/project/CHANGELOG.md) · [FAQ](docs/guides/FAQ.md)
+> Current: **v0.17.1** · [Docs site](https://neozork.github.io/Monte-Neo/) · [Changelog](docs/project/CHANGELOG.md) · [FAQ](docs/guides/FAQ.md)
 
 ## What this is (and is not)
 
@@ -186,6 +186,10 @@ Monte-Neo/
 </p>
 
 More under `docs/assets/`. Runnable script: [`examples/export_sma_sweep_quickstart.py`](examples/export_sma_sweep_quickstart.py).
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) · [docs](docs/development/contributing.md).
 
 ## License
 
