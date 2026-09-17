@@ -1,5 +1,27 @@
 # FAQ
 
+
+## When should I use Monte-Neo?
+
+**Good fit when:**
+
+- You want a **10²–10⁴** fee-aware next-bar grid on a Mac today (not one toy script)
+- You need an **Apple Silicon** path without Docker/cloud (Metal/Numba, 16GB-safe, auto → `cpu_numba`)
+- You care about **re-checkable** export + golden vectors
+- You want **research → paper OMS** validation (research bar first)
+- You want **MIT** software that runs **locally**
+
+**Usually not a fit when:**
+
+- You need a **full live multi-venue OMS**
+- You need **bot ops** (Telegram, exchange live/dry-run, marketplaces)
+- You need a **cloud institutional** multi-asset stack
+- You only want a **~50-line teaching backtest**
+- Your problem is a **portfolio weight allocator** or pipeline-bundle runner
+
+Tone: research-bar speed on Apple Silicon — not “replace every production stack.”
+
+
 ## Does Monte-Neo hang on very large bars (e.g. 10M)?
 
 No (as of **v0.14.1+**). `device="auto"` estimates Metal/MLX shared and host budgets before dispatch. If the job is too large for a safe Metal path on a 16GB-class Mac, it **falls back to `cpu_numba`** and sets `fallback_reason` (for example `metal_max_bars_exceeded`). You should never see an unbounded GPU wait.

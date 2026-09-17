@@ -9,7 +9,7 @@
 - **Indicator Generation**: Automatic search for profitable trading indicators.
 - **3D GPU Acceleration**: 
   - Massive parallel evaluation of strategy populations across multiple Monte Carlo scenarios.
-  - Integration with Apple Silicon Metal via MLX for 125x performance gains in evolutionary search.
+  - Integration with Apple Silicon Metal via MLX for evolutionary / research-bar acceleration (see [Performance](../development/performance.md)).
 - **Dynamic Indicator Generation**:
   - Generates novel indicators using genetic programming concepts.
   - Creates random valid Python formulas from market data.

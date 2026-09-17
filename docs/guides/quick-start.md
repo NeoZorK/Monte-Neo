@@ -1,36 +1,52 @@
 # Quick Start
 
-Get up and running with Monte-Neo in 3 steps.
+Export-first path: install → research export → optional policy triage → optional holdout.
+The interactive CLI wizard is optional and documented at the bottom.
 
-## 1. Launch the CLI
+## 1. Install
 
 ```bash
-uv run monte-neo
+pip install monte-neo
+# Apple Silicon extras (MLX / Metal bindings):
+pip install "monte-neo[apple]"
 ```
 
-## 2. Download Data
+Isolated CLI: `pipx install "monte-neo[apple]"`.
 
-Navigate to `📊 Download Market Data`. You will see a searchable grid of available symbols. Start typing to filter (e.g., `BTC`) and use arrow keys to select `BTCUSDT`. Select timeframe `1h` and `365 days`.
+Full matrix: [Installation](../setup/installation.md).
 
-## 3. Generate
+## 2. Export API (primary)
 
-Select `🎯 Set Target Metrics` and define your goals (e.g., Profit Factor > 2).
-Then select `🚀 Generate Indicator` and let the engine find the best solution for you.
+Fee-aware SMA sweep on synthetic OHLC — same shape as
+[`examples/export_sma_sweep_quickstart.py`](https://github.com/NeoZorK/Monte-Neo/blob/main/examples/export_sma_sweep_quickstart.py):
 
-### Dynamic Mode (Evolutionary Algorithms)
+```python
+from monte_neo.backtest import ExecutionModel, export_sma_sweep, synthetic_ohlcv
 
-To use the power of genetic algorithms:
-1. In the configuration menu, ensure `dynamic` is selected in indicator types.
-2. The engine will first perform a random search for candidates.
-3. If enough candidates are found, it will automatically start **Evolutionary Optimization**, cross-breeding and mutating the best strategies to find even more robust indicators.
-4. All results are automatically validated with **Monte Carlo simulations**.
+ohlc = synthetic_ohlcv(100_000, seed=42)
+model = ExecutionModel(commission_bps=5.0, slippage_bps=5.0, warmup_bars=50)
+out = export_sma_sweep(
+    ohlc["open"],
+    ohlc["high"],
+    ohlc["low"],
+    ohlc["close"],
+    combos=16,
+    model=model,
+    device="auto",  # Metal when safe on Apple Silicon; else cpu_numba
+)
+print(
+    {
+        "device": out.get("device"),
+        "fallback_reason": out.get("fallback_reason"),
+        "combos": out.get("combos"),
+        "ok": out.get("ok"),
+    }
+)
+```
 
----
+Aligned with the [Home](../home.md) snippet. More detail: [Research export API](../api/export.md).
 
-**Tip**: Use arrow keys to navigate the menus and Space to select checkboxes.
-For more details on how genetic algorithms work in Monte-Neo, see the [Dynamic Indicators Guide](../project/dynamic_indicators.md).
-
-## Policy triage (optional)
+## 3. Policy triage (optional)
 
 After you save an `export_sma_sweep` / `export_batch` JSON:
 
@@ -40,10 +56,37 @@ monte-neo --policy-triage path/to/export.json
 
 See [Research policy](../api/policy.md).
 
-## Holdout smoke
+## 4. Holdout smoke (optional)
 
 ```bash
 monte-neo --holdout-sma --holdout-bars 20000 --holdout-combos 32
 ```
 
 See [Holdout](../api/holdout.md).
+
+---
+
+## CLI wizard (optional)
+
+The interactive menu is still available if you prefer a guided loop.
+
+```bash
+uv run monte-neo
+# or: monte-neo
+```
+
+Typical flow:
+
+1. **Download Market Data** — searchable symbols (e.g. `BTCUSDT`), timeframe, history length
+2. **Set Target Metrics** — e.g. profit factor threshold
+3. **Generate Indicator** — search / optimize candidates
+
+### Dynamic Mode (evolutionary)
+
+1. In configuration, select `dynamic` among indicator types
+2. Random search finds candidates first
+3. With enough candidates, evolutionary optimization cross-breeds / mutates survivors
+4. Results can be checked with Monte Carlo helpers
+
+Tips: arrow keys navigate; Space toggles checkboxes.
+Deep dive: [Dynamic Indicators](../project/dynamic_indicators.md).
