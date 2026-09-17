@@ -51,9 +51,18 @@ class MonteNeoCLI:
 
 
 
-    def run_holdout_sma(self, bars: int = 20_000, combos: int = 32) -> int:
+    def run_holdout_sma(
+        self,
+        bars: int = 20_000,
+        combos: int = 32,
+        *,
+        promote_mode: str = "holdout_positive",
+        log_path: str | None = None,
+        human_label: str | None = None,
+    ) -> int:
         """Synthetic SMA holdout smoke (train/holdout split)."""
         from monte_neo.backtest import ExecutionModel, holdout_sma_sweep, synthetic_ohlcv
+        from monte_neo.policy import HeuristicPolicy, append_research_label, build_research_state
 
         try:
             ohlc = synthetic_ohlcv(int(bars), seed=42)
@@ -66,6 +75,41 @@ class MonteNeoCLI:
                 combos=int(combos),
                 model=model,
                 device="cpu_numba",
+                promote_mode=promote_mode,
+            )
+            # Optional policy view on train export embedded via holdout metrics
+            decision = HeuristicPolicy().decide(
+                build_research_state(
+                    {
+                        "ok": report.get("ok", True),
+                        "device": (report.get("train") or {}).get("device"),
+                        "bars": (report.get("split") or {}).get("n_bars"),
+                        "combos": (report.get("train") or {}).get("combos"),
+                        "export_api_version": report.get("export_api_version"),
+                        "engine": report.get("engine"),
+                        "lane": report.get("lane"),
+                        "model": report.get("model") or {},
+                        "work_checklist": {
+                            "next_bar_fill": True,
+                            "fees": True,
+                            "no_lookahead": True,
+                            "cash_position_equity": True,
+                        },
+                        "timing": report.get("timing") or {},
+                        "metrics": {
+                            "best_return": (report.get("train") or {}).get("best_return"),
+                            "rows": [
+                                {
+                                    "fast": r["fast"],
+                                    "slow": r["slow"],
+                                    "total_return": r["train_return"],
+                                }
+                                for r in (report.get("holdout") or {}).get("top_k") or []
+                            ],
+                        },
+                    },
+                    holdout_report=report,
+                )
             )
             console.print_json(data={
                 "schema": report["schema"],
@@ -73,9 +117,23 @@ class MonteNeoCLI:
                 "metrics": report["metrics"],
                 "train_best_pair": report["train"]["best_pair"],
                 "holdout_at_best": report["holdout"]["at_train_best"],
+                "policy": {
+                    "next_action": decision.get("next_action"),
+                    "promote_to_paper_oms": decision.get("promote_to_paper_oms"),
+                    "overfit_risk": decision.get("overfit_risk"),
+                },
             })
             for reason in report.get("reasons", []):
                 console.print(f"[dim]- {reason}[/]")
+            if log_path:
+                append_research_label(
+                    log_path,
+                    holdout_report=report,
+                    decision=decision,
+                    human_label=human_label,
+                    notes="cli --holdout-sma",
+                )
+                console.print(f"[green]Appended label → {log_path}[/]")
             return 0
         except Exception as e:
             console.print(f"[red]Holdout failed: {e}[/]")
@@ -221,6 +279,23 @@ def parse_args() -> argparse.Namespace:
         default=32,
         help="Combos for --holdout-sma (default 32)",
     )
+    parser.add_argument(
+        "--promote-mode",
+        type=str,
+        default="holdout_positive",
+        choices=["holdout_positive", "strict"],
+        help="Holdout promote gate (default holdout_positive)",
+    )
+    parser.add_argument(
+        "--holdout-log",
+        type=str,
+        help="Append JSONL research label (for a future LocalScorer corpus)",
+    )
+    parser.add_argument(
+        "--human-label",
+        type=str,
+        help="Optional label written with --holdout-log (accept/reject/mc/skip)",
+    )
 
     parser.add_argument(
         "--evolve",
@@ -257,7 +332,13 @@ def main() -> int:
         app = MonteNeoCLI()
 
         if args.holdout_sma:
-            return app.run_holdout_sma(bars=args.holdout_bars, combos=args.holdout_combos)
+            return app.run_holdout_sma(
+                bars=args.holdout_bars,
+                combos=args.holdout_combos,
+                promote_mode=args.promote_mode,
+                log_path=args.holdout_log,
+                human_label=args.human_label,
+            )
         if args.policy_triage:
             return app.run_policy_triage(args.policy_triage)
         if args.export:

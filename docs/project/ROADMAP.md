@@ -1,4 +1,8 @@
-# Monte-Neo Roadmap (v0.17.1)
+# Monte-Neo Roadmap (v0.17.2)
+
+## v0.17.2
+- [x] Soften holdout promote gate (`holdout_positive`) + label JSONL log
+- [ ] LocalScorer B — still waiting on real labels
 
 ## v0.17.1
 - [x] Install audit (pipx, TestPyPI recipe, FAQ)
