@@ -1,0 +1,64 @@
+name: PyPI install smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "PyPI version without leading v (empty = script default)"
+        required: false
+        default: ""
+  schedule:
+    # Weekly Monday 06:00 UTC
+    - cron: "0 6 * * 1"
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Resolve version
+        id: ver
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [ -n "${INPUT_VERSION:-}" ]; then
+            V="${INPUT_VERSION#v}"
+          elif [ "${EVENT_NAME}" = "release" ] && [ -n "${RELEASE_TAG:-}" ]; then
+            V="${RELEASE_TAG#v}"
+          else
+            # schedule or empty dispatch → script default (pinned current)
+            V=""
+          fi
+          echo "ver=${V}" >> "$GITHUB_OUTPUT"
+          if [ -n "${V}" ]; then
+            echo "Resolved PyPI version: ${V}"
+          else
+            echo "Using script default version"
+          fi
+
+      - name: Verify PyPI bare install
+        env:
+          VERIFY_PYPI_MAX_ATTEMPTS: "8"
+          VERIFY_PYPI_SLEEP_SECS: "20"
+        run: |
+          set -euo pipefail
+          chmod +x scripts/verify_pypi_install.sh
+          if [ -n "${{ steps.ver.outputs.ver }}" ]; then
+            ./scripts/verify_pypi_install.sh "${{ steps.ver.outputs.ver }}"
+          else
+            ./scripts/verify_pypi_install.sh
+          fi
+
