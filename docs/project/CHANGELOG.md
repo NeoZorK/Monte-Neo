@@ -3,6 +3,22 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.17.5] — 2026-09-17
+
+### Changed
+- Research `device="auto"` prefers **`cpu_numba`** for wall clock on typical grids (measured M1 Pro: Metal was ~50–100× slower on 100k×64 / 1M×32)
+- Sets `fallback_reason="auto_prefer_cpu_numba"` when auto declines Metal/MLX for speed
+- Explicit `device="metal"` / `"mlx"` unchanged (size gate only; may be slow — user's choice)
+- OMS `resolve_device("auto")` unchanged (still prefers Metal when available)
+
+### Added
+- Env `MONTE_NEO_RESEARCH_AUTO_PREFER_METAL=1` — restore pre-0.17.5 prefer-Metal research auto
+- Env `MONTE_NEO_RESEARCH_AUTO_METAL_MIN_COMBOS=N` — allow auto→Metal only when `n_combos >= N`
+
+### Notes
+- See [Performance](../development/performance.md) and [FAQ](../guides/FAQ.md).
+- License remains **MIT**. No peer product names in this tree.
+
 ## [v0.17.4] — 2026-09-17
 
 ### Changed

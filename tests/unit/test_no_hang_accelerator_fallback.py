@@ -80,10 +80,22 @@ def test_env_shared_budget_forces_fallback(monkeypatch: pytest.MonkeyPatch) -> N
     assert decision["fallback_reason"] == "metal_shared_bytes_budget_exceeded"
 
 
-def test_small_case_allows_metal_when_resolved() -> None:
+def test_small_case_auto_prefers_cpu_numba_for_wall_clock() -> None:
+    """device=auto declines Metal for typical grids even when Metal is available."""
     with patch("monte_neo.oms.accel.device.resolve_device", return_value="metal"):
         decision = decide_research_accelerator(
             n_bars=50_000, n_combos=16, device="auto"
+        )
+    assert decision["use_metal"] is False
+    assert decision["fallback_reason"] == "auto_prefer_cpu_numba"
+    assert decision["want_device"] == "metal"
+    assert decision["requested_device"] == "auto"
+
+
+def test_explicit_metal_still_allowed_when_size_ok() -> None:
+    with patch("monte_neo.oms.accel.device.resolve_device", return_value="metal"):
+        decision = decide_research_accelerator(
+            n_bars=50_000, n_combos=16, device="metal"
         )
     assert decision["use_metal"] is True
     assert decision["fallback_reason"] is None

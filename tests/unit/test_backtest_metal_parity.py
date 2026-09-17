@@ -99,10 +99,22 @@ def test_metal_parity_long_short() -> None:
 
 
 @pytest.mark.skipif(get_metal_research_engine() is None, reason="Metal research unavailable")
-def test_batch_auto_uses_metal() -> None:
+def test_batch_auto_prefers_cpu_numba_wall_clock() -> None:
+    """v0.17.5+: research auto declines Metal for wall clock on typical grids."""
     ohlc, sigs, model = _fixture(ExecutionModel(warmup_bars=40, funding_bps_per_bar=0.2, side_mode="long_short"))
     out = run_bar_backtest_batch(
         ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"], sigs,
         model=model, device="auto",
+    )
+    assert out["device"] == "cpu_numba"
+    assert out.get("fallback_reason") == "auto_prefer_cpu_numba"
+
+
+@pytest.mark.skipif(get_metal_research_engine() is None, reason="Metal research unavailable")
+def test_batch_explicit_metal_uses_metal() -> None:
+    ohlc, sigs, model = _fixture(ExecutionModel(warmup_bars=40, funding_bps_per_bar=0.2, side_mode="long_short"))
+    out = run_bar_backtest_batch(
+        ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"], sigs,
+        model=model, device="metal",
     )
     assert out["device"] == "metal"
