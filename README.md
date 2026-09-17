@@ -19,7 +19,7 @@
   <img src="https://img.shields.io/badge/macOS-Apple%20Silicon-black.svg" alt="macOS Apple Silicon"/>
 </p>
 
-> Current: **v0.16.0** · [Docs site](https://neozork.github.io/Monte-Neo/) · [Changelog](docs/project/CHANGELOG.md) · [FAQ](docs/guides/FAQ.md)
+> Current: **v0.17.0** · [Docs site](https://neozork.github.io/Monte-Neo/) · [Changelog](docs/project/CHANGELOG.md) · [FAQ](docs/guides/FAQ.md)
 
 ## What this is (and is not)
 
@@ -40,6 +40,7 @@ throughput is not an OMS event-loop claim.
 | Honest export API | `export_single` / `export_batch` / `export_sma_sweep` + golden vectors |
 | 16GB-class memory planner | `plan_research_bytes` + **no-hang** Metal size gate → `cpu_numba` fallback |
 | Local research triage | `HeuristicPolicy` after export → next action / promote / MC |
+| Holdout check | `holdout_sma_sweep` train→holdout gap (anti-overfit, no ML) |
 | Clear non-goals | macOS research tool first; paper OMS is a separate lane |
 | MIT | Use, fork, and ship without drama |
 

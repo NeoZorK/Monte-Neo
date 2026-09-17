@@ -50,6 +50,37 @@ class MonteNeoCLI:
             return 1
 
 
+
+    def run_holdout_sma(self, bars: int = 20_000, combos: int = 32) -> int:
+        """Synthetic SMA holdout smoke (train/holdout split)."""
+        from monte_neo.backtest import ExecutionModel, holdout_sma_sweep, synthetic_ohlcv
+
+        try:
+            ohlc = synthetic_ohlcv(int(bars), seed=42)
+            model = ExecutionModel(commission_bps=5.0, slippage_bps=5.0, warmup_bars=50)
+            report = holdout_sma_sweep(
+                ohlc["open"],
+                ohlc["high"],
+                ohlc["low"],
+                ohlc["close"],
+                combos=int(combos),
+                model=model,
+                device="cpu_numba",
+            )
+            console.print_json(data={
+                "schema": report["schema"],
+                "split": report["split"],
+                "metrics": report["metrics"],
+                "train_best_pair": report["train"]["best_pair"],
+                "holdout_at_best": report["holdout"]["at_train_best"],
+            })
+            for reason in report.get("reasons", []):
+                console.print(f"[dim]- {reason}[/]")
+            return 0
+        except Exception as e:
+            console.print(f"[red]Holdout failed: {e}[/]")
+            return 1
+
     def run_policy_triage(self, json_path: str) -> int:
         """Triage a research export JSON with HeuristicPolicy."""
         import json
@@ -173,6 +204,23 @@ def parse_args() -> argparse.Namespace:
         type=str,
         help="Path to research export JSON (export_sma_sweep) for HeuristicPolicy triage",
     )
+    parser.add_argument(
+        "--holdout-sma",
+        action="store_true",
+        help="Run synthetic SMA train/holdout helper (anti-overfit smoke)",
+    )
+    parser.add_argument(
+        "--holdout-bars",
+        type=int,
+        default=20_000,
+        help="Bars for --holdout-sma synthetic series (default 20000)",
+    )
+    parser.add_argument(
+        "--holdout-combos",
+        type=int,
+        default=32,
+        help="Combos for --holdout-sma (default 32)",
+    )
 
     parser.add_argument(
         "--evolve",
@@ -208,6 +256,8 @@ def main() -> int:
     try:
         app = MonteNeoCLI()
 
+        if args.holdout_sma:
+            return app.run_holdout_sma(bars=args.holdout_bars, combos=args.holdout_combos)
         if args.policy_triage:
             return app.run_policy_triage(args.policy_triage)
         if args.export:
