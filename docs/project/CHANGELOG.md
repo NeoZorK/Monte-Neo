@@ -8,7 +8,7 @@ Version source of truth: `src/monte_neo/_version.py`.
 ### Changed
 - Docs site homepage is native MkDocs `docs/index.md` at site root (no `/home/` duplicate)
 - Renamed `docs/INDEX.md` → `docs/docs-map.md` (macOS case-insensitive safe next to `index.md`)
-- Native MkDocs `docs/index.md` makes the docs.yml sed/copy-home hack a no-op (site root index comes from MkDocs); cleanup of dead workflow steps deferred (needs `workflow` OAuth scope to push)
+- Native MkDocs `docs/index.md` as site root; `docs.yml` checks root index and rejects `site/home/` (sed/copy-home hack removed)
 - Maintenance tests and contributing rules point at `docs/docs-map.md`
 
 ### Notes

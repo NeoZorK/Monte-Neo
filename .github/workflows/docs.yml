@@ -30,18 +30,11 @@ jobs:
         run: pip install "mkdocs-material>=9.5"
       - name: Build
         run: mkdocs build --strict
-      - name: Ensure root index.html for GitHub Pages
+      - name: Check MkDocs site root
         run: |
-          # Prefer product landing (docs/home.md → site/home/). Rewrite ../ → ./ so
-          # assets/CSS work at site root (cannot use docs/index.md next to INDEX.md on macOS).
-          if [ -f site/home/index.html ]; then
-            sed -E 's/(href|src)="\.\.\//\1="/g' site/home/index.html > site/index.html
-          elif [ -f site/INDEX/index.html ]; then
-            sed -E 's/(href|src)="\.\.\//\1="/g' site/INDEX/index.html > site/index.html
-          elif [ -f site/INDEX.html ] && [ ! -f site/index.html ]; then
-            cp site/INDEX.html site/index.html
-          fi
+          # Landing is docs/index.md → site/index.html (docs-map.md avoids INDEX/index clash on macOS).
           test -f site/index.html
+          test ! -d site/home
           grep -q 'stylesheets/extra.css' site/index.html
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -85,7 +85,7 @@ Docs site: https://neozork.github.io/Monte-Neo/ (MkDocs Material).
 - Config: `mkdocs.yml`
 - Workflow: `.github/workflows/docs.yml` (deploys on push to `main` when `docs/` changes)
 - Enable once: GitHub → Settings → Pages → Source **GitHub Actions**
-- Home page source is `docs/index.md` (MkDocs site root). Docs file map is `docs/docs-map.md` (maintenance tests). The old sed/copy-home steps in `docs.yml` are now a no-op (no `site/home/`); remove them when a token with `workflow` scope can push workflow edits.
+- Home page source is `docs/index.md` (MkDocs site root). Docs file map is `docs/docs-map.md` (maintenance tests). `docs.yml` asserts `site/index.html` exists and `site/home/` does not.
 
 ## Trusted Publishing (OIDC)
 
