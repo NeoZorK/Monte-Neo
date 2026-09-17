@@ -1,4 +1,9 @@
-# Monte-Neo Roadmap (v0.17.5)
+# Monte-Neo Roadmap (v0.17.6)
+
+## v0.17.6
+- [x] CI PyPI install smoke (`pypi-smoke.yml` + `scripts/verify_pypi_install.sh`)
+- [x] SECURITY.md linked from README / CONTRIBUTING / docs INDEX / nav
+- [ ] LocalScorer B — still waiting on real labels
 
 ## v0.17.5
 - [x] Research `device="auto"` prefers cpu_numba for wall clock (`auto_prefer_cpu_numba`)

@@ -84,4 +84,5 @@ nav:
       - Packaging: project/PACKAGING.md
       - Branching: project/BRANCHING.md
       - Docs map: INDEX.md
+      - Security: https://github.com/NeoZorK/Monte-Neo/blob/main/SECURITY.md
   - Commercial: en/COMMERCIAL.md

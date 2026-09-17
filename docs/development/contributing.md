@@ -40,3 +40,7 @@ MkDocs Material under `docs/`. Push to `main` with `docs/**` or `mkdocs.yml` cha
 ## Issues
 
 Use GitHub issue templates (bug / feature). Include OS, Python version, `monte-neo` version, and a minimal repro when reporting bugs.
+
+## Security
+
+Report vulnerabilities privately via [SECURITY.md](https://github.com/NeoZorK/Monte-Neo/blob/main/SECURITY.md) (GitHub Security Advisories when available). Do not open public issues for exploitable bugs.
