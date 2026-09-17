@@ -223,7 +223,6 @@ def test_promote_mode_invalid():
 
 def test_reject_when_train_pos_holdout_neg(monkeypatch):
     import monte_neo.backtest.holdout as ho
-    from monte_neo.backtest.export import export_sma_sweep
 
     ohlc = synthetic_ohlcv(2500, seed=7)
     model = ExecutionModel(commission_bps=1.0, slippage_bps=1.0, warmup_bars=20)
