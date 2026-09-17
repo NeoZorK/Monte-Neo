@@ -15,10 +15,10 @@ def find_root() -> Path:
 
 
 def test_index_completeness():
-    """Verify that all markdown files in docs/ are registered in docs/INDEX.md."""
+    """Verify that all markdown files in docs/ are registered in docs/docs-map.md."""
     root_dir = find_root()
     docs_dir = root_dir / "docs"
-    index_file = docs_dir / "INDEX.md"
+    index_file = docs_dir / "docs-map.md"
 
     if not index_file.exists():
         # Debug info for the user
@@ -26,7 +26,7 @@ def test_index_completeness():
         print(f"DEBUG: contents of root_dir: {os.listdir(root_dir)}")
 
     assert index_file.exists(), (
-        f"docs/INDEX.md must exist at {index_file}. \n"
+        f"docs/docs-map.md must exist at {index_file}. \n"
         f"If running in Docker, ensure you have: \n"
         f"1. Added 'COPY docs/ docs/' to your Dockerfile\n"
         f"2. Rebuilt the image: 'docker-compose build --no-cache'\n"
@@ -39,17 +39,17 @@ def test_index_completeness():
     # Get all .md files in docs/ (recursive)
     md_files = list(docs_dir.rglob("*.md"))
 
-    # Exclude INDEX.md itself
-    md_files = [f for f in md_files if f.name != "INDEX.md"]
+    # Exclude docs-map.md itself
+    md_files = [f for f in md_files if f.name != "docs-map.md"]
 
     for md_file in md_files:
         # Get relative path from root
         rel_path = md_file.relative_to(root_dir)
         rel_path_str = str(rel_path)
 
-        # Check if the path exists in INDEX.md
+        # Check if the path exists in docs-map.md
         assert rel_path_str in index_content, (
-            f"File {rel_path_str} is not registered in docs/INDEX.md. "
+            f"File {rel_path_str} is not registered in docs/docs-map.md. "
             f"Please add it to maintain the project index."
         )
 
@@ -82,7 +82,7 @@ def test_version_consistency():
 
 
 def test_license_and_docs_version_sync():
-    """Keep LICENSE, pyproject, and docs/INDEX version headers aligned."""
+    """Keep LICENSE, pyproject, and docs/docs-map version headers aligned."""
     root_dir = find_root()
     version_file = root_dir / "src" / "monte_neo" / "_version.py"
     version = re.search(
@@ -96,8 +96,8 @@ def test_license_and_docs_version_sync():
     pyproject = (root_dir / "pyproject.toml").read_text(encoding="utf-8")
     assert ('license = "MIT"' in pyproject) or ('text = "MIT"' in pyproject), "pyproject.toml license must be MIT"
 
-    index = (root_dir / "docs" / "INDEX.md").read_text(encoding="utf-8")
-    assert version in index, f"docs/INDEX.md must mention {version}"
+    index = (root_dir / "docs" / "docs-map.md").read_text(encoding="utf-8")
+    assert version in index, f"docs/docs-map.md must mention {version}"
 
     roadmap = (root_dir / "docs" / "project" / "ROADMAP.md").read_text(encoding="utf-8")
     assert version in roadmap, f"docs/project/ROADMAP.md must mention {version}"

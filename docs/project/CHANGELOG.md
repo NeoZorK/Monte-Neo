@@ -3,6 +3,18 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.17.7] — 2026-09-17
+
+### Changed
+- Docs site homepage is native MkDocs `docs/index.md` at site root (no `/home/` duplicate)
+- Renamed `docs/INDEX.md` → `docs/docs-map.md` (macOS case-insensitive safe next to `index.md`)
+- Native MkDocs `docs/index.md` makes the docs.yml sed/copy-home hack a no-op (site root index comes from MkDocs); cleanup of dead workflow steps deferred (needs `workflow` OAuth scope to push)
+- Maintenance tests and contributing rules point at `docs/docs-map.md`
+
+### Notes
+- Docs / Pages infra only — no runtime API break vs 0.17.6.
+- License remains **MIT**. No peer product names in this tree.
+
 ## [v0.17.6] — 2026-09-17
 
 ### Added
@@ -45,7 +57,7 @@ Version source of truth: `src/monte_neo/_version.py`.
 ## [v0.17.3] — 2026-09-17
 
 ### Added
-- Job-fit scenarios on [Home](../home.md) and [FAQ](../guides/FAQ.md): when Monte-Neo fits / when not (research bar vs OMS/live; peer-free)
+- Job-fit scenarios on [Home](../index.md) and [FAQ](../guides/FAQ.md): when Monte-Neo fits / when not (research bar vs OMS/live; peer-free)
 - [Performance](../development/performance.md) rewrite with first-party `export_sma_sweep` timings + `scripts/bench_research_bar.py`
 - MkDocs nav: Performance under Get started
 

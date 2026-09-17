@@ -67,7 +67,7 @@ docs_dir: docs
 site_dir: site
 
 nav:
-  - Home: home.md
+  - Home: index.md
   - Get started:
       - Install: setup/installation.md
       - Quick start: guides/quick-start.md
@@ -83,6 +83,6 @@ nav:
       - Roadmap: project/ROADMAP.md
       - Packaging: project/PACKAGING.md
       - Branching: project/BRANCHING.md
-      - Docs map: INDEX.md
+      - Docs map: docs-map.md
       - Security: https://github.com/NeoZorK/Monte-Neo/blob/main/SECURITY.md
   - Commercial: en/COMMERCIAL.md

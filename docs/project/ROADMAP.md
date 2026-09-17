@@ -1,4 +1,9 @@
-# Monte-Neo Roadmap (v0.17.6)
+# Monte-Neo Roadmap (v0.17.7)
+
+## v0.17.7
+- [x] Pages homepage: `docs/index.md` at site root; `docs/docs-map.md` replaces `INDEX.md`
+- [x] Native index.md site root (sed hack inert); prune old github-pages deployments after ship
+- [ ] LocalScorer B — still waiting on real labels
 
 ## v0.17.6
 - [x] CI PyPI install smoke (`pypi-smoke.yml` + `scripts/verify_pypi_install.sh`)
