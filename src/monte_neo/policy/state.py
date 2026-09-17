@@ -10,7 +10,12 @@ import numpy as np
 RESEARCH_STATE_SCHEMA = "mn.research_state.v1"
 
 
-def build_research_state(export_out: dict[str, Any], *, run_id: str | None = None) -> dict[str, Any]:
+def build_research_state(
+    export_out: dict[str, Any],
+    *,
+    run_id: str | None = None,
+    holdout_report: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Compress an export payload into a privacy-friendly research state.
 
     Does **not** include raw OHLCV — only metrics / checklist / timing.
@@ -46,6 +51,10 @@ def build_research_state(export_out: dict[str, Any], *, run_id: str | None = Non
 
     top_rows = sorted(rows, key=lambda r: float(r.get("total_return", 0.0)), reverse=True)[:16]
     model = dict(export_out.get("model") or {})
+    if holdout_report is not None:
+        from monte_neo.backtest.holdout import holdout_to_research_metrics
+
+        summary.update(holdout_to_research_metrics(holdout_report))
     return {
         "schema": RESEARCH_STATE_SCHEMA,
         "run_id": run_id or str(uuid.uuid4()),

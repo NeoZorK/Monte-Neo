@@ -120,6 +120,21 @@ class HeuristicPolicy:
         if state.get("fallback_reason"):
             reasons.append(f"device fallback: {state['fallback_reason']}")
 
+        # Optional holdout enrichment (from holdout_sma_sweep → ResearchState.metrics)
+        h_gap = metrics.get("holdout_gap")
+        h_over = metrics.get("holdout_overfit_risk")
+        h_ok = metrics.get("holdout_promote_ok")
+        if h_gap is not None:
+            reasons.append(f"holdout_gap={float(h_gap):.4f}")
+        if h_over == "high" or h_ok is False:
+            reasons.append("holdout blocks promote")
+            promote = False
+            overfit = "high"
+            worth_mc = True
+            if next_action == "promote_paper_oms":
+                next_action = "run_mc"
+            confidence = max(confidence, 0.85)
+
         if std is not None and float(std) < 1e-12 and metrics.get("n_rows", 0) > 1:
             reasons.append("near-zero return std across combos — check data/signals")
             overfit = "high"
