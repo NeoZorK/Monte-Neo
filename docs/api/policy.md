@@ -42,3 +42,8 @@ Tunable via `PolicyConfig` (`t_min_return`, `t_promote_return`, `p_min_frac_posi
 
 Pass a `holdout_sma_sweep` report into `build_research_state(..., holdout_report=...)`.
 High holdout gap blocks promote (see [Holdout](holdout.md)).
+
+## Label log
+
+`append_research_label(path, holdout_report=..., decision=..., human_label=...)` appends JSONL
+(`mn.research_label.v1`) for a future LocalScorer — not a model itself.

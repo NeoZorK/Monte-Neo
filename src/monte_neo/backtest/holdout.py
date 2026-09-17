@@ -96,11 +96,16 @@ def holdout_sma_sweep(
     min_holdout: int = 100,
     gap_high: float = 0.15,
     gap_med: float = 0.05,
+    promote_mode: str = "holdout_positive",
 ) -> dict[str, Any]:
     """Train SMA sweep on the first window; score top-K pairs on holdout.
 
-    Practical anti-overfit without ML: large ``train_best − holdout_at_best``
-    raises ``overfit_risk`` and clears ``promote_ok``.
+    Practical anti-overfit without ML.
+
+    ``promote_mode``:
+      - ``holdout_positive`` (default): promote if train and holdout returns > 0.
+        Large gaps still raise ``overfit_risk`` / suggest MC, but do **not** block.
+      - ``strict``: also require ``overfit_risk != "high"`` (legacy / conservative).
     """
     model = model or ExecutionModel(side_mode="long_flat")
     n = int(np.asarray(close).shape[0])
@@ -154,20 +159,34 @@ def holdout_sma_sweep(
     else:
         overfit = "low"
 
-    promote_ok = overfit != "high" and holdout_at_best > 0.0 and train_best > 0.0
-    next_action = "promote_paper_oms" if promote_ok else (
-        "run_mc" if overfit == "high" and train_best > 0.0 else "stop"
-    )
-    if overfit == "high" and holdout_at_best <= 0.0:
-        next_action = "reject"
+    mode = str(promote_mode or "holdout_positive").strip().lower()
+    if mode not in {"holdout_positive", "strict"}:
+        raise ValueError("promote_mode must be 'holdout_positive' or 'strict'")
+
+    base_ok = holdout_at_best > 0.0 and train_best > 0.0
+    if mode == "strict":
+        promote_ok = base_ok and overfit != "high"
+    else:
+        promote_ok = base_ok
+
+    if promote_ok:
+        next_action = "promote_paper_oms"
+    elif holdout_at_best <= 0.0 and train_best > 0.0:
+        next_action = "reject" if overfit == "high" else "stop"
+    elif overfit == "high" and train_best > 0.0:
+        next_action = "run_mc"
+    else:
+        next_action = "stop"
 
     reasons: list[str] = [
         f"train bars [{train_sl.start}:{train_sl.stop}] holdout [{hold_sl.start}:{hold_sl.stop}]",
         f"train_best={train_best:.4f} holdout_at_best={holdout_at_best:.4f} gap={gap_best:.4f}",
-        f"mean_gap_top_{k}={mean_gap:.4f} overfit_risk={overfit}",
+        f"mean_gap_top_{k}={mean_gap:.4f} overfit_risk={overfit} promote_mode={mode}",
     ]
+    if promote_ok and overfit == "high":
+        reasons.append("promote allowed (holdout>0) but gap high — prefer MC before size-up")
     if not promote_ok:
-        reasons.append("promote blocked by holdout gap / non-positive holdout")
+        reasons.append("promote blocked: non-positive train/holdout" + (" or strict overfit" if mode == "strict" else ""))
 
     elapsed = time.perf_counter() - t0
     return {
@@ -203,8 +222,10 @@ def holdout_sma_sweep(
             "gap_best": float(gap_best),
             "mean_gap_top_k": mean_gap,
             "overfit_risk": overfit,
+            "promote_mode": mode,
             "promote_ok": promote_ok,
             "next_action": next_action,
+            "worth_mc_stress": bool(overfit == "high" or (promote_ok and gap_best >= gap_med)),
         },
         "reasons": reasons,
         "timing": {"elapsed_s": float(elapsed), "includes_signal_build": True},
