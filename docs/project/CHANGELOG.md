@@ -3,6 +3,19 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.17.6] — 2026-09-17
+
+### Added
+- GitHub Actions **PyPI install smoke** (`.github/workflows/pypi-smoke.yml`): `workflow_dispatch`, weekly schedule, and `release` published → clean venv + `pip install monte-neo==… --no-cache-dir` + import policy/holdout (via `scripts/verify_pypi_install.sh`, CDN retries)
+- Links to [SECURITY.md](https://github.com/NeoZorK/Monte-Neo/blob/main/SECURITY.md) from README, CONTRIBUTING, docs INDEX, and MkDocs Project nav
+
+### Changed
+- `scripts/verify_pypi_install.sh` default version → **0.17.6**; `--no-cache-dir` + retry/sleep for PyPI CDN lag
+
+### Notes
+- Docs / OSS trust only — no runtime API break vs 0.17.5.
+- License remains **MIT**. No peer product names in this tree.
+
 ## [v0.17.5] — 2026-09-17
 
 ### Changed
