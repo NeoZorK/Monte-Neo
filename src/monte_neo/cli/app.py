@@ -53,12 +53,12 @@ class MonteNeoCLI:
     def run_policy_triage(self, json_path: str) -> int:
         """Triage a research export JSON with HeuristicPolicy."""
         import json
-        from pathlib import Path as P
+        from pathlib import Path
 
         from monte_neo.policy import triage_export
 
         try:
-            data = json.loads(P(json_path).read_text(encoding="utf-8"))
+            data = json.loads(Path(json_path).read_text(encoding="utf-8"))
             out = triage_export(data)
             console.print_json(data=out["decision"])
             for reason in out["decision"].get("reasons", []):
