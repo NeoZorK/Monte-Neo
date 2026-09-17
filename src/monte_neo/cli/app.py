@@ -49,6 +49,25 @@ class MonteNeoCLI:
             console.print("[yellow]Non-interactive mode not yet implemented[/]")
             return 1
 
+
+    def run_policy_triage(self, json_path: str) -> int:
+        """Triage a research export JSON with HeuristicPolicy."""
+        import json
+        from pathlib import Path as P
+
+        from monte_neo.policy import triage_export
+
+        try:
+            data = json.loads(P(json_path).read_text(encoding="utf-8"))
+            out = triage_export(data)
+            console.print_json(data=out["decision"])
+            for reason in out["decision"].get("reasons", []):
+                console.print(f"[dim]- {reason}[/]")
+            return 0
+        except Exception as e:
+            console.print(f"[red]Policy triage failed: {e}[/]")
+            return 1
+
     def run_export(self, json_path: str) -> int:
         """Export an indicator to C++."""
         import json
@@ -149,6 +168,11 @@ def parse_args() -> argparse.Namespace:
         type=str,
         help="Path to indicator JSON to export to C++",
     )
+    parser.add_argument(
+        "--policy-triage",
+        type=str,
+        help="Path to research export JSON (export_sma_sweep) for HeuristicPolicy triage",
+    )
 
     parser.add_argument(
         "--evolve",
@@ -184,6 +208,8 @@ def main() -> int:
     try:
         app = MonteNeoCLI()
 
+        if args.policy_triage:
+            return app.run_policy_triage(args.policy_triage)
         if args.export:
             return app.run_export(args.export)
         elif args.evolve:
