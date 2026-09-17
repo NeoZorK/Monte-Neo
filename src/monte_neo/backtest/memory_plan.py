@@ -19,6 +19,13 @@ _DEFAULT_METAL_SHARED_BYTES_BUDGET = 384 * (1024**2)
 # Override via MONTE_NEO_METAL_MAX_BARS.
 _DEFAULT_METAL_MAX_BARS = 2_500_000
 
+# Research device="auto" wall-clock policy (M1 Pro 16GB measured 2026-09-17):
+# typical grids (100k×64, 1M×32) are much faster on cpu_numba than Metal.
+# Default: auto declines Metal/MLX for speed after size gates would allow them.
+# Restore pre-0.17.5 prefer-Metal auto: MONTE_NEO_RESEARCH_AUTO_PREFER_METAL=1
+# Or allow Metal on auto only when n_combos >= N:
+#   MONTE_NEO_RESEARCH_AUTO_METAL_MIN_COMBOS=N
+
 
 def research_bytes_budget(override: int | None = None) -> int:
     """Usable host research-buffer budget in bytes (default ~7 GiB)."""
@@ -126,6 +133,34 @@ def plan_research_bytes(
     }
 
 
+
+def research_auto_prefer_metal() -> bool:
+    """True when env restores pre-0.17.5 research auto (prefer Metal when size-ok)."""
+    raw = os.environ.get("MONTE_NEO_RESEARCH_AUTO_PREFER_METAL", "").strip().lower()
+    return raw in {"1", "true", "yes", "on"}
+
+
+def research_auto_metal_min_combos() -> int | None:
+    """Optional combo floor for auto→Metal; None means auto never picks Metal for speed."""
+    raw = os.environ.get("MONTE_NEO_RESEARCH_AUTO_METAL_MIN_COMBOS", "").strip()
+    if not raw:
+        return None
+    return max(1, int(raw))
+
+
+def research_auto_should_attempt_accelerator(*, n_combos: int) -> bool:
+    """Whether device=auto may attempt Metal/MLX after size gates pass.
+
+    Default False (prefer cpu_numba wall clock on measured Apple Silicon grids).
+    """
+    if research_auto_prefer_metal():
+        return True
+    min_c = research_auto_metal_min_combos()
+    if min_c is None:
+        return False
+    return int(n_combos) >= int(min_c)
+
+
 def decide_research_accelerator(
     *,
     n_bars: int,
@@ -135,17 +170,24 @@ def decide_research_accelerator(
 ) -> dict[str, Any]:
     """Decide whether Metal/MLX may run, or force transparent cpu_numba fallback.
 
+    For ``device="auto"``, prefer ``cpu_numba`` on typical research grids when
+    Metal/MLX would otherwise pass size gates (wall-clock policy; see
+    ``research_auto_should_attempt_accelerator``). Explicit ``metal`` / ``mlx``
+    keep size-gate-only behavior.
+
     Returns keys: ``use_metal``, ``use_mlx``, ``fallback_reason``, ``plan``,
-    ``metal_tile_combos``.
+    ``metal_tile_combos``, ``requested_device``.
     """
     from monte_neo.oms.accel.device import resolve_device
 
+    requested = str(device or "auto").lower()
     plan = plan_research_bytes(
         n_bars=n_bars, n_combos=n_combos, bytes_budget=bytes_budget
     )
     want = resolve_device(device)
     out: dict[str, Any] = {
         "want_device": want,
+        "requested_device": requested,
         "use_metal": False,
         "use_mlx": False,
         "fallback_reason": None,
@@ -164,6 +206,12 @@ def decide_research_accelerator(
         if not plan["fits_metal_shared"]:
             out["fallback_reason"] = "metal_shared_bytes_budget_exceeded"
             return out
+        # Explicit metal/mlx: size gate only. Auto: wall-clock prefer Numba.
+        if requested == "auto" and not research_auto_should_attempt_accelerator(
+            n_combos=n_combos
+        ):
+            out["fallback_reason"] = "auto_prefer_cpu_numba"
+            return out
         out["use_metal"] = True
         return out
     if want == "mlx":
@@ -174,6 +222,11 @@ def decide_research_accelerator(
                 if int(n_bars) > int(plan["metal_max_bars"])
                 else "mlx_shared_bytes_budget_exceeded"
             )
+            return out
+        if requested == "auto" and not research_auto_should_attempt_accelerator(
+            n_combos=n_combos
+        ):
+            out["fallback_reason"] = "auto_prefer_cpu_numba"
             return out
         out["use_mlx"] = True
         return out
@@ -186,5 +239,8 @@ __all__ = [
     "metal_max_bars",
     "metal_shared_bytes_budget",
     "plan_research_bytes",
+    "research_auto_metal_min_combos",
+    "research_auto_prefer_metal",
+    "research_auto_should_attempt_accelerator",
     "research_bytes_budget",
 ]

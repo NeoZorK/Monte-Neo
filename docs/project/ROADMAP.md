@@ -1,4 +1,9 @@
-# Monte-Neo Roadmap (v0.17.4)
+# Monte-Neo Roadmap (v0.17.5)
+
+## v0.17.5
+- [x] Research `device="auto"` prefers cpu_numba for wall clock (`auto_prefer_cpu_numba`)
+- [x] Explicit metal/mlx unchanged; OMS `resolve_device` unchanged
+- [ ] LocalScorer B — still waiting on real labels
 
 ## v0.17.4
 - [x] Performance page: M1 Pro 16GB primary table (honest Metal vs cpu_numba wall times)

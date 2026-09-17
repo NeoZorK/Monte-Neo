@@ -26,19 +26,23 @@ Tone: research-bar speed on Apple Silicon — not “replace every production st
 
 No (as of **v0.14.1+**). `device="auto"` estimates Metal/MLX shared and host budgets before dispatch. If the job is too large for a safe Metal path on a 16GB-class Mac, it **falls back to `cpu_numba`** and sets `fallback_reason` (for example `metal_max_bars_exceeded`). You should never see an unbounded GPU wait.
 
-Override budgets with:
+As of **v0.17.5**, research `auto` also declines Metal when size-ok but Numba is the faster safe path (`fallback_reason=auto_prefer_cpu_numba`).
+
+Override budgets / auto policy with:
 
 - `MONTE_NEO_RESEARCH_BYTES_BUDGET`
 - `MONTE_NEO_METAL_SHARED_BYTES_BUDGET`
 - `MONTE_NEO_METAL_MAX_BARS`
+- `MONTE_NEO_RESEARCH_AUTO_PREFER_METAL=1` — restore pre-0.17.5 prefer-Metal research auto
+- `MONTE_NEO_RESEARCH_AUTO_METAL_MIN_COMBOS=N` — allow auto→Metal only when `n_combos >= N`
 
 ## Metal vs Numba — which should I use?
 
-- **`auto` (default):** try Metal economics when eligible; otherwise Numba. On M1 Pro, `auto` may pick Metal even when Numba is faster on small/medium grids — see [Performance](../development/performance.md).
-- **`metal`:** force Metal when eligible (still gated; may fall back).
-- **`cpu_numba`:** always Numba — prefer when **wall clock** matters for similar small/medium research grids on Apple Silicon; also best for huge bars or CI without Metal.
+- **`auto` (default, v0.17.5+):** research path prefers **`cpu_numba`** for wall clock on typical grids; may set `fallback_reason=auto_prefer_cpu_numba`. See [Performance](../development/performance.md).
+- **`metal`:** force Metal when eligible (size gate only; may be slow — your choice).
+- **`cpu_numba`:** always Numba — best default for huge bars or CI without Metal.
 
-Signal grids default to Numba for exact parity; MLX signal remains opt-in.
+Signal grids default to Numba for exact parity; MLX signal remains opt-in. OMS `resolve_device("auto")` is separate and still prefers Metal when available.
 
 ## Is this a live trading bot?
 
