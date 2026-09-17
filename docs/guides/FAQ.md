@@ -28,9 +28,33 @@ No. The primary job is **fast local research** on macOS (fee-aware next-bar econ
 pip install monte-neo
 # Metal/MLX on Apple Silicon:
 pip install "monte-neo[apple]"
+# isolated CLI:
+pipx install "monte-neo[apple]"
 ```
 
-Or from git / clone + `uv sync --extra apple`. See `docs/project/PACKAGING.md`.
+Docs: [Installation](../setup/installation.md) · site: https://neozork.github.io/Monte-Neo/
+
+## pip install from TestPyPI pulls weird packages?
+
+TestPyPI stubs can poison `--extra-index-url`. Use PyPI for daily installs. Maintainers: download with `--no-deps` from TestPyPI only (see Installation).
+
+## ImportError for matplotlib / binance?
+
+Those are **extras**, not default deps (since v0.16):
+
+```bash
+pip install "monte-neo[plot]"   # charts
+pip install "monte-neo[data]"   # Binance client
+```
+
+## How do I triage a sweep / check holdout?
+
+```bash
+monte-neo --policy-triage path/to/export.json
+monte-neo --holdout-sma --holdout-bars 20000 --holdout-combos 32
+```
+
+See [Policy](../api/policy.md) and [Holdout](../api/holdout.md).
 
 ## Python / hardware?
 
