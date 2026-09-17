@@ -24,6 +24,12 @@ from monte_neo.backtest.golden import (
     golden_fixture,
     verify_golden_vectors,
 )
+from monte_neo.backtest.holdout import (
+    HOLDOUT_SCHEMA,
+    holdout_sma_sweep,
+    holdout_to_research_metrics,
+    split_bar_range,
+)
 from monte_neo.backtest.memory_plan import decide_research_accelerator, plan_research_bytes
 from monte_neo.backtest.metal_economics import (
     get_metal_research_engine,
@@ -71,4 +77,8 @@ __all__ = [
     "build_sma_cross_grid_numba_golden",
     "decide_research_accelerator",
     "plan_research_bytes",
+    "HOLDOUT_SCHEMA",
+    "holdout_sma_sweep",
+    "holdout_to_research_metrics",
+    "split_bar_range",
 ]

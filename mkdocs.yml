@@ -75,6 +75,7 @@ nav:
   - API:
       - Research export: api/export.md
       - Research policy: api/policy.md
+      - Holdout: api/holdout.md
   - Project:
       - Changelog: project/CHANGELOG.md
       - Roadmap: project/ROADMAP.md

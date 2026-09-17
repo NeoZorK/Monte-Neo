@@ -53,6 +53,8 @@ def research_manifest() -> dict[str, Any]:
             "research_manifest",
             "plan_research_bytes",
             "build_sma_cross_grid",
+            "holdout_sma_sweep",
+            "split_bar_range",
         ],
     }
 

@@ -39,3 +39,11 @@ monte-neo --policy-triage path/to/export.json
 ```
 
 See [Research policy](../api/policy.md).
+
+## Holdout smoke
+
+```bash
+monte-neo --holdout-sma --holdout-bars 20000 --holdout-combos 32
+```
+
+See [Holdout](../api/holdout.md).

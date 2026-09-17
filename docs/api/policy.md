@@ -37,3 +37,8 @@ Tunable via `PolicyConfig` (`t_min_return`, `t_promote_return`, `p_min_frac_posi
 ## Roadmap
 
 - Holdout helper and LocalScorer B are **deferred** until A proves useful in real sweeps.
+
+## Holdout enrichment
+
+Pass a `holdout_sma_sweep` report into `build_research_state(..., holdout_report=...)`.
+High holdout gap blocks promote (see [Holdout](holdout.md)).

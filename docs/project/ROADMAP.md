@@ -1,10 +1,15 @@
-# Monte-Neo Roadmap (v0.16.0)
+# Monte-Neo Roadmap (v0.17.0)
+
+## v0.17.0
+- [x] Holdout / walk-forward helper around export (`holdout_sma_sweep`)
+- [ ] LocalScorer B — only if A proves useful
+- [ ] Install audit / CONTRIBUTING (tier 2)
 
 ## v0.16.0
 - [x] Slim default deps + optional extras (`apple` darwin markers, `plot`, `data`, `ml`, `server`, `full`)
 - [x] HeuristicPolicy A: ResearchState + triage + CLI `--policy-triage`
 - [x] Export UX docs (API + quickstart extras)
-- [ ] Holdout helper (tier 2) — deferred
+- [x] Holdout helper (tier 2) — shipped in v0.17.0
 - [ ] LocalScorer B — only if A proves useful
 
 ## v0.15.1

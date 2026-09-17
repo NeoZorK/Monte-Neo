@@ -65,6 +65,20 @@ def test_app_monte_neo_cli(tmp_path):
         )
         assert cli.run_policy_triage(str(good)) == 0
         assert cli.run_policy_triage(str(tmp_path / "missing_policy.json")) == 1
+        with patch("monte_neo.backtest.synthetic_ohlcv") as syn, patch(
+            "monte_neo.backtest.holdout_sma_sweep"
+        ) as hs:
+            syn.return_value = {"open": None, "high": None, "low": None, "close": None}
+            hs.return_value = {
+                "schema": "mn.holdout_report.v1",
+                "split": {},
+                "metrics": {"gap_best": 0.0},
+                "train": {"best_pair": {"fast": 5, "slow": 30}},
+                "holdout": {"at_train_best": 0.0},
+                "reasons": ["ok"],
+            }
+            assert cli.run_holdout_sma(bars=1000, combos=8) == 0
+        assert cli.run_holdout_sma(bars=10, combos=8) in (0, 1)
         with patch("monte_neo.data.storage.ParquetStorage") as parquet_storage, patch("monte_neo.utils.config.Config") as config_cls, patch(
             "monte_neo.core.evolution_ai.AIEvolutionEngine"
         ) as evolution_engine:
@@ -85,13 +99,17 @@ def test_app_monte_neo_cli(tmp_path):
 
         with patch("monte_neo.cli.app.parse_args") as pa:
             pa.return_value = SimpleNamespace(
-                export=None, policy_triage=None, evolve=None, headless=False, config=None, interactive=True, log_level="INFO"
+                export=None, policy_triage=None, holdout_sma=False, holdout_bars=20000, holdout_combos=32, evolve=None, headless=False, config=None, interactive=True, log_level="INFO"
             )
             assert app.main() == 0
             pa.return_value.policy_triage = "p.json"
             with patch.object(app.MonteNeoCLI, "run_policy_triage", return_value=0):
                 assert app.main() == 0
             pa.return_value.policy_triage = None
+            pa.return_value.holdout_sma = True
+            with patch.object(app.MonteNeoCLI, "run_holdout_sma", return_value=0):
+                assert app.main() == 0
+            pa.return_value.holdout_sma = False
             pa.return_value.export = "x.json"
             with patch.object(app.MonteNeoCLI, "run_export", return_value=0):
                 assert app.main() == 0
@@ -106,7 +124,7 @@ def test_app_monte_neo_cli(tmp_path):
                 assert app.main() == 0
             pa.side_effect = None
             pa.return_value = SimpleNamespace(
-                export=None, policy_triage=None, evolve=None, headless=False, config=None, interactive=True, log_level="INFO"
+                export=None, policy_triage=None, holdout_sma=False, holdout_bars=20000, holdout_combos=32, evolve=None, headless=False, config=None, interactive=True, log_level="INFO"
             )
             with patch("monte_neo.cli.app.MonteNeoCLI", side_effect=RuntimeError("x")):
                 assert app.main() == 1

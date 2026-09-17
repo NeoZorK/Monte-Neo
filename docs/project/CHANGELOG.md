@@ -3,6 +3,19 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.17.0] — 2026-09-17
+
+### Added
+- **Holdout helper** (`holdout_sma_sweep`, `split_bar_range`): train SMA sweep → score top-K on holdout
+  - Schema `mn.holdout_report.v1` with gap / overfit_risk / promote_ok
+  - HeuristicPolicy enrichment via `build_research_state(..., holdout_report=)`
+  - CLI: `monte-neo --holdout-sma`
+- Docs: [Holdout API](../api/holdout.md)
+
+### Notes
+- Practical anti-overfit without ML. LocalScorer B still deferred.
+- License remains **MIT**. No peer product names in this tree.
+
 ## [v0.16.0] — 2026-09-17
 
 ### Added
