@@ -6,13 +6,14 @@ Uses Metal when available. Refuses to write if SMA sweep returns are flat/zero.
 from __future__ import annotations
 
 from pathlib import Path
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
 
 from monte_neo.backtest import (
     ExecutionModel,
-    export_sma_sweep,
     export_single,
+    export_sma_sweep,
     plan_research_bytes,
 )
 
