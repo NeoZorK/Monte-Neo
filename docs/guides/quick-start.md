@@ -44,7 +44,7 @@ print(
 )
 ```
 
-Aligned with the [Home](../home.md) snippet. More detail: [Research export API](../api/export.md).
+Aligned with the [Home](../index.md) snippet. More detail: [Research export API](../api/export.md).
 
 ## 3. Policy triage (optional)
 

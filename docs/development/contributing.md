@@ -24,7 +24,7 @@ Thanks for helping improve Monte-Neo. Keep changes small, local-Mac friendly, an
 ## Versioning (Swiss clock)
 
 - Single source: `src/monte_neo/_version.py` (`vX.Y.Z`)
-- Keep in lockstep: `CHANGELOG`, `ROADMAP`, `README` current line, `docs/INDEX.md`
+- Keep in lockstep: `CHANGELOG`, `ROADMAP`, `README` current line, `docs/docs-map.md`
 - Releases: GitHub Release tag `vX.Y.Z` → OIDC Publish to PyPI
 
 ## Docs site
