@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Smoke: install monte-neo from PyPI into a temp venv and import policy/holdout.
 # Usage: ./scripts/verify_pypi_install.sh [version]
-# Example: ./scripts/verify_pypi_install.sh 0.17.1
+# Example: ./scripts/verify_pypi_install.sh 0.17.2
 set -euo pipefail
-VER="${1:-0.17.1}"
+VER="${1:-0.17.2}"
 DIR="$(mktemp -d)"
 trap 'rm -rf "$DIR"' EXIT
 python3 -m venv "$DIR/venv"

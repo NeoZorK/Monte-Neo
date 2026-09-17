@@ -42,3 +42,25 @@ monte-neo --holdout-sma --holdout-bars 20000 --holdout-combos 32
 ```
 
 Synthetic smoke only — for real bars call the Python API.
+
+## Promote modes
+
+| Mode | Promote when |
+|------|----------------|
+| `holdout_positive` (default) | `train_best > 0` and `holdout_at_best > 0` |
+| `strict` | same, **and** `overfit_risk != "high"` |
+
+Large gaps still set `overfit_risk` / `worth_mc_stress` but no longer block the default mode.
+
+## Label log (for a future LocalScorer)
+
+```bash
+monte-neo --holdout-sma --holdout-log ~/mn_labels.jsonl --human-label accept
+```
+
+Or in Python:
+
+```python
+from monte_neo.policy import append_research_label
+append_research_label("labels.jsonl", holdout_report=report, decision=decision, human_label="reject")
+```

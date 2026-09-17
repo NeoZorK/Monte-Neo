@@ -126,14 +126,26 @@ class HeuristicPolicy:
         h_ok = metrics.get("holdout_promote_ok")
         if h_gap is not None:
             reasons.append(f"holdout_gap={float(h_gap):.4f}")
-        if h_over == "high" or h_ok is False:
+        if h_ok is False:
             reasons.append("holdout blocks promote")
             promote = False
-            overfit = "high"
+            overfit = "high" if h_over == "high" else overfit
             worth_mc = True
             if next_action == "promote_paper_oms":
-                next_action = "run_mc"
+                next_action = "run_mc" if (metrics.get("holdout_return") or 0) > -1e9 else "reject"
+            if metrics.get("holdout_return") is not None and float(metrics["holdout_return"]) <= 0.0:
+                next_action = "reject"
             confidence = max(confidence, 0.85)
+        elif h_ok is True:
+            if h_over == "high":
+                worth_mc = True
+                reasons.append("holdout ok but gap high — MC before size-up")
+            # Holdout-positive can unlock promote when A was borderline stop
+            if not promote and next_action in {"stop", "refine_grid"}:
+                promote = True
+                next_action = "promote_paper_oms"
+                reasons.append("holdout_promote_ok unlocks promote")
+                confidence = max(confidence, 0.75)
 
         if std is not None and float(std) < 1e-12 and metrics.get("n_rows", 0) > 1:
             reasons.append("near-zero return std across combos — check data/signals")

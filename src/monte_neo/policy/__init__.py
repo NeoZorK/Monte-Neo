@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from monte_neo.policy.config import PolicyConfig
 from monte_neo.policy.heuristic import HeuristicPolicy, triage_export
+from monte_neo.policy.labels import LABEL_SCHEMA, append_research_label
 from monte_neo.policy.state import RESEARCH_STATE_SCHEMA, build_research_state
 
 __all__ = [
@@ -15,4 +16,6 @@ __all__ = [
     "PolicyConfig",
     "build_research_state",
     "triage_export",
+    "LABEL_SCHEMA",
+    "append_research_label",
 ]

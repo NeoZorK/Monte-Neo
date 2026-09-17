@@ -3,6 +3,20 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.17.2] — 2026-09-17
+
+### Changed
+- Holdout default **`promote_mode="holdout_positive"`**: positive holdout no longer blocked by large train−holdout gap
+- HeuristicPolicy: block promote only when `holdout_promote_ok` is false; high gap → MC flag; holdout can unlock promote
+
+### Added
+- `promote_mode="strict"` for legacy conservative gate
+- `append_research_label` JSONL logger + CLI `--holdout-log` / `--human-label` (corpus for a future LocalScorer — **not** B yet)
+
+### Notes
+- LocalScorer B still deferred until real labeled runs exist.
+- License remains **MIT**.
+
 ## [v0.17.1] — 2026-09-17
 
 ### Added

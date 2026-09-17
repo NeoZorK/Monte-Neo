@@ -72,7 +72,7 @@ def test_app_monte_neo_cli(tmp_path):
             hs.return_value = {
                 "schema": "mn.holdout_report.v1",
                 "split": {},
-                "metrics": {"gap_best": 0.0},
+                "metrics": {"gap_best": 0.0, "promote_ok": False, "promote_mode": "holdout_positive"},
                 "train": {"best_pair": {"fast": 5, "slow": 30}},
                 "holdout": {"at_train_best": 0.0},
                 "reasons": ["ok"],
@@ -99,7 +99,7 @@ def test_app_monte_neo_cli(tmp_path):
 
         with patch("monte_neo.cli.app.parse_args") as pa:
             pa.return_value = SimpleNamespace(
-                export=None, policy_triage=None, holdout_sma=False, holdout_bars=20000, holdout_combos=32, evolve=None, headless=False, config=None, interactive=True, log_level="INFO"
+                export=None, policy_triage=None, holdout_sma=False, holdout_bars=20000, holdout_combos=32, promote_mode="holdout_positive", holdout_log=None, human_label=None, evolve=None, headless=False, config=None, interactive=True, log_level="INFO"
             )
             assert app.main() == 0
             pa.return_value.policy_triage = "p.json"
@@ -124,7 +124,7 @@ def test_app_monte_neo_cli(tmp_path):
                 assert app.main() == 0
             pa.side_effect = None
             pa.return_value = SimpleNamespace(
-                export=None, policy_triage=None, holdout_sma=False, holdout_bars=20000, holdout_combos=32, evolve=None, headless=False, config=None, interactive=True, log_level="INFO"
+                export=None, policy_triage=None, holdout_sma=False, holdout_bars=20000, holdout_combos=32, promote_mode="holdout_positive", holdout_log=None, human_label=None, evolve=None, headless=False, config=None, interactive=True, log_level="INFO"
             )
             with patch("monte_neo.cli.app.MonteNeoCLI", side_effect=RuntimeError("x")):
                 assert app.main() == 1
