@@ -38,6 +38,29 @@ Fee-aware next-bar economics · Monte Carlo · paper OMS
 
 **Not a goal:** replace full event-driven production or live multi-venue bot platforms.
 
+
+## When Monte-Neo fits (and when it does not)
+
+Warm honesty beats a feature dump. Use this as a job-fit check.
+
+### Fits well
+
+- **Grid research on a Mac** — roughly **10²–10⁴** fee-aware next-bar combos (SMA / parametric sweeps), not a single one-off script
+- **Apple Silicon without Docker/cloud** — Metal economics + Numba, 16GB-safe planner, no-hang gate → `cpu_numba` fallback
+- **Re-checkable results** — export API + golden vectors before any timing claim
+- **Research → paper OMS** — research bar first; paper OMS is a validation lane, not live ops
+- **MIT + local** — core loop on your machine, no license gate and no mandatory cloud
+
+### Usually not the right tool
+
+- **Full live multi-venue / brokerage OMS** — production event-driven stacks are a different job
+- **Bot operations** — Telegram, exchange dry-run/live wiring, strategy marketplaces
+- **Cloud institutional multi-asset stacks** — cloud Docker-based institutional pipelines elsewhere
+- **One 50-line teaching backtest** — a tiny teaching tool is simpler for that
+- **Portfolio weight allocator / pipeline-bundle workflows** — different question than bar research
+
+See also [FAQ](guides/FAQ.md).
+
 ## Why Monte-Neo
 
 - **Local Apple Silicon speed** — Metal economics + Numba (MLX optional)

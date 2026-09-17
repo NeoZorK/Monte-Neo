@@ -31,7 +31,7 @@ docker-compose -f docker/docker-compose.yml exec monte-neo bash
 - `src/monte_neo/cli/`: Interactive interface
 
 ## Key Technologies
-- **MLX/Metal**: 3D GPU acceleration for population evaluation (up to 125x speedup).
+- **MLX/Metal**: Apple Silicon acceleration for population / scenario evaluation (measure with `scripts/bench_research_bar.py`).
 - **Numba**: JIT-optimized metrics and SL/TP calculation.
 - **Production Gate**: Multi-stage robustness certification pipeline.
 

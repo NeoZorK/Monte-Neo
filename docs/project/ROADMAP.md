@@ -1,4 +1,9 @@
-# Monte-Neo Roadmap (v0.17.2)
+# Monte-Neo Roadmap (v0.17.3)
+
+## v0.17.3
+- [x] Docs trust pack: job-fit scenarios, export-first quickstart, honest performance page
+- [x] `scripts/bench_research_bar.py` first-party research-bar timings
+- [ ] LocalScorer B — still waiting on real labels
 
 ## v0.17.2
 - [x] Soften holdout promote gate (`holdout_positive`) + label JSONL log

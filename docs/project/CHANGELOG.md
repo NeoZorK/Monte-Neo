@@ -3,6 +3,21 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.17.3] — 2026-09-17
+
+### Added
+- Job-fit scenarios on [Home](../home.md) and [FAQ](../guides/FAQ.md): when Monte-Neo fits / when not (research bar vs OMS/live; peer-free)
+- [Performance](../development/performance.md) rewrite with first-party `export_sma_sweep` timings + `scripts/bench_research_bar.py`
+- MkDocs nav: Performance under Get started
+
+### Changed
+- [Quick start](../guides/quick-start.md) is **export-first** (pip → export → policy → holdout); CLI wizard moved to optional section
+- Softened stale “125x” / “300k ops/sec” / “v0.0.4 targeting” claims in public docs
+
+### Notes
+- Docs / trust pack only — no runtime API break vs 0.17.2.
+- License remains **MIT**. No peer product names in this tree.
+
 ## [v0.17.2] — 2026-09-17
 
 ### Changed

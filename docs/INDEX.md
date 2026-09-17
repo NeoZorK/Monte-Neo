@@ -1,4 +1,4 @@
-# Monte-Neo v0.17.2
+# Monte-Neo v0.17.3
 
 A simplified guide to the Monte-Neo file structure.
 
