@@ -3,6 +3,16 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.17.4] — 2026-09-17
+
+### Changed
+- [Performance](../development/performance.md): primary table is **MacBook Pro M1 Pro 16 GB** real timings (post-warmup)
+- Honest guidance: for measured small/medium grids, `cpu_numba` beat Metal wall-clock while `auto` still selected Metal when eligible
+
+### Notes
+- Docs / trust only — no runtime API break vs 0.17.3.
+- License remains **MIT**. No peer product names in this tree.
+
 ## [v0.17.3] — 2026-09-17
 
 ### Added

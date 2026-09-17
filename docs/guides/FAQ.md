@@ -34,9 +34,9 @@ Override budgets with:
 
 ## Metal vs Numba — which should I use?
 
-- **`auto` (default):** try Metal economics when eligible; otherwise Numba.
+- **`auto` (default):** try Metal economics when eligible; otherwise Numba. On M1 Pro, `auto` may pick Metal even when Numba is faster on small/medium grids — see [Performance](../development/performance.md).
 - **`metal`:** force Metal when eligible (still gated; may fall back).
-- **`cpu_numba`:** always Numba (best for huge bars or CI without Metal).
+- **`cpu_numba`:** always Numba — prefer when **wall clock** matters for similar small/medium research grids on Apple Silicon; also best for huge bars or CI without Metal.
 
 Signal grids default to Numba for exact parity; MLX signal remains opt-in.
 
