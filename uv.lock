@@ -1099,6 +1099,8 @@ dev = [
     { name = "pytest-cov" },
     { name = "pytest-xdist" },
     { name = "ruff" },
+    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "scipy", version = "1.18.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "seaborn" },
     { name = "setuptools" },
     { name = "twine" },
@@ -1158,6 +1160,8 @@ dev = [
     { name = "pytest-cov" },
     { name = "pytest-xdist" },
     { name = "ruff" },
+    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "scipy", version = "1.18.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "setuptools" },
     { name = "types-pyyaml" },
 ]
@@ -1215,6 +1219,7 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1" },
     { name = "scikit-learn", marker = "extra == 'full'", specifier = ">=1.9.0" },
     { name = "scikit-learn", marker = "extra == 'ml'", specifier = ">=1.9.0" },
+    { name = "scipy", marker = "extra == 'dev'", specifier = ">=1.11" },
     { name = "scipy", marker = "extra == 'full'", specifier = ">=1.11" },
     { name = "scipy", marker = "extra == 'ml'", specifier = ">=1.11" },
     { name = "seaborn", marker = "extra == 'dev'", specifier = ">=0.13.2" },
@@ -1243,6 +1248,7 @@ dev = [
     { name = "pytest-cov", specifier = ">=4.1" },
     { name = "pytest-xdist", specifier = ">=3.3" },
     { name = "ruff", specifier = ">=0.1" },
+    { name = "scipy", specifier = ">=1.11" },
     { name = "setuptools", specifier = ">=75.0" },
     { name = "types-pyyaml" },
 ]
