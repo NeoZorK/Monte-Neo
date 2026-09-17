@@ -29,38 +29,69 @@ classifiers = [
 ]
 
 dependencies = [
+    # Research-core: fee-aware bar export / Metal-Numba path / CLI
     "numpy>=1.24",
     "pandas>=2.0",
     "pyarrow>=23.0.1",
     "numba>=0.58",
-    "ta>=0.10",
     "rich>=13.0",
     "questionary>=2.0",
     "prompt-toolkit>=3.0",
-    "plotext>=5.2",
-    "mplfinance",
     "pyyaml>=6.0",
     "python-dotenv>=1.2.2",
     "pybind11>=2.10.0",
-    "binance-connector>=3.12.0",
-    "seaborn>=0.13.2",
-    "matplotlib>=3.10.8",
-    "redis>=8.0.1",
-    "psycopg2-binary>=2.9.12",
-    "lightgbm>=4.6.0",
-    "scikit-learn>=1.9.0",
-    "statsmodels>=0.14.6",
-    "fastapi>=0.138.2",
-    "uvicorn>=0.49.0",
-    "pillow>=12.3.0",
 ]
 
 
 [project.optional-dependencies]
 apple = [
-    "mlx>=0.11.0",
-    "pyobjc-framework-metal>=12.2.2",
-    "pyobjc-framework-cocoa>=12.2.2",
+    "mlx>=0.11.0; sys_platform == 'darwin'",
+    "pyobjc-framework-metal>=12.2.2; sys_platform == 'darwin'",
+    "pyobjc-framework-cocoa>=12.2.2; sys_platform == 'darwin'",
+]
+plot = [
+    "matplotlib>=3.10.8",
+    "seaborn>=0.13.2",
+    "mplfinance",
+    "plotext>=5.2",
+    "pillow>=12.3.0",
+]
+data = [
+    "binance-connector>=3.12.0",
+]
+ml = [
+    "lightgbm>=4.6.0",
+    "scikit-learn>=1.9.0",
+    "statsmodels>=0.14.6",
+    "scipy>=1.11",
+    "ta>=0.10",
+]
+server = [
+    "fastapi>=0.138.2",
+    "uvicorn>=0.49.0",
+    "redis>=8.0.1",
+    "psycopg2-binary>=2.9.12",
+]
+# Back-compat kitchen sink for local/dev parity with pre-0.16 installs
+full = [
+    "mlx>=0.11.0; sys_platform == 'darwin'",
+    "pyobjc-framework-metal>=12.2.2; sys_platform == 'darwin'",
+    "pyobjc-framework-cocoa>=12.2.2; sys_platform == 'darwin'",
+    "matplotlib>=3.10.8",
+    "seaborn>=0.13.2",
+    "mplfinance",
+    "plotext>=5.2",
+    "pillow>=12.3.0",
+    "binance-connector>=3.12.0",
+    "lightgbm>=4.6.0",
+    "scikit-learn>=1.9.0",
+    "statsmodels>=0.14.6",
+    "scipy>=1.11",
+    "ta>=0.10",
+    "fastapi>=0.138.2",
+    "uvicorn>=0.49.0",
+    "redis>=8.0.1",
+    "psycopg2-binary>=2.9.12",
 ]
 dev = [
     "pytest>=9.0.3",
@@ -76,6 +107,14 @@ dev = [
     "setuptools>=75.0",
     "build>=1.2",
     "twine>=5.0",
+    # test suite needs plot + exchange client modules
+    "matplotlib>=3.10.8",
+    "seaborn>=0.13.2",
+    "mplfinance",
+    "plotext>=5.2",
+    "pillow>=12.3.0",
+    "binance-connector>=3.12.0",
+    "scipy>=1.11",
 ]
 
 [project.urls]
@@ -83,7 +122,7 @@ Homepage = "https://github.com/NeoZorK/Monte-Neo"
 Repository = "https://github.com/NeoZorK/Monte-Neo"
 Issues = "https://github.com/NeoZorK/Monte-Neo/issues"
 Changelog = "https://github.com/NeoZorK/Monte-Neo/blob/main/docs/project/CHANGELOG.md"
-Documentation = "https://github.com/NeoZorK/Monte-Neo/blob/main/docs/INDEX.md"
+Documentation = "https://neozork.github.io/Monte-Neo/"
 
 [dependency-groups]
 dev = [
@@ -98,6 +137,7 @@ dev = [
     "pandas-stubs",
     "types-PyYAML",
     "setuptools>=75.0",
+    "scipy>=1.11",
 ]
 
 [project.scripts]

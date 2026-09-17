@@ -100,3 +100,19 @@ On https://pypi.org/manage/account/publishing/ add a pending publisher:
 | Environment | `pypi` |
 
 Create a GitHub Environment named `pypi` (optional protection rules). After the first OIDC upload, long-lived API tokens can be rotated away.
+
+
+## Extras matrix (v0.16+)
+
+| Extra | Contents |
+|-------|----------|
+| *(default)* | Research-core: numpy, pandas, pyarrow, numba, rich, CLI |
+| `apple` | MLX + PyObjC Metal/Cocoa (**darwin only** markers) |
+| `plot` | matplotlib / seaborn / mplfinance / plotext / pillow |
+| `data` | binance-connector (downloader / websocket) |
+| `ml` | lightgbm, sklearn, statsmodels, scipy, ta |
+| `server` | fastapi, uvicorn, redis, psycopg2-binary |
+| `full` | Explicit kitchen-sink list (local parity with pre-0.16 installs) |
+| `dev` | pytest stack + plot + data (test suite) |
+
+Plot / exchange helpers lazy-import and raise a clear “install monte-neo[…]” error if missing.

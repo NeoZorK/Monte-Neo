@@ -72,6 +72,9 @@ nav:
       - Install: setup/installation.md
       - Quick start: guides/quick-start.md
       - FAQ: guides/FAQ.md
+  - API:
+      - Research export: api/export.md
+      - Research policy: api/policy.md
   - Project:
       - Changelog: project/CHANGELOG.md
       - Roadmap: project/ROADMAP.md

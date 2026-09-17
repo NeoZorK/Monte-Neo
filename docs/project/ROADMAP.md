@@ -1,4 +1,11 @@
-# Monte-Neo Roadmap (v0.15.1)
+# Monte-Neo Roadmap (v0.16.0)
+
+## v0.16.0
+- [x] Slim default deps + optional extras (`apple` darwin markers, `plot`, `data`, `ml`, `server`, `full`)
+- [x] HeuristicPolicy A: ResearchState + triage + CLI `--policy-triage`
+- [x] Export UX docs (API + quickstart extras)
+- [ ] Holdout helper (tier 2) — deferred
+- [ ] LocalScorer B — only if A proves useful
 
 ## v0.15.1
 - [x] Packaging/CI fixes after v0.15.0 tag (bare install, data wheel, ruff/CI)

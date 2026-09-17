@@ -19,7 +19,7 @@
   <img src="https://img.shields.io/badge/macOS-Apple%20Silicon-black.svg" alt="macOS Apple Silicon"/>
 </p>
 
-> Current: **v0.15.1** · [Docs site](https://neozork.github.io/Monte-Neo/) · [Changelog](docs/project/CHANGELOG.md) · [FAQ](docs/guides/FAQ.md)
+> Current: **v0.16.0** · [Docs site](https://neozork.github.io/Monte-Neo/) · [Changelog](docs/project/CHANGELOG.md) · [FAQ](docs/guides/FAQ.md)
 
 ## What this is (and is not)
 
@@ -39,6 +39,7 @@ throughput is not an OMS event-loop claim.
 | Fee-aware research bar | Next-bar fills, costs (bps), SL/TP/trail, funding, sessions |
 | Honest export API | `export_single` / `export_batch` / `export_sma_sweep` + golden vectors |
 | 16GB-class memory planner | `plan_research_bytes` + **no-hang** Metal size gate → `cpu_numba` fallback |
+| Local research triage | `HeuristicPolicy` after export → next action / promote / MC |
 | Clear non-goals | macOS research tool first; paper OMS is a separate lane |
 | MIT | Use, fork, and ship without drama |
 
@@ -47,9 +48,11 @@ throughput is not an OMS event-loop claim.
 **From PyPI (recommended):**
 
 ```bash
-pip install monte-neo
-# Apple Silicon Metal / MLX:
-pip install "monte-neo[apple]"
+pip install monte-neo                 # research-core (slim)
+pip install "monte-neo[apple]"        # Metal / MLX (Apple Silicon)
+pip install "monte-neo[plot]"         # charts
+pip install "monte-neo[data]"         # Binance downloader / websocket
+pip install "monte-neo[full]"         # kitchen-sink local parity
 ```
 
 **From git:**
@@ -64,10 +67,10 @@ pip install "monte-neo[apple] @ git+https://github.com/NeoZorK/Monte-Neo.git"
 ```bash
 git clone https://github.com/NeoZorK/Monte-Neo.git
 cd Monte-Neo
-uv sync --extra apple   # on Apple Silicon; omit --extra apple on Linux/CI
+uv sync --extra apple --extra plot --extra data --group dev
 ```
 
-See [PACKAGING.md](docs/project/PACKAGING.md).
+See [PACKAGING.md](docs/project/PACKAGING.md) · [Export API](docs/api/export.md) · [Policy triage](docs/api/policy.md).
 
 **Requirements:** Python **3.11+**. Best experience on **Apple Silicon** macOS. Numba CPU
 paths work more broadly; Metal/MLX are the `[apple]` extra.
@@ -75,9 +78,11 @@ paths work more broadly; Metal/MLX are the `[apple]` extra.
 ## Quick start
 
 ```bash
-uv sync
+uv sync --extra apple --extra plot --extra data --group dev
 uv run monte-neo
 uv run pytest tests -n auto
+# After an export_sma_sweep JSON:
+# uv run monte-neo --policy-triage path/to/export.json
 ```
 
 ### Research export (recommended)

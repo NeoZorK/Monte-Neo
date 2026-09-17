@@ -6,13 +6,27 @@ import time
 from collections.abc import Callable
 from typing import Any
 
-from binance.websocket.spot.websocket_stream import (
-    SpotWebsocketStreamClient as WebsocketClient,
-)
-
 from monte_neo.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+try:
+    from binance.websocket.spot.websocket_stream import (
+        SpotWebsocketStreamClient as WebsocketClient,
+    )
+except ImportError:  # pragma: no cover
+    WebsocketClient = None  # type: ignore[misc, assignment]
+
+
+def _websocket_client_cls():
+    """Lazy guard so research-core installs need no binance-connector."""
+    if WebsocketClient is None:
+        raise ImportError(
+            "binance-connector is required for websocket streaming. "
+            'Install with: pip install "monte-neo[data]"'
+        )
+    return WebsocketClient
 
 
 class BinanceWebsocketStreamer:
@@ -50,7 +64,7 @@ class BinanceWebsocketStreamer:
         self._callbacks: list[Callable[[dict], None]] = []
         if callback:
             self._callbacks.append(callback)
-        self._client = WebsocketClient(
+        self._client = _websocket_client_cls()(
             stream_url=stream_url or "wss://stream.binance.com:9443",
             on_message=self._dispatch_message,
             on_error=self._handle_error,

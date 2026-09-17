@@ -1,4 +1,4 @@
-# Monte-Neo v0.15.1
+# Monte-Neo v0.16.0
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -22,8 +22,8 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/project-structure.md - Deep dive into physical directory layout
 - docs/project/features.md - Detailed overview of framework features
 - docs/project/dynamic_indicators.md - Explanation of dynamic indicator generation
-- docs/project/ROADMAP.md - Development roadmap and milestones (v0.15.1)
-- docs/project/CHANGELOG.md - Release changelog (current: v0.15.1)
+- docs/project/ROADMAP.md - Development roadmap and milestones (v0.16.0)
+- docs/project/CHANGELOG.md - Release changelog (current: v0.16.0)
 - docs/project/backtest_engine.md - Fee-aware research bar engine
 - docs/project/oms_engine.md - Paper OMS (bar + tick/L2) + venue adapters
 - docs/assets/monteneo-logo.png - Project logo
@@ -60,7 +60,10 @@ A simplified guide to the Monte-Neo file structure.
 - docker/docker-compose.yml - Docker Compose service definitions
 
 ### Source Code (src/monte_neo/)
-- src/monte_neo/_version.py - Central version management (v0.15.1)
+- src/monte_neo/_version.py - Central version management (v0.16.0)
+- src/monte_neo/policy/ - HeuristicPolicy A (ResearchState + triage)
+- docs/api/export.md - Research export API (schema / golden)
+- docs/api/policy.md - Local research policy triage
 - docs/project/mc_accel.md - MC Metal/MLX dispatch + 16GB budgets
 - src/monte_neo/__init__.py - Main package entry point
 - src/monte_neo/backtest/ - Professional fee-aware research bar engine + SMA sweep

@@ -54,6 +54,17 @@ def test_app_monte_neo_cli(tmp_path):
             "monte_neo.core.optimization.production_exporter.ProductionExporter", side_effect=Exception("e")
         ):
             assert cli.run_export("x.json") == 1
+        # policy triage
+        good = tmp_path / "exp.json"
+        good.write_text(
+            '{"ok":true,"device":"cpu","bars":1,"combos":1,"export_api_version":"1",'
+            '"engine":"t","lane":"research_bar","model":{},'
+            '"work_checklist":{"next_bar_fill":true,"fees":true,"no_lookahead":true,"cash_position_equity":true},'
+            '"timing":{},"metrics":{"best_return":0.1,"rows":[{"fast":5,"slow":30,"total_return":0.1}]}}',
+            encoding="utf-8",
+        )
+        assert cli.run_policy_triage(str(good)) == 0
+        assert cli.run_policy_triage(str(tmp_path / "missing_policy.json")) == 1
         with patch("monte_neo.data.storage.ParquetStorage") as parquet_storage, patch("monte_neo.utils.config.Config") as config_cls, patch(
             "monte_neo.core.evolution_ai.AIEvolutionEngine"
         ) as evolution_engine:
@@ -74,9 +85,13 @@ def test_app_monte_neo_cli(tmp_path):
 
         with patch("monte_neo.cli.app.parse_args") as pa:
             pa.return_value = SimpleNamespace(
-                export=None, evolve=None, headless=False, config=None, interactive=True, log_level="INFO"
+                export=None, policy_triage=None, evolve=None, headless=False, config=None, interactive=True, log_level="INFO"
             )
             assert app.main() == 0
+            pa.return_value.policy_triage = "p.json"
+            with patch.object(app.MonteNeoCLI, "run_policy_triage", return_value=0):
+                assert app.main() == 0
+            pa.return_value.policy_triage = None
             pa.return_value.export = "x.json"
             with patch.object(app.MonteNeoCLI, "run_export", return_value=0):
                 assert app.main() == 0
@@ -91,7 +106,7 @@ def test_app_monte_neo_cli(tmp_path):
                 assert app.main() == 0
             pa.side_effect = None
             pa.return_value = SimpleNamespace(
-                export=None, evolve=None, headless=False, config=None, interactive=True, log_level="INFO"
+                export=None, policy_triage=None, evolve=None, headless=False, config=None, interactive=True, log_level="INFO"
             )
             with patch("monte_neo.cli.app.MonteNeoCLI", side_effect=RuntimeError("x")):
                 assert app.main() == 1

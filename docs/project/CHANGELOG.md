@@ -3,6 +3,26 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.16.0] — 2026-09-17
+
+### Added
+- **HeuristicPolicy A** (`monte_neo.policy`): local deterministic triage after research export
+  - `build_research_state` → compact `mn.research_state.v1` (no raw OHLCV)
+  - `triage_export` / `HeuristicPolicy.decide` → next_action, promote/MC flags, reasons
+  - CLI: `monte-neo --policy-triage path/to/export.json`
+- Docs: export API + policy pages; install extras matrix (`[apple]`, `[plot]`, `[data]`, `[ml]`, `[server]`, `[full]`)
+
+### Changed
+- **Slim default dependencies** — research-core only (numpy/pandas/pyarrow/numba/rich/CLI)
+- Optional extras: `apple` (darwin markers), `plot`, `data`, `ml`, `server`, `full`
+- Lazy imports for Binance downloader, websocket client, plot helpers (`monte-neo[data]` / `[plot]`)
+- CI syncs `--extra apple --extra plot --extra data --group dev`
+- Documentation URL → https://neozork.github.io/Monte-Neo/
+
+### Notes
+- Not a cloud “System One” model — offline rules only. Holdout helper / LocalScorer B deferred.
+- License remains **MIT**. No peer product names in this tree.
+
 ## [v0.15.1] — 2026-09-16
 
 ### Fixed
