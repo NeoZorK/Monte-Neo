@@ -72,6 +72,7 @@ nav:
       - Install: setup/installation.md
       - Quick start: guides/quick-start.md
       - FAQ: guides/FAQ.md
+      - Contributing: development/contributing.md
   - API:
       - Research export: api/export.md
       - Research policy: api/policy.md

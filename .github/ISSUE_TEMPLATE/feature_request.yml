@@ -1,0 +1,27 @@
+name: Feature request
+description: Propose a research-lane improvement (export, holdout, policy, docs)
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What friction does this remove on a local Mac research loop?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Concrete API / CLI / docs change. Prefer small, MIT-friendly scope.
+    validations:
+      required: true
+  - type: checkboxes
+    id: non_goals
+    attributes:
+      label: Fits project non-goals?
+      options:
+        - label: Not a live multi-venue bot-ops product ask
+          required: true
+        - label: No peer product names required in the public tree
+          required: true
