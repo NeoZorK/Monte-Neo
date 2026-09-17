@@ -68,7 +68,7 @@ Once a candidate indicator is evolved and passes basic backtesting, it enters th
 
 ### Parallel Execution (GPU/Numba)
 - **MLX Engine**: For large-scale testing, scenarios are offloaded to the GPU.
-- **Numba Parallelism**: Metrics calculations for SL/TP and scenarios are processed in parallel using JIT-compiled code, reaching 300k+ operations per second.
+- **Numba Parallelism**: Metrics calculations for SL/TP and scenarios are processed in parallel using JIT-compiled code (see [Performance](performance.md) for first-party timings).
 
 ### Sequential Mode (Optimized Workflow)
 To maximize efficiency, validation can run in **Sequential Mode**:
