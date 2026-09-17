@@ -1,4 +1,8 @@
-# Monte-Neo Roadmap (v0.17.3)
+# Monte-Neo Roadmap (v0.17.4)
+
+## v0.17.4
+- [x] Performance page: M1 Pro 16GB primary table (honest Metal vs cpu_numba wall times)
+- [ ] LocalScorer B — still waiting on real labels
 
 ## v0.17.3
 - [x] Docs trust pack: job-fit scenarios, export-first quickstart, honest performance page
