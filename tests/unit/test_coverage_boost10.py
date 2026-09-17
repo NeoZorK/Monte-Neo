@@ -52,6 +52,9 @@ print("ok")
 
 
 def test_portfolio_manager_scipy_paths():
+    import pytest
+
+    pytest.importorskip("scipy")
     from monte_neo.core.portfolio.manager import PortfolioAsset, PortfolioManager
 
     pm = PortfolioManager()

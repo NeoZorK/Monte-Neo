@@ -26,7 +26,7 @@ monte-neo --version
 python -c "import monte_neo; print(monte_neo.__version__)"
 ```
 
-Current release: **v0.15.1** on [PyPI](https://pypi.org/project/monte-neo/).
+Current release: **v0.16.0** on [PyPI](https://pypi.org/project/monte-neo/).
 
 ## From source (developers)
 
@@ -57,3 +57,12 @@ pip install /tmp/mn-wheels/monte_neo-*.whl
 ```
 
 For everyday use, install from **PyPI**, not TestPyPI.
+
+## Optional extras
+
+```bash
+pip install "monte-neo[apple]"   # Metal / MLX (macOS)
+pip install "monte-neo[plot]"    # charts
+pip install "monte-neo[data]"    # exchange downloader
+pip install "monte-neo[full]"    # everything listed in pyproject
+```

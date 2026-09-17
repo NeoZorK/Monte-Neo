@@ -11,11 +11,26 @@ from collections.abc import Callable
 from datetime import datetime, timedelta
 
 import pandas as pd
-from binance.spot import Spot
 
 from monte_neo.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+try:
+    from binance.spot import Spot
+except ImportError:  # pragma: no cover
+    Spot = None  # type: ignore[misc, assignment]
+
+
+def _require_spot():
+    """Lazy guard so research-core installs need no binance-connector."""
+    if Spot is None:
+        raise ImportError(
+            "binance-connector is required for market download. "
+            'Install with: pip install "monte-neo[data]"'
+        )
+    return Spot
 
 
 class BinanceDownloader:
@@ -60,7 +75,7 @@ class BinanceDownloader:
         """
         self.api_key = api_key or os.getenv("BINANCE_API_KEY", "")
         self.api_secret = api_secret or os.getenv("BINANCE_API_SECRET", "")
-        self.client = Spot(api_key=self.api_key, api_secret=self.api_secret)
+        self.client = _require_spot()(api_key=self.api_key, api_secret=self.api_secret)
         logger.info("Binance client initialized")
 
     def get_available_symbols(self) -> list[str]:

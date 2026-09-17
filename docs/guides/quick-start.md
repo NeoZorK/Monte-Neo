@@ -29,3 +29,13 @@ To use the power of genetic algorithms:
 
 **Tip**: Use arrow keys to navigate the menus and Space to select checkboxes.
 For more details on how genetic algorithms work in Monte-Neo, see the [Dynamic Indicators Guide](../project/dynamic_indicators.md).
+
+## Policy triage (optional)
+
+After you save an `export_sma_sweep` / `export_batch` JSON:
+
+```bash
+monte-neo --policy-triage path/to/export.json
+```
+
+See [Research policy](../api/policy.md).
