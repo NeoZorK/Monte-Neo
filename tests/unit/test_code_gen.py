@@ -67,13 +67,22 @@ class TestCodeGenerator(unittest.TestCase):
                 self.assertIn("ewm(span=", code)
 
     def test_binary_ops(self):
-        # Force binary op (op_type=0)
+        # Force binary op (op_type=0); leaves alternate so operands differ
         self.rng.integers.return_value = 0
-        self.rng.choice.side_effect = lambda x: "+" if isinstance(x, list) and "+" in x else x[0]
+        leaves = iter(range(100))
+        self.rng.choice.side_effect = (
+            lambda x: "+" if isinstance(x, list) and "+" in x else x[next(leaves) % len(x)]
+        )
         code = self.generator.generate_code()
         self.assertIn(" + ", code)
         self.assertTrue(code.startswith("("))
         self.assertTrue(code.endswith(")"))
+
+    def test_binary_identical_operands_collapse_to_leaf(self):
+        # Every leaf is the same column: x + x would be degenerate -> return the leaf
+        self.rng.integers.return_value = 0
+        self.rng.choice.side_effect = lambda x: "+" if isinstance(x, list) and "+" in x else x[0]
+        self.assertEqual(self.generator.generate_code(), "data['close']")
 
     def test_fallback_coverage(self):
         # Trigger the final fallback line 79
@@ -85,3 +94,16 @@ class TestCodeGenerator(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+
+def test_binary_ops_never_use_identical_operands():
+    """x / x or x - x is a constant: the generator must never emit it."""
+    import re
+
+    import numpy as np
+
+    pattern = re.compile(r"\((data\['\w+'\]) [-+*/] \1\)")
+    for seed in range(300):
+        code = CodeGenerator(np.random.default_rng(seed)).generate_code()
+        assert not pattern.search(code), code

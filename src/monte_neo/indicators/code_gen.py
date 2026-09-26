@@ -40,6 +40,13 @@ class CodeGenerator:
             op = self.rng.choice(["+", "-", "*", "/"])
             left = self.generate_code(depth + 1)
             right = self.generate_code(depth + 1)
+            # Identical operands give a constant (x / x, x - x): a degenerate indicator.
+            for _ in range(8):
+                if right != left:
+                    break
+                right = self.generate_code(depth + 1)
+            if right == left:
+                return left
             return f"({left} {op} {right})"
 
         elif op_type == 1:
