@@ -75,6 +75,8 @@ def verify_strategy(
     holdout_fraction: float = 0.3,
     min_trades: int = 30,
     probe_checks: int = 24,
+    extra_checks: list[dict[str, Any]] | None = None,
+    extra: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Verify one strategy and return a ``strategy-verdict/1`` report.
 
@@ -82,6 +84,8 @@ def verify_strategy(
     ``strategy`` (``file.py[:func]``) / ``signal_fn``. Code enables the
     look-ahead probes; ``source`` (or the strategy file) enables static lint.
     ``n_trials`` is how many variants were tried before picking this one.
+    ``extra_checks`` / ``extra`` let wrappers (e.g. grid search) add check
+    rows and report sections that take part in the verdict and certificate.
     """
     df = load_ohlcv(ohlcv)
     n = len(df)
@@ -127,6 +131,7 @@ def verify_strategy(
         rows.accuracy_row(accuracy),
         *rows.economics_rows(model, total_return, breakeven, delay),
         *rows.statistics_rows(dsr, n_closed, int(min_trades), trials_declared=n_trials is not None, holdout=holdout),
+        *(extra_checks or []),
     ]
     metrics = {
         "bars": n,
@@ -141,7 +146,7 @@ def verify_strategy(
         "breakeven_cost_bps": float(breakeven["breakeven_bps"]),
         "hit_rate": accuracy.get("hit_rate"),
     }
-    return _report(checks, metrics, df, sig, src, model, n_trials)
+    return _report(checks, metrics, df, sig, src, model, n_trials, extra)
 
 
 def _report(
@@ -152,6 +157,7 @@ def _report(
     src: str | None,
     model: ExecutionModel,
     n_trials: int | None,
+    extra: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     verdict = aggregate_verdict(checks)
     data_bytes = np.ascontiguousarray(df[list(OHLC_COLS)].to_numpy(dtype=np.float64)).tobytes()
@@ -164,6 +170,8 @@ def _report(
         "model": model.to_dict(),
         "n_trials": int(n_trials or 1),
     }
+    if extra:
+        repro["extra_sha256"] = _sha256(json.dumps(to_jsonable(extra), sort_keys=True).encode())
     cert_id = _sha256(json.dumps({"r": repro, "v": verdict}, sort_keys=True, default=str).encode())[:16]
     reasons = [f"{c['id']}: {c['summary']}" for c in checks if c["status"] == "fail"]
     reasons += [f"{c['id']}: {c['summary']}" for c in checks if c["status"] == "warn"]
@@ -179,6 +187,7 @@ def _report(
             "reproducibility": repro,
             "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
             "disclaimer": DISCLAIMER,
+            **(extra or {}),
         }
     )
 

@@ -31,6 +31,8 @@ def build_parser() -> argparse.ArgumentParser:
     src.add_argument("--signals", help="Positions per bar (.csv / .parquet / .npy): +1 long, 0 flat, -1 short")
     src.add_argument("--strategy", help="Strategy file 'path.py[:func]' with func(df) -> positions (default func: signal)")
     p.add_argument("--n-trials", type=int, default=None, help="How many variants were tried before this one")
+    p.add_argument("--grid", help="Parameter grid as JSON or a .json file, e.g. '{\"fast\": [10, 20], \"slow\": [50, 100]}' (needs --strategy)")
+    p.add_argument("--folds", type=int, default=4, help="Walk-forward folds for --grid (default 4)")
     p.add_argument("--commission-bps", type=float, default=5.0, help="Commission per side in bps (default 5)")
     p.add_argument("--slippage-bps", type=float, default=5.0, help="Slippage per side in bps (default 5)")
     p.add_argument("--side-mode", choices=["long_flat", "long_short"], default=None, help="Default: long_short if signals contain shorts")
@@ -53,6 +55,13 @@ def _render_text(report: dict[str, Any], console: Console) -> None:
         style = _STATUS_STYLE.get(c["status"], "")
         table.add_row(c["id"], c["category"], f"[{style}]{c['status']}[/]", c["summary"])
     console.print(table)
+    grid = report.get("grid")
+    if grid:
+        wf = grid["walk_forward"]
+        console.print(
+            f"grid: {grid['n_combos']} combos · best {grid['best_params']} · walk-forward OOS Sharpe/bar"
+            f" {wf['oos_sharpe']:+.4f} · stability {wf['param_stability']:.2f}"
+        )
     m = report.get("metrics") or {}
     if m:
         console.print(
@@ -63,6 +72,14 @@ def _render_text(report: dict[str, Any], console: Console) -> None:
     for action in report["next_actions"]:
         console.print(f"[yellow]→ {action}[/]")
     console.print(f"[dim]{report['disclaimer']}[/]")
+
+
+def _load_grid(spec: str) -> dict[str, list[Any]]:
+    text = Path(spec).read_text(encoding="utf-8") if spec.endswith(".json") and Path(spec).is_file() else spec
+    grid = json.loads(text)
+    if not isinstance(grid, dict):
+        raise ValueError("--grid must be a JSON object {name: [values]}")
+    return grid
 
 
 def _side_mode(args: argparse.Namespace) -> str:
@@ -77,7 +94,7 @@ def _side_mode(args: argparse.Namespace) -> str:
 
 def run(args: argparse.Namespace, console: Console | None = None) -> int:
     """Execute a parsed ``verify`` command."""
-    from monte_neo.verify import VERDICT_JSON_SCHEMA, load_ohlcv, model_from_costs, verify_strategy
+    from monte_neo.verify import VERDICT_JSON_SCHEMA, load_ohlcv, model_from_costs, verify_grid, verify_strategy
 
     console = console or Console()
     if args.schema:
@@ -85,6 +102,9 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
         return 0
     if not args.ohlcv or not (args.signals or args.strategy):
         console.print("[red]verify needs --ohlcv and one of --signals / --strategy[/]")
+        return 3
+    if args.grid and not args.strategy:
+        console.print("[red]--grid needs --strategy (signal(df, **params))[/]")
         return 3
     try:
         df = load_ohlcv(args.ohlcv)
@@ -95,15 +115,11 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
             warmup_bars=args.warmup_bars,
             n_bars=len(df),
         )
-        report = verify_strategy(
-            df,
-            signals=args.signals,
-            strategy=args.strategy,
-            model=model,
-            n_trials=args.n_trials,
-            periods_per_year=args.periods_per_year,
-            min_trades=args.min_trades,
-        )
+        common = {"model": model, "periods_per_year": args.periods_per_year, "min_trades": args.min_trades}
+        if args.grid:
+            report = verify_grid(df, _load_grid(args.grid), strategy=args.strategy, folds=args.folds, **common)
+        else:
+            report = verify_strategy(df, signals=args.signals, strategy=args.strategy, n_trials=args.n_trials, **common)
     except Exception as exc:  # input errors must not look like a verdict
         console.print(f"[red]verify failed: {exc}[/]")
         return 3

@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.18.0)
+# Monte-Neo Roadmap (v0.19.0)
 
 Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier for agent-built strategies).
 
@@ -11,10 +11,15 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 - [x] MCP server `monte-neo-mcp` + Claude Code plugin / Codex / Gemini / Cursor configs
 - [x] GitHub Action (`action.yml`)
 
-## Next (v0.19+)
-- [ ] Trap Suite → 50+ traps (resample/timezone leakage, survivorship, fee-free fills, target leakage in ML features)
-- [ ] Walk-forward re-verification for parameterized strategies (`n_trials` from grid size)
-- [ ] Optional Claude Code hook: remind to verify when a backtest changes without a fresh certificate
+## v0.19.0 — measured selection bias + agent nudges
+- [x] `verify_grid`: in-verifier grid search, measured `n_trials`, anchored walk-forward (`walk_forward_oos`)
+- [x] Trap Suite: 9 traps + 3 honest controls + 2 grid strategies + data snooping
+- [x] New lint rules (reversed window, full-series rank/stat/fit, group aggregates)
+- [x] Claude Code plugin hook (reminder after strategy edits)
+- [x] Action: `grid`, PR comment updated in place
+
+## Next (v0.20+)
+- [ ] Trap Suite → 50+ traps (survivorship across a universe, timezone/resample edges, target leakage in ML features)
 - [ ] Publish to MCP registries (official registry, glama, smithery, mcpmarket)
 - [ ] Agent Backtest Honesty Bench (same tasks → several agents → verifier → public leaderboard)
 - [ ] Signed certificates + public verification page

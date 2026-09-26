@@ -24,6 +24,7 @@ NEXT_ACTIONS: dict[str, str] = {
     "deflated_sharpe": "Sharpe does not survive the number of variants tried: test out-of-sample or reduce the search space.",
     "trials_disclosed": "Pass n_trials = number of variants you tried (parameters, rules, assets) so selection bias is priced in.",
     "holdout_consistency": "Recent (holdout) performance does not confirm the earlier sample: check for regime dependence or overfit.",
+    "walk_forward_oos": "Parameters picked on past folds do not hold on the next fold: shrink the grid or prefer robust parameter plateaus.",
 }
 
 

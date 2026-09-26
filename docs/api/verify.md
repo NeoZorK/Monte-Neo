@@ -59,7 +59,7 @@ monte-neo verify --schema          # print the JSON schema
 | `determinism` | integrity | two runs of `signal(df)` on the same data disagree |
 | `lookahead_truncation` | lookahead | `signal(df[:t+1])[-1] != signal(df)[t]` at any checkpoint |
 | `lookahead_perturbation` | lookahead | rewriting bars after `t` (future returns mirrored) changes signals up to `t` |
-| `lookahead_static_lint` | lookahead | `shift(-k)`, `center=True`, `bfill` (fail); `fit` on the full series, `x[i + k]` (warn) |
+| `lookahead_static_lint` | lookahead | `shift(-k)`, `center=True`, `bfill`, windows over `x[::-1]` (fail); full-series `fit`/`polyfit`, `rank`, `mean`/`std`/`max`…, group `transform("last")`, `x[i + k]` (warn) |
 | `implausible_accuracy` | lookahead | next-bar direction hit rate ≥ 0.60 over ≥ 100 active bars |
 | `costs_modeled` | economics | zero commission and slippage (warn) |
 | `net_profitability` | economics | total return ≤ 0 after costs |
@@ -69,6 +69,7 @@ monte-neo verify --schema          # print the JSON schema
 | `deflated_sharpe` | statistics | Deflated Sharpe < 0.5 (fail) or < 0.95 (warn) |
 | `trials_disclosed` | statistics | `n_trials` not declared (info only) |
 | `holdout_consistency` | statistics | Sharpe positive in the first 70% and ≤ 0 in the last 30% (warn) |
+| `walk_forward_oos` | statistics | `verify_grid` only: walk-forward out-of-sample Sharpe ≤ 0 (fail) or < 50% of the in-sample best (warn) |
 
 ### Execution semantics
 
@@ -92,6 +93,31 @@ When an agent tries 200 variants and reports the best one, the best Sharpe is
 mostly luck. The verifier prices this in, but only if it knows the number of trials.
 The trap suite (`tests/traps`) includes this case: the best of 200 random strategies
 passes when `n_trials` is hidden and fails once `n_trials=200` is declared.
+
+## Grid search inside the verifier: `verify_grid`
+
+Agents tend to under-report `n_trials`. With `verify_grid`, the verifier runs the
+parameter search itself, so the selection bias is measured instead of declared.
+
+```python
+from monte_neo.verify import verify_grid
+
+# my_strategy.py:  def signal(df, fast=20, slow=80): ...
+report = verify_grid("btc_1h.csv", {"fast": [10, 20, 40], "slow": [80, 120, 200]},
+                     strategy="my_strategy.py", folds=4)
+report["grid"]  # n_combos, best_params, top, walk_forward
+```
+
+What `verify_grid` does:
+
+- Expands the grid, up to 512 combos.
+- Runs every combo through the fee-aware engine and picks the best by per-bar Sharpe.
+- Verifies that best combo with `n_trials = n_combos` and the measured Sharpe spread across trials.
+- Runs an **anchored walk-forward**: parameters are re-chosen on past folds only and scored on
+  the next fold. Its out-of-sample Sharpe becomes the `walk_forward_oos` check.
+
+CLI: `monte-neo verify --ohlcv data.csv --strategy my_strategy.py --grid '{"fast":[10,20],"slow":[80,120]}'`
+(or `--grid grid.json`). MCP tool: `verify_grid`.
 
 ## Certificate (`strategy-verdict/1`)
 

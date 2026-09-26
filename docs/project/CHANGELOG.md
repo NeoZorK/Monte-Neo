@@ -3,6 +3,29 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.19.0] — 2026-09-26
+
+### Added
+- `verify_grid`: the verifier runs the parameter search itself. It expands the grid (≤ 512 combos),
+  measures `n_trials` and the spread of trial Sharpes, verifies the best combo, and runs an anchored
+  walk-forward (new `walk_forward_oos` check). Available through CLI `--grid` / `--folds`, the
+  MCP tool `verify_grid` and the `grid` input of the Action.
+- Static lint rules: `reversed_window` (fail), `full_sample_rank`, `full_sample_stat`,
+  `group_aggregate` and `polyfit` fit (warn)
+- Trap Suite: `hourly_close_leak`, `reverse_rolling`, `full_polyfit`, `full_rank` traps, the honest
+  control `expanding_zscore`, and the grid strategies `sma_params` / `momentum_params`
+- Claude Code plugin `PostToolUse` hook: reminds the agent to verify after editing strategy or
+  backtest code (once per file per session, never blocks the edit)
+- GitHub Action inputs `grid`, `comment` (PR comment updated in place) and `github-token`
+- `verify_strategy(extra_checks=, extra=)` extension points; `reproducibility.extra_sha256`
+
+### Changed
+- `publish.yml` runs on `v*` tag push: it checks that the tag equals the package version,
+  publishes to PyPI, then creates the GitHub Release from this CHANGELOG section
+
+### Notes
+- No breaking API change vs 0.18.0.
+
 ## [v0.18.0] — 2026-09-26
 
 ### Added

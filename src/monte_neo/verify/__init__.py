@@ -6,6 +6,7 @@ Entry point: :func:`verify_strategy` → ``strategy-verdict/1`` report.
 from __future__ import annotations
 
 from monte_neo.verify.costs import breakeven_cost_bps, delay_scan, delay_signals
+from monte_neo.verify.grid import expand_grid, verify_grid, walk_forward
 from monte_neo.verify.ingest import (
     call_signal_fn,
     load_ohlcv,
@@ -49,6 +50,7 @@ __all__ = [
     "deflated_sharpe",
     "delay_scan",
     "delay_signals",
+    "expand_grid",
     "expected_max_sharpe",
     "implausible_accuracy",
     "infer_periods_per_year",
@@ -65,5 +67,7 @@ __all__ = [
     "probe_truncation",
     "sharpe_per_bar",
     "to_jsonable",
+    "verify_grid",
     "verify_strategy",
+    "walk_forward",
 ]

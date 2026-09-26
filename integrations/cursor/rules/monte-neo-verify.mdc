@@ -12,6 +12,8 @@ Before reporting any trading strategy, signal or backtest result (returns, Sharp
 3. Call the `verify_strategy` tool of the `monte-neo` MCP server (or run
    `monte-neo verify --ohlcv data.csv --strategy strategy.py --n-trials N --format json`)
    with `n_trials` = number of variants you tried and realistic costs.
+   If you tuned parameters, make them keyword arguments of `signal(df, **params)` and call
+   `verify_grid` with the grid instead: the verifier then counts the trials and runs a walk-forward.
 4. `REJECT` means the backtest is wrong: apply `next_actions` and verify again.
    `NEEDS_MORE_EVIDENCE` means the result is not statistically established.
 5. Report the verifier verdict, `certificate_id` and metrics, not your own backtest numbers.
