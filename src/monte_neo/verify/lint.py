@@ -8,12 +8,12 @@ from typing import Any
 _BFILL_METHODS = {"bfill", "backfill"}
 _FIT_METHODS = {"fit", "fit_transform", "polyfit"}
 _GROUP_AGGS = {"last", "max", "min", "mean", "sum", "std", "median", "size", "count", "nunique"}
-_CUM_METHODS = {"cummax", "cummin", "cumsum", "cumprod"}
+_CUM_METHODS = {"cummax", "cummin", "cumsum", "cumprod", "accumulate"}
 _FORWARD_REINDEX = {"bfill", "backfill", "nearest"}
 _WINDOW_METHODS = {"rolling", "expanding", "ewm"}
 _STAT_METHODS = {"mean", "std", "var", "min", "max", "median", "quantile", "sum", "idxmax", "idxmin", "argmax", "argmin"}
 _NUMPY_STATS = {"mean", "std", "var", "min", "max", "median", "percentile", "quantile", "sum", "argmax", "argmin", "nanmean", "nanstd"}
-_POSITIONAL = {"iloc", "values"}
+_POSITIONAL = {"iloc", "iat", "values"}
 _PERIOD_METHODS = {"diff", "pct_change"}
 _SAFE_INTERPOLATE = {"pad", "ffill"}
 _FORWARD_ASOF = {"forward", "nearest"}
@@ -22,6 +22,8 @@ _MODULES = {"np", "numpy", "math", "statistics", "pd", "pandas"}
 _CENTERED_FILTERS = {"filtfilt", "sosfiltfilt", "savgol_filter", "gaussian_filter1d", "uniform_filter1d", "medfilt"}
 _TRANSFORMS = {"fft", "rfft", "fftn", "rfftn", "dct", "hilbert", "detrend"}
 _FULL_RANKS = {"qcut", "argsort"}
+_BUILTIN_STATS = {"max", "min", "sum", "sorted"}
+_FORWARD_INDEXER = "FixedForwardWindowIndexer"
 _CONVOLVE = {"convolve", "correlate"}
 
 
@@ -151,6 +153,14 @@ class _Visitor(ast.NodeVisitor):
                     self._add(node, "group_aggregate", "warn", f"groupby().{attr}() includes later rows of each group; shift(1) to use completed groups")
             elif attr == "sort_values" and not node.args and _kw(node, "by") is None:
                 self._add(node, "full_sample_rank", "warn", "sort_values over the whole series orders bars by future values too")
+            elif attr == _FORWARD_INDEXER:
+                self._add(node, "forward_window", "fail", "FixedForwardWindowIndexer makes rolling windows look at the next bars")
+            elif attr == "tail":
+                self._add(node, "last_row", "fail", "tail() reads the last (future) bars of the dataset")
+            elif attr == "sort" and isinstance(node.func.value, ast.Name) and node.func.value.id in ("np", "numpy"):
+                self._add(node, "full_sample_rank", "warn", "np.sort over the whole array orders bars by future values too")
+            elif attr == "cut" and isinstance(node.args[1] if len(node.args) > 1 else _kw(node, "bins"), ast.Constant):
+                self._add(node, "full_sample_rank", "warn", "pd.cut with a bin count takes edges from the whole-series min and max")
             elif attr in _FULL_RANKS:
                 self._add(node, "full_sample_rank", "warn", f"{attr} ranks bars against the whole sample, future included")
             elif attr in _FIT_METHODS:
@@ -171,6 +181,12 @@ class _Visitor(ast.NodeVisitor):
                 self._add(node, "full_sample_stat", "warn", "whole-series statistic includes future bars (use rolling/expanding)")
             elif attr == "transform" and node.args and _is_str(node.args[0], _GROUP_AGGS):
                 self._add(node, "group_aggregate", "warn", "group aggregate broadcasts values from later rows of the same group")
+        elif isinstance(node.func, ast.Name):
+            name = node.func.id
+            if name == _FORWARD_INDEXER:
+                self._add(node, "forward_window", "fail", "FixedForwardWindowIndexer makes rolling windows look at the next bars")
+            elif name in _BUILTIN_STATS and len(node.args) == 1 and not node.keywords and self._is_series_ref(node.args[0]):
+                self._add(node, "full_sample_stat", "warn", f"built-in {name}() over a whole column includes future bars")
         if _is_true(_kw(node, "center")):
             self._add(node, "centered_window", "fail", "center=True windows include future bars")
         self.generic_visit(node)

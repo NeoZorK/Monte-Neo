@@ -3,6 +3,24 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.30.0] — 2026-09-26
+
+### Added
+- Trap Suite: `forward_window_indexer`, `np_sort_rank`, `cut_auto_bins`, `reversed_accumulate`,
+  `tail_threshold`, `iat_last`, `builtin_max`, and two traps that only the dynamic probes can catch,
+  `dataset_fraction` and `block_mean_reshape`; honest controls `cut_fixed_bins`, `hour_running_high`
+  and `rolling_min_periods` (40 traps, 15 honest controls)
+- Lint rules (20 in total):
+  - `forward_window` (fail): `FixedForwardWindowIndexer`;
+  - `last_row` (fail) now also covers `.tail()` and `.iat[-k]`;
+  - `reversed_cumulative` (fail) now also covers `np.<ufunc>.accumulate` over a reversed array;
+  - `full_sample_rank` (warn) now covers `np.sort` and `pd.cut` with a bin count;
+  - `full_sample_stat` (warn) now covers the built-ins `max` / `min` / `sum` / `sorted` over a whole column.
+- Trap Suite guide: a section on traps that are invisible to the static lint
+
+### Notes
+- No breaking API change vs 0.29.0.
+
 ## [v0.29.0] — 2026-09-26
 
 ### Added
