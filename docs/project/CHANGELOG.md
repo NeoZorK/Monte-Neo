@@ -3,6 +3,22 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.29.0] — 2026-09-26
+
+### Added
+- **Certificate verification page** on the docs site: [Verify a certificate](../verify.md). It checks the
+  Ed25519 signature of a `strategy-verdict/1` certificate in the browser with WebCrypto; nothing is
+  uploaded. `?cert=<https URL>&key=ed25519:<key>` loads and checks a certificate from a link, so the
+  "Verified by Monte-Neo" badge can point to a one-click check.
+- `docs/assets/verify-certificate.js`: rebuilds the exact bytes Python signs (sorted keys, Python
+  float formatting, Python string escapes). A test runs it in Node and compares it with
+  `canonical_payload` on 500+ floats, Unicode and control characters, and checks a Python signature
+  and a tampered certificate.
+- The article "Six ways your agent's backtest lies" is published on the docs site (Articles).
+
+### Notes
+- No API change vs 0.28.0.
+
 ## [v0.28.0] — 2026-09-26
 
 ### Added
