@@ -19,6 +19,10 @@ Version source of truth: `src/monte_neo/_version.py`.
 - GitHub Action inputs `grid`, `comment` (PR comment updated in place) and `github-token`
 - `verify_strategy(extra_checks=, extra=)` extension points; `reproducibility.extra_sha256`
 
+### Changed
+- `publish.yml` runs on `v*` tag push: it checks that the tag equals the package version,
+  publishes to PyPI, then creates the GitHub Release from this CHANGELOG section
+
 ### Notes
 - No breaking API change vs 0.18.0.
 

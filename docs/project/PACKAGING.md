@@ -89,7 +89,13 @@ Docs site: https://neozork.github.io/Monte-Neo/ (MkDocs Material).
 
 ## Trusted Publishing (OIDC)
 
-Workflow: `.github/workflows/publish.yml` (on GitHub Release).
+Workflow: `.github/workflows/publish.yml`, triggered by pushing a `v*` tag:
+
+1. The tag must equal `__version__` in `src/monte_neo/_version.py`, otherwise the job fails.
+2. Build and publish to PyPI with OIDC.
+3. Create the GitHub Release from the matching `docs/project/CHANGELOG.md` section.
+
+Release: `git tag v0.19.0 && git push origin v0.19.0`. Do not create the Release by hand; the workflow does it.
 
 On https://pypi.org/manage/account/publishing/ add a pending publisher:
 
