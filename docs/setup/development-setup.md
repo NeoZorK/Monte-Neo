@@ -34,7 +34,7 @@
 
    ```bash
    uv run bash scripts/build_native.sh
-   uv run python verify_hardware.py
+   uv run python scripts/verify_hardware.py
    ```
 
 ## Development Workflow

@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.25.0)
+# Monte-Neo Roadmap (v0.26.0)
 
 Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier for agent-built strategies).
 
@@ -45,12 +45,16 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 ## v0.25.0 — signed certificates
 - [x] Ed25519 signatures: `--keygen`, `--sign`, `--check-signature`; MCP `check_signature`
 
-## Next (v0.26+)
+## v0.26.0 — focus and storefront
+- [x] Cleanup: tracked artifacts removed, scripts moved, research lanes frozen, legacy tests isolated
+- [x] README / docs home / PyPI metadata rewritten; download badges; banner; CITATION; glama.json
+- [x] Marketing plan + launch kit + article draft
+
+## Next (v0.27+)
 - [ ] First public bench run: same tasks → Claude Code / Codex / Gemini / Cursor → published leaderboard
 - [ ] Trap Suite → 50+ traps (now 25 + 9 honest controls; next: survivorship across a universe, timezone edges)
-- [ ] Publish to MCP registries (official registry, glama, smithery, mcpmarket)
+- [~] Publish to MCP catalogues: official registry (done), glama / smithery / mcp.so / mcpmarket (owner submits; texts in docs/marketing/launch-kit.md)
 - [~] Signed certificates (v0.25.0) + public verification page; signing in the GitHub Action
-- [ ] Freeze / trim side lanes (indicator generator, MLX 3D engine, root scripts): see CLEANUP_CANDIDATES_RU.md
 
 ## v0.17.7
 - [x] Pages homepage: `docs/index.md` at site root; `docs/docs-map.md` replaces `INDEX.md`

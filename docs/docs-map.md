@@ -1,4 +1,4 @@
-# Monte-Neo v0.25.0
+# Monte-Neo v0.26.0
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -16,6 +16,8 @@ A simplified guide to the Monte-Neo file structure.
 - pyproject.toml - Python package configuration and dependencies
 - uv.lock - Lockfile for consistent environment management
 - LICENSE - MIT License
+- CITATION.cff - Citation metadata (GitHub "Cite this repository")
+- glama.json - Glama MCP catalogue ownership claim
 - SECURITY.md - Vulnerability reporting (GitHub Security Advisories)
 - .github/workflows/pypi-smoke.yml - PyPI bare-install smoke (schedule / dispatch / release)
 - .github/workflows/verify-action.yml - Self-test of action.yml (leaky strategy must be rejected)
@@ -32,13 +34,18 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/project-structure.md - Deep dive into physical directory layout
 - docs/project/features.md - Detailed overview of framework features
 - docs/project/dynamic_indicators.md - Explanation of dynamic indicator generation
-- docs/project/ROADMAP.md - Development roadmap and milestones (v0.25.0)
+- docs/project/ROADMAP.md - Development roadmap and milestones (v0.26.0)
 - docs/project/PRODUCT_STRATEGY_RU.md - Product strategy: agent-native strategy verifier niche, moat, roadmap (RU, internal)
 - docs/project/CLEANUP_CANDIDATES_RU.md - Cleanup candidate list with evidence, awaiting owner approval (RU, internal)
-- docs/project/CHANGELOG.md - Release changelog (current: v0.25.0)
+- docs/project/CHANGELOG.md - Release changelog (current: v0.26.0)
 - docs/project/backtest_engine.md - Fee-aware research bar engine
 - docs/project/oms_engine.md - Paper OMS (bar + tick/L2) + venue adapters
-- docs/assets/monteneo-logo.png - Project logo
+- docs/assets/monteneo-logo.png - Project logo (original, with the old tagline)
+- docs/assets/logo-sphere.png - Logo mark without text (transparent)
+- docs/assets/social-preview.png - 1280×640 banner: README hero and GitHub social preview
+- docs/project/MARKETING_PLAN_RU.md - Marketing plan: goals, audiences, channels, launch order (RU, internal)
+- docs/marketing/launch-kit.md - Ready-to-post launch texts, GitHub About text, catalogue entries
+- docs/marketing/article-six-ways.md - Article draft: six ways an agent's backtest lies
 - docs/project/BRANCHING.md - Branch and version policy
 - docs/project/v0.0.5_plan.md - Development plan for v0.0.5
 - docs/project/tech-stack.md - Technology stack and performance targets
@@ -79,7 +86,7 @@ A simplified guide to the Monte-Neo file structure.
 - docker/docker-compose.yml - Docker Compose service definitions
 
 ### Source Code (src/monte_neo/)
-- src/monte_neo/_version.py - Central version management (v0.25.0)
+- src/monte_neo/_version.py - Central version management (v0.26.0)
 - src/monte_neo/verify/ - Strategy verifier (ingest, look-ahead probes, lint, costs, stats, checks, verdict, grid + walk-forward, certificate recheck)
 - src/monte_neo/mcp/ - MCP server (monte-neo-mcp) + agent-facing tool functions
 - src/monte_neo/cli/verify_cmd.py - `monte-neo verify` command (CI exit codes)
@@ -181,10 +188,14 @@ A simplified guide to the Monte-Neo file structure.
   - tests/unit/test_dynamic_indicator.py - Tests for dynamic code generation and evolution
   - tests/unit/test_gpu_engine_parallel.py - Tests for GPU parallel path selection
   - tests/unit/test_binance_websocket.py - Tests for Binance WebSocket streaming
+  - tests/unit/legacy_coverage/ - Legacy gap-filling tests for the frozen research lanes (not extended)
+- tests/traps/ - Verifier Trap Suite (strategies that lie + honest controls)
 - tests/integration/ - End-to-end workflow tests
 - tests/stress/ - Memory and CPU performance stress tests
 
 ### Utility Scripts (scripts/)
 - scripts/run_full_test_suite.sh - Master verification script (uv + docker)
 - scripts/check_system.py - Native verification of Genetic Algorithms & Dynamic Indicators
+- scripts/verify_hardware.py - Float8 / Metal hardware check (Apple Silicon)
+- scripts/experiments/ - One-off Metal / MLX experiments, not maintained
 - docs/project/PACKAGING.md - PyPI / TestPyPI free packaging checklist
