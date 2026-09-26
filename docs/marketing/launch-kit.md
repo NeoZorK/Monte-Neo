@@ -17,6 +17,11 @@ run is complete.
   [`docs/assets/social-preview.png`](../assets/social-preview.png) (1280×640).
 - **Include in the home page:** Releases and Packages on; Deployments off.
 
+## Media
+
+- Banner: [`docs/assets/social-preview.png`](../assets/social-preview.png) (1280×640)
+- Animated demo: [`docs/assets/demo-verify.gif`](../assets/demo-verify.gif). Attach it to the X thread, LinkedIn and Reddit posts.
+
 ## Show HN
 
 **Title:** Show HN: Monte-Neo – catch look-ahead bias in backtests your AI agent writes

@@ -79,7 +79,7 @@ For HTTP clients, add `--transport streamable-http`.
 ## GitHub Actions
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.18.0
+- uses: NeoZorK/Monte-Neo@v0.27.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py
@@ -95,6 +95,21 @@ Optional inputs:
 - `grid: '{"fast": [10, 20], "slow": [80, 120]}'` runs `verify_grid` instead of a single verification.
 - `comment: "true"` posts the verdict as a PR comment and updates the same comment on later runs.
   The job needs the `pull-requests: write` permission.
+- `signing-key: ${{ secrets.MONTE_NEO_SIGNING_KEY }}` signs the certificate with Ed25519. The `key-id`
+  output and the step summary show which key signed it.
+- `upload-certificate: "true"` uploads the certificate as the `monte-neo-certificate` workflow artifact.
+
+### Signing certificates in CI
+
+1. Create a key pair locally: `pip install "monte-neo[sign]"` and `monte-neo verify --keygen ci`.
+2. Store the content of `ci.key` as the repository secret `MONTE_NEO_SIGNING_KEY`
+   (Settings → Secrets and variables → Actions). Delete the local copy if you do not need it.
+3. Publish `ci.pub`, for example in your README. Anyone can then check a certificate from your CI:
+   `monte-neo verify --check-signature verdict.json --public-key ci.pub`.
+
+The action writes the key to a temporary file that only the runner user can read, and deletes it
+right after signing. Pull requests from forks do not receive repository secrets, so their
+certificates are not signed.
 
 ## Writing a strategy file
 

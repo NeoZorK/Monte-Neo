@@ -8,6 +8,7 @@ on:
       - "src/monte_neo/cli/verify_cmd.py"
       - "tests/traps/**"
       - ".github/workflows/verify-action.yml"
+      - "src/monte_neo/verify/signing.py"
   workflow_dispatch:
 
 permissions:
@@ -54,3 +55,42 @@ jobs:
           echo "outcome=$OUTCOME verdict=$VERDICT"
           test "$OUTCOME" = "failure"
           test "$VERDICT" = "REJECT"
+
+      - name: Create a throwaway signing key
+        id: key
+        run: |
+          python -m pip install --quiet cryptography
+          python - <<'PY' > key.pem
+          from cryptography.hazmat.primitives import serialization
+          from cryptography.hazmat.primitives.asymmetric import ed25519
+          k = ed25519.Ed25519PrivateKey.generate()
+          print(k.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+                                serialization.NoEncryption()).decode(), end="")
+          PY
+          {
+            echo "pem<<MN_PEM_EOF"
+            cat key.pem
+            echo "MN_PEM_EOF"
+          } >> "$GITHUB_OUTPUT"
+          rm key.pem
+
+      - name: Honest strategy with a signed certificate
+        id: signed
+        uses: ./
+        with:
+          ohlcv: sample.csv
+          strategy: tests/traps/strategies/sma_cross.py
+          fail-on: NEEDS_MORE_EVIDENCE
+          signing-key: ${{ steps.key.outputs.pem }}
+          upload-certificate: "true"
+        continue-on-error: true
+
+      - name: Assert the certificate is signed
+        env:
+          CERT: ${{ steps.signed.outputs.certificate }}
+          KEY_ID: ${{ steps.signed.outputs.key-id }}
+        run: |
+          echo "key id: $KEY_ID"
+          test -n "$KEY_ID"
+          monte-neo verify --check-signature "$CERT"
+          test ! -e "$RUNNER_TEMP/monte-neo-signing.key"
