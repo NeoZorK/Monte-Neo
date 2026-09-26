@@ -101,3 +101,19 @@ def test_license_and_docs_version_sync():
 
     roadmap = (root_dir / "docs" / "project" / "ROADMAP.md").read_text(encoding="utf-8")
     assert version in roadmap, f"docs/project/ROADMAP.md must mention {version}"
+
+
+def test_referenced_assets_exist():
+    """Every docs/assets file linked from README.md or docs/*.md must be in the tree.
+
+    CI checks out only committed files, so an asset hidden by .gitignore fails here.
+    """
+    root_dir = find_root()
+    sources = [root_dir / "README.md", *(root_dir / "docs").rglob("*.md")]
+    pattern = re.compile(r"(?:docs/)?assets/([\w.\-/]+\.(?:png|gif|jpg|jpeg|svg))")
+    missing = set()
+    for src in sources:
+        for name in pattern.findall(src.read_text(encoding="utf-8")):
+            if not (root_dir / "docs" / "assets" / name).is_file():
+                missing.add(f"{src.relative_to(root_dir)} -> docs/assets/{name}")
+    assert not missing, f"referenced assets missing from the tree: {sorted(missing)}"

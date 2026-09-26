@@ -101,6 +101,8 @@ exports/
 *.png
 *.jpg
 *.jpeg
+*.gif
+# Keep this exception after every image pattern above: later rules win.
 !docs/assets/
 !docs/assets/**
 
@@ -112,7 +114,6 @@ exports/
 *.pfx
 cert.pem
 key.pem
-*.gif
 
 # Profile stats
  profile_stats.txt
