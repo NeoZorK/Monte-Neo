@@ -47,7 +47,13 @@ jobs:
       - name: Publish server.json to the MCP Registry
         run: |
           ./mcp-publisher login github-oidc
-          for i in 1 2 3 4 5; do ./mcp-publisher publish && exit 0; echo "retry $i (PyPI propagation)"; sleep $((i * 30)); done
+          for i in 1 2 3 4 5; do
+            if out=$(./mcp-publisher publish 2>&1); then echo "$out"; exit 0; fi
+            echo "$out"
+            # 422 = invalid server.json: retrying cannot help
+            if echo "$out" | grep -q "status 422"; then exit 1; fi
+            echo "retry $i (PyPI propagation)"; sleep $((i * 30))
+          done
           exit 1
 
   github-release:

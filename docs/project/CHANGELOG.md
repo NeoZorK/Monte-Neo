@@ -13,6 +13,10 @@ Version source of truth: `src/monte_neo/_version.py`.
 - `scripts/make_example_bench.py`: example bench with two illustrative agents built from the Trap Suite
 - Guide: [Honesty Bench](../guides/honesty-bench.md)
 
+### Fixed
+- MCP Registry publish: `server.json` description shortened to ≤ 100 characters (the registry rejected
+  v0.20.0 with 422); `mcp-registry` job stops retrying on validation errors
+
 ### Notes
 - No breaking API change vs 0.20.0.
 

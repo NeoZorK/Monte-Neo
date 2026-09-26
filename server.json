@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.NeoZorK/monte-neo",
   "title": "Monte-Neo strategy verifier",
-  "description": "Verify trading-strategy backtests before you trust them: look-ahead probes, trading costs, Deflated Sharpe, walk-forward, reproducible certificates.",
+  "description": "Verify trading-strategy backtests: look-ahead probes, trading costs, Deflated Sharpe, walk-forward.",
   "repository": {
     "url": "https://github.com/NeoZorK/Monte-Neo",
     "source": "github"

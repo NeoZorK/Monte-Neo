@@ -89,3 +89,5 @@ def test_mcp_registry_server_json() -> None:
     assert (pkg["registryType"], pkg["identifier"], pkg["version"]) == ("pypi", "monte-neo", PKG_VERSION)
     assert pkg["packageArguments"] == [{"type": "positional", "value": "mcp"}]
     assert f"mcp-name: {server['name']}" in (ROOT / "README.md").read_text()
+    # Registry validation limits (422 otherwise)
+    assert len(server["description"]) <= 100
