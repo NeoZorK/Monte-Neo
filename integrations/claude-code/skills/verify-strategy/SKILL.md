@@ -18,6 +18,9 @@ strategy performance to the user until Monte-Neo has verified it.
    inside it. If the strategy cannot be expressed that way, save the positions to a
    `.npy` / `.csv` file instead (look-ahead probes then cannot run).
 3. Count how many variants you tried (parameter sets, rules, assets). That is `n_trials`.
+   If you tuned parameters, expose them as keyword arguments (`signal(df, fast=20, slow=80)`)
+   and call the `verify_grid` tool with the grid (`{"fast": [10, 20], "slow": [50, 100]}`):
+   the verifier runs the search itself, counts the trials and adds a walk-forward check.
 4. Call the `verify_strategy` MCP tool (server `monte-neo`) with `ohlcv_path`,
    `strategy_path` (or `signals_path`), `n_trials`, and realistic
    `commission_bps` / `slippage_bps`.

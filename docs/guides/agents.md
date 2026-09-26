@@ -11,6 +11,7 @@ Requirements: [uv](https://docs.astral.sh/uv/) (for `uvx`) and Python 3.11+.
 | Tool | Purpose |
 |------|---------|
 | `verify_strategy` | Full verification, returns a `strategy-verdict/1` certificate |
+| `verify_grid` | Runs the parameter search inside the verifier (counts `n_trials`) and adds a walk-forward check |
 | `probe_lookahead` | Look-ahead probes only (lint, truncation, perturbation, determinism) |
 | `cost_stress` | Break-even cost and returns under 0, 1 and 2 bars of execution delay |
 | `verdict_schema` | JSON schema of the certificate |
@@ -30,6 +31,10 @@ and the `/verify` command.
 /plugin marketplace add NeoZorK/Monte-Neo
 /plugin install monte-neo@monte-neo
 ```
+
+The plugin includes a `PostToolUse` hook. When Claude writes or edits a Python file
+that looks like strategy or backtest code, the hook reminds it to verify before
+reporting results. It fires once per file per session and never blocks an edit.
 
 MCP server only:
 
@@ -78,6 +83,12 @@ For HTTP clients, add `--transport streamable-http`.
 The job fails on `REJECT`. To also fail on `NEEDS_MORE_EVIDENCE`, set
 `fail-on: NEEDS_MORE_EVIDENCE`. The step summary shows every check. The
 `verdict` and `certificate` outputs can feed later steps.
+
+Optional inputs:
+
+- `grid: '{"fast": [10, 20], "slow": [80, 120]}'` runs `verify_grid` instead of a single verification.
+- `comment: "true"` posts the verdict as a PR comment and updates the same comment on later runs.
+  The job needs the `pull-requests: write` permission.
 
 ## Writing a strategy file
 

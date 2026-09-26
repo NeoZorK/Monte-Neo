@@ -173,13 +173,13 @@ MCP-инструменты (минимальный набор, не 30 штук 
 - [x] Look-ahead probes (truncation, perturbation, delay scan) + AST-lint
 - [x] Deflated Sharpe / PSR с обязательным `n_trials`; break-even cost
 - [x] `verify()` → `strategy-verdict/1` (JSON-schema в `docs/api/`)
-- [~] Trap Suite v1: 30–50 плохих стратегий с golden-вердиктами в `tests/traps/` (v0.18.0: 5 ловушек + 2 честных контроля + data snooping)
+- [~] Trap Suite v1: 30–50 плохих стратегий с golden-вердиктами в `tests/traps/` (v0.19.0: 9 ловушек + 3 честных контроля + 2 grid-стратегии + data snooping)
 - [x] CLI `monte-neo verify --ohlcv … --signals …`
 
 ### Фаза 2 — дистрибуция в агентах (2–3 недели) · v0.21
 - [x] `monte-neo-mcp` (stdio) — `uvx monte-neo-mcp`
-- [x] Claude Code plugin (skill + /verify + .mcp.json), Codex/Gemini/Cursor сниппеты; hook — следующий шаг
-- [x] GitHub Action (step summary + verdict output); PR-комментарий — следующий шаг
+- [x] Claude Code plugin (skill + /verify + .mcp.json + PostToolUse-хук, v0.19.0), Codex/Gemini/Cursor сниппеты
+- [x] GitHub Action (step summary + verdict output + PR-комментарий, v0.19.0)
 - [ ] Регистрация в MCP-каталогах (официальный registry, glama, mcpmarket, smithery)
 
 ### Фаза 3 — ров (moat) (постоянно)

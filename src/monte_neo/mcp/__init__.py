@@ -13,6 +13,7 @@ from monte_neo.mcp.tools import (
     probe_lookahead,
     verdict_schema,
     verifier_manifest,
+    verify_grid,
     verify_strategy,
 )
 
@@ -23,5 +24,6 @@ __all__ = [
     "probe_lookahead",
     "verdict_schema",
     "verifier_manifest",
+    "verify_grid",
     "verify_strategy",
 ]

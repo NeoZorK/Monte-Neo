@@ -29,6 +29,18 @@ inputs:
     description: Slippage per side (bps)
     required: false
     default: "5"
+  grid:
+    description: "Parameter grid as JSON (e.g. '{\"fast\": [10, 20]}'); the verifier runs the search and walk-forward"
+    required: false
+    default: ""
+  comment:
+    description: "Post (or update) a PR comment with the verdict: 'true' or 'false'. Needs pull-requests: write"
+    required: false
+    default: "false"
+  github-token:
+    description: Token used for the PR comment
+    required: false
+    default: ${{ github.token }}
   fail-on:
     description: "Lowest verdict that fails the job: REJECT (default) or NEEDS_MORE_EVIDENCE"
     required: false
@@ -66,28 +78,50 @@ runs:
         MN_COMMISSION: ${{ inputs.commission-bps }}
         MN_SLIPPAGE: ${{ inputs.slippage-bps }}
         MN_FAIL_ON: ${{ inputs.fail-on }}
+        MN_GRID: ${{ inputs.grid }}
+        MN_COMMENT: ${{ inputs.comment }}
+        MN_PR: ${{ github.event.pull_request.number }}
+        GH_TOKEN: ${{ inputs.github-token }}
       run: |
         set +e
         src=(--signals "$MN_SIGNALS")
         if [ -n "$MN_STRATEGY" ]; then src=(--strategy "$MN_STRATEGY"); fi
+        extra=(--n-trials "$MN_TRIALS")
+        if [ -n "$MN_GRID" ]; then extra=(--grid "$MN_GRID"); fi
         cert="$RUNNER_TEMP/strategy-verdict.json"
-        monte-neo verify --ohlcv "$MN_OHLCV" "${src[@]}" --n-trials "$MN_TRIALS" \
+        report="$RUNNER_TEMP/strategy-verdict.md"
+        monte-neo verify --ohlcv "$MN_OHLCV" "${src[@]}" "${extra[@]}" \
           --commission-bps "$MN_COMMISSION" --slippage-bps "$MN_SLIPPAGE" --out "$cert"
         code=$?
         if [ "$code" -eq 3 ]; then exit 3; fi
         verdict=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['verdict'])" "$cert")
         echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
         echo "certificate=$cert" >> "$GITHUB_OUTPUT"
-        python - "$cert" >> "$GITHUB_STEP_SUMMARY" <<'PY'
+        python - "$cert" > "$report" <<'PY'
         import json, sys
         r = json.load(open(sys.argv[1]))
+        print("<!-- monte-neo-verdict -->")
         print(f"## Monte-Neo verdict: {r['verdict']}\n\nCertificate `{r['certificate_id']}`\n")
+        g = r.get("grid")
+        if g:
+            wf = g["walk_forward"]
+            print(f"Grid: {g['n_combos']} combos, best `{g['best_params']}`, walk-forward OOS Sharpe/bar {wf['oos_sharpe']:+.4f}\n")
         print("| check | status | summary |\n|---|---|---|")
         for c in r["checks"]:
             print(f"| {c['id']} | {c['status']} | {c['summary']} |")
         for a in r["next_actions"]:
             print(f"- {a}")
         PY
+        cat "$report" >> "$GITHUB_STEP_SUMMARY"
+        if [ "$MN_COMMENT" = "true" ] && [ -n "$MN_PR" ]; then
+          cid=$(gh api "repos/$GITHUB_REPOSITORY/issues/$MN_PR/comments" --paginate \
+            --jq '.[] | select(.body | startswith("<!-- monte-neo-verdict -->")) | .id' | tail -n 1)
+          if [ -n "$cid" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$cid" -F body=@"$report" > /dev/null
+          else
+            gh pr comment "$MN_PR" --repo "$GITHUB_REPOSITORY" --body-file "$report"
+          fi
+        fi
         if [ "$code" -eq 2 ]; then exit 2; fi
         if [ "$code" -eq 1 ] && [ "$MN_FAIL_ON" = "NEEDS_MORE_EVIDENCE" ]; then exit 1; fi
         exit 0

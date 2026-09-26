@@ -16,6 +16,7 @@ from monte_neo.mcp import server as mcp_server
 from monte_neo.mcp import tools
 
 LEAKY = "import numpy as np\n\ndef signal(df):\n    return np.sign(df['close'].shift(-1) - df['close'])\n"
+PARAMS = "def signal(df, fast=10, slow=40):\n    c = df['close']\n    return (c.rolling(fast).mean() > c.rolling(slow).mean()).astype(int)\n"
 
 
 @pytest.fixture(scope="module")
@@ -30,7 +31,14 @@ def files(tmp_path_factory) -> dict[str, str]:
     np.save(long_short, np.where(np.arange(len(df)) % 40 < 20, 1, -1))
     strat = root / "leaky.py"
     strat.write_text(LEAKY)
-    return {"ohlcv": str(ohlcv), "lf": str(long_flat), "ls": str(long_short), "strategy": str(strat), "root": str(root)}
+    params = root / "params.py"
+    params.write_text(PARAMS)
+    grid = root / "grid.json"
+    grid.write_text('{"fast": [5, 10], "slow": [40, 60]}')
+    return {
+        "ohlcv": str(ohlcv), "lf": str(long_flat), "ls": str(long_short), "strategy": str(strat),
+        "root": str(root), "params": str(params), "grid": str(grid),
+    }
 
 
 def _run(argv: list[str]) -> tuple[int, str]:
@@ -138,3 +146,21 @@ def test_mcp_server_class_fallbacks(monkeypatch) -> None:
     monkeypatch.setitem(sys.modules, "mcp.server.fastmcp", None)
     with pytest.raises(SystemExit, match="monte-neo\\[mcp\\]"):
         mcp_server._server_class()
+
+
+def test_cli_grid(files) -> None:
+    code, text = _run(["--ohlcv", files["ohlcv"], "--strategy", files["params"], "--grid", files["grid"], "--folds", "2"])
+    assert code in (0, 1, 2) and "grid: 4 combos" in text
+    code, text = _run(["--ohlcv", files["ohlcv"], "--strategy", files["params"], "--grid", '{"fast": [5]}', "--format", "json"])
+    assert '"n_combos": 1' in text
+    code, text = _run(["--ohlcv", files["ohlcv"], "--signals", files["lf"], "--grid", '{"fast": [5]}'])
+    assert code == 3 and "--grid needs --strategy" in text
+    code, text = _run(["--ohlcv", files["ohlcv"], "--strategy", files["params"], "--grid", "[1, 2]"])
+    assert code == 3 and "JSON object" in text
+
+
+def test_mcp_verify_grid(files) -> None:
+    rep = tools.verify_grid(files["ohlcv"], files["params"], {"fast": [5, 10], "slow": [40]}, folds=2)
+    assert rep["grid"]["n_combos"] == 2
+    full = tools.verify_grid(files["ohlcv"], files["params"], {"fast": [5]}, compact=False)
+    assert all("details" in c for c in full["checks"])
