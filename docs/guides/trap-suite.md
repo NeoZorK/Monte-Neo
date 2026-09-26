@@ -11,7 +11,7 @@ statuses that must appear.
 
 ## Catalogue
 
-25 traps, 9 honest controls, 2 parameterized strategies for `verify_grid` and a data-snooping test.
+31 traps, 12 honest controls, 2 parameterized strategies for `verify_grid` and a data-snooping test.
 "Caught by" lists the checks that flag each trap on the random-walk dataset. "lint (warn)" is a
 warning only; the dynamic probes produce the `REJECT`.
 
@@ -26,6 +26,7 @@ warning only; the dynamic probes produce the `REJECT`.
 | `reverse_rolling` | Rolling window over a reversed series | truncation, perturbation, lint, implausible accuracy |
 | `last_row_leak` | Every bar compared with `.iloc[-1]`, the final close | truncation, perturbation, lint |
 | `gradient_leak` | `np.gradient` uses central differences (bar t + 1) | truncation, perturbation, lint, implausible accuracy |
+| `reversed_cummax` | `cummax` over the reversed series is the highest price still to come | truncation, perturbation, lint |
 
 ### Centered windows and filters
 
@@ -41,6 +42,7 @@ warning only; the dynamic probes produce the `REJECT`.
 |------|-------------|-----------|
 | `bfill_leak` | Sparse series backward-filled | truncation, perturbation, lint, implausible accuracy |
 | `interpolate_leak` | `interpolate()` uses the next known value | truncation, perturbation, lint |
+| `reindex_nearest` | `reindex(method="nearest")` aligns bars with the next hour's close | truncation, perturbation, lint |
 | `merge_asof_forward` | `merge_asof(direction="forward")` | truncation, perturbation, lint |
 
 ### Whole-sample statistics
@@ -56,6 +58,7 @@ warning only; the dynamic probes produce the `REJECT`.
 | `cumsum_total_norm` | Cumulative share of the whole-sample total | truncation, lint (warn) |
 | `full_polyfit` | Trend fitted once on the whole series | truncation, perturbation, lint (warn) |
 | `target_encoding_leak` | Mean forward return per bucket, fitted on everything | truncation, perturbation, lint |
+| `sort_values_rank` | `sort_values` ranks every bar among all prices | truncation, perturbation, lint (warn) |
 
 ### Aggregates over the current bucket
 
@@ -63,6 +66,9 @@ warning only; the dynamic probes produce the `REJECT`.
 |------|-------------|-----------|
 | `hourly_close_leak` | Each minute sees its hour's final close | truncation, perturbation, lint (warn) |
 | `resample_max_leak` | Each bar sees the maximum of its 15-minute bucket | truncation, lint (warn) |
+| `hourly_close_map` | `groupby().last()` mapped back onto every minute of the hour | truncation, perturbation, lint (warn) |
+| `hour_size_leak` | `transform("size")` knows how many bars the hour will have | truncation, lint (warn) |
+| `bars_left_in_hour` | `cumcount(ascending=False)` counts the bars still to come | truncation, lint |
 
 ### Economics
 
@@ -87,6 +93,9 @@ leaks.
 | `cummax_drawdown` | Drawdown from the running peak |
 | `convolve_causal` | Trailing average via `np.convolve(mode="full")[:n]` |
 | `rolling_quantile_band` | Breakout above a lagged rolling quantile |
+| `prev_hour_close_map` | Previous completed hour: `groupby().last().shift(1)` |
+| `bars_into_hour` | `cumcount()` counts only bars already seen |
+| `expanding_quantile_band` | Expanding quantile of past closes, shifted by one bar |
 
 Grid strategies: `sma_params`, `momentum_params`.
 

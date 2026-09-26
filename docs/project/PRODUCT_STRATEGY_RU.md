@@ -173,7 +173,7 @@ MCP-инструменты (минимальный набор, не 30 штук 
 - [x] Look-ahead probes (truncation, perturbation, delay scan) + AST-lint
 - [x] Deflated Sharpe / PSR с обязательным `n_trials`; break-even cost
 - [x] `verify()` → `strategy-verdict/1` (JSON-schema в `docs/api/`)
-- [~] Trap Suite v1: 30–50 плохих стратегий с golden-вердиктами в `tests/traps/` (v0.24.0: 25 ловушек + 9 честных контролей + 2 grid-стратегии + data snooping)
+- [~] Trap Suite v1: 30–50 плохих стратегий с golden-вердиктами в `tests/traps/` (v0.28.0: 31 ловушка + 12 честных контролей + 2 grid-стратегии + data snooping)
 - [x] CLI `monte-neo verify --ohlcv … --signals …`
 
 ### Фаза 2 — дистрибуция в агентах (2–3 недели) · v0.21

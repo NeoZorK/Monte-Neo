@@ -66,7 +66,7 @@ the truth: on a random walk, the strategy has no edge after costs.
 
 ```console
 $ monte-neo verify --ohlcv prices.csv --strategy agent_strategy.py --n-trials 40
-REJECT  certificate 4f8adb31b088b0c0
+REJECT  certificate e6fb7a2fc5b47cc2
   check                    category    status  summary
   data_integrity           integrity   pass    OHLCV is clean
   lookahead_truncation     lookahead   fail    truncation probe: LEAK DETECTED
@@ -96,13 +96,13 @@ The run used a synthetic random walk; output shortened.
 
 | Family | Checks |
 |--------|--------|
-| **Look-ahead** | Truncation probe (does bar *t* change when later bars are removed?), future-perturbation probe, static AST lint (17 rules), implausible hit rate |
+| **Look-ahead** | Truncation probe (does bar *t* change when later bars are removed?), future-perturbation probe, static AST lint (19 rules), implausible hit rate |
 | **Economics** | Net return after commission and slippage, break-even cost in bps, one- and two-bar execution delay |
 | **Statistics** | Probabilistic and Deflated Sharpe priced by `n_trials`, sample size, holdout consistency, walk-forward out-of-sample check for grid searches |
 | **Integrity** | Broken OHLCV, non-deterministic signals |
 
 Every rule is backed by the [Trap Suite](https://neozork.github.io/Monte-Neo/guides/trap-suite/):
-25 strategies that are known to lie and 9 honest controls. It runs on every build, so the
+31 strategies that are known to lie and 12 honest controls. It runs on every build, so the
 verifier cannot silently stop catching a leak or start accusing honest code.
 
 ## Where to use it
@@ -185,7 +185,7 @@ MCP tools: `verify_strategy`, `verify_grid`, `probe_lookahead`, `cost_stress`,
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.27.1
+- uses: NeoZorK/Monte-Neo@v0.28.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py
