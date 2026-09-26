@@ -16,6 +16,11 @@ _PERIOD_METHODS = {"diff", "pct_change"}
 _SAFE_INTERPOLATE = {"pad", "ffill"}
 _FORWARD_ASOF = {"forward", "nearest"}
 _MODULES = {"np", "numpy", "math", "statistics", "pd", "pandas"}
+# Filters that centre the window (or run forwards and backwards) by default.
+_CENTERED_FILTERS = {"filtfilt", "sosfiltfilt", "savgol_filter", "gaussian_filter1d", "uniform_filter1d", "medfilt"}
+_TRANSFORMS = {"fft", "rfft", "fftn", "rfftn", "dct", "hilbert", "detrend"}
+_FULL_RANKS = {"qcut", "argsort"}
+_CONVOLVE = {"convolve", "correlate"}
 
 
 def _const_number(node: ast.AST | None) -> float | None:
@@ -57,6 +62,8 @@ class _Visitor(ast.NodeVisitor):
 
     def _add(self, node: ast.AST, rule: str, severity: str, message: str) -> None:
         line = int(getattr(node, "lineno", 0))
+        if any(f["rule"] == rule and f["line"] == line for f in self.findings):
+            return  # one finding per rule and line (e.g. nested argsort calls)
         snippet = self.lines[line - 1].strip() if 0 < line <= len(self.lines) else ""
         self.findings.append(
             {"rule": rule, "severity": severity, "line": line, "message": message, "snippet": snippet}
@@ -101,6 +108,16 @@ class _Visitor(ast.NodeVisitor):
                 self._add(node, "backward_fill", "fail", "backward fill copies future values into the past")
             elif attr == "fillna" and _is_str(_kw(node, "method"), _BFILL_METHODS):
                 self._add(node, "backward_fill", "fail", "fillna(method='bfill') copies future values into the past")
+            elif attr == "gradient":
+                self._add(node, "central_difference", "fail", "np.gradient uses central differences: bar t reads bar t + 1")
+            elif attr in _CONVOLVE and _is_str(_kw(node, "mode") or (node.args[2] if len(node.args) > 2 else None), {"same"}):
+                self._add(node, "centered_filter", "fail", f"{attr}(mode='same') centres the kernel on each bar and mixes in future bars")
+            elif attr in _CENTERED_FILTERS:
+                self._add(node, "centered_filter", "fail", f"{attr} is centred or zero-phase: each output depends on later bars")
+            elif attr in _TRANSFORMS:
+                self._add(node, "full_sample_transform", "warn", f"{attr} over the whole series mixes every bar with future bars")
+            elif attr in _FULL_RANKS:
+                self._add(node, "full_sample_rank", "warn", f"{attr} ranks bars against the whole sample, future included")
             elif attr in _FIT_METHODS:
                 self._add(node, "full_sample_fit", "warn", "model fit on the whole series leaks future statistics unless done walk-forward")
             elif attr in _WINDOW_METHODS and _is_reversed(node.func.value):
