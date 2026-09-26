@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import yaml
@@ -48,3 +50,33 @@ def test_github_action_is_valid() -> None:
     action = yaml.safe_load((ROOT / "action.yml").read_text())
     assert action["runs"]["using"] == "composite"
     assert {"ohlcv", "strategy", "signals", "n-trials"} <= set(action["inputs"])
+
+
+HOOK = INTEG / "claude-code" / "hooks" / "remind_verify.py"
+
+
+def _hook(payload: str, tmp_path: Path) -> str:
+    env = {"TMPDIR": str(tmp_path), "PATH": "/usr/bin:/bin"}
+    return subprocess.run([sys.executable, str(HOOK)], input=payload, capture_output=True, text=True, env=env, check=True).stdout
+
+
+def test_plugin_hook_config() -> None:
+    hooks = json.loads((INTEG / "claude-code" / "hooks" / "hooks.json").read_text())
+    entry = hooks["hooks"]["PostToolUse"][0]
+    assert entry["matcher"] == "Write|Edit"
+    assert "${CLAUDE_PLUGIN_ROOT}/hooks/remind_verify.py" in entry["hooks"][0]["command"]
+
+
+def test_reminder_hook(tmp_path: Path) -> None:
+    strat = tmp_path / "strat.py"
+    strat.write_text("def signal(df):\n    return df.close * 0\n")
+    other = tmp_path / "util.py"
+    other.write_text("x = 1\n")
+    payload = json.dumps({"session_id": "s/1", "tool_input": {"file_path": str(strat)}})
+    out = json.loads(_hook(payload, tmp_path))
+    assert out["hookSpecificOutput"]["hookEventName"] == "PostToolUse"
+    assert "verify_strategy" in out["hookSpecificOutput"]["additionalContext"]
+    assert _hook(payload, tmp_path) == ""  # once per file per session
+    assert _hook(json.dumps({"tool_input": {"file_path": str(other)}}), tmp_path) == ""
+    assert _hook(json.dumps({"tool_input": {"file_path": str(tmp_path / "x.txt")}}), tmp_path) == ""
+    assert _hook("not json", tmp_path) == ""

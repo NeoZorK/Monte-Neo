@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 
 from monte_neo.backtest import run_bar_backtest
-from monte_neo.verify import model_from_costs, verify_strategy
+from monte_neo.verify import model_from_costs, verify_grid, verify_strategy
 
 STRATEGY_DIR = Path(__file__).parent / "strategies"
 
@@ -24,10 +24,17 @@ TRAPS = [
     ("global_zscore", "random_walk", {"REJECT"}, {"lookahead_perturbation": "fail"}),
     ("bfill_leak", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "fail"}),
     ("high_turnover", "random_walk", {"REJECT"}, {"net_profitability": "fail"}),
+    ("hourly_close_leak", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "warn"}),
+    ("reverse_rolling", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "fail"}),
+    ("full_polyfit", "random_walk", {"REJECT"}, {"lookahead_perturbation": "fail", "lookahead_static_lint": "warn"}),
+    ("full_rank", "random_walk", {"REJECT"}, {"lookahead_perturbation": "fail", "lookahead_static_lint": "warn"}),
     ("sma_cross", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE"}, {}),
+    ("expanding_zscore", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
     ("momentum", "planted", {"PASS", "PASS_WITH_WARNINGS"}, {"net_profitability": "pass", "deflated_sharpe": "pass"}),
 ]
-HONEST = {"high_turnover", "sma_cross", "momentum"}
+HONEST = {"high_turnover", "sma_cross", "momentum", "expanding_zscore"}
+# Parameterized strategies exercised through verify_grid (not in TRAPS).
+GRID_STRATEGIES = {"sma_params", "momentum_params"}
 
 
 def _statuses(report: dict) -> dict[str, str]:
@@ -36,7 +43,7 @@ def _statuses(report: dict) -> dict[str, str]:
 
 def test_every_strategy_file_is_in_manifest() -> None:
     files = {p.stem for p in STRATEGY_DIR.glob("*.py")}
-    assert files == {t[0] for t in TRAPS}
+    assert files == {t[0] for t in TRAPS} | GRID_STRATEGIES
 
 
 @pytest.mark.parametrize(("name", "dataset", "verdicts", "required"), TRAPS, ids=[t[0] for t in TRAPS])
@@ -70,3 +77,21 @@ def test_data_snooping_is_priced_by_n_trials(random_walk) -> None:
     assert _statuses(hidden)["deflated_sharpe"] != "fail"
     assert _statuses(honest)["deflated_sharpe"] == "fail"
     assert honest["verdict"] in {"NEEDS_MORE_EVIDENCE", "REJECT"}
+
+
+def test_grid_on_random_walk_fails_walk_forward(random_walk) -> None:
+    grid = {"fast": [5, 10, 20, 40], "slow": [50, 80, 120, 200]}
+    report = verify_grid(random_walk, grid, strategy=STRATEGY_DIR / "sma_params.py")
+    statuses = _statuses(report)
+    assert report["reproducibility"]["n_trials"] == 16
+    assert statuses["walk_forward_oos"] == "fail"
+    assert report["verdict"] == "REJECT"
+    assert all(statuses[c] != "fail" for c in LOOKAHEAD_IDS)
+
+
+def test_grid_on_planted_edge_passes(planted) -> None:
+    model = model_from_costs(commission_bps=1.0, slippage_bps=1.0, n_bars=len(planted))
+    report = verify_grid(planted, {"lookback": [1, 2, 3, 5, 8]}, strategy=STRATEGY_DIR / "momentum_params.py", model=model)
+    assert report["grid"]["best_params"] == {"lookback": 1}
+    assert _statuses(report)["walk_forward_oos"] == "pass"
+    assert report["verdict"] in {"PASS", "PASS_WITH_WARNINGS"}

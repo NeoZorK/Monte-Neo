@@ -15,8 +15,9 @@ SERVER_INSTRUCTIONS = (
     "Monte-Neo is an independent verifier for trading-strategy backtests. "
     "Before you claim a strategy is profitable, call verify_strategy with the OHLCV file and either "
     "the positions file or the strategy .py file (a signal(df) function). Pass n_trials = how many "
-    "variants you tried. Treat REJECT as a bug in the backtest, fix what next_actions says and "
-    "re-verify. Report the verdict and certificate_id to the user instead of your own backtest numbers."
+    "variants you tried, or call verify_grid with your parameter grid so the verifier counts them. "
+    "Treat REJECT as a bug in the backtest, fix what next_actions says and re-verify. "
+    "Report the verdict and certificate_id to the user instead of your own backtest numbers."
 )
 
 
@@ -78,6 +79,39 @@ def verify_strategy(
         return {"error": "provide signals_path or strategy_path"}
     df, model = _model(ohlcv_path, commission_bps, slippage_bps, side_mode, warmup_bars, signals_path)
     report = _verify(df, signals=signals_path, strategy=strategy_path, model=model, n_trials=n_trials)
+    return _compact(report) if compact else report
+
+
+def verify_grid(
+    ohlcv_path: str,
+    strategy_path: str,
+    grid: dict[str, list[Any]],
+    commission_bps: float = 5.0,
+    slippage_bps: float = 5.0,
+    side_mode: str | None = None,
+    folds: int = 4,
+    compact: bool = True,
+) -> dict[str, Any]:
+    """Run the parameter search inside the verifier and verify the best combo.
+
+    Prefer this over verify_strategy when you tuned parameters: n_trials and the
+    spread of trial Sharpes are measured instead of declared, and an anchored
+    walk-forward scores re-selected parameters out of sample.
+
+    Args:
+        ohlcv_path: CSV/Parquet with open, high, low, close.
+        strategy_path: Python file 'path.py[:func]' defining func(df, **params) -> positions.
+        grid: Parameter grid, e.g. {"fast": [10, 20], "slow": [50, 100]} (max 512 combos).
+        commission_bps: Commission per side in basis points.
+        slippage_bps: Slippage per side in basis points.
+        side_mode: 'long_flat' or 'long_short' (default long_short).
+        folds: Walk-forward folds.
+        compact: Drop details of passing checks to keep the response short.
+    """
+    from monte_neo.verify import verify_grid as _verify_grid
+
+    df, model = _model(ohlcv_path, commission_bps, slippage_bps, side_mode, None, None)
+    report = _verify_grid(df, grid, strategy=strategy_path, model=model, folds=folds)
     return _compact(report) if compact else report
 
 
@@ -184,6 +218,7 @@ def verifier_manifest() -> dict[str, Any]:
 
 TOOLS: tuple[Callable[..., dict[str, Any]], ...] = (
     verify_strategy,
+    verify_grid,
     probe_lookahead,
     cost_stress,
     verdict_schema,
@@ -197,5 +232,6 @@ __all__ = [
     "probe_lookahead",
     "verdict_schema",
     "verifier_manifest",
+    "verify_grid",
     "verify_strategy",
 ]

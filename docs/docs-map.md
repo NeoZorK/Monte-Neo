@@ -1,4 +1,4 @@
-# Monte-Neo v0.18.0
+# Monte-Neo v0.19.0
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -30,9 +30,9 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/project-structure.md - Deep dive into physical directory layout
 - docs/project/features.md - Detailed overview of framework features
 - docs/project/dynamic_indicators.md - Explanation of dynamic indicator generation
-- docs/project/ROADMAP.md - Development roadmap and milestones (v0.18.0)
+- docs/project/ROADMAP.md - Development roadmap and milestones (v0.19.0)
 - docs/project/PRODUCT_STRATEGY_RU.md - Product strategy: agent-native strategy verifier niche, moat, roadmap (RU, internal)
-- docs/project/CHANGELOG.md - Release changelog (current: v0.18.0)
+- docs/project/CHANGELOG.md - Release changelog (current: v0.19.0)
 - docs/project/backtest_engine.md - Fee-aware research bar engine
 - docs/project/oms_engine.md - Paper OMS (bar + tick/L2) + venue adapters
 - docs/assets/monteneo-logo.png - Project logo
@@ -71,12 +71,12 @@ A simplified guide to the Monte-Neo file structure.
 - docker/docker-compose.yml - Docker Compose service definitions
 
 ### Source Code (src/monte_neo/)
-- src/monte_neo/_version.py - Central version management (v0.18.0)
-- src/monte_neo/verify/ - Strategy verifier (ingest, look-ahead probes, lint, costs, stats, checks, verdict)
+- src/monte_neo/_version.py - Central version management (v0.19.0)
+- src/monte_neo/verify/ - Strategy verifier (ingest, look-ahead probes, lint, costs, stats, checks, verdict, grid + walk-forward)
 - src/monte_neo/mcp/ - MCP server (monte-neo-mcp) + agent-facing tool functions
 - src/monte_neo/cli/verify_cmd.py - `monte-neo verify` command (CI exit codes)
 - src/monte_neo/backtest/export_signals.py - Bring-your-own-signals export
-- integrations/ - Claude Code plugin, Codex / Gemini / Cursor agent configs (AGENT_RULES.md source of truth)
+- integrations/ - Claude Code plugin (skill, /verify, PostToolUse reminder hook), Codex / Gemini / Cursor agent configs (AGENT_RULES.md source of truth)
 - .claude-plugin/marketplace.json - Claude Code plugin marketplace entry
 - action.yml - Composite GitHub Action for strategy verification
 - tests/traps/ - Verifier Trap Suite (lying strategies + honest controls)
