@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.21.0)
+# Monte-Neo Roadmap (v0.22.0)
 
 Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier for agent-built strategies).
 
@@ -29,9 +29,13 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 - [x] `monte-neo bench`: verify agent submissions, compare claims, leaderboard (`honesty-bench/1`)
 - [x] Example bench from the Trap Suite + guide
 
-## Next (v0.22+)
+## v0.22.0 — public-run kit
+- [x] `monte-neo bench init`: Honesty Bench v1 tasks + hidden answer key; false-discovery / edge-found metrics
+- [x] Trap Suite: 17 traps + 5 honest controls; 5 new lint rules
+
+## Next (v0.23+)
 - [ ] First public bench run: same tasks → Claude Code / Codex / Gemini / Cursor → published leaderboard
-- [ ] Trap Suite → 50+ traps (survivorship across a universe, timezone/resample edges, target leakage in ML features)
+- [ ] Trap Suite → 50+ traps (now 17 + 5 honest controls; next: survivorship across a universe, timezone edges)
 - [ ] Publish to MCP registries (official registry, glama, smithery, mcpmarket)
 - [ ] Signed certificates + public verification page
 - [ ] Freeze / trim side lanes (indicator generator, MLX 3D engine, root scripts)

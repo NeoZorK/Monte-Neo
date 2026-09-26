@@ -9,7 +9,10 @@ _BFILL_METHODS = {"bfill", "backfill"}
 _FIT_METHODS = {"fit", "fit_transform", "polyfit"}
 _GROUP_AGGS = {"last", "max", "min", "mean", "sum", "std", "median"}
 _WINDOW_METHODS = {"rolling", "expanding", "ewm"}
-_STAT_METHODS = {"mean", "std", "var", "min", "max", "median", "quantile"}
+_STAT_METHODS = {"mean", "std", "var", "min", "max", "median", "quantile", "sum"}
+_PERIOD_METHODS = {"diff", "pct_change"}
+_SAFE_INTERPOLATE = {"pad", "ffill"}
+_FORWARD_ASOF = {"forward", "nearest"}
 _MODULES = {"np", "numpy", "math", "statistics", "pd", "pandas"}
 
 
@@ -58,6 +61,12 @@ class _Visitor(ast.NodeVisitor):
         )
 
     @staticmethod
+    def _negative_arg(call: ast.Call, pos: int, name: str) -> bool:
+        arg = call.args[pos] if len(call.args) > pos else _kw(call, name)
+        val = _const_number(arg)
+        return val is not None and val < 0
+
+    @staticmethod
     def _on_window(node: ast.AST) -> bool:
         return isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr in _WINDOW_METHODS
 
@@ -74,10 +83,18 @@ class _Visitor(ast.NodeVisitor):
         if isinstance(node.func, ast.Attribute):
             attr = node.func.attr
             if attr == "shift":
-                arg = node.args[0] if node.args else _kw(node, "periods")
-                val = _const_number(arg)
-                if val is not None and val < 0:
+                if self._negative_arg(node, 0, "periods"):
                     self._add(node, "negative_shift", "fail", "shift with a negative period reads future bars")
+            elif attr in _PERIOD_METHODS:
+                if self._negative_arg(node, 0, "periods"):
+                    self._add(node, "negative_period", "fail", f"{attr} with a negative period compares with future bars")
+            elif attr == "roll":
+                if self._negative_arg(node, 1, "shift"):
+                    self._add(node, "negative_roll", "fail", "roll with a negative shift pulls future values into the past")
+            elif attr == "merge_asof" and _is_str(_kw(node, "direction"), _FORWARD_ASOF):
+                self._add(node, "forward_asof", "fail", "merge_asof direction forward/nearest joins future rows")
+            elif attr == "interpolate" and not _is_str(_kw(node, "method"), _SAFE_INTERPOLATE):
+                self._add(node, "interpolate", "fail", "interpolate uses the next known value (future) unless method='ffill'")
             elif attr in _BFILL_METHODS:
                 self._add(node, "backward_fill", "fail", "backward fill copies future values into the past")
             elif attr == "fillna" and _is_str(_kw(node, "method"), _BFILL_METHODS):

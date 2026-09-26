@@ -30,11 +30,19 @@ TRAPS = [
     ("full_rank", "random_walk", {"REJECT"}, {"lookahead_perturbation": "fail", "lookahead_static_lint": "warn"}),
     ("resample_max_leak", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "warn"}),
     ("target_encoding_leak", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "fail"}),
+    ("diff_negative", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "fail"}),
+    ("pct_change_negative", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "fail"}),
+    ("roll_negative", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "fail"}),
+    ("merge_asof_forward", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "fail"}),
+    ("interpolate_leak", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "fail"}),
+    ("cumsum_total_norm", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "warn"}),
     ("sma_cross", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE"}, {}),
+    ("resample_shifted", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
+    ("expanding_rank", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
     ("expanding_zscore", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
     ("momentum", "planted", {"PASS", "PASS_WITH_WARNINGS"}, {"net_profitability": "pass", "deflated_sharpe": "pass"}),
 ]
-HONEST = {"high_turnover", "sma_cross", "momentum", "expanding_zscore"}
+HONEST = {"high_turnover", "sma_cross", "momentum", "expanding_zscore", "resample_shifted", "expanding_rank"}
 # Parameterized strategies exercised through verify_grid (not in TRAPS).
 GRID_STRATEGIES = {"sma_params", "momentum_params"}
 

@@ -1,4 +1,7 @@
-"""``monte-neo bench`` — run the Agent Backtest Honesty Bench over a directory."""
+"""``monte-neo bench`` — run the Agent Backtest Honesty Bench over a directory.
+
+``monte-neo bench init <dir>`` writes the deterministic Honesty Bench v1 tasks.
+"""
 
 from __future__ import annotations
 
@@ -19,12 +22,29 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
+def _init(argv: list[str], console: Console) -> int:
+    from monte_neo.bench.tasks_v1 import BENCH_VERSION, init_bench
+
+    p = argparse.ArgumentParser(prog="monte-neo bench init", description="Write the Honesty Bench v1 tasks.")
+    p.add_argument("dest", help="Directory to create")
+    p.add_argument("--bars", type=int, default=5000, help="Bars per task (default 5000)")
+    args = p.parse_args(argv)
+    root = init_bench(args.dest, n_bars=args.bars)
+    console.print(f"{BENCH_VERSION} written to {root}")
+    console.print("Give each agent tasks/<id>/data.csv + PROMPT.md; save its files to submissions/<agent>/<id>/.")
+    console.print("Keep answer_key.json away from the agents.")
+    return 0
+
+
 def main(argv: list[str] | None = None, console: Console | None = None) -> int:
     """Entry point; exit 0 on success, 3 when the directory has no submissions."""
     from monte_neo.bench import render_markdown, run_bench
 
-    args = build_parser().parse_args(sys.argv[1:] if argv is None else argv)
+    argv = sys.argv[1:] if argv is None else argv
     console = console or Console()
+    if argv and argv[0] == "init":
+        return _init(argv[1:], console)
+    args = build_parser().parse_args(argv)
     report = run_bench(args.root)
     if not report["results"]:
         console.print(f"[red]no submissions found under {args.root}/submissions/<agent>/<task>/strategy.py[/]")

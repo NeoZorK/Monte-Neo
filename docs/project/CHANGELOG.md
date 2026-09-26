@@ -3,6 +3,27 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.22.0] — 2026-09-26
+
+### Added
+- **Honesty Bench v1**: `monte-neo bench init <dir>` writes five deterministic tasks (`noise`, `momentum`,
+  `mean-reversion`, `costs-trap`, `regime`) with a shared prompt, 5 + 5 bps costs and a hidden
+  `answer_key.json`
+- Bench metrics from the answer key: **false discovery** (claimed profit on a task with no edge after
+  costs) and **edge found** (edge task where the strategy passes verification)
+- Trap Suite: `diff_negative`, `pct_change_negative`, `roll_negative`, `merge_asof_forward`,
+  `interpolate_leak`, `cumsum_total_norm`, plus the honest controls `resample_shifted` and `expanding_rank`
+  (17 traps, 5 honest controls)
+- Lint rules: `negative_period` (`diff` / `pct_change`), `negative_roll`, `forward_asof`, `interpolate`
+  (fail); `sum` added to `full_sample_stat`
+
+### Fixed
+- `test_generator_dynamic` evaluated a random formula on 100 bars. Stacked windows and shifts can need
+  about 180 bars of warm-up, so the test now uses 400 bars.
+
+### Notes
+- No breaking API change vs 0.21.0.
+
 ## [v0.21.0] — 2026-09-26
 
 ### Added

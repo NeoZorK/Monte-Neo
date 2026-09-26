@@ -112,8 +112,16 @@ def test_generator_dynamic(sample_data):
     assert "source_code" in indicator.get_parameters()
     print(f"Generated code: {indicator.get_parameters()['source_code']}")
 
-    # Check it runs
-    result = indicator.calculate(sample_data)
+    # Check it runs. Generated formulas can stack windows and shifts
+    # (crossover up to ~80 bars + shifts/rolls up to 49 at 3 depth levels ~ 180 bars
+    # of warm-up), so use enough bars that any valid formula yields values.
+    rng = np.random.default_rng(7)
+    n = 400
+    long_data = pd.DataFrame(
+        {col: rng.random(n) * (1000 if col == "volume" else 100) for col in ("open", "high", "low", "close", "volume")},
+        index=pd.date_range(start="2023-01-01", periods=n, freq="D"),
+    )
+    result = indicator.calculate(long_data)
     assert not result["dynamic"].isnull().all()
 
 
