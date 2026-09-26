@@ -41,7 +41,7 @@ run is complete.
 > reproducible certificate you can sign.
 >
 > It ships as an MCP server (Claude Code plugin, Codex, Gemini CLI, Cursor), a CLI and a GitHub
-> Action. The rules are backed by a "Trap Suite" of 31 strategies that are known to lie.
+> Action. The rules are backed by a "Trap Suite" of 40 strategies that are known to lie.
 >
 > `pip install monte-neo` · https://github.com/NeoZorK/Monte-Neo
 >

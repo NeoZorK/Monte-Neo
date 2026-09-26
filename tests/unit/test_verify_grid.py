@@ -182,3 +182,29 @@ def signal(df):
     assert by_rule["reverse_count"] == [8]
     assert by_rule["group_aggregate"] == [10, 12]
     assert by_rule["full_sample_rank"] == [13]
+
+
+def test_lint_forward_indexer_tail_builtins() -> None:
+    src = """
+def signal(df):
+    a = df.close.rolling(window=pd.api.indexers.FixedForwardWindowIndexer(window_size=5)).max()
+    b = FixedForwardWindowIndexer(window_size=5)
+    c = df.close.tail(100).mean()
+    d = df.close.iat[-1]
+    e = np.sort(close)
+    f = pd.cut(close, bins=5)
+    g = pd.cut(close, [0, 1, 2])
+    h = np.maximum.accumulate(x[::-1])
+    i = max(df.close)
+    j = max(a, b)
+    k = sorted(values, key=abs)
+    return a
+"""
+    by_rule: dict[str, list[int]] = {}
+    for f in lint_source(src)["findings"]:
+        by_rule.setdefault(f["rule"], []).append(f["line"])
+    assert by_rule["forward_window"] == [3, 4]
+    assert by_rule["last_row"] == [5, 6]
+    assert by_rule["full_sample_rank"] == [7, 8]
+    assert by_rule["reversed_cumulative"] == [10]
+    assert by_rule["full_sample_stat"] == [11]

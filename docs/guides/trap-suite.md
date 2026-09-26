@@ -11,7 +11,7 @@ statuses that must appear.
 
 ## Catalogue
 
-31 traps, 12 honest controls, 2 parameterized strategies for `verify_grid` and a data-snooping test.
+40 traps, 15 honest controls, 2 parameterized strategies for `verify_grid` and a data-snooping test.
 "Caught by" lists the checks that flag each trap on the random-walk dataset. "lint (warn)" is a
 warning only; the dynamic probes produce the `REJECT`.
 
@@ -27,6 +27,10 @@ warning only; the dynamic probes produce the `REJECT`.
 | `last_row_leak` | Every bar compared with `.iloc[-1]`, the final close | truncation, perturbation, lint |
 | `gradient_leak` | `np.gradient` uses central differences (bar t + 1) | truncation, perturbation, lint, implausible accuracy |
 | `reversed_cummax` | `cummax` over the reversed series is the highest price still to come | truncation, perturbation, lint |
+| `reversed_accumulate` | `np.maximum.accumulate` over the reversed array | truncation, perturbation, lint |
+| `forward_window_indexer` | `FixedForwardWindowIndexer` makes `rolling()` look ahead | truncation, perturbation, lint, implausible accuracy |
+| `tail_threshold` | Threshold from `.tail(500).mean()`, the last bars of the dataset | truncation, perturbation, lint |
+| `iat_last` | `.iat[-1]` reads the final close | truncation, perturbation, lint |
 
 ### Centered windows and filters
 
@@ -59,6 +63,9 @@ warning only; the dynamic probes produce the `REJECT`.
 | `full_polyfit` | Trend fitted once on the whole series | truncation, perturbation, lint (warn) |
 | `target_encoding_leak` | Mean forward return per bucket, fitted on everything | truncation, perturbation, lint |
 | `sort_values_rank` | `sort_values` ranks every bar among all prices | truncation, perturbation, lint (warn) |
+| `np_sort_rank` | `np.sort` + `searchsorted` ranks each close among all closes | truncation, perturbation, lint (warn) |
+| `cut_auto_bins` | `pd.cut(bins=5)` takes edges from the whole-series min and max | truncation, perturbation, lint (warn) |
+| `builtin_max` | Python's `max()` over the whole column | perturbation, lint (warn) |
 
 ### Aggregates over the current bucket
 
@@ -69,6 +76,16 @@ warning only; the dynamic probes produce the `REJECT`.
 | `hourly_close_map` | `groupby().last()` mapped back onto every minute of the hour | truncation, perturbation, lint (warn) |
 | `hour_size_leak` | `transform("size")` knows how many bars the hour will have | truncation, lint (warn) |
 | `bars_left_in_hour` | `cumcount(ascending=False)` counts the bars still to come | truncation, lint |
+
+### Invisible to the static lint
+
+These leak without any suspicious call. Only the dynamic probes catch them, which is why Monte-Neo
+runs the strategy instead of only reading it.
+
+| File | How it lies | Caught by |
+|------|-------------|-----------|
+| `dataset_fraction` | `np.arange(len(df)) / len(df)`: a bar's position depends on how many bars come later | truncation |
+| `block_mean_reshape` | `reshape(-1, 60).mean(axis=1).repeat(60)`: every bar sees the rest of its block | truncation, perturbation |
 
 ### Economics
 
@@ -96,6 +113,9 @@ leaks.
 | `prev_hour_close_map` | Previous completed hour: `groupby().last().shift(1)` |
 | `bars_into_hour` | `cumcount()` counts only bars already seen |
 | `expanding_quantile_band` | Expanding quantile of past closes, shifted by one bar |
+| `cut_fixed_bins` | `pd.cut` with explicit, fixed bin edges |
+| `hour_running_high` | Running high of the hour so far: `groupby().cummax()` |
+| `rolling_min_periods` | `rolling(50, min_periods=1)` |
 
 Grid strategies: `sma_params`, `momentum_params`.
 
