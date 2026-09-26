@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.27.1)
+# Monte-Neo Roadmap (v0.28.0)
 
 Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier for agent-built strategies).
 
@@ -54,9 +54,12 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 - [x] GitHub Action: `signing-key`, `upload-certificate`, `key-id` output; self-test covers signing
 - [x] Animated README demo from real verifier output
 
-## Next (v0.28+)
+## v0.28.0 — calendar and reversed-series traps
+- [x] Trap Suite: 31 traps + 12 honest controls; lint 19 rules (reversed cumulative, reverse count, reindex nearest, group aggregates)
+
+## Next (v0.29+)
 - [ ] First public bench run: same tasks → Claude Code / Codex / Gemini / Cursor → published leaderboard
-- [ ] Trap Suite → 50+ traps (now 25 + 9 honest controls; next: survivorship across a universe, timezone edges)
+- [ ] Trap Suite → 50+ traps (now 31 + 12 honest controls; next: survivorship across a universe, multi-asset joins)
 - [~] Publish to MCP catalogues: official registry (done), glama / smithery / mcp.so / mcpmarket (owner submits; texts in docs/marketing/launch-kit.md)
 - [~] Signed certificates (v0.25.0), signing in the GitHub Action (v0.27.0); next: public verification page
 

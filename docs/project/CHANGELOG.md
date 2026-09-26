@@ -3,6 +3,24 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.28.0] — 2026-09-26
+
+### Added
+- Trap Suite: `reversed_cummax`, `reindex_nearest`, `bars_left_in_hour`, `hour_size_leak`,
+  `hourly_close_map`, `sort_values_rank`, plus the honest controls `prev_hour_close_map`,
+  `bars_into_hour` and `expanding_quantile_band` (31 traps, 12 honest controls)
+- Lint rules (19 in total):
+  - `reversed_cumulative` (fail): `cummax` / `cummin` / `cumsum` / `cumprod` over a reversed series;
+  - `reverse_count` (fail): `cumcount(ascending=False)`;
+  - `backward_fill` now also covers `reindex(method="bfill" | "backfill" | "nearest")`;
+  - `group_aggregate` (warn) now covers `groupby(...).last()` / `max()` / `size()` / … and
+    `transform("size" | "count" | "nunique")`; a following `.shift(1)` marks the aggregate as safe;
+  - `full_sample_rank` (warn) now covers `Series.sort_values()`.
+
+### Notes
+- No breaking API change vs 0.27.1. `groupby(...)[col].max()` without a shift is now reported as
+  `group_aggregate` instead of `full_sample_stat`.
+
 ## [v0.27.1] — 2026-09-26
 
 ### Fixed
