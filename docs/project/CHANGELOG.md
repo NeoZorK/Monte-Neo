@@ -21,6 +21,11 @@ Version source of truth: `src/monte_neo/_version.py`.
 - `monte_neo` and `monte_neo.core` export lazily, so `import monte_neo`, the verifier, the MCP server
   and the CLI no longer load MLX / Metal backends (fixes intermittent CI aborts on macOS runners)
 
+### Fixed
+- `BinanceDownloader._fetch_klines`: a persistent HTTP 429 / rate limit now raises after
+  `MAX_RATE_LIMIT_RETRIES` (5) instead of sleeping forever. This was the cause of CI jobs hanging for an hour.
+- `test_misc_one_liners` no longer reaches Binance over the network; CI `test` job has `timeout-minutes: 20`
+
 ### Notes
 - No breaking API change vs 0.19.0.
 
