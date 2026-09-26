@@ -1,6 +1,6 @@
 {
   "name": "monte-neo",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "description": "Independent verifier for trading-strategy backtests: look-ahead probes, cost stress, Deflated Sharpe. Returns a strategy-verdict/1 certificate.",
   "author": { "name": "NeoZorK" },
   "homepage": "https://neozork.github.io/Monte-Neo/",

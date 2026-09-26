@@ -79,7 +79,7 @@ def signal(df, np=None):
     assert by_rule["reversed_window"] == [3]
     assert by_rule["full_sample_rank"] == [4]
     assert by_rule["group_aggregate"] == [6]
-    assert by_rule["full_sample_stat"] == [8, 12]
+    assert by_rule["full_sample_stat"] == [8, 9, 12]
     assert by_rule["full_sample_fit"] == [13]
     assert res["status"] == "fail"
 
@@ -107,3 +107,26 @@ def signal(df):
     assert by_rule["forward_asof"] == [8]
     assert by_rule["interpolate"] == [10]
     assert by_rule["full_sample_stat"] == [12]
+
+
+def test_lint_last_row_idxmax_and_numpy_stats() -> None:
+    src = """
+def signal(df):
+    a = df.close.iloc[-1]
+    b = df.close.values[-2]
+    c = df.close.to_numpy()[-1]
+    d = df.close.iloc[1]
+    e = lst[-1]
+    f = df.close.idxmax()
+    g = np.mean(close)
+    h = np.mean(np.array([1, 2]))
+    i = numpy.std(df.close)
+    j = np.mean([1, 2])
+    k = np.clip(close, 0, 1)
+    return a
+"""
+    by_rule: dict[str, list[int]] = {}
+    for f in lint_source(src)["findings"]:
+        by_rule.setdefault(f["rule"], []).append(f["line"])
+    assert by_rule["last_row"] == [3, 4, 5]
+    assert by_rule["full_sample_stat"] == [8, 9, 11]
