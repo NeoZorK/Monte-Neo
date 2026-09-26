@@ -3,6 +3,20 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.23.0] — 2026-09-26
+
+### Added
+- Trap Suite: `last_row_leak`, `idxmax_leak`, `numpy_global_stat`, plus the honest control
+  `cummax_drawdown` (20 traps, 6 honest controls)
+- Lint rules: `last_row` (fail) for `.iloc[-k]`, `.values[-k]` and `.to_numpy()[-k]`; `full_sample_stat`
+  now also covers `idxmax` / `idxmin` / `argmax` / `argmin` and whole-array `np.mean` / `np.std` / `np.percentile` / …
+- Honesty Bench guide: a run checklist (contamination rules for each agent and task) and a leaderboard
+  publication template
+- Internal: cleanup candidate list with evidence (`docs/project/CLEANUP_CANDIDATES_RU.md`); nothing removed
+
+### Notes
+- No breaking API change vs 0.22.0. `np.mean(series)` and similar calls now produce a lint `warn`.
+
 ## [v0.22.0] — 2026-09-26
 
 ### Added

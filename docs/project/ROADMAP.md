@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.22.0)
+# Monte-Neo Roadmap (v0.23.0)
 
 Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier for agent-built strategies).
 
@@ -33,12 +33,17 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 - [x] `monte-neo bench init`: Honesty Bench v1 tasks + hidden answer key; false-discovery / edge-found metrics
 - [x] Trap Suite: 17 traps + 5 honest controls; 5 new lint rules
 
-## Next (v0.23+)
+## v0.23.0 — bench protocol
+- [x] Trap Suite: 20 traps + 6 honest controls; `last_row` lint rule, `np.*` / `idxmax` full-sample stats
+- [x] Honesty Bench run checklist (contamination rules) + leaderboard publication template
+- [x] Cleanup candidate list (awaiting approval)
+
+## Next (v0.24+)
 - [ ] First public bench run: same tasks → Claude Code / Codex / Gemini / Cursor → published leaderboard
-- [ ] Trap Suite → 50+ traps (now 17 + 5 honest controls; next: survivorship across a universe, timezone edges)
+- [ ] Trap Suite → 50+ traps (now 20 + 6 honest controls; next: survivorship across a universe, timezone edges)
 - [ ] Publish to MCP registries (official registry, glama, smithery, mcpmarket)
 - [ ] Signed certificates + public verification page
-- [ ] Freeze / trim side lanes (indicator generator, MLX 3D engine, root scripts)
+- [ ] Freeze / trim side lanes (indicator generator, MLX 3D engine, root scripts): see CLEANUP_CANDIDATES_RU.md
 
 ## v0.17.7
 - [x] Pages homepage: `docs/index.md` at site root; `docs/docs-map.md` replaces `INDEX.md`

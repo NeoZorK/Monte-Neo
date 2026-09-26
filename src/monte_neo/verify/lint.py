@@ -9,7 +9,9 @@ _BFILL_METHODS = {"bfill", "backfill"}
 _FIT_METHODS = {"fit", "fit_transform", "polyfit"}
 _GROUP_AGGS = {"last", "max", "min", "mean", "sum", "std", "median"}
 _WINDOW_METHODS = {"rolling", "expanding", "ewm"}
-_STAT_METHODS = {"mean", "std", "var", "min", "max", "median", "quantile", "sum"}
+_STAT_METHODS = {"mean", "std", "var", "min", "max", "median", "quantile", "sum", "idxmax", "idxmin", "argmax", "argmin"}
+_NUMPY_STATS = {"mean", "std", "var", "min", "max", "median", "percentile", "quantile", "sum", "argmax", "argmin", "nanmean", "nanstd"}
+_POSITIONAL = {"iloc", "values"}
 _PERIOD_METHODS = {"diff", "pct_change"}
 _SAFE_INTERPOLATE = {"pad", "ffill"}
 _FORWARD_ASOF = {"forward", "nearest"}
@@ -105,6 +107,14 @@ class _Visitor(ast.NodeVisitor):
                 self._add(node, "reversed_window", "fail", "window over a reversed series looks into the future")
             elif attr == "rank" and not self._on_window(node.func.value):
                 self._add(node, "full_sample_rank", "warn", "rank over the whole series compares bars with future values")
+            elif (
+                attr in _NUMPY_STATS
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id in ("np", "numpy")
+                and node.args
+                and not isinstance(node.args[0], ast.Call | ast.Constant | ast.List | ast.Tuple)
+            ):
+                self._add(node, "full_sample_stat", "warn", f"np.{attr} over a whole array includes future bars")
             elif attr in _STAT_METHODS and self._is_series_ref(node.func.value):
                 self._add(node, "full_sample_stat", "warn", "whole-series statistic includes future bars (use rolling/expanding)")
             elif attr == "transform" and node.args and _is_str(node.args[0], _GROUP_AGGS):
@@ -115,6 +125,13 @@ class _Visitor(ast.NodeVisitor):
 
     def visit_Subscript(self, node: ast.Subscript) -> Any:
         idx = node.slice
+        target = node.value
+        is_positional = (isinstance(target, ast.Attribute) and target.attr in _POSITIONAL) or (
+            isinstance(target, ast.Call) and isinstance(target.func, ast.Attribute) and target.func.attr == "to_numpy"
+        )
+        last = _const_number(idx)
+        if is_positional and last is not None and last < 0:
+            self._add(node, "last_row", "fail", "indexing from the end reads the last (future) bars of the dataset")
         if isinstance(idx, ast.BinOp) and isinstance(idx.op, ast.Add):
             step = _const_number(idx.right)
             if step is not None and step > 0:
