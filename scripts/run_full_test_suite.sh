@@ -54,11 +54,11 @@ uv run pytest tests/stress/ -W ignore
 # 5. Phase 5: Hardware Specific Tests (Metal/GPU)
 echo -e "\n${BLUE}[5/10] Phase 5: Hardware Specific Tests...${NC}"
 echo -e "${BLUE}Testing Metal Pipeline...${NC}"
-uv run scripts/test_metal_pipeline.py
+uv run scripts/experiments/test_metal_pipeline.py
 echo -e "${BLUE}Testing BB Metal...${NC}"
-uv run scripts/test_bb_metal.py
+uv run scripts/experiments/test_bb_metal.py
 echo -e "${BLUE}Testing Advanced Metal...${NC}"
-uv run scripts/test_advanced_metal.py
+uv run scripts/experiments/test_advanced_metal.py
 
 # 6. Phase 6: Benchmarks
 echo -e "\n${BLUE}[6/10] Phase 6: Benchmarks...${NC}"

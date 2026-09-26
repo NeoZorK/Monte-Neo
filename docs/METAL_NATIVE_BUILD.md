@@ -44,7 +44,7 @@ bash src/monte_neo/core/acceleration/cpp_metal/compile.sh
 ## Verify
 
 ```bash
-uv run python verify_hardware.py
+uv run python scripts/verify_hardware.py
 uv run pytest tests -k metal -n auto
 ```
 

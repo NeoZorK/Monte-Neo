@@ -53,7 +53,7 @@ def test_memory_plan_unknown_want_fallthrough():
 
 def test_cli_app_main_subprocess():
     # Cover `if __name__ == "__main__": sys.exit(main())`
-    root = Path(__file__).resolve().parents[2]
+    root = Path(__file__).resolve().parents[3]
     env = {**__import__("os").environ, "PYTHONPATH": str(root / "src")}
     r = subprocess.run(
         [sys.executable, "-m", "monte_neo.cli.app", "--version"],

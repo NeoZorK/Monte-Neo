@@ -5,14 +5,14 @@ build-backend = "hatchling.build"
 [project]
 name = "monte-neo"
 dynamic = ["version"]
-description = "Fast local research for trading strategies on Apple Silicon: fee-aware bar backtests, Monte Carlo, paper OMS (Metal/MLX/Numba)"
+description = "Independent verifier for trading strategies written by AI agents and humans: look-ahead probes, fee-aware economics, Deflated Sharpe, signed certificates, MCP server"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
 authors = [
-    { name = "Monte-Neo Team" }
+    { name = "NeoZorK" }
 ]
-keywords = ["trading", "monte-carlo", "backtesting", "apple-silicon", "metal", "research", "oms"]
+keywords = ["trading", "backtesting", "backtest-verification", "look-ahead-bias", "overfitting", "deflated-sharpe", "quant", "algorithmic-trading", "mcp", "mcp-server", "ai-agents", "claude-code"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -26,6 +26,8 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Office/Business :: Financial :: Investment",
     "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing",
 ]
 
 dependencies = [

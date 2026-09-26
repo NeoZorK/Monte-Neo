@@ -3,6 +3,33 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.26.0] — 2026-09-26
+
+### Changed
+- **README and docs home rewritten** around the verifier: the problem, real CLI output, where to use
+  it, why Monte-Neo, quick start for the CLI, agents and the GitHub Action, and certificates
+- Badges: PyPI version, total downloads (pepy), downloads per month (pypistats), Python versions, CI,
+  license, MCP Registry, supported agents, stars; a "Verified by Monte-Neo" badge for users
+- PyPI metadata: new description, keywords and classifiers; author NeoZorK
+- New banner `docs/assets/social-preview.png` (README hero, GitHub social preview) and logo mark
+  `docs/assets/logo-sphere.png`
+- Research lanes frozen (bug fixes only): the indicator generator, the MLX/Metal engine, the paper OMS,
+  the policy module and the CLI menu; see "Frozen lanes" in the contributing guide
+
+### Added
+- `CITATION.cff`, `glama.json`
+- Launch kit and article draft under `docs/marketing/`; internal marketing plan
+
+### Removed
+- Tracked build artifacts: `profile_stats.txt`, `exports/`, `verify_gpu_optimizer.py`
+
+### Moved
+- `verify_hardware.py` → `scripts/`; one-off Metal/MLX experiments → `scripts/experiments/`;
+  `tests/unit/test_coverage_boost*.py` → `tests/unit/legacy_coverage/`
+
+### Notes
+- No API change vs 0.25.0.
+
 ## [v0.25.0] — 2026-09-26
 
 ### Added

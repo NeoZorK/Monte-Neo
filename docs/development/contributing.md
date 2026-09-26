@@ -12,8 +12,20 @@ Thanks for helping improve Monte-Neo. Keep changes small, local-Mac friendly, an
 
 ## What belongs here
 
-- Research-bar export, holdout, policy heuristics, Metal/Numba performance, docs clarity
-- MIT-compatible code and docs only
+- The strategy verifier (`monte_neo.verify`), its MCP server, agent integrations and the GitHub Action
+- New traps for the [Trap Suite](../guides/trap-suite.md) and Honesty Bench tasks
+- Docs clarity; MIT-compatible code and docs only
+
+## Frozen lanes (bug fixes only)
+
+These parts still work and are tested, but they are not developed further:
+
+- the indicator generator and its C++/Metal export (`indicators/`, `core/`);
+- the MLX / Metal 3D engine and GPU helpers;
+- the paper OMS (`oms/`), the research policy (`policy/`) and the interactive CLI menu (`cli/menu/`).
+
+A PR for a frozen lane should fix a bug and add a regression test in a thematic test file.
+Legacy gap-filling tests live in `tests/unit/legacy_coverage/` and are not extended.
 
 ## What does not
 
