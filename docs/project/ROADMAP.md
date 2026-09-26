@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.19.0)
+# Monte-Neo Roadmap (v0.20.0)
 
 Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier for agent-built strategies).
 
@@ -18,7 +18,14 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 - [x] Claude Code plugin hook (reminder after strategy edits)
 - [x] Action: `grid`, PR comment updated in place
 
-## Next (v0.20+)
+## v0.20.0 — reproducible certificates
+- [x] `recheck_certificate` / `monte-neo verify --recheck` / MCP `recheck_certificate`
+- [x] Grid certificates record `spec` + `folds` (exact reproduction)
+- [x] Trap Suite: 11 traps (+ resample aggregate, ML target encoding)
+- [x] Lazy `monte_neo` / `monte_neo.core` exports: no MLX load on verifier/CLI/MCP import
+- [x] Release workflow (manual dispatch) + tag-driven publish with GitHub Release
+
+## Next (v0.21+)
 - [ ] Trap Suite → 50+ traps (survivorship across a universe, timezone/resample edges, target leakage in ML features)
 - [ ] Publish to MCP registries (official registry, glama, smithery, mcpmarket)
 - [ ] Agent Backtest Honesty Bench (same tasks → several agents → verifier → public leaderboard)

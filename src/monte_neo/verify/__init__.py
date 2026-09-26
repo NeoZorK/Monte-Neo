@@ -22,6 +22,7 @@ from monte_neo.verify.lookahead import (
     probe_perturbation,
     probe_truncation,
 )
+from monte_neo.verify.recheck import RECHECK_SCHEMA_ID, load_certificate, recheck_certificate
 from monte_neo.verify.schema import (
     VERDICT_JSON_SCHEMA,
     VERDICT_SCHEMA_ID,
@@ -40,6 +41,7 @@ from monte_neo.verify.stats import (
 from monte_neo.verify.verdict import model_from_costs, verify_strategy
 
 __all__ = [
+    "RECHECK_SCHEMA_ID",
     "VERDICTS",
     "VERDICT_JSON_SCHEMA",
     "VERDICT_SCHEMA_ID",
@@ -55,6 +57,7 @@ __all__ = [
     "implausible_accuracy",
     "infer_periods_per_year",
     "lint_source",
+    "load_certificate",
     "load_ohlcv",
     "load_signal_fn",
     "load_signals",
@@ -65,6 +68,7 @@ __all__ = [
     "probe_determinism",
     "probe_perturbation",
     "probe_truncation",
+    "recheck_certificate",
     "sharpe_per_bar",
     "to_jsonable",
     "verify_grid",

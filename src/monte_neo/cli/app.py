@@ -228,7 +228,7 @@ def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
         prog="monte-neo",
-        description="Monte-Neo research CLI. Strategy verifier: monte-neo verify --help",
+        description="Monte-Neo research CLI. Strategy verifier: monte-neo verify --help · MCP server: monte-neo mcp",
     )
 
     parser.add_argument(
@@ -327,6 +327,10 @@ def main() -> int:
         from monte_neo.cli.verify_cmd import main as verify_main
 
         return verify_main(sys.argv[2:])
+    if len(sys.argv) > 1 and sys.argv[1] == "mcp":
+        from monte_neo.mcp.server import main as mcp_main
+
+        return mcp_main(sys.argv[2:])
     args = parse_args()
 
     # Setup logging

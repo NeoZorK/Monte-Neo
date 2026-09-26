@@ -1,7 +1,7 @@
 """``monte-neo verify`` — CI-friendly strategy verifier command.
 
 Exit codes: 0 PASS / PASS_WITH_WARNINGS, 1 NEEDS_MORE_EVIDENCE, 2 REJECT,
-3 usage or input error.
+3 usage or input error, 4 certificate not reproduced (``--recheck``).
 """
 
 from __future__ import annotations
@@ -40,6 +40,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--periods-per-year", type=float, default=None, help="Bars per year for annualization (default: inferred)")
     p.add_argument("--min-trades", type=int, default=30, help="Minimum closed trades for statistics (default 30)")
     p.add_argument("--out", help="Write the strategy-verdict/1 JSON certificate to this path")
+    p.add_argument("--recheck", help="Reproduce this certificate JSON from --ohlcv and --signals / --strategy")
     p.add_argument("--format", choices=["text", "json"], default="text", help="stdout format (default text)")
     p.add_argument("--schema", action="store_true", help="Print the strategy-verdict/1 JSON schema and exit")
     return p
@@ -94,7 +95,14 @@ def _side_mode(args: argparse.Namespace) -> str:
 
 def run(args: argparse.Namespace, console: Console | None = None) -> int:
     """Execute a parsed ``verify`` command."""
-    from monte_neo.verify import VERDICT_JSON_SCHEMA, load_ohlcv, model_from_costs, verify_grid, verify_strategy
+    from monte_neo.verify import (
+        VERDICT_JSON_SCHEMA,
+        load_ohlcv,
+        model_from_costs,
+        recheck_certificate,
+        verify_grid,
+        verify_strategy,
+    )
 
     console = console or Console()
     if args.schema:
@@ -103,6 +111,14 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
     if not args.ohlcv or not (args.signals or args.strategy):
         console.print("[red]verify needs --ohlcv and one of --signals / --strategy[/]")
         return 3
+    if args.recheck:
+        try:
+            result = recheck_certificate(args.recheck, args.ohlcv, signals=args.signals, strategy=args.strategy)
+        except Exception as exc:
+            console.print(f"[red]recheck failed: {exc}[/]")
+            return 3
+        console.print_json(data=result)
+        return 0 if result["reproduced"] else 4
     if args.grid and not args.strategy:
         console.print("[red]--grid needs --strategy (signal(df, **params))[/]")
         return 3

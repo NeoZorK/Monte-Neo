@@ -3,6 +3,27 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.20.0] — 2026-09-26
+
+### Added
+- Certificate re-check: `recheck_certificate` / `monte-neo verify --recheck cert.json` (exit 4 when not
+  reproduced) / MCP tool `recheck_certificate`. It compares the data, signal and source hashes,
+  re-runs the verifier (or the recorded grid search) and compares the verdict and `certificate_id`.
+  Schema `strategy-recheck/1`.
+- Grid certificates record `grid.spec` and `grid.folds`, so they can be reproduced exactly
+- Trap Suite: `resample_max_leak`, `target_encoding_leak` (ML-style target encoding on the full sample)
+
+- `monte-neo mcp` subcommand (same server as `monte-neo-mcp`)
+- Official MCP Registry entry `server.json` (`io.github.NeoZorK/monte-neo`) + `mcp-registry` publish job (GitHub OIDC)
+
+### Changed
+- `mcp` SDK is now a default dependency, so `uvx monte-neo mcp` works with no extras (`[mcp]` extra kept for compatibility)
+- `monte_neo` and `monte_neo.core` export lazily, so `import monte_neo`, the verifier, the MCP server
+  and the CLI no longer load MLX / Metal backends (fixes intermittent CI aborts on macOS runners)
+
+### Notes
+- No breaking API change vs 0.19.0.
+
 ## [v0.19.0] — 2026-09-26
 
 ### Added

@@ -88,6 +88,9 @@ def test_cli_main_and_app_dispatch(files, monkeypatch) -> None:
     assert verify_cmd.main() == 7
     monkeypatch.setattr(sys, "argv", ["monte-neo", "verify", "--schema"])
     assert app.main() == 7
+    monkeypatch.setattr(mcp_server, "main", lambda argv=None: 9)
+    monkeypatch.setattr(sys, "argv", ["monte-neo", "mcp", "--transport", "stdio"])
+    assert app.main() == 9
 
 
 def test_mcp_tools(files) -> None:
@@ -164,3 +167,16 @@ def test_mcp_verify_grid(files) -> None:
     assert rep["grid"]["n_combos"] == 2
     full = tools.verify_grid(files["ohlcv"], files["params"], {"fast": [5]}, compact=False)
     assert all("details" in c for c in full["checks"])
+
+
+def test_cli_and_mcp_recheck(files) -> None:
+    cert = f"{files['root']}/recheck_cert.json"
+    _run(["--ohlcv", files["ohlcv"], "--signals", files["lf"], "--out", cert, "--format", "json"])
+    code, text = _run(["--recheck", cert, "--ohlcv", files["ohlcv"], "--signals", files["lf"]])
+    assert code == 0 and '"reproduced": true' in text
+    code, _ = _run(["--recheck", cert, "--ohlcv", files["ohlcv"], "--signals", files["ls"]])
+    assert code == 4
+    code, text = _run(["--recheck", "missing.json", "--ohlcv", files["ohlcv"], "--signals", files["lf"]])
+    assert code == 3 and "recheck failed" in text
+    assert tools.recheck_certificate(cert, files["ohlcv"], signals_path=files["lf"])["reproduced"] is True
+    assert "error" in tools.recheck_certificate(cert, files["ohlcv"])

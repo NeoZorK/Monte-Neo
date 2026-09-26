@@ -1238,6 +1238,7 @@ wheels = [
 name = "monte-neo"
 source = { editable = "." }
 dependencies = [
+    { name = "mcp" },
     { name = "numba" },
     { name = "numpy" },
     { name = "pandas" },
@@ -1359,6 +1360,7 @@ requires-dist = [
     { name = "matplotlib", marker = "extra == 'dev'", specifier = ">=3.10.8" },
     { name = "matplotlib", marker = "extra == 'full'", specifier = ">=3.10.8" },
     { name = "matplotlib", marker = "extra == 'plot'", specifier = ">=3.10.8" },
+    { name = "mcp", specifier = ">=1.10" },
     { name = "mcp", marker = "extra == 'mcp'", specifier = ">=1.10" },
     { name = "mlx", marker = "sys_platform == 'darwin' and extra == 'apple'", specifier = ">=0.11.0" },
     { name = "mlx", marker = "sys_platform == 'darwin' and extra == 'full'", specifier = ">=0.11.0" },

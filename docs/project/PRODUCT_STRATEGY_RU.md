@@ -173,7 +173,7 @@ MCP-инструменты (минимальный набор, не 30 штук 
 - [x] Look-ahead probes (truncation, perturbation, delay scan) + AST-lint
 - [x] Deflated Sharpe / PSR с обязательным `n_trials`; break-even cost
 - [x] `verify()` → `strategy-verdict/1` (JSON-schema в `docs/api/`)
-- [~] Trap Suite v1: 30–50 плохих стратегий с golden-вердиктами в `tests/traps/` (v0.19.0: 9 ловушек + 3 честных контроля + 2 grid-стратегии + data snooping)
+- [~] Trap Suite v1: 30–50 плохих стратегий с golden-вердиктами в `tests/traps/` (v0.20.0: 11 ловушек + 3 честных контроля + 2 grid-стратегии + data snooping)
 - [x] CLI `monte-neo verify --ohlcv … --signals …`
 
 ### Фаза 2 — дистрибуция в агентах (2–3 недели) · v0.21
@@ -185,7 +185,7 @@ MCP-инструменты (минимальный набор, не 30 штук 
 ### Фаза 3 — ров (moat) (постоянно)
 - [ ] **Agent Backtest Honesty Bench**: даём 5 агентам одинаковые задачи «сделай прибыльную стратегию»,
       прогоняем через верификатор, публикуем лидерборд (ежемесячно)
-- [ ] Подписанные сертификаты + публичная страница проверки (`verify.monte-neo.dev/<hash>`)
+- [~] Воспроизводимые сертификаты: `monte-neo verify --recheck` (v0.20.0); подпись и публичная страница проверки — позже
 - [ ] Label-цикл: сертификат → paper OMS через N недель → метка → LocalScorer B
 - [ ] Trap Suite открыт для контрибуций («нашёл, как агент обманул себя — пришли ловушку»)
 

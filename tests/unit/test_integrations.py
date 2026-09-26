@@ -80,3 +80,12 @@ def test_reminder_hook(tmp_path: Path) -> None:
     assert _hook(json.dumps({"tool_input": {"file_path": str(other)}}), tmp_path) == ""
     assert _hook(json.dumps({"tool_input": {"file_path": str(tmp_path / "x.txt")}}), tmp_path) == ""
     assert _hook("not json", tmp_path) == ""
+
+
+def test_mcp_registry_server_json() -> None:
+    server = json.loads((ROOT / "server.json").read_text())
+    assert server["version"] == PKG_VERSION
+    pkg = server["packages"][0]
+    assert (pkg["registryType"], pkg["identifier"], pkg["version"]) == ("pypi", "monte-neo", PKG_VERSION)
+    assert pkg["packageArguments"] == [{"type": "positional", "value": "mcp"}]
+    assert f"mcp-name: {server['name']}" in (ROOT / "README.md").read_text()
