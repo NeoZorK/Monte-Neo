@@ -19,6 +19,8 @@ A simplified guide to the Monte-Neo file structure.
 - SECURITY.md - Vulnerability reporting (GitHub Security Advisories)
 - .github/workflows/pypi-smoke.yml - PyPI bare-install smoke (schedule / dispatch / release)
 - .github/workflows/verify-action.yml - Self-test of action.yml (leaky strategy must be rejected)
+- .github/workflows/publish.yml - Tag-driven PyPI publish + GitHub Release from CHANGELOG
+- .github/workflows/release.yml - Manual release: version check, tag as NeoZorK, start publish
 - scripts/verify_pypi_install.sh - Local/CI PyPI install verify helper
 - CONTRIBUTING.md - Root pointer to contributing guide
 - .gitignore - Git exclusion rules

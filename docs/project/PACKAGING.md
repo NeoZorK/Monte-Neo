@@ -95,7 +95,13 @@ Workflow: `.github/workflows/publish.yml`, triggered by pushing a `v*` tag:
 2. Build and publish to PyPI with OIDC.
 3. Create the GitHub Release from the matching `docs/project/CHANGELOG.md` section.
 
-Release: `git tag v0.19.0 && git push origin v0.19.0`. Do not create the Release by hand; the workflow does it.
+Release, either way:
+
+- push a tag: `git tag v0.19.0 && git push origin v0.19.0`;
+- or run the **Release** workflow (`.github/workflows/release.yml`, Actions → Release → Run workflow,
+  input `v0.19.0`). It checks the version, creates the tag as NeoZorK and starts `publish.yml` on the tag.
+
+Do not create the GitHub Release by hand; `publish.yml` creates it.
 
 On https://pypi.org/manage/account/publishing/ add a pending publisher:
 
