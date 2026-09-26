@@ -16,6 +16,8 @@ Version source of truth: `src/monte_neo/_version.py`.
 ### Fixed
 - MCP Registry publish: `server.json` description shortened to ≤ 100 characters (the registry rejected
   v0.20.0 with 422); `mcp-registry` job stops retrying on validation errors
+- `CodeGenerator` no longer emits binary expressions with identical operands (`x / x`, `x - x`), which
+  produced constant indicators and made `test_generator_dynamic` flaky
 
 ### Notes
 - No breaking API change vs 0.20.0.
