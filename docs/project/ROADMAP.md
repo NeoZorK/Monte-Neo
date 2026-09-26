@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.26.0)
+# Monte-Neo Roadmap (v0.27.0)
 
 Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier for agent-built strategies).
 
@@ -50,11 +50,15 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 - [x] README / docs home / PyPI metadata rewritten; download badges; banner; CITATION; glama.json
 - [x] Marketing plan + launch kit + article draft
 
-## Next (v0.27+)
+## v0.27.0 — signed CI certificates + demo
+- [x] GitHub Action: `signing-key`, `upload-certificate`, `key-id` output; self-test covers signing
+- [x] Animated README demo from real verifier output
+
+## Next (v0.28+)
 - [ ] First public bench run: same tasks → Claude Code / Codex / Gemini / Cursor → published leaderboard
 - [ ] Trap Suite → 50+ traps (now 25 + 9 honest controls; next: survivorship across a universe, timezone edges)
 - [~] Publish to MCP catalogues: official registry (done), glama / smithery / mcp.so / mcpmarket (owner submits; texts in docs/marketing/launch-kit.md)
-- [~] Signed certificates (v0.25.0) + public verification page; signing in the GitHub Action
+- [~] Signed certificates (v0.25.0), signing in the GitHub Action (v0.27.0); next: public verification page
 
 ## v0.17.7
 - [x] Pages homepage: `docs/index.md` at site root; `docs/docs-map.md` replaces `INDEX.md`

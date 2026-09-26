@@ -3,6 +3,20 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.27.0] — 2026-09-26
+
+### Added
+- **GitHub Action signs certificates:** new inputs `signing-key` (Ed25519 PEM from a repository secret)
+  and `upload-certificate` (workflow artifact `monte-neo-certificate`), new output `key-id`; the step
+  summary and PR comment name the signing key. The key is written to an owner-only temporary file and
+  deleted right after signing. The action self-test now checks a signed certificate.
+- Animated demo `docs/assets/demo-verify.gif` (leaky agent strategy → fix → honest verdict), rendered
+  from real verifier output by `scripts/make_demo_gif.py`; shown in the README
+- Guide: "Signing certificates in CI" in [Use from agents](../guides/agents.md)
+
+### Notes
+- No breaking change vs 0.26.0. Without `signing-key` the action behaves as before.
+
 ## [v0.26.0] — 2026-09-26
 
 ### Changed

@@ -45,6 +45,14 @@ inputs:
     description: "Lowest verdict that fails the job: REJECT (default) or NEEDS_MORE_EVIDENCE"
     required: false
     default: REJECT
+  signing-key:
+    description: "Ed25519 private key (PEM text) to sign the certificate; pass a secret, e.g. ${{ secrets.MONTE_NEO_SIGNING_KEY }}"
+    required: false
+    default: ""
+  upload-certificate:
+    description: "Upload the certificate as a workflow artifact named monte-neo-certificate: 'true' or 'false'"
+    required: false
+    default: "false"
   python-version:
     description: Python version to run the verifier with
     required: false
@@ -57,6 +65,9 @@ outputs:
   certificate:
     description: Path of the strategy-verdict/1 JSON certificate
     value: ${{ steps.verify.outputs.certificate }}
+  key-id:
+    description: Key id of the signature (empty when the certificate is not signed)
+    value: ${{ steps.verify.outputs.key-id }}
 
 runs:
   using: composite
@@ -66,7 +77,15 @@ runs:
         python-version: ${{ inputs.python-version }}
     - name: Install Monte-Neo
       shell: bash
-      run: python -m pip install --quiet "${{ github.action_path }}"
+      env:
+        MN_SIGN: ${{ inputs.signing-key != '' }}
+        MN_PATH: ${{ github.action_path }}
+      run: |
+        if [ "$MN_SIGN" = "true" ]; then
+          python -m pip install --quiet "$MN_PATH[sign]"
+        else
+          python -m pip install --quiet "$MN_PATH"
+        fi
     - name: Verify strategy
       id: verify
       shell: bash
@@ -81,6 +100,7 @@ runs:
         MN_GRID: ${{ inputs.grid }}
         MN_COMMENT: ${{ inputs.comment }}
         MN_PR: ${{ github.event.pull_request.number }}
+        MN_SIGNING_KEY: ${{ inputs.signing-key }}
         GH_TOKEN: ${{ inputs.github-token }}
       run: |
         set +e
@@ -90,18 +110,30 @@ runs:
         if [ -n "$MN_GRID" ]; then extra=(--grid "$MN_GRID"); fi
         cert="$RUNNER_TEMP/strategy-verdict.json"
         report="$RUNNER_TEMP/strategy-verdict.md"
+        sign=()
+        if [ -n "$MN_SIGNING_KEY" ]; then
+          key="$RUNNER_TEMP/monte-neo-signing.key"
+          (umask 077 && printf '%s\n' "$MN_SIGNING_KEY" > "$key")
+          trap 'rm -f "$key"' EXIT
+          sign=(--sign "$key")
+        fi
         monte-neo verify --ohlcv "$MN_OHLCV" "${src[@]}" "${extra[@]}" \
-          --commission-bps "$MN_COMMISSION" --slippage-bps "$MN_SLIPPAGE" --out "$cert"
+          --commission-bps "$MN_COMMISSION" --slippage-bps "$MN_SLIPPAGE" --out "$cert" "${sign[@]}"
         code=$?
+        if [ -n "$MN_SIGNING_KEY" ]; then rm -f "$key"; fi
         if [ "$code" -eq 3 ]; then exit 3; fi
         verdict=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['verdict'])" "$cert")
         echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
         echo "certificate=$cert" >> "$GITHUB_OUTPUT"
+        key_id=$(python -c "import json,sys; print((json.load(open(sys.argv[1])).get('signature') or {}).get('key_id', ''))" "$cert")
+        echo "key-id=$key_id" >> "$GITHUB_OUTPUT"
         python - "$cert" > "$report" <<'PY'
         import json, sys
         r = json.load(open(sys.argv[1]))
         print("<!-- monte-neo-verdict -->")
-        print(f"## Monte-Neo verdict: {r['verdict']}\n\nCertificate `{r['certificate_id']}`\n")
+        sig = r.get("signature")
+        signed = f", signed by key `{sig['key_id']}`" if sig else ""
+        print(f"## Monte-Neo verdict: {r['verdict']}\n\nCertificate `{r['certificate_id']}`{signed}\n")
         g = r.get("grid")
         if g:
             wf = g["walk_forward"]
@@ -125,3 +157,9 @@ runs:
         if [ "$code" -eq 2 ]; then exit 2; fi
         if [ "$code" -eq 1 ] && [ "$MN_FAIL_ON" = "NEEDS_MORE_EVIDENCE" ]; then exit 1; fi
         exit 0
+    - name: Upload certificate
+      if: ${{ always() && inputs.upload-certificate == 'true' && steps.verify.outputs.certificate != '' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: monte-neo-certificate
+        path: ${{ steps.verify.outputs.certificate }}
