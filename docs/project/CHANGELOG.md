@@ -3,6 +3,13 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.27.1] — 2026-09-26
+
+### Fixed
+- The README demo `docs/assets/demo-verify.gif` was missing from v0.27.0: a `*.gif` rule in `.gitignore`
+  came after the `docs/assets/` exception and hid the file. The exception now comes last, and a new test
+  checks that every asset referenced from `README.md` or `docs/` is in the tree.
+
 ## [v0.27.0] — 2026-09-26
 
 ### Added
