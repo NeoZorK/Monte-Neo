@@ -53,9 +53,20 @@ Backtest libraries run whatever code you give them. None of them tell you the ba
 or its positions. It returns one of four verdicts, the checks behind the verdict, concrete next
 steps and a reproducible, optionally signed certificate.
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/NeoZorK/Monte-Neo/main/docs/assets/demo-verify.gif" alt="monte-neo verify rejects a leaky agent strategy, the agent fixes it, and the honest verdict follows" width="820"/>
+</p>
+
+The agent's strategy used `shift(-1)`, so it knew the next close. Monte-Neo found the leak in four
+independent ways and named the line. After the fix, no look-ahead is left, and the verifier tells
+the truth: on a random walk, the strategy has no edge after costs.
+
+<details>
+<summary>Text output of the first run</summary>
+
 ```console
 $ monte-neo verify --ohlcv prices.csv --strategy agent_strategy.py --n-trials 40
-REJECT  certificate 08ae7b091908a83c
+REJECT  certificate 4f8adb31b088b0c0
   check                    category    status  summary
   data_integrity           integrity   pass    OHLCV is clean
   lookahead_truncation     lookahead   fail    truncation probe: LEAK DETECTED
@@ -70,8 +81,9 @@ REJECT  certificate 08ae7b091908a83c
 → Fix the flagged source lines (negative shift, center=True, backward fill) and re-run verify. Lines: 6.
 ```
 
-The strategy used `shift(-1)`, so it knew the next close. Monte-Neo found the leak in four
-independent ways and pointed to line 6. The run above used a synthetic random walk; output shortened.
+The run used a synthetic random walk; output shortened.
+
+</details>
 
 | Verdict | Meaning | CLI exit code |
 |---------|---------|---------------|
@@ -173,12 +185,14 @@ MCP tools: `verify_strategy`, `verify_grid`, `probe_lookahead`, `cost_stress`,
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.26.0
+- uses: NeoZorK/Monte-Neo@v0.27.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py
     n-trials: "12"
-    comment: "true"        # post the verdict on the pull request
+    comment: "true"                                        # post the verdict on the pull request
+    signing-key: ${{ secrets.MONTE_NEO_SIGNING_KEY }}      # optional: sign the certificate
+    upload-certificate: "true"                             # optional: keep it as a workflow artifact
 ```
 
 The job fails on `REJECT`. The verdict and every check appear in the step summary.
