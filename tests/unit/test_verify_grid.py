@@ -208,3 +208,38 @@ def signal(df):
     assert by_rule["full_sample_rank"] == [7, 8]
     assert by_rule["reversed_cumulative"] == [10]
     assert by_rule["full_sample_stat"] == [11]
+
+
+def test_lint_inline_constants_and_whole_series_methods() -> None:
+    src = """
+horizon = -2
+centred = True
+reused = -1
+reused = 1
+
+def signal(df, fast=-1):
+    a = df.close.shift(horizon)
+    b = df.close.rolling(5, center=centred).mean()
+    c = df.close.shift(reused)
+    d = df.close.shift(fast)
+    e = df.close.round(-1).mode()
+    f = df.close.describe()
+    g = df.groupby(h)["close"].agg("max")
+    h2 = df.close.rolling(5).agg("mean")
+    i = df.close.nlargest(3)
+    j = np.cumsum(np.flip(x))
+    k = np.interp(t, tp, fp)
+    m = close.resample("h").max()
+    n = close.resample("h").max().shift(1)
+    return a
+"""
+    by_rule: dict[str, list[int]] = {}
+    for f in lint_source(src)["findings"]:
+        by_rule.setdefault(f["rule"], []).append(f["line"])
+    assert by_rule["negative_shift"] == [8]
+    assert by_rule["centered_window"] == [9]
+    assert by_rule["full_sample_stat"] == [12, 13]
+    assert by_rule["group_aggregate"] == [14, 19]
+    assert by_rule["full_sample_rank"] == [16]
+    assert by_rule["reversed_cumulative"] == [17]
+    assert by_rule["interpolate"] == [18]

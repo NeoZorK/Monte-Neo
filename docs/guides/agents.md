@@ -79,7 +79,7 @@ For HTTP clients, add `--transport streamable-http`.
 ## GitHub Actions
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.30.0
+- uses: NeoZorK/Monte-Neo@v0.31.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py
