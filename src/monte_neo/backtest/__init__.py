@@ -20,6 +20,7 @@ from monte_neo.backtest.export import (
     research_manifest,
     verify_export_golden,
 )
+from monte_neo.backtest.export_signals import export_signals, normalize_positions
 from monte_neo.backtest.golden import (
     golden_fixture,
     verify_golden_vectors,
@@ -66,6 +67,7 @@ __all__ = [
     "assert_fee_hurts_return",
     "EXPORT_API_VERSION",
     "export_batch",
+    "export_signals",
     "export_single",
     "export_sma_signal",
     "export_sma_sweep",
@@ -81,4 +83,5 @@ __all__ = [
     "holdout_sma_sweep",
     "holdout_to_research_metrics",
     "split_bar_range",
+    "normalize_positions",
 ]

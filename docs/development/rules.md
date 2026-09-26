@@ -1,5 +1,11 @@
 # 📜 Monte-Neo Rules (v0.0.7)
 
+## Authorship (public repositories)
+
+- Every commit, PR, comment and release on public repositories is authored as **NeoZorK**
+  (`63606118+NeoZorK@users.noreply.github.com`).
+- No AI co-author trailers, session links or "Generated with" footers. See root `CLAUDE.md`.
+
 ## Coding Standards
 
 - **Files < 300 lines**: If a file grows larger, split it into sub-modules.

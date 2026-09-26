@@ -5,9 +5,9 @@
 </p>
 
 <p align="center">
-  <strong>Fast local research</strong> for trading strategies on Apple Silicon<br/>
-  Fee-aware next-bar economics · Monte Carlo · paper OMS<br/>
-  MIT · Python 3.11+ · Metal / MLX / Numba
+  <strong>Verify a trading strategy before you trust it.</strong><br/>
+  Look-ahead probes · fee-aware next-bar economics · Deflated Sharpe · MCP server for coding agents<br/>
+  MIT · Python 3.11+ · Numba (Metal / MLX optional)
 </p>
 
 <p align="center">
@@ -16,33 +16,73 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"/></a>
   <a href="https://github.com/NeoZorK/Monte-Neo/releases/latest"><img src="https://img.shields.io/github/v/release/NeoZorK/Monte-Neo?label=release" alt="Latest release"/></a>
   <img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+"/>
-  <img src="https://img.shields.io/badge/macOS-Apple%20Silicon-black.svg" alt="macOS Apple Silicon"/>
 </p>
 
-> Current: **v0.17.7** · [Docs site](https://neozork.github.io/Monte-Neo/) · [Changelog](docs/project/CHANGELOG.md) · [FAQ](docs/guides/FAQ.md)
+> Current: **v0.18.0** · [Docs site](https://neozork.github.io/Monte-Neo/) · [Verifier API](docs/api/verify.md) · [Agents](docs/guides/agents.md) · [Changelog](docs/project/CHANGELOG.md)
 
-## What this is (and is not)
+## What this is
 
-**Job:** on Apple Silicon macOS, build and verify trading-domain strategies **very quickly**
-with fee-aware next-bar economics you can re-check (export API + golden vectors).
+Coding agents can now turn a trading idea into a backtest in minutes. Those
+backtests often fail in the same ways:
 
-**Lanes:** research bar (primary speed path) · Monte Carlo research · paper OMS (validation).
+- they read future bars (look-ahead);
+- they ignore fees and slippage;
+- they report the best of hundreds of tried variants.
 
-**Not a goal:** replace full event-driven production / live-bot platforms. Research sweep
-throughput is not an OMS event-loop claim.
+**Monte-Neo is an independent verifier.** An agent, a CI job or a human calls it before
+claiming that a strategy works. It returns a verdict (`PASS`, `PASS_WITH_WARNINGS`,
+`NEEDS_MORE_EVIDENCE` or `REJECT`), the checks behind it, concrete `next_actions` and a
+reproducible `strategy-verdict/1` certificate.
+
+```text
+$ uv run python examples/verify_quickstart.py
+leaky: REJECT  certificate b4dfa9beee5515d2
+  lookahead_truncation     lookahead   fail  truncation probe: LEAK DETECTED
+  lookahead_perturbation   lookahead   fail  future-perturbation probe: LEAK DETECTED
+  lookahead_static_lint    lookahead   fail  static lint: negative_shift
+  implausible_accuracy     lookahead   fail  next-bar hit rate 1.000
+  net_profitability        economics   fail  net total return -41.26% after costs
+  deflated_sharpe          statistics  fail  deflated Sharpe 0.000 over 10 trial(s)
+  -> The signal at bar t changes when later bars are removed: compute features only from rows <= t ...
+causal: REJECT  certificate cc4c852ef6c99626
+  net_profitability        economics   fail  net total return -3.88% after costs
+  ...
+```
+
+Both strategies run on a synthetic random walk, so neither has a real edge. The leaky
+one is caught by all four look-ahead checks. The causal one is never accused of
+look-ahead: it is rejected only because it loses money after costs.
+
+| Check family | What it catches |
+|--------------|-----------------|
+| **Look-ahead** | Truncation and future-perturbation probes, AST lint (`shift(-k)`, `center=True`, `bfill`), implausible hit rate |
+| **Economics** | Losses after fees and slippage, thin break-even cost, edge that disappears with one bar of delay |
+| **Statistics** | Deflated Sharpe priced by `n_trials`, sample size, holdout consistency |
+| **Integrity** | Broken OHLCV, non-deterministic signals |
+
+**Works where agents work:**
+
+- MCP server `monte-neo-mcp`, for Claude Code (plugin), Codex, Gemini CLI, Cursor or any MCP client;
+- CLI with CI exit codes;
+- GitHub Action;
+- Python API.
+
+See [Use from agents](docs/guides/agents.md).
+
+**Not a goal:** replace live-trading platforms. The verifier checks backtest methodology,
+not future profit. It is not investment advice.
 
 ## Why Monte-Neo
 
 | Advantage | What you get |
 |-----------|----------------|
-| Local Apple Silicon speed | Metal economics + Numba (MLX optional for signals) |
-| Fee-aware research bar | Next-bar fills, costs (bps), SL/TP/trail, funding, sessions |
-| Honest export API | `export_single` / `export_batch` / `export_sma_sweep` + golden vectors |
-| 16GB-class memory planner | `plan_research_bytes` + **no-hang** Metal size gate → `cpu_numba` fallback |
-| Local research triage | `HeuristicPolicy` after export → next action / promote / MC |
-| Holdout check | `holdout_sma_sweep` train→holdout gap (anti-overfit, no ML) |
-| Clear non-goals | macOS research tool first; paper OMS is a separate lane |
-| MIT | Use, fork, and ship without drama |
+| Deterministic verdicts | Same data, code and `n_trials` give the same `certificate_id` |
+| Trap Suite | `tests/traps`: known ways backtests lie, each with its expected verdict |
+| Fee-aware research bar | Next-bar fills, costs in bps, SL/TP/trail, funding, sessions |
+| Honest export API | `export_signals` / `export_single` / `export_batch` / `export_sma_sweep` + golden vectors |
+| Anti-overfit research | Holdout, walk-forward, CSCV/PBO, Monte Carlo helpers, `HeuristicPolicy` triage |
+| Local and private | Runs on your machine; no data leaves it |
+| MIT | Use, fork and ship without drama |
 
 ## Install
 
@@ -50,6 +90,7 @@ throughput is not an OMS event-loop claim.
 
 ```bash
 pip install monte-neo                 # research-core (slim)
+pip install "monte-neo[mcp]"          # MCP server for coding agents (monte-neo-mcp)
 pip install "monte-neo[apple]"        # Metal / MLX (Apple Silicon)
 pip install "monte-neo[plot]"         # charts
 pip install "monte-neo[data]"         # Binance downloader / websocket
@@ -73,10 +114,22 @@ uv sync --extra apple --extra plot --extra data --group dev
 
 See [PACKAGING.md](docs/project/PACKAGING.md) · [Export API](docs/api/export.md) · [Policy triage](docs/api/policy.md).
 
-**Requirements:** Python **3.11+**. Best experience on **Apple Silicon** macOS. Numba CPU
-paths work more broadly; Metal/MLX are the `[apple]` extra.
+**Requirements:** Python **3.11+** on macOS or Linux. The verifier and research bar run on
+Numba CPU. Metal and MLX are optional (`[apple]` extra).
 
-## Quick start
+## Quick start: verify a strategy
+
+```python
+from monte_neo.verify import verify_strategy
+
+report = verify_strategy("btc_1h.csv", strategy="my_strategy.py", n_trials=12)
+print(report["verdict"], report["certificate_id"], report["next_actions"])
+```
+
+`my_strategy.py` defines `signal(df)`, which returns one position per bar: `+1` long,
+`0` flat, `-1` short. Details: [Verifier API](docs/api/verify.md).
+
+## Quick start: research engine
 
 ```bash
 uv sync --extra apple --extra plot --extra data --group dev
@@ -150,6 +203,8 @@ jobs demote to Numba instead of hanging (v0.14.1+).
 
 | Area | Status |
 |------|--------|
+| Strategy verifier + MCP server | `monte_neo.verify` / `monte-neo verify` / `monte-neo-mcp` |
+| Agent integrations | `integrations/` (Claude Code plugin, Codex, Gemini, Cursor) + `action.yml` |
 | MC indicator / robustness workflows | Available via CLI and library |
 | Fee-aware research bar engine | `monte_neo.backtest` |
 | Research export + golden vectors | `export_*` / `verify_golden_vectors` |
@@ -163,6 +218,8 @@ jobs demote to Numba instead of hanging (v0.14.1+).
 ```
 Monte-Neo/
 ├── src/monte_neo/
+│   ├── verify/        # Strategy verifier (look-ahead, costs, Deflated Sharpe)
+│   ├── mcp/           # MCP server for coding agents
 │   ├── backtest/      # Research bar engine + export
 │   ├── oms/           # Paper OMS + accel
 │   ├── core/          # Generator / Metal bridges
@@ -171,7 +228,8 @@ Monte-Neo/
 │   ├── metrics/       # Trading metrics
 │   ├── cli/           # Interactive CLI
 │   └── visualization/
-├── tests/
+├── integrations/      # Claude Code plugin, Codex / Gemini / Cursor configs
+├── tests/             # unit, integration, traps (verifier Trap Suite)
 ├── docs/
 └── docker/
 ```

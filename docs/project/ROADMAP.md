@@ -1,4 +1,24 @@
-# Monte-Neo Roadmap (v0.17.7)
+# Monte-Neo Roadmap (v0.18.0)
+
+Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier for agent-built strategies).
+
+## v0.18.0 — verifier core + agent distribution
+- [x] `export_signals()` — bring-your-own positions
+- [x] Look-ahead probes (truncation, perturbation, determinism) + AST lint + implausible accuracy
+- [x] Deflated Sharpe / PSR with `n_trials`; break-even cost; delay scan; holdout consistency
+- [x] `verify_strategy()` → `strategy-verdict/1`; CLI `monte-neo verify`
+- [x] Trap Suite v1 (`tests/traps`)
+- [x] MCP server `monte-neo-mcp` + Claude Code plugin / Codex / Gemini / Cursor configs
+- [x] GitHub Action (`action.yml`)
+
+## Next (v0.19+)
+- [ ] Trap Suite → 50+ traps (resample/timezone leakage, survivorship, fee-free fills, target leakage in ML features)
+- [ ] Walk-forward re-verification for parameterized strategies (`n_trials` from grid size)
+- [ ] Optional Claude Code hook: remind to verify when a backtest changes without a fresh certificate
+- [ ] Publish to MCP registries (official registry, glama, smithery, mcpmarket)
+- [ ] Agent Backtest Honesty Bench (same tasks → several agents → verifier → public leaderboard)
+- [ ] Signed certificates + public verification page
+- [ ] Freeze / trim side lanes (indicator generator, MLX 3D engine, root scripts)
 
 ## v0.17.7
 - [x] Pages homepage: `docs/index.md` at site root; `docs/docs-map.md` replaces `INDEX.md`

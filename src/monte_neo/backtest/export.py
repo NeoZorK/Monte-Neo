@@ -47,6 +47,7 @@ def research_manifest() -> dict[str, Any]:
         "required_work_keys": list(REQUIRED_WORK_KEYS),
         "entrypoints": [
             "export_single",
+            "export_signals",
             "export_batch",
             "export_sma_sweep",
             "verify_export_golden",

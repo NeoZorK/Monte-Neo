@@ -116,6 +116,9 @@ dev = [
     "binance-connector>=3.12.0",
     "scipy>=1.11",
 ]
+mcp = [
+    "mcp>=1.10",
+]
 
 [project.urls]
 Homepage = "https://github.com/NeoZorK/Monte-Neo"
@@ -142,6 +145,8 @@ dev = [
 
 [project.scripts]
 monte-neo = "monte_neo.cli.app:main"
+monte-neo-verify = "monte_neo.cli.verify_cmd:main"
+monte-neo-mcp = "monte_neo.mcp.server:main"
 
 [tool.hatch.version]
 path = "src/monte_neo/_version.py"

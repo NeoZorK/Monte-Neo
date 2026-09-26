@@ -1,0 +1,56 @@
+name: Verify action self-test
+
+on:
+  pull_request:
+    paths:
+      - "action.yml"
+      - "src/monte_neo/verify/**"
+      - "src/monte_neo/cli/verify_cmd.py"
+      - "tests/traps/**"
+      - ".github/workflows/verify-action.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  self-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build sample OHLCV
+        run: |
+          python -m pip install --quiet numpy pandas
+          python - <<'PY'
+          import numpy as np, pandas as pd
+          rng = np.random.default_rng(1)
+          close = 100 * np.exp(np.cumsum(rng.normal(0, 0.001, 3000)))
+          open_ = np.roll(close, 1); open_[0] = close[0]
+          pd.DataFrame({
+              "timestamp": pd.date_range("2024-01-01", periods=3000, freq="min", tz="UTC"),
+              "open": open_, "high": np.maximum(open_, close) * 1.0005,
+              "low": np.minimum(open_, close) * 0.9995, "close": close,
+          }).to_csv("sample.csv", index=False)
+          PY
+
+      - name: Leaky strategy must be rejected
+        id: leaky
+        continue-on-error: true
+        uses: ./
+        with:
+          ohlcv: sample.csv
+          strategy: tests/traps/strategies/lookahead_shift.py
+
+      - name: Assert rejection
+        env:
+          OUTCOME: ${{ steps.leaky.outcome }}
+          VERDICT: ${{ steps.leaky.outputs.verdict }}
+        run: |
+          echo "outcome=$OUTCOME verdict=$VERDICT"
+          test "$OUTCOME" = "failure"
+          test "$VERDICT" = "REJECT"

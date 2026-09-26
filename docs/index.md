@@ -5,8 +5,8 @@
 </p>
 
 <p class="mn-tagline" markdown="1">
-**Fast local research** for trading strategies on Apple Silicon  
-Fee-aware next-bar economics · Monte Carlo · paper OMS
+**Verify a trading strategy before you trust it**  
+Look-ahead probes · fee-aware next-bar economics · Deflated Sharpe · MCP for coding agents
 </p>
 
 <p class="mn-badges" markdown="1">
@@ -25,6 +25,18 @@ Fee-aware next-bar economics · Monte Carlo · paper OMS
     ```
 
     Or isolated CLI: `brew install pipx && pipx install "monte-neo[apple]"`
+
+## Strategy verifier
+
+```bash
+pip install "monte-neo[mcp]"
+monte-neo verify --ohlcv data.csv --strategy my_strategy.py --n-trials 12
+```
+
+`monte-neo verify` returns `PASS`, `PASS_WITH_WARNINGS`, `NEEDS_MORE_EVIDENCE` or `REJECT`.
+It also returns a reproducible `strategy-verdict/1` certificate. Coding agents call it
+through the `monte-neo-mcp` server; see [Use from agents](guides/agents.md) and
+[Verifier API](api/verify.md).
 
 ## What it is
 

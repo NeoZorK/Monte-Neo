@@ -1,5 +1,5 @@
 site_name: Monte-Neo
-site_description: Fast local research for trading strategies on Apple Silicon
+site_description: Verify trading strategies before you trust them — look-ahead, costs, Deflated Sharpe, MCP for coding agents
 site_url: https://neozork.github.io/Monte-Neo/
 repo_url: https://github.com/NeoZorK/Monte-Neo
 repo_name: NeoZorK/Monte-Neo
@@ -71,10 +71,12 @@ nav:
   - Get started:
       - Install: setup/installation.md
       - Quick start: guides/quick-start.md
+      - Use from agents: guides/agents.md
       - FAQ: guides/FAQ.md
       - Performance: development/performance.md
       - Contributing: development/contributing.md
   - API:
+      - Strategy verifier: api/verify.md
       - Research export: api/export.md
       - Research policy: api/policy.md
       - Holdout: api/holdout.md
