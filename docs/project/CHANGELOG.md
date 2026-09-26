@@ -3,6 +3,28 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.31.0] — 2026-09-26
+
+### Added
+- **Trap Suite reaches 50 traps** (18 honest controls): `describe_threshold`, `nlargest_dates`,
+  `agg_zscore`, `flip_cumsum`, `resample_ffill_max`, `np_interp_fill`, `mode_level`,
+  `value_counts_level`, `centered_variable`, `shift_variable`; honest controls `rolling_apply_span`,
+  `hour_open_ref`, `expanding_max_breakout`
+- Lint:
+  - constant propagation: a name assigned a constant exactly once (`horizon = -1`, `centred = True`)
+    is checked as that constant, so a negative shift or `center=True` hidden in a variable is caught;
+    names that are reassigned or are function parameters are left alone;
+  - `describe()`, `agg()`, `mode()`, `value_counts()` over the whole series (`full_sample_stat`, warn) and
+    `nlargest()` / `nsmallest()` (`full_sample_rank`, warn), also on derived series such as
+    `close.round(-1).mode()`;
+  - `np.flip` counts as a reversal for `reversed_cumulative`;
+  - `resample(...).max()` and other resample / groupby aggregates, including `agg`, without a shift
+    are `group_aggregate` (warn);
+  - `np.interp` is reported as `interpolate` (fail).
+
+### Notes
+- No breaking API change vs 0.30.0.
+
 ## [v0.30.0] — 2026-09-26
 
 ### Added

@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import ast
+import copy
 from typing import Any
 
 _BFILL_METHODS = {"bfill", "backfill"}
 _FIT_METHODS = {"fit", "fit_transform", "polyfit"}
-_GROUP_AGGS = {"last", "max", "min", "mean", "sum", "std", "median", "size", "count", "nunique"}
+_GROUP_AGGS = {"last", "max", "min", "mean", "sum", "std", "median", "size", "count", "nunique", "agg", "aggregate"}
 _CUM_METHODS = {"cummax", "cummin", "cumsum", "cumprod", "accumulate"}
 _FORWARD_REINDEX = {"bfill", "backfill", "nearest"}
 _WINDOW_METHODS = {"rolling", "expanding", "ewm"}
@@ -24,6 +25,10 @@ _TRANSFORMS = {"fft", "rfft", "fftn", "rfftn", "dct", "hilbert", "detrend"}
 _FULL_RANKS = {"qcut", "argsort"}
 _BUILTIN_STATS = {"max", "min", "sum", "sorted"}
 _FORWARD_INDEXER = "FixedForwardWindowIndexer"
+# Whole-series methods reported even when called on a derived series (e.g. close.round(-1).mode()).
+_WHOLE_STATS = {"describe", "agg", "aggregate", "mode", "value_counts"}
+_WHOLE_RANKS = {"nlargest", "nsmallest"}
+_CHAIN_BREAKERS = _WINDOW_METHODS | {"groupby", "resample"}
 _CONVOLVE = {"convolve", "correlate"}
 
 
@@ -44,7 +49,15 @@ def _kw(call: ast.Call, name: str) -> ast.AST | None:
 
 
 def _is_reversed(node: ast.AST) -> bool:
-    """True for ``x[::-1]`` (a full reverse slice)."""
+    """True for ``x[::-1]`` (a full reverse slice) and ``np.flip(x)``."""
+    if (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "flip"
+        and isinstance(node.func.value, ast.Name)
+        and node.func.value.id in ("np", "numpy")
+    ):
+        return True
     if not isinstance(node, ast.Subscript) or not isinstance(node.slice, ast.Slice):
         return False
     sl = node.slice
@@ -52,15 +65,54 @@ def _is_reversed(node: ast.AST) -> bool:
 
 
 def _on_groupby(node: ast.AST) -> bool:
-    """True when ``node`` is a chain that starts from a ``.groupby(...)`` call."""
+    """True when ``node`` is a chain that starts from a ``.groupby(...)`` or ``.resample(...)`` call."""
     while isinstance(node, ast.Attribute | ast.Subscript | ast.Call):
         if isinstance(node, ast.Call):
-            if isinstance(node.func, ast.Attribute) and node.func.attr == "groupby":
+            if isinstance(node.func, ast.Attribute) and node.func.attr in ("groupby", "resample"):
                 return True
             node = node.func
         else:
             node = node.value
     return False
+
+
+def _is_series_chain(node: ast.AST) -> bool:
+    """A column or a chain of element-wise calls on it, with no window / groupby / resample step."""
+    while isinstance(node, ast.Attribute | ast.Subscript | ast.Call):
+        if isinstance(node, ast.Call):
+            if isinstance(node.func, ast.Attribute) and node.func.attr in _CHAIN_BREAKERS:
+                return False
+            node = node.func
+        else:
+            node = node.value
+    return isinstance(node, ast.Name) and node.id not in _MODULES
+
+
+class _InlineConstants(ast.NodeTransformer):
+    """Replace names assigned a constant exactly once (``horizon = -1``) by that constant."""
+
+    def __init__(self, tree: ast.AST) -> None:
+        stores: dict[str, int] = {}
+        values: dict[str, ast.AST] = {}
+        params: set[str] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
+                stores[node.id] = stores.get(node.id, 0) + 1
+            elif isinstance(node, ast.arg):
+                params.add(node.arg)
+            if (
+                isinstance(node, ast.Assign)
+                and len(node.targets) == 1
+                and isinstance(node.targets[0], ast.Name)
+                and (isinstance(node.value, ast.Constant) or _const_number(node.value) is not None)
+            ):
+                values[node.targets[0].id] = node.value
+        self.consts = {k: v for k, v in values.items() if stores.get(k) == 1 and k not in params}
+
+    def visit_Name(self, node: ast.Name) -> Any:
+        if isinstance(node.ctx, ast.Load) and node.id in self.consts:
+            return ast.copy_location(copy.deepcopy(self.consts[node.id]), node)
+        return node
 
 
 def _is_true(node: ast.AST | None) -> bool:
@@ -161,6 +213,12 @@ class _Visitor(ast.NodeVisitor):
                 self._add(node, "full_sample_rank", "warn", "np.sort over the whole array orders bars by future values too")
             elif attr == "cut" and isinstance(node.args[1] if len(node.args) > 1 else _kw(node, "bins"), ast.Constant):
                 self._add(node, "full_sample_rank", "warn", "pd.cut with a bin count takes edges from the whole-series min and max")
+            elif attr == "interp" and isinstance(node.func.value, ast.Name) and node.func.value.id in ("np", "numpy"):
+                self._add(node, "interpolate", "fail", "np.interp draws a line to the next known point (future) across gaps")
+            elif attr in _WHOLE_RANKS and _is_series_chain(node.func.value):
+                self._add(node, "full_sample_rank", "warn", f"{attr} over the whole series picks bars by future values too")
+            elif attr in _WHOLE_STATS and _is_series_chain(node.func.value):
+                self._add(node, "full_sample_stat", "warn", f"{attr}() over the whole series includes future bars")
             elif attr in _FULL_RANKS:
                 self._add(node, "full_sample_rank", "warn", f"{attr} ranks bars against the whole sample, future included")
             elif attr in _FIT_METHODS:
@@ -218,7 +276,7 @@ def lint_source(source: str) -> dict[str, Any]:
     except SyntaxError as exc:
         return {"status": "skip", "findings": [], "error": f"syntax error: {exc.msg} (line {exc.lineno})"}
     visitor = _Visitor(source.splitlines())
-    visitor.visit(tree)
+    visitor.visit(_InlineConstants(tree).visit(tree))
     severities = {f["severity"] for f in visitor.findings}
     status = "fail" if "fail" in severities else ("warn" if severities else "pass")
     return {"status": status, "findings": visitor.findings}
