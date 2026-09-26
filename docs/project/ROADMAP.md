@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.31.0)
+# Monte-Neo Roadmap (v0.32.0)
 
 Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier for agent-built strategies).
 
@@ -67,8 +67,11 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 ## v0.31.0 — 50 traps
 - [x] Trap Suite: 50 traps + 18 honest controls; lint constant propagation, whole-series methods, np.flip / np.interp, resample aggregates
 
-## Next (v0.32+)
-- [ ] First public bench run: same tasks → Claude Code / Codex / Gemini / Cursor → published leaderboard
+## v0.32.0 — public bench run tooling
+- [x] `bench prepare` / `bench collect` (aliased clean workspaces) + headless runner with transcripts
+
+## Next (v0.33+)
+- [ ] First public bench run (owner runs it; tooling ready in v0.32.0): Claude Code / Codex / Gemini CLI / Cursor → published leaderboard
 - [ ] Trap Suite beyond 50: multi-asset input (universe) for survivorship and cross-asset join traps
 - [~] Publish to MCP catalogues: official registry (done), glama / smithery / mcp.so / mcpmarket (owner submits; texts in docs/marketing/launch-kit.md)
 - [x] Signed certificates (v0.25.0), signing in the GitHub Action (v0.27.0), public verification page (v0.29.0)

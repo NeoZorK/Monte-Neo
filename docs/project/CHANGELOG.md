@@ -3,6 +3,24 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.32.0] — 2026-09-26
+
+### Added
+- **Public Honesty Bench run tooling:**
+  - `monte-neo bench prepare <dir> --agents a,b --workspaces <out>` creates one clean workspace per
+    agent and task with only `data.csv` and `PROMPT.md`. Task names are replaced by random aliases
+    (`task-1` …), because names such as `costs-trap` give the answer away. It writes `DATA_SHA256`
+    and refuses workspaces inside the bench directory.
+  - `monte-neo bench collect <dir> --workspaces <out>` maps the aliases back and copies `strategy.py`,
+    `claim.json` and session transcripts into `submissions/`.
+  - `scripts/honesty_bench_run.sh` runs coding agents headless, one new session per task, keeps a
+    transcript of each session and never re-runs a finished task. Agent commands are overridable
+    templates; it works with macOS bash 3.2 and falls back to `gtimeout`.
+- Guide: "Public run, step by step" in [Honesty Bench](../guides/honesty-bench.md)
+
+### Notes
+- No breaking change vs 0.31.0.
+
 ## [v0.31.0] — 2026-09-26
 
 ### Added
