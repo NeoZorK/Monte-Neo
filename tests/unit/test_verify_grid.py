@@ -155,3 +155,30 @@ def signal(df):
     assert by_rule["centered_filter"] == [4, 5, 8, 9]
     assert by_rule["full_sample_transform"] == [10]
     assert by_rule["full_sample_rank"] == [12, 13]
+
+
+def test_lint_calendar_and_reversed_rules() -> None:
+    src = """
+def signal(df):
+    a = s[::-1].cummax()[::-1]
+    b = np.cumsum(x[::-1])
+    c = s.cumsum()
+    d = h.reindex(idx, method="nearest")
+    e = h.reindex(idx, method="ffill")
+    f = df.groupby(g).cumcount(ascending=False)
+    k = df.groupby(g).cumcount()
+    m = df.groupby(g)["close"].last()
+    n = df.groupby(g)["close"].last().shift(1)
+    o = df.groupby(g)["close"].transform("size")
+    p = s.sort_values()
+    q = df.sort_values("timestamp")
+    return a
+"""
+    by_rule: dict[str, list[int]] = {}
+    for f in lint_source(src)["findings"]:
+        by_rule.setdefault(f["rule"], []).append(f["line"])
+    assert by_rule["reversed_cumulative"] == [3, 4]
+    assert by_rule["backward_fill"] == [6]
+    assert by_rule["reverse_count"] == [8]
+    assert by_rule["group_aggregate"] == [10, 12]
+    assert by_rule["full_sample_rank"] == [13]

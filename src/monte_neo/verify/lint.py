@@ -7,7 +7,9 @@ from typing import Any
 
 _BFILL_METHODS = {"bfill", "backfill"}
 _FIT_METHODS = {"fit", "fit_transform", "polyfit"}
-_GROUP_AGGS = {"last", "max", "min", "mean", "sum", "std", "median"}
+_GROUP_AGGS = {"last", "max", "min", "mean", "sum", "std", "median", "size", "count", "nunique"}
+_CUM_METHODS = {"cummax", "cummin", "cumsum", "cumprod"}
+_FORWARD_REINDEX = {"bfill", "backfill", "nearest"}
 _WINDOW_METHODS = {"rolling", "expanding", "ewm"}
 _STAT_METHODS = {"mean", "std", "var", "min", "max", "median", "quantile", "sum", "idxmax", "idxmin", "argmax", "argmin"}
 _NUMPY_STATS = {"mean", "std", "var", "min", "max", "median", "percentile", "quantile", "sum", "argmax", "argmin", "nanmean", "nanstd"}
@@ -47,8 +49,24 @@ def _is_reversed(node: ast.AST) -> bool:
     return sl.lower is None and sl.upper is None and _const_number(sl.step) == -1.0
 
 
+def _on_groupby(node: ast.AST) -> bool:
+    """True when ``node`` is a chain that starts from a ``.groupby(...)`` call."""
+    while isinstance(node, ast.Attribute | ast.Subscript | ast.Call):
+        if isinstance(node, ast.Call):
+            if isinstance(node.func, ast.Attribute) and node.func.attr == "groupby":
+                return True
+            node = node.func
+        else:
+            node = node.value
+    return False
+
+
 def _is_true(node: ast.AST | None) -> bool:
     return isinstance(node, ast.Constant) and node.value is True
+
+
+def _is_false(node: ast.AST | None) -> bool:
+    return isinstance(node, ast.Constant) and node.value is False
 
 
 def _is_str(node: ast.AST | None, values: set[str]) -> bool:
@@ -59,6 +77,8 @@ class _Visitor(ast.NodeVisitor):
     def __init__(self, lines: list[str]) -> None:
         self.lines = lines
         self.findings: list[dict[str, Any]] = []
+        # Group aggregates followed by a positive shift use completed groups only.
+        self._shifted_aggs: set[int] = set()
 
     def _add(self, node: ast.AST, rule: str, severity: str, message: str) -> None:
         line = int(getattr(node, "lineno", 0))
@@ -94,6 +114,8 @@ class _Visitor(ast.NodeVisitor):
             if attr == "shift":
                 if self._negative_arg(node, 0, "periods"):
                     self._add(node, "negative_shift", "fail", "shift with a negative period reads future bars")
+                elif isinstance(node.func.value, ast.Call):
+                    self._shifted_aggs.add(id(node.func.value))
             elif attr in _PERIOD_METHODS:
                 if self._negative_arg(node, 0, "periods"):
                     self._add(node, "negative_period", "fail", f"{attr} with a negative period compares with future bars")
@@ -116,6 +138,19 @@ class _Visitor(ast.NodeVisitor):
                 self._add(node, "centered_filter", "fail", f"{attr} is centred or zero-phase: each output depends on later bars")
             elif attr in _TRANSFORMS:
                 self._add(node, "full_sample_transform", "warn", f"{attr} over the whole series mixes every bar with future bars")
+            elif attr == "reindex" and _is_str(_kw(node, "method"), _FORWARD_REINDEX):
+                self._add(node, "backward_fill", "fail", "reindex with method bfill/nearest takes values from later rows")
+            elif attr == "cumcount" and _is_false(_kw(node, "ascending")):
+                self._add(node, "reverse_count", "fail", "cumcount(ascending=False) counts the rows still to come")
+            elif attr in _CUM_METHODS and (
+                _is_reversed(node.func.value) or (node.args and _is_reversed(node.args[0]))
+            ):
+                self._add(node, "reversed_cumulative", "fail", f"{attr} over a reversed series accumulates future values")
+            elif attr in _GROUP_AGGS and _on_groupby(node.func.value):
+                if id(node) not in self._shifted_aggs:
+                    self._add(node, "group_aggregate", "warn", f"groupby().{attr}() includes later rows of each group; shift(1) to use completed groups")
+            elif attr == "sort_values" and not node.args and _kw(node, "by") is None:
+                self._add(node, "full_sample_rank", "warn", "sort_values over the whole series orders bars by future values too")
             elif attr in _FULL_RANKS:
                 self._add(node, "full_sample_rank", "warn", f"{attr} ranks bars against the whole sample, future included")
             elif attr in _FIT_METHODS:
