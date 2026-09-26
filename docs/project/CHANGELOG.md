@@ -3,6 +3,26 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.24.0] — 2026-09-26
+
+### Added
+- Trap Suite: signal-processing leaks `gradient_leak`, `convolve_same`, `fft_denoise`, whole-sample ranks
+  `qcut_full`, `argsort_rank`, plus the honest controls `ewm_cross`, `convolve_causal` and
+  `rolling_quantile_band` (25 traps, 9 honest controls)
+- Lint rules: `central_difference` (`np.gradient`, fail), `centered_filter` (`convolve` / `correlate` with
+  `mode="same"`, `filtfilt`, `sosfiltfilt`, `savgol_filter`, `gaussian_filter1d`, `uniform_filter1d`,
+  `medfilt`, fail), `full_sample_transform` (`fft`, `rfft`, `dct`, `hilbert`, `detrend`, warn); `qcut` and
+  `argsort` added to `full_sample_rank`
+- Guide: [Trap Suite](../guides/trap-suite.md), with the catalogue and how to contribute a trap; a
+  "Trap submission" issue form; a test keeps the catalogue in sync with `tests/traps/strategies/`
+
+### Changed
+- Lint reports one finding per rule and line (nested calls such as `argsort(argsort(x))` no longer
+  produce duplicates)
+
+### Notes
+- No breaking API change vs 0.23.0.
+
 ## [v0.23.0] — 2026-09-26
 
 ### Added

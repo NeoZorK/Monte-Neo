@@ -1,0 +1,35 @@
+name: Trap submission
+description: A way a backtest (or an agent) fooled itself that the verifier should catch
+labels: ["trap"]
+body:
+  - type: textarea
+    id: story
+    attributes:
+      label: How it lies
+      description: One or two sentences. What looks like an edge, and where does the future (or the cost) leak in?
+    validations:
+      required: true
+  - type: textarea
+    id: code
+    attributes:
+      label: Minimal strategy
+      description: The smallest `signal(df)` that reproduces it. pandas and numpy only.
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: verdict
+    attributes:
+      label: What monte-neo returns today
+      description: Output of `monte-neo verify --ohlcv <data> --strategy <file>` (verdict and failing checks), and the version.
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options:
+        - Trap (should be rejected)
+        - Honest control (wrongly accused today)
+    validations:
+      required: true

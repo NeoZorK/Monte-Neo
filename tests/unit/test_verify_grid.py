@@ -130,3 +130,28 @@ def signal(df):
         by_rule.setdefault(f["rule"], []).append(f["line"])
     assert by_rule["last_row"] == [3, 4, 5]
     assert by_rule["full_sample_stat"] == [8, 9, 11]
+
+
+def test_lint_signal_processing_rules() -> None:
+    src = """
+def signal(df):
+    a = np.gradient(close)
+    b = np.convolve(close, k, mode="same")
+    c = np.convolve(close, k, "same")
+    d = np.convolve(close, k, mode="full")
+    e = np.correlate(close, k)
+    f = signal.filtfilt(b, a, close)
+    g = savgol_filter(close, 11, 2) + scipy.signal.savgol_filter(close, 11, 2)
+    h = np.fft.rfft(close)
+    i = np.fft.irfft(h)
+    j = pd.qcut(ret, 5, labels=False)
+    k = np.argsort(np.argsort(close))
+    return a
+"""
+    by_rule: dict[str, list[int]] = {}
+    for f in lint_source(src)["findings"]:
+        by_rule.setdefault(f["rule"], []).append(f["line"])
+    assert by_rule["central_difference"] == [3]
+    assert by_rule["centered_filter"] == [4, 5, 8, 9]
+    assert by_rule["full_sample_transform"] == [10]
+    assert by_rule["full_sample_rank"] == [12, 13]
