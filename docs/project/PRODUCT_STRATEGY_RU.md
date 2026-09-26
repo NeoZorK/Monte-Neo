@@ -173,7 +173,7 @@ MCP-инструменты (минимальный набор, не 30 штук 
 - [x] Look-ahead probes (truncation, perturbation, delay scan) + AST-lint
 - [x] Deflated Sharpe / PSR с обязательным `n_trials`; break-even cost
 - [x] `verify()` → `strategy-verdict/1` (JSON-schema в `docs/api/`)
-- [~] Trap Suite v1: 30–50 плохих стратегий с golden-вердиктами в `tests/traps/` (v0.20.0: 11 ловушек + 3 честных контроля + 2 grid-стратегии + data snooping)
+- [~] Trap Suite v1: 30–50 плохих стратегий с golden-вердиктами в `tests/traps/` (v0.22.0: 17 ловушек + 5 честных контролей + 2 grid-стратегии + data snooping)
 - [x] CLI `monte-neo verify --ohlcv … --signals …`
 
 ### Фаза 2 — дистрибуция в агентах (2–3 недели) · v0.21
@@ -183,7 +183,7 @@ MCP-инструменты (минимальный набор, не 30 штук 
 - [ ] Регистрация в MCP-каталогах (официальный registry, glama, mcpmarket, smithery)
 
 ### Фаза 3 — ров (moat) (постоянно)
-- [~] **Agent Backtest Honesty Bench** (инструмент готов в v0.21.0: `monte-neo bench`; первый публичный прогон — следующий шаг): даём 5 агентам одинаковые задачи «сделай прибыльную стратегию»,
+- [~] **Agent Backtest Honesty Bench** (инструмент готов в v0.21.0, набор задач v1 с ключом ответов — v0.22.0: `monte-neo bench init`; первый публичный прогон — следующий шаг): даём 5 агентам одинаковые задачи «сделай прибыльную стратегию»,
       прогоняем через верификатор, публикуем лидерборд (ежемесячно)
 - [~] Воспроизводимые сертификаты: `monte-neo verify --recheck` (v0.20.0); подпись и публичная страница проверки — позже
 - [ ] Label-цикл: сертификат → paper OMS через N недель → метка → LocalScorer B

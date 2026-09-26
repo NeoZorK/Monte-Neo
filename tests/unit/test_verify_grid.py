@@ -82,3 +82,28 @@ def signal(df, np=None):
     assert by_rule["full_sample_stat"] == [8, 12]
     assert by_rule["full_sample_fit"] == [13]
     assert res["status"] == "fail"
+
+
+def test_lint_negative_periods_roll_asof_interpolate() -> None:
+    src = """
+def signal(df):
+    a = df.close.diff(-1)
+    b = df.close.pct_change(periods=-2)
+    c = df.close.diff(1)
+    d = np.roll(x, -1)
+    e = np.roll(x, 1)
+    f = pd.merge_asof(a, b, on="t", direction="forward")
+    g = pd.merge_asof(a, b, on="t")
+    h = s.interpolate()
+    i = s.interpolate(method="ffill")
+    j = df.volume.sum()
+    return a
+"""
+    by_rule: dict[str, list[int]] = {}
+    for f in lint_source(src)["findings"]:
+        by_rule.setdefault(f["rule"], []).append(f["line"])
+    assert by_rule["negative_period"] == [3, 4]
+    assert by_rule["negative_roll"] == [6]
+    assert by_rule["forward_asof"] == [8]
+    assert by_rule["interpolate"] == [10]
+    assert by_rule["full_sample_stat"] == [12]

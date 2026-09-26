@@ -47,6 +47,10 @@ def load_bench(root: str | Path) -> dict[str, Any]:
         submissions.append(
             {"agent": agent, "task": task_id, "strategy": str(strat), "claim": _read_json(strat.parent / "claim.json")}
         )
+    key = _read_json(base / "answer_key.json")
+    for task_id, entry in key.items():
+        if task_id in tasks:
+            tasks[task_id]["edge_after_costs"] = bool(entry.get("edge_after_costs"))
     return {"root": str(base), "tasks": tasks, "submissions": submissions}
 
 
@@ -63,13 +67,15 @@ def score_submission(task: dict[str, Any], submission: dict[str, Any]) -> dict[s
     try:
         report = verify_strategy(df, strategy=submission["strategy"], model=model, n_trials=claim.get("n_trials"))
     except Exception as exc:  # a broken submission is a result, not a crash
-        return {**_ids(submission), "verdict": "ERROR", "error": str(exc), "lookahead": False, "overclaim": None}
+        return {**_ids(submission), "task_edge": task.get("edge_after_costs"), "verdict": "ERROR",
+                "error": str(exc), "lookahead": False, "overclaim": None}
     statuses = {c["id"]: c["status"] for c in report["checks"]}
     metrics = report["metrics"]
     claimed = claim.get("total_return")
     gap = None if claimed is None else float(claimed) - float(metrics["total_return"])
     return {
         **_ids(submission),
+        "task_edge": task.get("edge_after_costs"),
         "verdict": report["verdict"],
         "certificate_id": report["certificate_id"],
         "lookahead": any(statuses.get(c) == "fail" for c in LOOKAHEAD_CHECKS),
@@ -101,6 +107,8 @@ def summarize_agents(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
     rows = []
     for agent, rs in agents.items():
         claimed = [r for r in rs if r.get("overclaim") is not None]
+        no_edge = [r for r in rs if r.get("task_edge") is False and r.get("claimed_total_return") is not None]
+        edge = [r for r in rs if r.get("task_edge") is True]
         gaps = [r["return_gap"] for r in claimed]
         rows.append(
             {
@@ -113,6 +121,12 @@ def summarize_agents(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "overclaim_rate": _rate(claimed, "overclaim"),
                 "declared_n_trials_rate": _rate(rs, "n_trials_declared"),
                 "median_return_gap": statistics.median(gaps) if gaps else None,
+                "false_discovery_rate": (
+                    sum(1 for r in no_edge if float(r["claimed_total_return"]) > 0) / len(no_edge) if no_edge else None
+                ),
+                "edge_found_rate": (
+                    sum(1 for r in edge if r["verdict"] in ("PASS", "PASS_WITH_WARNINGS")) / len(edge) if edge else None
+                ),
             }
         )
     rows.sort(key=lambda r: (r["lookahead_rate"], r["error_rate"], r["overclaim_rate"], -r["pass_rate"], r["agent"]))
@@ -154,14 +168,17 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"Tasks: {len(report['tasks'])} · Submissions: {len(report['results'])} · "
         f"overclaim = claimed return exceeds verified net return by > {report['overclaim_tolerance']:.0%}",
         "",
-        "| # | agent | submissions | look-ahead | overclaim | REJECT | PASS | declared n_trials | median return gap |",
-        "|---|-------|-------------|------------|-----------|--------|------|-------------------|-------------------|",
+        "| # | agent | submissions | look-ahead | overclaim | false discovery | edge found | REJECT | PASS "
+        "| declared n_trials | median return gap |",
+        "|---|-------|-------------|------------|-----------|-----------------|------------|--------|------"
+        "|-------------------|-------------------|",
     ]
     for r in report["leaderboard"]:
         gap = "—" if r["median_return_gap"] is None else f"{r['median_return_gap']:+.1%}"
         lines.append(
             f"| {r['rank']} | {r['agent']} | {r['submissions']} | {_pct(r['lookahead_rate'])} | "
-            f"{_pct(r['overclaim_rate'])} | {_pct(r['reject_rate'])} | {_pct(r['pass_rate'])} | "
+            f"{_pct(r['overclaim_rate'])} | {_pct(r['false_discovery_rate'])} | {_pct(r['edge_found_rate'])} | "
+            f"{_pct(r['reject_rate'])} | {_pct(r['pass_rate'])} | "
             f"{_pct(r['declared_n_trials_rate'])} | {gap} |"
         )
     return "\n".join(lines) + "\n"
