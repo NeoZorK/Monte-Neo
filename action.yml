@@ -46,7 +46,7 @@ inputs:
     required: false
     default: REJECT
   signing-key:
-    description: "Ed25519 private key (PEM text) to sign the certificate; pass a secret, e.g. ${{ secrets.MONTE_NEO_SIGNING_KEY }}"
+    description: "Ed25519 private key (PEM text) to sign the certificate; pass it from a repository secret such as MONTE_NEO_SIGNING_KEY"
     required: false
     default: ""
   upload-certificate:
