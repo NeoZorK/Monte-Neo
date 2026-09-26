@@ -42,6 +42,7 @@ monte-neo verify --schema          # print the JSON schema
 | 2 | `REJECT` |
 | 3 | Usage or input error (not a verdict) |
 | 4 | `--recheck`: the certificate was not reproduced |
+| 5 | `--check-signature`: the signature is invalid, or the certificate was signed by a key other than `--public-key` |
 
 ## Verdicts
 
@@ -164,6 +165,36 @@ How the re-check works:
 
 The result is `strategy-recheck/1`. `monte-neo verify --recheck` exits with code 4 when the
 certificate is not reproduced. MCP tool: `recheck_certificate`.
+
+### Signing a certificate
+
+A re-check proves that the numbers are right. A signature proves who issued the certificate
+and that nobody edited it afterwards. Monte-Neo signs certificates with Ed25519.
+Signing needs the `sign` extra:
+
+```bash
+pip install "monte-neo[sign]"
+monte-neo verify --keygen issuer          # writes issuer.key (keep secret) and issuer.pub
+monte-neo verify --ohlcv btc_1h.csv --strategy my_strategy.py --sign issuer.key --out verdict.json
+monte-neo verify --check-signature verdict.json --public-key issuer.pub
+```
+
+```python
+from monte_neo.verify import check_signature, sign_certificate
+signed = sign_certificate(report, "issuer.key")
+check_signature(signed, public_key="ed25519:...")["key_matches"]
+```
+
+- The signature covers the canonical JSON of the certificate without its `signature` block:
+  sorted keys, no whitespace, UTF-8. Changing any field, including the verdict or a metric,
+  breaks it.
+- The `signature` block stores the algorithm, the public key and its `key_id` (the first
+  16 hex characters of the key's SHA-256).
+- Without `--public-key`, a valid signature proves only integrity, because anyone can sign
+  with a fresh key. Publish your `.pub` key (for example in your README) so that others can
+  check who signed.
+- The result is `strategy-signature-check/1`. MCP tool: `check_signature`.
+- The private key file is created with owner-only permissions. In CI, keep it in a secret.
 
 ## Bring your own signals: `export_signals`
 

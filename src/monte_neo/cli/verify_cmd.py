@@ -1,7 +1,8 @@
 """``monte-neo verify`` — CI-friendly strategy verifier command.
 
 Exit codes: 0 PASS / PASS_WITH_WARNINGS, 1 NEEDS_MORE_EVIDENCE, 2 REJECT,
-3 usage or input error, 4 certificate not reproduced (``--recheck``).
+3 usage or input error, 4 certificate not reproduced (``--recheck``),
+5 signature invalid or signed by an unexpected key (``--check-signature``).
 """
 
 from __future__ import annotations
@@ -41,6 +42,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--min-trades", type=int, default=30, help="Minimum closed trades for statistics (default 30)")
     p.add_argument("--out", help="Write the strategy-verdict/1 JSON certificate to this path")
     p.add_argument("--recheck", help="Reproduce this certificate JSON from --ohlcv and --signals / --strategy")
+    p.add_argument("--sign", metavar="KEY", help="Sign the certificate with this Ed25519 private key (PEM); needs monte-neo[sign]")
+    p.add_argument("--keygen", metavar="PREFIX", help="Create PREFIX.key (private) and PREFIX.pub (public) and exit")
+    p.add_argument("--check-signature", metavar="CERT", help="Check the signature of this certificate JSON and exit")
+    p.add_argument("--public-key", help="Expected signer for --check-signature: 'ed25519:<base64>' or a .pub file")
     p.add_argument("--format", choices=["text", "json"], default="text", help="stdout format (default text)")
     p.add_argument("--schema", action="store_true", help="Print the strategy-verdict/1 JSON schema and exit")
     return p
@@ -93,6 +98,22 @@ def _side_mode(args: argparse.Namespace) -> str:
     return "long_short"
 
 
+def _run_signing(args: argparse.Namespace, console: Console) -> int:
+    from monte_neo.verify.signing import check_signature, generate_keypair, signature_ok
+
+    try:
+        if args.keygen:
+            keys = generate_keypair(args.keygen)
+            console.print(f"private key {keys['private_key']} (keep secret) · public key {keys['public_key']} · key id {keys['key_id']}")
+            return 0
+        result = check_signature(args.check_signature, public_key=args.public_key)
+    except Exception as exc:
+        console.print(f"[red]signature command failed: {exc}[/]")
+        return 3
+    console.print_json(data=result)
+    return 0 if signature_ok(result) else 5
+
+
 def run(args: argparse.Namespace, console: Console | None = None) -> int:
     """Execute a parsed ``verify`` command."""
     from monte_neo.verify import (
@@ -108,6 +129,8 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
     if args.schema:
         console.print_json(data=VERDICT_JSON_SCHEMA)
         return 0
+    if args.keygen or args.check_signature:
+        return _run_signing(args, console)
     if not args.ohlcv or not (args.signals or args.strategy):
         console.print("[red]verify needs --ohlcv and one of --signals / --strategy[/]")
         return 3
@@ -139,6 +162,14 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
     except Exception as exc:  # input errors must not look like a verdict
         console.print(f"[red]verify failed: {exc}[/]")
         return 3
+    if args.sign:
+        from monte_neo.verify.signing import sign_certificate
+
+        try:
+            report = sign_certificate(report, args.sign)
+        except Exception as exc:
+            console.print(f"[red]signing failed: {exc}[/]")
+            return 3
     if args.out:
         Path(args.out).write_text(json.dumps(report, indent=2), encoding="utf-8")
     if args.format == "json":

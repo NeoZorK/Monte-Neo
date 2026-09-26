@@ -137,6 +137,22 @@ def recheck_certificate(
     return to_jsonable(_recheck(certificate_path, ohlcv_path, signals=signals_path, strategy=strategy_path))
 
 
+def check_signature(certificate_path: str, public_key: str | None = None) -> dict[str, Any]:
+    """Check the Ed25519 signature of a strategy-verdict/1 certificate.
+
+    Args:
+        certificate_path: Signed JSON certificate.
+        public_key: The issuer's published key ('ed25519:<base64>' or a .pub file). Without it
+            the check proves only that the certificate was not edited after signing.
+    """
+    from monte_neo.verify.signing import check_signature as _check
+
+    try:
+        return _check(certificate_path, public_key=public_key)
+    except Exception as exc:  # missing extra or unreadable file: report, do not crash the server
+        return {"error": str(exc)}
+
+
 def probe_lookahead(ohlcv_path: str, strategy_path: str) -> dict[str, Any]:
     """Look-ahead probes only: static lint, determinism, truncation, future perturbation.
 
@@ -242,6 +258,7 @@ TOOLS: tuple[Callable[..., dict[str, Any]], ...] = (
     verify_strategy,
     verify_grid,
     recheck_certificate,
+    check_signature,
     probe_lookahead,
     cost_stress,
     verdict_schema,
@@ -252,6 +269,7 @@ __all__ = [
     "SERVER_INSTRUCTIONS",
     "recheck_certificate",
     "TOOLS",
+    "check_signature",
     "cost_stress",
     "probe_lookahead",
     "verdict_schema",

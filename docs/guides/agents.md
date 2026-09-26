@@ -15,6 +15,7 @@ Requirements: [uv](https://docs.astral.sh/uv/) (for `uvx`) and Python 3.11+.
 | `probe_lookahead` | Look-ahead probes only (lint, truncation, perturbation, determinism) |
 | `cost_stress` | Break-even cost and returns under 0, 1 and 2 bars of execution delay |
 | `recheck_certificate` | Reproduces a certificate from its original data and strategy or signals |
+| `check_signature` | Checks a certificate's Ed25519 signature, optionally against the issuer's public key |
 | `verdict_schema` | JSON schema of the certificate |
 | `verifier_manifest` | Execution semantics and the check catalogue |
 

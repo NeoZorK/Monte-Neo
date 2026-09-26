@@ -30,6 +30,12 @@ from monte_neo.verify.schema import (
     aggregate_verdict,
     to_jsonable,
 )
+from monte_neo.verify.signing import (
+    SIGNATURE_CHECK_SCHEMA_ID,
+    check_signature,
+    generate_keypair,
+    sign_certificate,
+)
 from monte_neo.verify.stats import (
     bar_returns,
     deflated_sharpe,
@@ -42,6 +48,7 @@ from monte_neo.verify.verdict import model_from_costs, verify_strategy
 
 __all__ = [
     "RECHECK_SCHEMA_ID",
+    "SIGNATURE_CHECK_SCHEMA_ID",
     "VERDICTS",
     "VERDICT_JSON_SCHEMA",
     "VERDICT_SCHEMA_ID",
@@ -49,11 +56,13 @@ __all__ = [
     "bar_returns",
     "breakeven_cost_bps",
     "call_signal_fn",
+    "check_signature",
     "deflated_sharpe",
     "delay_scan",
     "delay_signals",
     "expand_grid",
     "expected_max_sharpe",
+    "generate_keypair",
     "implausible_accuracy",
     "infer_periods_per_year",
     "lint_source",
@@ -70,6 +79,7 @@ __all__ = [
     "probe_truncation",
     "recheck_certificate",
     "sharpe_per_bar",
+    "sign_certificate",
     "to_jsonable",
     "verify_grid",
     "verify_strategy",

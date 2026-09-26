@@ -49,6 +49,17 @@ VERDICT_JSON_SCHEMA: dict[str, Any] = {
         "next_actions": {"type": "array", "items": {"type": "string"}},
         "reproducibility": {"type": "object"},
         "disclaimer": {"type": "string"},
+        "signature": {
+            "type": "object",
+            "description": "Optional Ed25519 signature over the canonical JSON of the certificate without this field",
+            "required": ["alg", "key_id", "public_key", "value"],
+            "properties": {
+                "alg": {"const": "ed25519"},
+                "key_id": {"type": "string"},
+                "public_key": {"type": "string"},
+                "value": {"type": "string"},
+            },
+        },
     },
 }
 

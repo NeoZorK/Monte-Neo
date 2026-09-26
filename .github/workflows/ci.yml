@@ -25,7 +25,7 @@ jobs:
           enable-cache: true
 
       - name: Install dependencies
-        run: uv sync --extra apple --extra plot --extra data --extra mcp --group dev
+        run: uv sync --extra apple --extra plot --extra data --extra mcp --extra sign --group dev
 
       - name: Lint
         run: uv run ruff check .

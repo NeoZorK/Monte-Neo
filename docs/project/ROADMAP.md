@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.24.0)
+# Monte-Neo Roadmap (v0.25.0)
 
 Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier for agent-built strategies).
 
@@ -42,11 +42,14 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 - [x] Trap Suite: 25 traps + 9 honest controls; signal-processing lint rules (gradient, centred filters, FFT)
 - [x] Trap Suite catalogue + contribution guide + issue form
 
-## Next (v0.25+)
+## v0.25.0 — signed certificates
+- [x] Ed25519 signatures: `--keygen`, `--sign`, `--check-signature`; MCP `check_signature`
+
+## Next (v0.26+)
 - [ ] First public bench run: same tasks → Claude Code / Codex / Gemini / Cursor → published leaderboard
 - [ ] Trap Suite → 50+ traps (now 25 + 9 honest controls; next: survivorship across a universe, timezone edges)
 - [ ] Publish to MCP registries (official registry, glama, smithery, mcpmarket)
-- [ ] Signed certificates + public verification page
+- [~] Signed certificates (v0.25.0) + public verification page; signing in the GitHub Action
 - [ ] Freeze / trim side lanes (indicator generator, MLX 3D engine, root scripts): see CLEANUP_CANDIDATES_RU.md
 
 ## v0.17.7
