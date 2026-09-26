@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Smoke: install monte-neo from PyPI into a temp venv and import policy/holdout.
 # Usage: ./scripts/verify_pypi_install.sh [version]
-# Example: ./scripts/verify_pypi_install.sh 0.21.0
+# Example: ./scripts/verify_pypi_install.sh 0.22.0
 # Handles PyPI CDN lag with retries/sleeps.
 set -euo pipefail
-VER="${1:-0.21.0}"
+VER="${1:-0.22.0}"
 VER="${VER#v}"
 DIR="$(mktemp -d)"
 trap 'rm -rf "$DIR"' EXIT
