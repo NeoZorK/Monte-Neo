@@ -11,7 +11,7 @@ statuses that must appear.
 
 ## Catalogue
 
-40 traps, 15 honest controls, 2 parameterized strategies for `verify_grid` and a data-snooping test.
+50 traps, 18 honest controls, 2 parameterized strategies for `verify_grid` and a data-snooping test.
 "Caught by" lists the checks that flag each trap on the random-walk dataset. "lint (warn)" is a
 warning only; the dynamic probes produce the `REJECT`.
 
@@ -31,6 +31,8 @@ warning only; the dynamic probes produce the `REJECT`.
 | `forward_window_indexer` | `FixedForwardWindowIndexer` makes `rolling()` look ahead | truncation, perturbation, lint, implausible accuracy |
 | `tail_threshold` | Threshold from `.tail(500).mean()`, the last bars of the dataset | truncation, perturbation, lint |
 | `iat_last` | `.iat[-1]` reads the final close | truncation, perturbation, lint |
+| `flip_cumsum` | `np.flip(np.cumsum(np.flip(ret)))` sums the returns still to come | truncation, perturbation, lint |
+| `shift_variable` | `horizon = -1; close.shift(horizon)`: the negative shift hides in a variable | truncation, perturbation, lint, implausible accuracy |
 
 ### Centered windows and filters
 
@@ -38,6 +40,7 @@ warning only; the dynamic probes produce the `REJECT`.
 |------|-------------|-----------|
 | `centered_window` | `rolling(..., center=True)` | truncation, perturbation, lint, implausible accuracy |
 | `convolve_same` | `np.convolve(mode="same")` centres the kernel | truncation, perturbation, lint, implausible accuracy |
+| `centered_variable` | `centred = True; rolling(21, center=centred)` | truncation, perturbation, lint, implausible accuracy |
 | `fft_denoise` | FFT low-pass over the whole series | truncation, perturbation, lint (warn) |
 
 ### Filling gaps from the future
@@ -47,6 +50,7 @@ warning only; the dynamic probes produce the `REJECT`.
 | `bfill_leak` | Sparse series backward-filled | truncation, perturbation, lint, implausible accuracy |
 | `interpolate_leak` | `interpolate()` uses the next known value | truncation, perturbation, lint |
 | `reindex_nearest` | `reindex(method="nearest")` aligns bars with the next hour's close | truncation, perturbation, lint |
+| `np_interp_fill` | `np.interp` draws a line to the next known point across gaps | truncation, perturbation, lint |
 | `merge_asof_forward` | `merge_asof(direction="forward")` | truncation, perturbation, lint |
 
 ### Whole-sample statistics
@@ -66,6 +70,11 @@ warning only; the dynamic probes produce the `REJECT`.
 | `np_sort_rank` | `np.sort` + `searchsorted` ranks each close among all closes | truncation, perturbation, lint (warn) |
 | `cut_auto_bins` | `pd.cut(bins=5)` takes edges from the whole-series min and max | truncation, perturbation, lint (warn) |
 | `builtin_max` | Python's `max()` over the whole column | perturbation, lint (warn) |
+| `describe_threshold` | Quartiles from `describe()` over the whole series | truncation, perturbation, lint (warn) |
+| `agg_zscore` | z-score from `agg(["mean", "std"])` over the whole series | truncation, perturbation, lint (warn) |
+| `mode_level` | `round(-1).mode()`: most frequent level over the whole dataset | truncation, perturbation, lint (warn) |
+| `value_counts_level` | `value_counts().idxmax()`: busiest level, future included | truncation, perturbation, lint (warn) |
+| `nlargest_dates` | `nlargest(100)` finds the dataset's highest closes | perturbation, lint (warn) |
 
 ### Aggregates over the current bucket
 
@@ -76,6 +85,7 @@ warning only; the dynamic probes produce the `REJECT`.
 | `hourly_close_map` | `groupby().last()` mapped back onto every minute of the hour | truncation, perturbation, lint (warn) |
 | `hour_size_leak` | `transform("size")` knows how many bars the hour will have | truncation, lint (warn) |
 | `bars_left_in_hour` | `cumcount(ascending=False)` counts the bars still to come | truncation, lint |
+| `resample_ffill_max` | `resample("h").max()` forward-filled from the hour's first minute | truncation, lint (warn) |
 
 ### Invisible to the static lint
 
@@ -116,6 +126,9 @@ leaks.
 | `cut_fixed_bins` | `pd.cut` with explicit, fixed bin edges |
 | `hour_running_high` | Running high of the hour so far: `groupby().cummax()` |
 | `rolling_min_periods` | `rolling(50, min_periods=1)` |
+| `rolling_apply_span` | `rolling().apply(lambda w: w[-1] - w[0])`: `w[-1]` is the current bar |
+| `hour_open_ref` | `transform("first")`: the hour's first close is already known |
+| `expanding_max_breakout` | `expanding().max().shift(1)` |
 
 Grid strategies: `sma_params`, `momentum_params`.
 
