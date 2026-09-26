@@ -1,0 +1,93 @@
+name: Monte-Neo strategy verify
+description: Verify a trading-strategy backtest (look-ahead, costs, selection bias) and fail the job on REJECT.
+author: NeoZorK
+branding:
+  icon: check-circle
+  color: blue
+
+inputs:
+  ohlcv:
+    description: OHLCV table (.csv / .parquet) with open, high, low, close[, timestamp]
+    required: true
+  strategy:
+    description: Strategy file 'path.py[:func]' with func(df) -> positions
+    required: false
+    default: ""
+  signals:
+    description: Positions per bar file (.csv / .parquet / .npy), used when no strategy is given
+    required: false
+    default: ""
+  n-trials:
+    description: Number of variants tried before choosing this one
+    required: false
+    default: "1"
+  commission-bps:
+    description: Commission per side (bps)
+    required: false
+    default: "5"
+  slippage-bps:
+    description: Slippage per side (bps)
+    required: false
+    default: "5"
+  fail-on:
+    description: "Lowest verdict that fails the job: REJECT (default) or NEEDS_MORE_EVIDENCE"
+    required: false
+    default: REJECT
+  python-version:
+    description: Python version to run the verifier with
+    required: false
+    default: "3.11"
+
+outputs:
+  verdict:
+    description: PASS, PASS_WITH_WARNINGS, NEEDS_MORE_EVIDENCE or REJECT
+    value: ${{ steps.verify.outputs.verdict }}
+  certificate:
+    description: Path of the strategy-verdict/1 JSON certificate
+    value: ${{ steps.verify.outputs.certificate }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+    - name: Install Monte-Neo
+      shell: bash
+      run: python -m pip install --quiet "${{ github.action_path }}"
+    - name: Verify strategy
+      id: verify
+      shell: bash
+      env:
+        MN_OHLCV: ${{ inputs.ohlcv }}
+        MN_STRATEGY: ${{ inputs.strategy }}
+        MN_SIGNALS: ${{ inputs.signals }}
+        MN_TRIALS: ${{ inputs.n-trials }}
+        MN_COMMISSION: ${{ inputs.commission-bps }}
+        MN_SLIPPAGE: ${{ inputs.slippage-bps }}
+        MN_FAIL_ON: ${{ inputs.fail-on }}
+      run: |
+        set +e
+        src=(--signals "$MN_SIGNALS")
+        if [ -n "$MN_STRATEGY" ]; then src=(--strategy "$MN_STRATEGY"); fi
+        cert="$RUNNER_TEMP/strategy-verdict.json"
+        monte-neo verify --ohlcv "$MN_OHLCV" "${src[@]}" --n-trials "$MN_TRIALS" \
+          --commission-bps "$MN_COMMISSION" --slippage-bps "$MN_SLIPPAGE" --out "$cert"
+        code=$?
+        if [ "$code" -eq 3 ]; then exit 3; fi
+        verdict=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['verdict'])" "$cert")
+        echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
+        echo "certificate=$cert" >> "$GITHUB_OUTPUT"
+        python - "$cert" >> "$GITHUB_STEP_SUMMARY" <<'PY'
+        import json, sys
+        r = json.load(open(sys.argv[1]))
+        print(f"## Monte-Neo verdict: {r['verdict']}\n\nCertificate `{r['certificate_id']}`\n")
+        print("| check | status | summary |\n|---|---|---|")
+        for c in r["checks"]:
+            print(f"| {c['id']} | {c['status']} | {c['summary']} |")
+        for a in r["next_actions"]:
+            print(f"- {a}")
+        PY
+        if [ "$code" -eq 2 ]; then exit 2; fi
+        if [ "$code" -eq 1 ] && [ "$MN_FAIL_ON" = "NEEDS_MORE_EVIDENCE" ]; then exit 1; fi
+        exit 0

@@ -24,10 +24,13 @@ jobs:
           enable-cache: true
 
       - name: Install dependencies
-        run: uv sync --extra apple --extra plot --extra data --group dev
+        run: uv sync --extra apple --extra plot --extra data --extra mcp --group dev
 
       - name: Lint
         run: uv run ruff check .
 
       - name: Run unit tests
         run: uv run pytest tests/unit -W ignore
+
+      - name: Run verifier Trap Suite
+        run: uv run pytest tests/traps -W ignore

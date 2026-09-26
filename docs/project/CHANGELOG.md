@@ -3,6 +3,34 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.18.0] — 2026-09-26
+
+### Added
+- **Strategy verifier** `monte_neo.verify.verify_strategy` → `strategy-verdict/1` certificate
+  (verdict, checks, metrics, `next_actions`, SHA-256 reproducibility block, deterministic `certificate_id`)
+- Look-ahead probes: truncation, future perturbation (mirrored returns), determinism, AST lint
+  (`shift(-k)`, `center=True`, `bfill`, full-sample `fit`, `x[i + k]`), implausible next-bar hit rate
+- Cost stress: break-even cost (bps per side), 0/1/2-bar execution delay scan
+- Selection-aware statistics: PSR, Deflated Sharpe priced by `n_trials`, sample size, holdout consistency
+- `export_signals` — bring-your-own positions through the fee-aware research bar (with signal SHA-256)
+- CLI `monte-neo verify` (+ `monte-neo-verify`) with CI exit codes 0/1/2/3 and `--out` certificate
+- MCP server `monte-neo-mcp` (`[mcp]` extra; MCP SDK 2.x `MCPServer`, 1.x `FastMCP` fallback):
+  `verify_strategy`, `probe_lookahead`, `cost_stress`, `verdict_schema`, `verifier_manifest`
+- Agent integrations in `integrations/`: Claude Code plugin (skill `verify-strategy`, `/verify`,
+  `.mcp.json`) + root `.claude-plugin/marketplace.json`, Codex, Gemini CLI extension, Cursor rules
+- Composite GitHub Action `action.yml` (fails on `REJECT`, step summary, `verdict` output)
+- Trap Suite `tests/traps`: 5 lying strategies + 2 honest controls + data-snooping case
+- Docs: [Verifier API](../api/verify.md), [Use from agents](../guides/agents.md),
+  internal product strategy (`docs/project/PRODUCT_STRATEGY_RU.md`)
+
+### Changed
+- README / docs home repositioned: "verify a trading strategy before you trust it"
+- CI installs the `mcp` extra and runs `tests/traps`
+
+### Notes
+- No breaking change to existing research / export APIs.
+- License remains **MIT**. No peer product names in this tree.
+
 ## [v0.17.7] — 2026-09-17
 
 ### Changed

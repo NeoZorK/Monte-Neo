@@ -1,4 +1,4 @@
-# Monte-Neo v0.17.7
+# Monte-Neo v0.18.0
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -11,11 +11,14 @@ A simplified guide to the Monte-Neo file structure.
 - docs/assets/logo-mark.png - Compact theme logo / favicon (96px)
 - docs/assets/logo-header.png - Compact header logo (128px)
 - README.md - Main project documentation
+- CLAUDE.md - Agent instructions (authorship rule: NeoZorK only, no AI attribution)
+- .claude/settings.json - Claude Code project settings (built-in attribution disabled)
 - pyproject.toml - Python package configuration and dependencies
 - uv.lock - Lockfile for consistent environment management
 - LICENSE - MIT License
 - SECURITY.md - Vulnerability reporting (GitHub Security Advisories)
 - .github/workflows/pypi-smoke.yml - PyPI bare-install smoke (schedule / dispatch / release)
+- .github/workflows/verify-action.yml - Self-test of action.yml (leaky strategy must be rejected)
 - scripts/verify_pypi_install.sh - Local/CI PyPI install verify helper
 - CONTRIBUTING.md - Root pointer to contributing guide
 - .gitignore - Git exclusion rules
@@ -27,8 +30,9 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/project-structure.md - Deep dive into physical directory layout
 - docs/project/features.md - Detailed overview of framework features
 - docs/project/dynamic_indicators.md - Explanation of dynamic indicator generation
-- docs/project/ROADMAP.md - Development roadmap and milestones (v0.17.7)
-- docs/project/CHANGELOG.md - Release changelog (current: v0.17.7)
+- docs/project/ROADMAP.md - Development roadmap and milestones (v0.18.0)
+- docs/project/PRODUCT_STRATEGY_RU.md - Product strategy: agent-native strategy verifier niche, moat, roadmap (RU, internal)
+- docs/project/CHANGELOG.md - Release changelog (current: v0.18.0)
 - docs/project/backtest_engine.md - Fee-aware research bar engine
 - docs/project/oms_engine.md - Paper OMS (bar + tick/L2) + venue adapters
 - docs/assets/monteneo-logo.png - Project logo
@@ -57,6 +61,8 @@ A simplified guide to the Monte-Neo file structure.
 ### Guides & Examples (docs/guides/, docs/examples/)
 - docs/guides/quick-start.md - 3-step guide to get started
 - docs/guides/FAQ.md - Metal vs Numba, install, no-hang gate, PyPI timing
+- docs/guides/agents.md - Use the verifier from Claude Code / Codex / Gemini / Cursor / GitHub Actions
+- docs/api/verify.md - Strategy verifier API, checks, verdicts, strategy-verdict/1 certificate
 - docs/examples/README.md - Standalone script examples (Placeholder)
 - docs/api/README.md - API reference (Placeholder)
 
@@ -65,7 +71,16 @@ A simplified guide to the Monte-Neo file structure.
 - docker/docker-compose.yml - Docker Compose service definitions
 
 ### Source Code (src/monte_neo/)
-- src/monte_neo/_version.py - Central version management (v0.17.7)
+- src/monte_neo/_version.py - Central version management (v0.18.0)
+- src/monte_neo/verify/ - Strategy verifier (ingest, look-ahead probes, lint, costs, stats, checks, verdict)
+- src/monte_neo/mcp/ - MCP server (monte-neo-mcp) + agent-facing tool functions
+- src/monte_neo/cli/verify_cmd.py - `monte-neo verify` command (CI exit codes)
+- src/monte_neo/backtest/export_signals.py - Bring-your-own-signals export
+- integrations/ - Claude Code plugin, Codex / Gemini / Cursor agent configs (AGENT_RULES.md source of truth)
+- .claude-plugin/marketplace.json - Claude Code plugin marketplace entry
+- action.yml - Composite GitHub Action for strategy verification
+- tests/traps/ - Verifier Trap Suite (lying strategies + honest controls)
+- examples/verify_quickstart.py - Leaky vs causal strategy verifier demo
 - src/monte_neo/policy/ - HeuristicPolicy A (ResearchState + triage)
 - src/monte_neo/backtest/holdout.py - Train/holdout SMA helper
 - docs/api/holdout.md - Holdout API

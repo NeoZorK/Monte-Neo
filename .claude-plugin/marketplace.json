@@ -1,0 +1,11 @@
+{
+  "name": "monte-neo",
+  "owner": { "name": "NeoZorK" },
+  "plugins": [
+    {
+      "name": "monte-neo",
+      "source": "./integrations/claude-code",
+      "description": "Independent verifier for trading-strategy backtests (look-ahead, costs, Deflated Sharpe)."
+    }
+  ]
+}

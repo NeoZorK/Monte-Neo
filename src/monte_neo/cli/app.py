@@ -228,7 +228,7 @@ def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
         prog="monte-neo",
-        description="Monte Carlo Indicator Generator Framework",
+        description="Monte-Neo research CLI. Strategy verifier: monte-neo verify --help",
     )
 
     parser.add_argument(
@@ -323,6 +323,10 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     """Main entry point."""
+    if len(sys.argv) > 1 and sys.argv[1] == "verify":
+        from monte_neo.cli.verify_cmd import main as verify_main
+
+        return verify_main(sys.argv[2:])
     args = parse_args()
 
     # Setup logging
