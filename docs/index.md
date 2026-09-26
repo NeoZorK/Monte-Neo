@@ -62,6 +62,8 @@ certificate that can be signed.
 - [Verifier API](api/verify.md): checks, verdicts, certificates, re-checks and signatures
 - [Trap Suite](guides/trap-suite.md): 31 strategies that lie and 12 honest controls, and how to add yours
 - [Honesty Bench](guides/honesty-bench.md): score how honestly agents report backtests
+- [Verify a certificate](verify.md): check a signed certificate in your browser
+- [Six ways your agent's backtest lies](marketing/article-six-ways.md): the traps, with numbers
 - [FAQ](guides/FAQ.md) · [Changelog](project/CHANGELOG.md) · [Roadmap](project/ROADMAP.md)
 
 ## Research engine (maintenance mode)

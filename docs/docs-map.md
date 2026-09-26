@@ -1,4 +1,4 @@
-# Monte-Neo v0.28.0
+# Monte-Neo v0.29.0
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -34,10 +34,10 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/project-structure.md - Deep dive into physical directory layout
 - docs/project/features.md - Detailed overview of framework features
 - docs/project/dynamic_indicators.md - Explanation of dynamic indicator generation
-- docs/project/ROADMAP.md - Development roadmap and milestones (v0.28.0)
+- docs/project/ROADMAP.md - Development roadmap and milestones (v0.29.0)
 - docs/project/PRODUCT_STRATEGY_RU.md - Product strategy: agent-native strategy verifier niche, moat, roadmap (RU, internal)
 - docs/project/CLEANUP_CANDIDATES_RU.md - Cleanup candidate list with evidence, awaiting owner approval (RU, internal)
-- docs/project/CHANGELOG.md - Release changelog (current: v0.28.0)
+- docs/project/CHANGELOG.md - Release changelog (current: v0.29.0)
 - docs/project/backtest_engine.md - Fee-aware research bar engine
 - docs/project/oms_engine.md - Paper OMS (bar + tick/L2) + venue adapters
 - docs/assets/monteneo-logo.png - Project logo (original, with the old tagline)
@@ -74,6 +74,7 @@ A simplified guide to the Monte-Neo file structure.
 - docs/guides/FAQ.md - Metal vs Numba, install, no-hang gate, PyPI timing
 - docs/guides/agents.md - Use the verifier from Claude Code / Codex / Gemini / Cursor / GitHub Actions
 - docs/guides/honesty-bench.md - Agent Backtest Honesty Bench: layout, metrics, fair-play rules
+- docs/verify.md - Browser page that checks a certificate's Ed25519 signature (docs/assets/verify-certificate.js)
 - docs/guides/trap-suite.md - Trap Suite catalogue (31 traps, 12 honest controls) and how to contribute a trap
 - src/monte_neo/bench/ - Honesty Bench (verify agent submissions, compare claims, leaderboard; v1 tasks + answer key)
 - src/monte_neo/cli/bench_cmd.py - `monte-neo bench` command
@@ -87,7 +88,7 @@ A simplified guide to the Monte-Neo file structure.
 - docker/docker-compose.yml - Docker Compose service definitions
 
 ### Source Code (src/monte_neo/)
-- src/monte_neo/_version.py - Central version management (v0.28.0)
+- src/monte_neo/_version.py - Central version management (v0.29.0)
 - src/monte_neo/verify/ - Strategy verifier (ingest, look-ahead probes, lint, costs, stats, checks, verdict, grid + walk-forward, certificate recheck)
 - src/monte_neo/mcp/ - MCP server (monte-neo-mcp) + agent-facing tool functions
 - src/monte_neo/cli/verify_cmd.py - `monte-neo verify` command (CI exit codes)

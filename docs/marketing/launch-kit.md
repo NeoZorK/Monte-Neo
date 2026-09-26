@@ -96,7 +96,13 @@ r/ChatGPTCoding (agent angle: "make your agent verify its own backtest"), r/Pyth
 >
 > https://github.com/NeoZorK/Monte-Neo
 
-## Article outline (dev.to / Medium / personal blog)
+## Article (dev.to / Medium / personal blog)
+
+Full text: [`article-six-ways.md`](article-six-ways.md), also published at
+`https://neozork.github.io/Monte-Neo/marketing/article-six-ways/`. When cross-posting, set that URL
+as the canonical link.
+
+### Outline
 
 **Title:** Six ways your AI agent's backtest lies, and how to catch each one
 
