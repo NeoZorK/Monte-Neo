@@ -73,6 +73,7 @@ nav:
       - Quick start: guides/quick-start.md
       - Use from agents: guides/agents.md
       - Honesty Bench: guides/honesty-bench.md
+      - Trap Suite: guides/trap-suite.md
       - FAQ: guides/FAQ.md
       - Performance: development/performance.md
       - Contributing: development/contributing.md

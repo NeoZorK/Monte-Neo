@@ -79,7 +79,7 @@ not future profit. It is not investment advice.
 | Advantage | What you get |
 |-----------|----------------|
 | Deterministic verdicts | Same data, code and `n_trials` give the same `certificate_id` |
-| Trap Suite | `tests/traps`: known ways backtests lie, each with its expected verdict |
+| Trap Suite | `tests/traps`: known ways backtests lie, each with its expected verdict ([catalogue, contribute a trap](docs/guides/trap-suite.md)) |
 | Fee-aware research bar | Next-bar fills, costs in bps, SL/TP/trail, funding, sessions |
 | Honest export API | `export_signals` / `export_single` / `export_batch` / `export_sma_sweep` + golden vectors |
 | Anti-overfit research | Holdout, walk-forward, CSCV/PBO, Monte Carlo helpers, `HeuristicPolicy` triage |

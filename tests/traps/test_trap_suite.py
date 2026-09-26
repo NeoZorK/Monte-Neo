@@ -39,14 +39,23 @@ TRAPS = [
     ("last_row_leak", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "fail"}),
     ("idxmax_leak", "random_walk", {"REJECT"}, {"lookahead_perturbation": "fail", "lookahead_static_lint": "warn"}),
     ("numpy_global_stat", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "warn"}),
+    ("gradient_leak", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "fail"}),
+    ("convolve_same", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "fail"}),
+    ("fft_denoise", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "warn"}),
+    ("qcut_full", "random_walk", {"REJECT"}, {"lookahead_perturbation": "fail", "lookahead_static_lint": "warn"}),
+    ("argsort_rank", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "warn"}),
     ("sma_cross", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE"}, {}),
     ("resample_shifted", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
     ("expanding_rank", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
     ("expanding_zscore", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
     ("cummax_drawdown", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
+    ("ewm_cross", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
+    ("convolve_causal", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
+    ("rolling_quantile_band", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
     ("momentum", "planted", {"PASS", "PASS_WITH_WARNINGS"}, {"net_profitability": "pass", "deflated_sharpe": "pass"}),
 ]
-HONEST = {"high_turnover", "sma_cross", "momentum", "expanding_zscore", "resample_shifted", "expanding_rank", "cummax_drawdown"}
+HONEST = {"high_turnover", "sma_cross", "momentum", "expanding_zscore", "resample_shifted", "expanding_rank", "cummax_drawdown",
+          "ewm_cross", "convolve_causal", "rolling_quantile_band"}
 # Parameterized strategies exercised through verify_grid (not in TRAPS).
 GRID_STRATEGIES = {"sma_params", "momentum_params"}
 
@@ -58,6 +67,12 @@ def _statuses(report: dict) -> dict[str, str]:
 def test_every_strategy_file_is_in_manifest() -> None:
     files = {p.stem for p in STRATEGY_DIR.glob("*.py")}
     assert files == {t[0] for t in TRAPS} | GRID_STRATEGIES
+
+
+def test_every_strategy_file_is_in_catalogue() -> None:
+    guide = (Path(__file__).parents[2] / "docs" / "guides" / "trap-suite.md").read_text(encoding="utf-8")
+    missing = sorted(p.stem for p in STRATEGY_DIR.glob("*.py") if f"`{p.stem}`" not in guide)
+    assert not missing, f"add to docs/guides/trap-suite.md: {missing}"
 
 
 @pytest.mark.parametrize(("name", "dataset", "verdicts", "required"), TRAPS, ids=[t[0] for t in TRAPS])
