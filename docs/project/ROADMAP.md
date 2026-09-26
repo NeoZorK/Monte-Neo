@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.29.0)
+# Monte-Neo Roadmap (v0.30.0)
 
 Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier for agent-built strategies).
 
@@ -61,9 +61,12 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 - [x] Browser verification of signed certificates (WebCrypto Ed25519), link parameters for badges
 - [x] Article published on the docs site
 
-## Next (v0.30+)
+## v0.30.0 — 40 traps
+- [x] Trap Suite: 40 traps + 15 honest controls, including two only the dynamic probes catch; lint 20 rules
+
+## Next (v0.31+)
 - [ ] First public bench run: same tasks → Claude Code / Codex / Gemini / Cursor → published leaderboard
-- [ ] Trap Suite → 50+ traps (now 31 + 12 honest controls; next: survivorship across a universe, multi-asset joins)
+- [ ] Trap Suite → 50+ traps (now 40 + 15 honest controls; next: survivorship across a universe, multi-asset joins)
 - [~] Publish to MCP catalogues: official registry (done), glama / smithery / mcp.so / mcpmarket (owner submits; texts in docs/marketing/launch-kit.md)
 - [x] Signed certificates (v0.25.0), signing in the GitHub Action (v0.27.0), public verification page (v0.29.0)
 
