@@ -1,262 +1,270 @@
-# Monte-Neo
-
 <!-- mcp-name: io.github.NeoZorK/monte-neo -->
 
+<h1 align="center">
+  <img src="https://raw.githubusercontent.com/NeoZorK/Monte-Neo/main/docs/assets/social-preview.png" alt="Monte-Neo: the independent verifier for trading strategies written by AI agents and humans" width="860"/>
+</h1>
+
 <p align="center">
-  <img src="docs/assets/monteneo-logo.png" alt="Monte-Neo logo" width="120"/>
+  <strong>The independent verifier for trading strategies written by AI agents and humans.</strong><br/>
+  Catch look-ahead bias, hidden trading costs and overfitting before a backtest reaches your money.
 </p>
 
 <p align="center">
-  <strong>Verify a trading strategy before you trust it.</strong><br/>
-  Look-ahead probes · fee-aware next-bar economics · Deflated Sharpe · MCP server for coding agents<br/>
-  MIT · Python 3.11+ · Numba (Metal / MLX optional)
-</p>
-
-<p align="center">
+  <a href="https://pypi.org/project/monte-neo/"><img src="https://img.shields.io/pypi/v/monte-neo?label=PyPI&color=0a7bbb" alt="PyPI version"/></a>
+  <a href="https://pepy.tech/projects/monte-neo"><img src="https://static.pepy.tech/badge/monte-neo" alt="Total downloads"/></a>
+  <a href="https://pypistats.org/packages/monte-neo"><img src="https://img.shields.io/pypi/dm/monte-neo?label=downloads%2Fmonth" alt="Downloads per month"/></a>
+  <a href="https://pypi.org/project/monte-neo/"><img src="https://img.shields.io/pypi/pyversions/monte-neo" alt="Python versions"/></a>
   <a href="https://github.com/NeoZorK/Monte-Neo/actions/workflows/ci.yml"><img src="https://github.com/NeoZorK/Monte-Neo/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
-  <a href="https://pypi.org/project/monte-neo/"><img src="https://img.shields.io/pypi/v/monte-neo.svg" alt="PyPI"/></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"/></a>
-  <a href="https://github.com/NeoZorK/Monte-Neo/releases/latest"><img src="https://img.shields.io/github/v/release/NeoZorK/Monte-Neo?label=release" alt="Latest release"/></a>
-  <img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+"/>
+  <a href="https://github.com/NeoZorK/Monte-Neo/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license"/></a>
+  <br/>
+  <a href="https://registry.modelcontextprotocol.io/v0/servers?search=io.github.NeoZorK/monte-neo"><img src="https://img.shields.io/badge/MCP%20Registry-io.github.NeoZorK%2Fmonte--neo-6f42c1" alt="MCP Registry"/></a>
+  <a href="https://neozork.github.io/Monte-Neo/guides/agents/"><img src="https://img.shields.io/badge/works%20with-Claude%20Code%20%C2%B7%20Codex%20%C2%B7%20Gemini%20CLI%20%C2%B7%20Cursor-444" alt="Works with coding agents"/></a>
+  <a href="https://github.com/NeoZorK/Monte-Neo/stargazers"><img src="https://img.shields.io/github/stars/NeoZorK/Monte-Neo?style=flat" alt="GitHub stars"/></a>
 </p>
 
-> Current: **v0.22.0** · [Docs site](https://neozork.github.io/Monte-Neo/) · [Verifier API](docs/api/verify.md) · [Agents](docs/guides/agents.md) · [Changelog](docs/project/CHANGELOG.md)
+<p align="center">
+  <a href="https://neozork.github.io/Monte-Neo/">Docs</a> ·
+  <a href="#quick-start">Quick start</a> ·
+  <a href="https://neozork.github.io/Monte-Neo/guides/agents/">Use from agents</a> ·
+  <a href="https://neozork.github.io/Monte-Neo/api/verify/">Verifier API</a> ·
+  <a href="https://neozork.github.io/Monte-Neo/guides/trap-suite/">Trap Suite</a> ·
+  <a href="https://github.com/NeoZorK/Monte-Neo/blob/main/docs/project/CHANGELOG.md">Changelog</a>
+</p>
 
-## What this is
+---
 
-Coding agents can now turn a trading idea into a backtest in minutes. Those
-backtests often fail in the same ways:
+## The problem
 
-- they read future bars (look-ahead);
-- they ignore fees and slippage;
-- they report the best of hundreds of tried variants.
+A coding agent can turn a trading idea into a backtest in minutes. It will then tell you the
+strategy returns 40% a year with a Sharpe of 3. Most of the time that number is wrong, for
+the same few reasons:
 
-**Monte-Neo is an independent verifier.** An agent, a CI job or a human calls it before
-claiming that a strategy works. It returns a verdict (`PASS`, `PASS_WITH_WARNINGS`,
-`NEEDS_MORE_EVIDENCE` or `REJECT`), the checks behind it, concrete `next_actions` and a
-reproducible `strategy-verdict/1` certificate.
+- **Look-ahead bias.** The code reads future bars: `shift(-1)`, centred windows, `bfill`,
+  statistics over the whole series, `np.gradient`, an FFT filter.
+- **Missing costs.** The edge is smaller than fees and slippage, or it disappears when the fill
+  comes one bar later.
+- **Selection bias.** The agent tried 300 variants and reports the best one as if it were the only one.
 
-```text
-$ uv run python examples/verify_quickstart.py
-leaky: REJECT  certificate b4dfa9beee5515d2
-  lookahead_truncation     lookahead   fail  truncation probe: LEAK DETECTED
-  lookahead_perturbation   lookahead   fail  future-perturbation probe: LEAK DETECTED
-  lookahead_static_lint    lookahead   fail  static lint: negative_shift
-  implausible_accuracy     lookahead   fail  next-bar hit rate 1.000
-  net_profitability        economics   fail  net total return -41.26% after costs
-  deflated_sharpe          statistics  fail  deflated Sharpe 0.000 over 10 trial(s)
-  -> The signal at bar t changes when later bars are removed: compute features only from rows <= t ...
-causal: REJECT  certificate cc4c852ef6c99626
-  net_profitability        economics   fail  net total return -3.88% after costs
-  ...
+Backtest libraries run whatever code you give them. None of them tell you the backtest itself is broken.
+
+## The solution
+
+**Monte-Neo checks the backtest, not the idea.** Give it the price data and the strategy code
+or its positions. It returns one of four verdicts, the checks behind the verdict, concrete next
+steps and a reproducible, optionally signed certificate.
+
+```console
+$ monte-neo verify --ohlcv prices.csv --strategy agent_strategy.py --n-trials 40
+REJECT  certificate 08ae7b091908a83c
+  check                    category    status  summary
+  data_integrity           integrity   pass    OHLCV is clean
+  lookahead_truncation     lookahead   fail    truncation probe: LEAK DETECTED
+  lookahead_perturbation   lookahead   fail    future-perturbation probe: LEAK DETECTED
+  lookahead_static_lint    lookahead   fail    static lint: negative_shift
+  implausible_accuracy     lookahead   fail    next-bar hit rate 1.000
+  net_profitability        economics   fail    net total return -64.97% after costs
+  deflated_sharpe          statistics  fail    deflated Sharpe 0.000 over 40 trial(s)
+  ...                                          (7 more checks)
+→ The signal at bar t changes when later bars are removed: compute features only from rows <= t
+  (no shift(-k), centered windows, bfill or full-sample stats).
+→ Fix the flagged source lines (negative shift, center=True, backward fill) and re-run verify. Lines: 6.
 ```
 
-Both strategies run on a synthetic random walk, so neither has a real edge. The leaky
-one is caught by all four look-ahead checks. The causal one is never accused of
-look-ahead: it is rejected only because it loses money after costs.
+The strategy used `shift(-1)`, so it knew the next close. Monte-Neo found the leak in four
+independent ways and pointed to line 6. The run above used a synthetic random walk; output shortened.
 
-| Check family | What it catches |
-|--------------|-----------------|
-| **Look-ahead** | Truncation and future-perturbation probes, AST lint (`shift(-k)`, `center=True`, `bfill`), implausible hit rate |
-| **Economics** | Losses after fees and slippage, thin break-even cost, edge that disappears with one bar of delay |
-| **Statistics** | Deflated Sharpe priced by `n_trials`, sample size, holdout consistency |
+| Verdict | Meaning | CLI exit code |
+|---------|---------|---------------|
+| `PASS` | No problems found | 0 |
+| `PASS_WITH_WARNINGS` | Usable; read the warnings | 0 |
+| `NEEDS_MORE_EVIDENCE` | Too few trades, or the Sharpe does not survive the number of variants tried | 1 |
+| `REJECT` | The backtest is broken or loses money after costs | 2 |
+
+## What it checks
+
+| Family | Checks |
+|--------|--------|
+| **Look-ahead** | Truncation probe (does bar *t* change when later bars are removed?), future-perturbation probe, static AST lint (17 rules), implausible hit rate |
+| **Economics** | Net return after commission and slippage, break-even cost in bps, one- and two-bar execution delay |
+| **Statistics** | Probabilistic and Deflated Sharpe priced by `n_trials`, sample size, holdout consistency, walk-forward out-of-sample check for grid searches |
 | **Integrity** | Broken OHLCV, non-deterministic signals |
 
-**Works where agents work:**
+Every rule is backed by the [Trap Suite](https://neozork.github.io/Monte-Neo/guides/trap-suite/):
+25 strategies that are known to lie and 9 honest controls. It runs on every build, so the
+verifier cannot silently stop catching a leak or start accusing honest code.
 
-- MCP server `monte-neo-mcp`, for Claude Code (plugin), Codex, Gemini CLI, Cursor or any MCP client;
-- CLI with CI exit codes;
-- GitHub Action;
-- Python API.
+## Where to use it
 
-See [Use from agents](docs/guides/agents.md).
-
-**Not a goal:** replace live-trading platforms. The verifier checks backtest methodology,
-not future profit. It is not investment advice.
+| You are… | Use Monte-Neo to… |
+|----------|-------------------|
+| **Building strategies with Claude Code, Codex, Gemini CLI or Cursor** | Make the agent verify its own backtest before it reports results. The MCP server and the Claude Code plugin do this automatically. |
+| **Running a strategy repository** | Add the [GitHub Action](#github-action). A pull request whose backtest leaks or loses money after costs fails CI, and the verdict is posted as a PR comment. |
+| **A quant, reviewer or allocator** | Check a strategy someone else sends you, with their data and code, in one command. Re-check or verify the signature of the certificate they hand over. |
+| **A prop firm, strategy marketplace or trading course** | Screen submissions before a human looks at them. Publish signed certificates next to listed strategies. |
+| **A researcher comparing agents** | Run the [Honesty Bench](https://neozork.github.io/Monte-Neo/guides/honesty-bench/): the same tasks for every agent, scored by how often each one claims profit that is not there. |
 
 ## Why Monte-Neo
 
-| Advantage | What you get |
-|-----------|----------------|
-| Deterministic verdicts | Same data, code and `n_trials` give the same `certificate_id` |
-| Trap Suite | `tests/traps`: known ways backtests lie, each with its expected verdict ([catalogue, contribute a trap](docs/guides/trap-suite.md)) |
-| Fee-aware research bar | Next-bar fills, costs in bps, SL/TP/trail, funding, sessions |
-| Honest export API | `export_signals` / `export_single` / `export_batch` / `export_sma_sweep` + golden vectors |
-| Anti-overfit research | Holdout, walk-forward, CSCV/PBO, Monte Carlo helpers, `HeuristicPolicy` triage |
-| Local and private | Runs on your machine; no data leaves it |
-| MIT | Use, fork and ship without drama |
+- **Independent.** It checks code it did not write, with probes that do not trust the strategy's own numbers.
+- **Built for agents.** An MCP server, a Claude Code plugin with a skill, a slash command and a reminder hook, plus rules for Codex, Gemini CLI and Cursor. Every failed check returns a `next_action` the agent can act on.
+- **Reproducible.** The same data, code and `n_trials` always give the same `certificate_id`. Anyone can reproduce a certificate with `--recheck`.
+- **Signed.** Ed25519 signatures show who issued a certificate and that nobody edited it.
+- **Honest about selection bias.** Declare how many variants you tried, or let `verify_grid` count them for you. The Deflated Sharpe prices them in.
+- **Local and private.** Your data and code never leave your machine. MIT licensed.
 
-## Install
-
-**From PyPI (recommended):**
+## Quick start
 
 ```bash
-pip install monte-neo                 # research-core (slim)
-pip install "monte-neo[mcp]"          # MCP server for coding agents (monte-neo-mcp)
-pip install "monte-neo[apple]"        # Metal / MLX (Apple Silicon)
-pip install "monte-neo[plot]"         # charts
-pip install "monte-neo[data]"         # Binance downloader / websocket
-pip install "monte-neo[full]"         # kitchen-sink local parity
+pip install monte-neo
 ```
 
-**From git:**
+**Command line**
 
 ```bash
-pip install "git+https://github.com/NeoZorK/Monte-Neo.git"
-pip install "monte-neo[apple] @ git+https://github.com/NeoZorK/Monte-Neo.git"
+monte-neo verify --ohlcv btc_1h.csv --strategy my_strategy.py --n-trials 12 --out verdict.json
 ```
 
-**In-repo (contributors):**
+`my_strategy.py` defines `signal(df)`, which returns one position per bar: `+1` long, `0` flat,
+`-1` short. The position decided on bar *t* is filled at the open of bar *t + 1*.
 
-```bash
-git clone https://github.com/NeoZorK/Monte-Neo.git
-cd Monte-Neo
-uv sync --extra apple --extra plot --extra data --group dev
+```python
+def signal(df):
+    fast = df["close"].rolling(20).mean()
+    slow = df["close"].rolling(80).mean()
+    return (fast > slow).astype(int)
 ```
 
-See [PACKAGING.md](docs/project/PACKAGING.md) · [Export API](docs/api/export.md) · [Policy triage](docs/api/policy.md).
-
-**Requirements:** Python **3.11+** on macOS or Linux. The verifier and research bar run on
-Numba CPU. Metal and MLX are optional (`[apple]` extra).
-
-## Quick start: verify a strategy
+**Python**
 
 ```python
 from monte_neo.verify import verify_strategy
 
 report = verify_strategy("btc_1h.csv", strategy="my_strategy.py", n_trials=12)
-print(report["verdict"], report["certificate_id"], report["next_actions"])
+print(report["verdict"], report["next_actions"])
 ```
 
-`my_strategy.py` defines `signal(df)`, which returns one position per bar: `+1` long,
-`0` flat, `-1` short. Details: [Verifier API](docs/api/verify.md).
-
-## Quick start: research engine
+**Parameter search with honest trial counting**
 
 ```bash
-uv sync --extra apple --extra plot --extra data --group dev
-uv run monte-neo
-uv run pytest tests -n auto
-# After an export_sma_sweep JSON:
-# uv run monte-neo --policy-triage path/to/export.json
+monte-neo verify --ohlcv btc_1h.csv --strategy sma.py --grid '{"fast": [10, 20], "slow": [80, 120]}'
 ```
 
-### Research export (recommended)
+## Use it from your coding agent
+
+**Claude Code** (plugin with the MCP server, the `verify-strategy` skill and `/verify`):
+
+```text
+/plugin marketplace add NeoZorK/Monte-Neo
+/plugin install monte-neo@monte-neo
+```
+
+**Any MCP client** (Codex, Gemini CLI, Cursor, and others):
+
+```bash
+uvx monte-neo mcp
+```
+
+It is also listed in the official MCP Registry as `io.github.NeoZorK/monte-neo`. Setup for each
+client: [Use from agents](https://neozork.github.io/Monte-Neo/guides/agents/).
+
+MCP tools: `verify_strategy`, `verify_grid`, `probe_lookahead`, `cost_stress`,
+`recheck_certificate`, `check_signature`, `verdict_schema`, `verifier_manifest`.
+
+## GitHub Action
+
+```yaml
+- uses: NeoZorK/Monte-Neo@v0.26.0
+  with:
+    ohlcv: data/btc_1h.csv
+    strategy: strategies/momentum.py
+    n-trials: "12"
+    comment: "true"        # post the verdict on the pull request
+```
+
+The job fails on `REJECT`. The verdict and every check appear in the step summary.
+
+## Certificates you can check
+
+Each run produces a `strategy-verdict/1` JSON certificate. It contains the verdict, every check,
+the metrics and the SHA-256 hashes of the data, signals and code.
+
+```bash
+monte-neo verify --recheck verdict.json --ohlcv btc_1h.csv --strategy my_strategy.py  # reproduce it
+pip install "monte-neo[sign]"
+monte-neo verify --keygen issuer                                  # issuer.key + issuer.pub
+monte-neo verify --ohlcv btc_1h.csv --strategy my_strategy.py --sign issuer.key --out verdict.json
+monte-neo verify --check-signature verdict.json --public-key issuer.pub
+```
+
+Show that a strategy passed:
+
+[![Verified by Monte-Neo](https://img.shields.io/badge/verified%20by-Monte--Neo-2ea44f)](https://github.com/NeoZorK/Monte-Neo)
+
+```markdown
+[![Verified by Monte-Neo](https://img.shields.io/badge/verified%20by-Monte--Neo-2ea44f)](https://github.com/NeoZorK/Monte-Neo)
+```
+
+Link the badge to the signed certificate so that readers can check it themselves.
+
+## Install options
+
+```bash
+pip install monte-neo              # verifier, CLI and MCP server
+pip install "monte-neo[sign]"      # + Ed25519 certificate signing
+pip install "monte-neo[plot]"      # + charts
+pip install "monte-neo[apple]"     # + Metal / MLX research engine (Apple Silicon)
+pip install "monte-neo[full]"      # everything
+```
+
+Python 3.11+ on macOS or Linux.
+
+<details>
+<summary><strong>Research engine</strong> (fee-aware bar backtests, sweeps, Monte Carlo)</summary>
+
+Monte-Neo started as a fast local research engine for Apple Silicon, and the verifier runs on it.
+The engine is still available. It is in maintenance mode: bug fixes only.
 
 ```python
-from monte_neo.backtest import (
-    ExecutionModel,
-    export_sma_sweep,
-    synthetic_ohlcv,
-)
+from monte_neo.backtest import ExecutionModel, export_sma_sweep, synthetic_ohlcv
 
 ohlc = synthetic_ohlcv(100_000, seed=42)
 model = ExecutionModel(commission_bps=5.0, slippage_bps=5.0, warmup_bars=50)
-out = export_sma_sweep(
-    ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"],
-    combos=16,
-    model=model,
-    device="auto",  # Metal when safe; else cpu_numba (see fallback_reason)
-)
-print(out["device"], out.get("fallback_reason"), out["combos"])
+out = export_sma_sweep(ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"], combos=16, model=model, device="auto")
+print(out["device"], out["combos"])
 ```
 
-### Single bar backtest
+- Next-bar fills, costs in bps, SL/TP/trailing stops, funding, sessions
+- Export API with golden vectors, holdout, walk-forward, CSCV/PBO, Monte Carlo helpers
+- Metal / MLX / Numba device selection with a memory planner that falls back to CPU instead of hanging
+- Paper OMS for event-level validation
 
-```python
-from monte_neo.backtest import (
-    ExecutionModel,
-    frame_to_ohlc,
-    run_bar_backtest,
-    sma_signal,
-    synthetic_ohlcv,
-)
+Docs: [quick start](https://neozork.github.io/Monte-Neo/guides/quick-start/) ·
+[export API](https://neozork.github.io/Monte-Neo/api/export/) ·
+[backtest engine](https://github.com/NeoZorK/Monte-Neo/blob/main/docs/project/backtest_engine.md)
 
-ohlc = frame_to_ohlc(synthetic_ohlcv(5_000, seed=42))
-model = ExecutionModel(
-    commission_bps=5.0,
-    slippage_bps=5.0,
-    size_fraction=0.25,
-    sl_pct=1.0,
-    tp_pct=2.0,
-)
-sig = sma_signal(ohlc["close"], fast=10, slow=40)
-out = run_bar_backtest(
-    ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"], sig, model=model
-)
-print(out["total_return"], out["metrics"]["max_drawdown"], len(out["trades"]))
-```
+</details>
 
-More: [docs/guides/quick-start.md](docs/guides/quick-start.md) · [backtest engine](docs/project/backtest_engine.md) · [FAQ](docs/guides/FAQ.md)
+## Project status
 
-## How to use (research workflow)
+Monte-Neo is in active development (beta). The verifier API and the `strategy-verdict/1`
+schema are stable across minor releases. See the
+[roadmap](https://github.com/NeoZorK/Monte-Neo/blob/main/docs/project/ROADMAP.md).
 
-1. Load or synthesize OHLCV (`synthetic_ohlcv` / your frame → `frame_to_ohlc`).
-2. Set an `ExecutionModel` (fees, SL/TP, sessions, side mode).
-3. Sweep with `export_sma_sweep` / `export_batch`, or a single `export_single`.
-4. Check `device`, `signal_device`, and `fallback_reason` when using `auto`.
-5. Optional depth: `equity_stride`, journal, `plan_research_bytes` / `memory` on exports.
-6. Paper OMS (`monte_neo.oms`) only when you need event-lane validation — not for sweep cps claims.
-
-**Devices:** `auto` · `metal` · `cpu_numba` (and MLX where signal paths allow). Oversized Metal
-jobs demote to Numba instead of hanging (v0.14.1+).
-
-## Features (honest)
-
-| Area | Status |
-|------|--------|
-| Strategy verifier + MCP server | `monte_neo.verify` / `monte-neo verify` / `monte-neo-mcp` |
-| Agent integrations | `integrations/` (Claude Code plugin, Codex, Gemini, Cursor) + `action.yml` |
-| MC indicator / robustness workflows | Available via CLI and library |
-| Fee-aware research bar engine | `monte_neo.backtest` |
-| Research export + golden vectors | `export_*` / `verify_golden_vectors` |
-| Memory / no-hang accelerator gate | `plan_research_bytes` / `decide_research_accelerator` |
-| Paper OMS + venue adapters | `monte_neo.oms` |
-| Metal / MLX / Numba device select | Best-effort on Apple Silicon; CPU fallbacks |
-| Docker | Supported for headless/CI-style runs |
-
-## Project structure
-
-```
-Monte-Neo/
-├── src/monte_neo/
-│   ├── verify/        # Strategy verifier (look-ahead, costs, Deflated Sharpe)
-│   ├── mcp/           # MCP server for coding agents
-│   ├── backtest/      # Research bar engine + export
-│   ├── oms/           # Paper OMS + accel
-│   ├── core/          # Generator / Metal bridges
-│   ├── data/          # Market data downloaders
-│   ├── monte_carlo/   # MC methods
-│   ├── metrics/       # Trading metrics
-│   ├── cli/           # Interactive CLI
-│   └── visualization/
-├── integrations/      # Claude Code plugin, Codex / Gemini / Cursor configs
-├── tests/             # unit, integration, traps (verifier Trap Suite)
-├── docs/
-└── docker/
-```
-
-## Screenshots / demos
-
-<p align="center">
-  <img src="docs/assets/demo_sma_sweep.png" alt="SMA sweep demo" width="720"/>
-</p>
-<p align="center">
-  <img src="docs/assets/demo_memory_plan.png" alt="Memory plan demo" width="720"/>
-</p>
-
-More under `docs/assets/`. Runnable script: [`examples/export_sma_sweep_quickstart.py`](examples/export_sma_sweep_quickstart.py).
+**Not investment advice.** Monte-Neo checks backtest methodology. It does not predict future
+profit.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) · [docs](docs/development/contributing.md).
+Found a way a backtest fooled you or your agent? [Submit it as a trap](https://github.com/NeoZorK/Monte-Neo/issues/new?template=trap_submission.yml).
+Bug reports and pull requests are welcome; see the
+[contributing guide](https://github.com/NeoZorK/Monte-Neo/blob/main/docs/development/contributing.md).
+Report security issues privately: [SECURITY.md](https://github.com/NeoZorK/Monte-Neo/blob/main/SECURITY.md).
 
-## Security
+## Citation
 
-Report vulnerabilities privately — see [SECURITY.md](SECURITY.md) (GitHub Security Advisories preferred; do not open public issues for exploitable bugs).
+If Monte-Neo helps your research, please cite it. GitHub shows the citation under
+**Cite this repository** ([CITATION.cff](https://github.com/NeoZorK/Monte-Neo/blob/main/CITATION.cff)).
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
-
-Public repository: https://github.com/NeoZorK/Monte-Neo
+[MIT](https://github.com/NeoZorK/Monte-Neo/blob/main/LICENSE)

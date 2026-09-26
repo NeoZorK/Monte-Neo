@@ -1,4 +1,4 @@
-"""Hardware verification for Float8 and Metal paths. Run: uv run python verify_hardware.py"""
+"""Hardware verification for Float8 and Metal paths. Run: uv run python scripts/verify_hardware.py"""
 
 import numpy as np
 

@@ -1,110 +1,86 @@
 # Monte-Neo
 
 <p class="mn-hero-logo" markdown="1">
-![Monte-Neo](assets/logo-header.png){ width="96" }
+![Monte-Neo](assets/logo-sphere.png){ width="120" }
 </p>
 
 <p class="mn-tagline" markdown="1">
-**Verify a trading strategy before you trust it**  
-Look-ahead probes · fee-aware next-bar economics · Deflated Sharpe · MCP for coding agents
+**The independent verifier for trading strategies written by AI agents and humans**  
+Catch look-ahead bias, hidden trading costs and overfitting before a backtest reaches your money
 </p>
 
 <p class="mn-badges" markdown="1">
-[![PyPI](https://img.shields.io/pypi/v/monte-neo.svg)](https://pypi.org/project/monte-neo/)
+[![PyPI](https://img.shields.io/pypi/v/monte-neo?label=PyPI&color=0a7bbb)](https://pypi.org/project/monte-neo/)
+[![Downloads](https://static.pepy.tech/badge/monte-neo)](https://pepy.tech/projects/monte-neo)
+[![Downloads/month](https://img.shields.io/pypi/dm/monte-neo?label=downloads%2Fmonth)](https://pypistats.org/packages/monte-neo)
 [![CI](https://github.com/NeoZorK/Monte-Neo/actions/workflows/ci.yml/badge.svg)](https://github.com/NeoZorK/Monte-Neo/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/NeoZorK/Monte-Neo/blob/main/LICENSE)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://pypi.org/project/monte-neo/)
-[![Apple Silicon](https://img.shields.io/badge/macOS-Apple%20Silicon-black.svg)](https://neozork.github.io/Monte-Neo/)
+[![MCP Registry](https://img.shields.io/badge/MCP%20Registry-io.github.NeoZorK%2Fmonte--neo-6f42c1)](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.NeoZorK/monte-neo)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/NeoZorK/Monte-Neo/blob/main/LICENSE)
 </p>
 
 !!! tip "Install"
     ```bash
     pip install monte-neo
-    # Apple Silicon extras (MLX / Metal bindings):
-    pip install "monte-neo[apple]"
+    monte-neo verify --ohlcv prices.csv --strategy my_strategy.py --n-trials 12
     ```
 
-    Or isolated CLI: `brew install pipx && pipx install "monte-neo[apple]"`
+## The problem
 
-## Strategy verifier
+A coding agent can turn a trading idea into a backtest in minutes, and then report a Sharpe
+of 3. Most of the time that number is wrong:
 
-```bash
-pip install "monte-neo[mcp]"
-monte-neo verify --ohlcv data.csv --strategy my_strategy.py --n-trials 12
-```
+- **Look-ahead bias:** the code reads future bars (`shift(-1)`, centred windows, `bfill`,
+  whole-series statistics, `np.gradient`, FFT filters).
+- **Missing costs:** the edge is smaller than fees and slippage, or needs a perfect fill.
+- **Selection bias:** the best of 300 variants is reported as if it were the only one.
 
-`monte-neo verify` returns `PASS`, `PASS_WITH_WARNINGS`, `NEEDS_MORE_EVIDENCE` or `REJECT`.
-It also returns a reproducible `strategy-verdict/1` certificate. Coding agents call it
-through the `monte-neo-mcp` server; see [Use from agents](guides/agents.md) and
-[Verifier API](api/verify.md).
+## What Monte-Neo does
 
-## What it is
+It checks the backtest, not the idea. Give it the price data and the strategy code or its
+positions. It returns `PASS`, `PASS_WITH_WARNINGS`, `NEEDS_MORE_EVIDENCE` or `REJECT`, the
+checks behind the verdict, concrete next steps for the agent, and a reproducible `strategy-verdict/1`
+certificate that can be signed.
 
-| Lane | Role |
-|------|------|
-| **Research bar** | Primary speed path — fee-aware next-bar grids on Mac |
-| **Monte Carlo** | Research helpers for robustness checks |
-| **Paper OMS** | Validation semantics — not a live-bot claim |
+| Family | Checks |
+|--------|--------|
+| **Look-ahead** | Truncation and future-perturbation probes, static AST lint (17 rules), implausible hit rate |
+| **Economics** | Net return after costs, break-even cost in bps, one- and two-bar execution delay |
+| **Statistics** | Probabilistic and Deflated Sharpe priced by `n_trials`, sample size, holdout, walk-forward for grids |
+| **Integrity** | Broken OHLCV, non-deterministic signals |
 
-**Job:** on an Apple Silicon Mac, iterate strategy hypotheses in minutes with economics you can re-check (export API + golden vectors).
+## Where to use it
 
-**Not a goal:** replace full event-driven production or live multi-venue bot platforms.
+- **Inside your coding agent:** Claude Code plugin, or the MCP server for Codex, Gemini CLI and
+  Cursor. See [Use from agents](guides/agents.md).
+- **In CI:** a GitHub Action that fails the pull request on `REJECT` and posts the verdict.
+- **When reviewing someone else's strategy:** re-check their certificate and verify its signature.
+- **When screening submissions** at a prop firm, marketplace or course.
+- **When comparing agents:** the [Honesty Bench](guides/honesty-bench.md).
 
+## Learn more
 
-## When Monte-Neo fits (and when it does not)
+- [Verifier API](api/verify.md): checks, verdicts, certificates, re-checks and signatures
+- [Trap Suite](guides/trap-suite.md): 25 strategies that lie and 9 honest controls, and how to add yours
+- [Honesty Bench](guides/honesty-bench.md): score how honestly agents report backtests
+- [FAQ](guides/FAQ.md) · [Changelog](project/CHANGELOG.md) · [Roadmap](project/ROADMAP.md)
 
-Warm honesty beats a feature dump. Use this as a job-fit check.
+## Research engine (maintenance mode)
 
-### Fits well
-
-- **Grid research on a Mac** — roughly **10²–10⁴** fee-aware next-bar combos (SMA / parametric sweeps), not a single one-off script
-- **Apple Silicon without Docker/cloud** — Metal economics + Numba, 16GB-safe planner, no-hang gate → `cpu_numba` fallback
-- **Re-checkable results** — export API + golden vectors before any timing claim
-- **Research → paper OMS** — research bar first; paper OMS is a validation lane, not live ops
-- **MIT + local** — core loop on your machine, no license gate and no mandatory cloud
-
-### Usually not the right tool
-
-- **Full live multi-venue / brokerage OMS** — production event-driven stacks are a different job
-- **Bot operations** — Telegram, exchange dry-run/live wiring, strategy marketplaces
-- **Cloud institutional multi-asset stacks** — cloud Docker-based institutional pipelines elsewhere
-- **One 50-line teaching backtest** — a tiny teaching tool is simpler for that
-- **Portfolio weight allocator / pipeline-bundle workflows** — different question than bar research
-
-See also [FAQ](guides/FAQ.md).
-
-## Why Monte-Neo
-
-- **Local Apple Silicon speed** — Metal economics + Numba (MLX optional)
-- **Fee-aware research bar** — next-bar fills, costs (bps), honest checklist
-- **Export API** — `export_single` / `export_batch` / `export_sma_sweep` + golden vectors
-- **16GB-safe** — memory planner + no-hang Metal gate → `cpu_numba` fallback
-- **MIT** — use, fork, ship
-
-## Quick example
+Monte-Neo started as a fast local research engine for Apple Silicon: fee-aware next-bar
+backtests, parameter sweeps with golden vectors, Monte Carlo helpers and a paper OMS, with
+Metal / MLX / Numba device selection. The verifier runs on this engine. The engine still works
+and receives bug fixes, but new work goes into the verifier.
 
 ```python
-from monte_neo.backtest import export_sma_sweep
-import numpy as np
+from monte_neo.backtest import ExecutionModel, export_sma_sweep, synthetic_ohlcv
 
-n = 50_000
-close = 100 + np.cumsum(np.random.randn(n) * 0.1)
-open_ = close  # demo: flat OHLC
-high = close + 0.2
-low = close - 0.2
-
-result = export_sma_sweep(
-    open_=open_, high=high, low=low, close=close,
-    fast=[5, 10, 20],
-    slow=[50, 100],
-    device="auto",  # Metal when safe, else cpu_numba
-)
-print(result["device"], result.get("ok"), len(result.get("rows", result)))
+ohlc = synthetic_ohlcv(100_000, seed=42)
+model = ExecutionModel(commission_bps=5.0, slippage_bps=5.0, warmup_bars=50)
+out = export_sma_sweep(ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"], combos=16, model=model, device="auto")
+print(out["device"], out["combos"])
 ```
 
-See also: [examples/export_sma_sweep_quickstart.py](https://github.com/NeoZorK/Monte-Neo/blob/main/examples/export_sma_sweep_quickstart.py)
-
-## Demos
+See the [quick start](guides/quick-start.md) and the [export API](api/export.md).
 
 <div class="mn-gallery" markdown="1">
 
@@ -114,8 +90,5 @@ See also: [examples/export_sma_sweep_quickstart.py](https://github.com/NeoZorK/M
 
 </div>
 
-## Next steps
-
-- [Install](setup/installation.md) · [Quick start](guides/quick-start.md) · [FAQ](guides/FAQ.md)
-- [Changelog](project/CHANGELOG.md) · [Roadmap](project/ROADMAP.md) · [Commercial](en/COMMERCIAL.md)
-- Source: [github.com/NeoZorK/Monte-Neo](https://github.com/NeoZorK/Monte-Neo)
+Source: [github.com/NeoZorK/Monte-Neo](https://github.com/NeoZorK/Monte-Neo) · MIT license ·
+Not investment advice.

@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use Monte-Neo in your research, please cite it as below."
+type: software
+title: "Monte-Neo: an independent verifier for trading-strategy backtests"
+abstract: >-
+  Monte-Neo checks trading-strategy backtests written by AI coding agents and humans.
+  It detects look-ahead bias with truncation and future-perturbation probes and a static
+  lint, prices trading costs and execution delay, and deflates the Sharpe ratio by the number
+  of variants tried. It returns a reproducible, optionally signed strategy-verdict/1
+  certificate, and ships an MCP server for coding agents.
+authors:
+  - name: "NeoZorK"
+    website: "https://github.com/NeoZorK"
+version: "0.26.0"
+date-released: "2026-09-26"
+license: MIT
+repository-code: "https://github.com/NeoZorK/Monte-Neo"
+url: "https://neozork.github.io/Monte-Neo/"
+keywords:
+  - backtesting
+  - look-ahead bias
+  - overfitting
+  - deflated Sharpe ratio
+  - algorithmic trading
+  - AI agents
+  - Model Context Protocol
