@@ -1285,6 +1285,7 @@ dev = [
 ]
 full = [
     { name = "binance-connector" },
+    { name = "cryptography" },
     { name = "fastapi" },
     { name = "lightgbm" },
     { name = "matplotlib" },
@@ -1328,6 +1329,9 @@ server = [
     { name = "redis" },
     { name = "uvicorn" },
 ]
+sign = [
+    { name = "cryptography" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -1353,6 +1357,8 @@ requires-dist = [
     { name = "binance-connector", marker = "extra == 'full'", specifier = ">=3.12.0" },
     { name = "black", marker = "extra == 'dev'", specifier = ">=26.3.1" },
     { name = "build", marker = "extra == 'dev'", specifier = ">=1.2" },
+    { name = "cryptography", marker = "extra == 'full'", specifier = ">=42" },
+    { name = "cryptography", marker = "extra == 'sign'", specifier = ">=42" },
     { name = "fastapi", marker = "extra == 'full'", specifier = ">=0.138.2" },
     { name = "fastapi", marker = "extra == 'server'", specifier = ">=0.138.2" },
     { name = "lightgbm", marker = "extra == 'full'", specifier = ">=4.6.0" },
@@ -1417,7 +1423,7 @@ requires-dist = [
     { name = "uvicorn", marker = "extra == 'full'", specifier = ">=0.49.0" },
     { name = "uvicorn", marker = "extra == 'server'", specifier = ">=0.49.0" },
 ]
-provides-extras = ["apple", "data", "dev", "full", "mcp", "ml", "plot", "server"]
+provides-extras = ["apple", "data", "dev", "full", "mcp", "ml", "plot", "server", "sign"]
 
 [package.metadata.requires-dev]
 dev = [
