@@ -28,6 +28,8 @@ TRAPS = [
     ("reverse_rolling", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "fail"}),
     ("full_polyfit", "random_walk", {"REJECT"}, {"lookahead_perturbation": "fail", "lookahead_static_lint": "warn"}),
     ("full_rank", "random_walk", {"REJECT"}, {"lookahead_perturbation": "fail", "lookahead_static_lint": "warn"}),
+    ("resample_max_leak", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "warn"}),
+    ("target_encoding_leak", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "fail"}),
     ("sma_cross", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE"}, {}),
     ("expanding_zscore", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
     ("momentum", "planted", {"PASS", "PASS_WITH_WARNINGS"}, {"net_profitability": "pass", "deflated_sharpe": "pass"}),

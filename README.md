@@ -1,5 +1,7 @@
 # Monte-Neo
 
+<!-- mcp-name: io.github.NeoZorK/monte-neo -->
+
 <p align="center">
   <img src="docs/assets/monteneo-logo.png" alt="Monte-Neo logo" width="120"/>
 </p>
@@ -18,7 +20,7 @@
   <img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+"/>
 </p>
 
-> Current: **v0.19.0** · [Docs site](https://neozork.github.io/Monte-Neo/) · [Verifier API](docs/api/verify.md) · [Agents](docs/guides/agents.md) · [Changelog](docs/project/CHANGELOG.md)
+> Current: **v0.20.0** · [Docs site](https://neozork.github.io/Monte-Neo/) · [Verifier API](docs/api/verify.md) · [Agents](docs/guides/agents.md) · [Changelog](docs/project/CHANGELOG.md)
 
 ## What this is
 

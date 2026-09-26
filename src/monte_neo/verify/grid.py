@@ -119,6 +119,8 @@ def verify_grid(
     wf = walk_forward(returns, folds=folds)
     section = {
         "grid": {
+            "spec": {k: list(v) for k, v in grid.items()},
+            "folds": int(folds),
             "n_combos": len(combos),
             "best_params": best,
             "top": [{"params": combos[int(i)], "sharpe_per_bar": float(sharpes[i])} for i in order[:TOP_K]],

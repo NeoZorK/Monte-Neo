@@ -41,6 +41,7 @@ monte-neo verify --schema          # print the JSON schema
 | 1 | `NEEDS_MORE_EVIDENCE` |
 | 2 | `REJECT` |
 | 3 | Usage or input error (not a verdict) |
+| 4 | `--recheck`: the certificate was not reproduced |
 
 ## Verdicts
 
@@ -139,6 +140,30 @@ CLI: `monte-neo verify --ohlcv data.csv --strategy my_strategy.py --grid '{"fast
 
 `certificate_id` is derived from the reproducibility block and the verdict. The same
 data, signals, code, model and `n_trials` always give the same id.
+
+### Re-checking a certificate
+
+A certificate is useful only if someone else can reproduce it. Re-check it with the
+original data and the strategy file or signals file:
+
+```bash
+monte-neo verify --recheck verdict.json --ohlcv btc_1h.csv --strategy my_strategy.py
+```
+
+```python
+from monte_neo.verify import recheck_certificate
+recheck_certificate("verdict.json", "btc_1h.csv", strategy="my_strategy.py")["reproduced"]
+```
+
+How the re-check works:
+
+1. It compares the data, signal and source hashes with the certificate.
+2. It re-runs the verifier with the recorded execution model and `n_trials`. For a grid
+   certificate, it re-runs the recorded grid search.
+3. It compares the verdict and the `certificate_id`.
+
+The result is `strategy-recheck/1`. `monte-neo verify --recheck` exits with code 4 when the
+certificate is not reproduced. MCP tool: `recheck_certificate`.
 
 ## Bring your own signals: `export_signals`
 
