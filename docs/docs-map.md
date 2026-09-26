@@ -28,6 +28,7 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/features.md - Detailed overview of framework features
 - docs/project/dynamic_indicators.md - Explanation of dynamic indicator generation
 - docs/project/ROADMAP.md - Development roadmap and milestones (v0.17.7)
+- docs/project/PRODUCT_STRATEGY_RU.md - Product strategy: agent-native strategy verifier niche, moat, roadmap (RU, internal)
 - docs/project/CHANGELOG.md - Release changelog (current: v0.17.7)
 - docs/project/backtest_engine.md - Fee-aware research bar engine
 - docs/project/oms_engine.md - Paper OMS (bar + tick/L2) + venue adapters
