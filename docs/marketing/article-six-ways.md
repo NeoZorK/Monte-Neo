@@ -1,7 +1,6 @@
 # Six ways your AI agent's backtest lies, and how to catch each one
 
-*Draft for dev.to, Medium or a personal blog. Every number below comes from running the
-published code; the strategies are in
+*Every number below comes from running the published code (checked on v0.28.0); the strategies are in
 [`tests/traps/strategies/`](https://github.com/NeoZorK/Monte-Neo/tree/main/tests/traps/strategies)
 and the data is a synthetic random walk (`synthetic_ohlcv(3000, seed=1)`).*
 
@@ -111,8 +110,9 @@ Catching these once is not enough. The checks need to run every time an agent cl
 - **In the agent:** the MCP server (`uvx monte-neo mcp`) or the Claude Code plugin. Each failed
   check returns a `next_action`, so the agent can fix the code and try again.
 - **In CI:** a GitHub Action that fails the pull request on `REJECT` and posts the verdict.
-- **For others:** a reproducible `strategy-verdict/1` certificate. Anyone can re-run it, and you
-  can sign it with Ed25519.
+- **For others:** a reproducible `strategy-verdict/1` certificate. Anyone can re-run it, you can
+  sign it with Ed25519, and readers can check the signature on the
+  [verification page](https://neozork.github.io/Monte-Neo/verify/).
 
 These patterns and many more are in the open
 [Trap Suite](https://neozork.github.io/Monte-Neo/guides/trap-suite/). If your agent found a way

@@ -48,7 +48,7 @@
 3. GitHub Marketplace для Action — галочка при следующем релизе.
 
 ### Неделя 2 — контент-якорь
-4. Статья «Six ways your AI agent's backtest lies» (dev.to + Medium + сайт документации). Все примеры
+4. Статья «Six ways your AI agent's backtest lies»: [x] опубликована на сайте документации (v0.29.0); [ ] dev.to и Medium с canonical-ссылкой на сайт. Все примеры
    берутся из Trap Suite, поэтому воспроизводимы.
 5. [x] GIF-демо (v0.27.0): `docs/assets/demo-verify.gif` — утечка → REJECT → исправление → честный вердикт. Использовать в постах и статье.
 

@@ -194,6 +194,8 @@ check_signature(signed, public_key="ed25519:...")["key_matches"]
   with a fresh key. Publish your `.pub` key (for example in your README) so that others can
   check who signed.
 - The result is `strategy-signature-check/1`. MCP tool: `check_signature`.
+- Anyone can also check a certificate in the browser on the [verification page](../verify.md);
+  nothing is uploaded.
 - The private key file is created with owner-only permissions. In CI, keep it in a secret.
 
 ## Bring your own signals: `export_signals`

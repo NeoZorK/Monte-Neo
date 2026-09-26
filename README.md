@@ -66,7 +66,7 @@ the truth: on a random walk, the strategy has no edge after costs.
 
 ```console
 $ monte-neo verify --ohlcv prices.csv --strategy agent_strategy.py --n-trials 40
-REJECT  certificate e6fb7a2fc5b47cc2
+REJECT  certificate a205d25d59002faa
   check                    category    status  summary
   data_integrity           integrity   pass    OHLCV is clean
   lookahead_truncation     lookahead   fail    truncation probe: LEAK DETECTED
@@ -185,7 +185,7 @@ MCP tools: `verify_strategy`, `verify_grid`, `probe_lookahead`, `cost_stress`,
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.28.0
+- uses: NeoZorK/Monte-Neo@v0.29.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py
@@ -218,7 +218,9 @@ Show that a strategy passed:
 [![Verified by Monte-Neo](https://img.shields.io/badge/verified%20by-Monte--Neo-2ea44f)](https://github.com/NeoZorK/Monte-Neo)
 ```
 
-Link the badge to the signed certificate so that readers can check it themselves.
+Link the badge to the [verification page](https://neozork.github.io/Monte-Neo/verify/) with your certificate and public
+key (`/verify/?cert=<https URL>&key=ed25519:<key>`). Readers then check the signature in their
+browser with one click; nothing is uploaded.
 
 ## Install options
 
