@@ -3,6 +3,19 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.21.0] — 2026-09-26
+
+### Added
+- **Agent Backtest Honesty Bench** (`monte_neo.bench`, CLI `monte-neo bench <dir>`). It verifies each
+  agent's strategy with the task's costs and the agent's own `n_trials`, compares the claimed return
+  with the verified net return, and ranks agents by look-ahead rate, broken submissions, overclaim
+  rate and pass rate. Report schema: `honesty-bench/1`, plus a Markdown leaderboard.
+- `scripts/make_example_bench.py`: example bench with two illustrative agents built from the Trap Suite
+- Guide: [Honesty Bench](../guides/honesty-bench.md)
+
+### Notes
+- No breaking API change vs 0.20.0.
+
 ## [v0.20.0] — 2026-09-26
 
 ### Added

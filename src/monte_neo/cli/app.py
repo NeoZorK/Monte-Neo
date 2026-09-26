@@ -327,6 +327,10 @@ def main() -> int:
         from monte_neo.cli.verify_cmd import main as verify_main
 
         return verify_main(sys.argv[2:])
+    if len(sys.argv) > 1 and sys.argv[1] == "bench":
+        from monte_neo.cli.bench_cmd import main as bench_main
+
+        return bench_main(sys.argv[2:])
     if len(sys.argv) > 1 and sys.argv[1] == "mcp":
         from monte_neo.mcp.server import main as mcp_main
 
