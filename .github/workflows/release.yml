@@ -1,0 +1,42 @@
+name: Release
+
+# Manual release: checks the version, tags main as NeoZorK and starts publish.yml on the tag.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag to release, e.g. v0.19.0 (must equal src/monte_neo/_version.py)"
+        required: true
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Check version and tag
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          pkg=$(python3 -c "import re; print(re.search(r'__version__ = \"(v[^\"]+)\"', open('src/monte_neo/_version.py').read()).group(1))")
+          test "$pkg" = "$VERSION" || { echo "requested $VERSION but package is $pkg"; exit 1; }
+          if git rev-parse -q --verify "refs/tags/$VERSION" > /dev/null; then echo "tag $VERSION already exists"; exit 1; fi
+      - name: Create tag
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          git config user.name "NeoZorK"
+          git config user.email "63606118+NeoZorK@users.noreply.github.com"
+          git tag -a "$VERSION" -m "Monte-Neo $VERSION"
+          git push origin "refs/tags/$VERSION"
+      - name: Start publish on the tag
+        env:
+          VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run publish.yml --repo "$GITHUB_REPOSITORY" --ref "$VERSION"
