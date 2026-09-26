@@ -46,6 +46,9 @@ dependencies = [
 
 
 [project.optional-dependencies]
+sign = [
+    "cryptography>=42",
+]
 apple = [
     "mlx>=0.11.0; sys_platform == 'darwin'",
     "pyobjc-framework-metal>=12.2.2; sys_platform == 'darwin'",
@@ -76,6 +79,7 @@ server = [
 ]
 # Back-compat kitchen sink for local/dev parity with pre-0.16 installs
 full = [
+    "cryptography>=42",
     "mlx>=0.11.0; sys_platform == 'darwin'",
     "pyobjc-framework-metal>=12.2.2; sys_platform == 'darwin'",
     "pyobjc-framework-cocoa>=12.2.2; sys_platform == 'darwin'",

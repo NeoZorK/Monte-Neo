@@ -5,7 +5,7 @@ Thanks for helping improve Monte-Neo. Keep changes small, local-Mac friendly, an
 ## Quick path
 
 1. Fork / clone, Python **3.11+**
-2. `uv sync --extra apple --extra plot --extra data --group dev` (omit `--extra apple` on Linux CI)
+2. `uv sync --extra apple --extra plot --extra data --extra mcp --extra sign --group dev` (omit `--extra apple` on Linux CI)
 3. Branch from `main`: `feat/…` or `fix/…`
 4. `uv run ruff check .` and `uv run pytest tests/unit -W ignore`
 5. Open a PR against `main` — CI `test` must be green

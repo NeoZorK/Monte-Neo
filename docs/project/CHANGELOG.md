@@ -3,6 +3,21 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.25.0] — 2026-09-26
+
+### Added
+- **Signed certificates** (Ed25519, optional extra `monte-neo[sign]`):
+  - `monte-neo verify --keygen PREFIX` writes `PREFIX.key` (owner-only) and `PREFIX.pub`;
+  - `--sign KEY` adds a `signature` block to the certificate;
+  - `--check-signature CERT [--public-key PUB]` checks it (exit code 5 when invalid or signed by another key);
+  - library: `sign_certificate`, `check_signature`, `generate_keypair`; result schema `strategy-signature-check/1`
+- MCP tool `check_signature`
+- `strategy-verdict/1` schema: optional `signature` property (backward compatible)
+
+### Notes
+- No breaking API change vs 0.24.0. The default install is unchanged; `cryptography` comes only with
+  the `sign` (or `full`) extra.
+
 ## [v0.24.0] — 2026-09-26
 
 ### Added
