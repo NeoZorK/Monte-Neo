@@ -11,6 +11,8 @@ A simplified guide to the Monte-Neo file structure.
 - docs/assets/logo-mark.png - Compact theme logo / favicon (96px)
 - docs/assets/logo-header.png - Compact header logo (128px)
 - README.md - Main project documentation
+- CLAUDE.md - Agent instructions (authorship rule: NeoZorK only, no AI attribution)
+- .claude/settings.json - Claude Code project settings (built-in attribution disabled)
 - pyproject.toml - Python package configuration and dependencies
 - uv.lock - Lockfile for consistent environment management
 - LICENSE - MIT License
