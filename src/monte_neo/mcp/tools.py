@@ -115,6 +115,28 @@ def verify_grid(
     return _compact(report) if compact else report
 
 
+def recheck_certificate(
+    certificate_path: str,
+    ohlcv_path: str,
+    signals_path: str | None = None,
+    strategy_path: str | None = None,
+) -> dict[str, Any]:
+    """Reproduce a strategy-verdict/1 certificate from its original inputs.
+
+    Args:
+        certificate_path: JSON certificate written by verify (--out) or returned by a tool.
+        ohlcv_path: The same OHLCV file that was verified.
+        signals_path: The same positions file (or use strategy_path).
+        strategy_path: The same strategy file that was verified.
+    """
+    from monte_neo.verify import recheck_certificate as _recheck
+    from monte_neo.verify import to_jsonable
+
+    if not signals_path and not strategy_path:
+        return {"error": "provide signals_path or strategy_path"}
+    return to_jsonable(_recheck(certificate_path, ohlcv_path, signals=signals_path, strategy=strategy_path))
+
+
 def probe_lookahead(ohlcv_path: str, strategy_path: str) -> dict[str, Any]:
     """Look-ahead probes only: static lint, determinism, truncation, future perturbation.
 
@@ -219,6 +241,7 @@ def verifier_manifest() -> dict[str, Any]:
 TOOLS: tuple[Callable[..., dict[str, Any]], ...] = (
     verify_strategy,
     verify_grid,
+    recheck_certificate,
     probe_lookahead,
     cost_stress,
     verdict_schema,
@@ -227,6 +250,7 @@ TOOLS: tuple[Callable[..., dict[str, Any]], ...] = (
 
 __all__ = [
     "SERVER_INSTRUCTIONS",
+    "recheck_certificate",
     "TOOLS",
     "cost_stress",
     "probe_lookahead",

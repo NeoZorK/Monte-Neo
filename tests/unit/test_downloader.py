@@ -122,3 +122,13 @@ def test_download_sample_data(mock_spot):
     df = download_sample_data(days=1)
     assert isinstance(df, pd.DataFrame)
     assert len(df) > 0
+
+
+def test_fetch_klines_persistent_rate_limit_fails(mock_spot):
+    """A 429 that never clears must raise, not loop (and hang CI) forever."""
+    mock_spot.return_value.klines.side_effect = Exception("429: Too many requests")
+    downloader = BinanceDownloader()
+    with patch("time.sleep") as mock_sleep:
+        with pytest.raises(RuntimeError, match="rate limit persisted"):
+            downloader._fetch_klines("BTCUSDT", "1h", 0, 1000)
+    assert mock_sleep.call_count == BinanceDownloader.MAX_RATE_LIMIT_RETRIES

@@ -14,6 +14,7 @@ Requirements: [uv](https://docs.astral.sh/uv/) (for `uvx`) and Python 3.11+.
 | `verify_grid` | Runs the parameter search inside the verifier (counts `n_trials`) and adds a walk-forward check |
 | `probe_lookahead` | Look-ahead probes only (lint, truncation, perturbation, determinism) |
 | `cost_stress` | Break-even cost and returns under 0, 1 and 2 bars of execution delay |
+| `recheck_certificate` | Reproduces a certificate from its original data and strategy or signals |
 | `verdict_schema` | JSON schema of the certificate |
 | `verifier_manifest` | Execution semantics and the check catalogue |
 
@@ -65,8 +66,12 @@ registers the MCP server and loads `GEMINI.md` as context.
 Use this stdio command:
 
 ```bash
-uvx --from "monte-neo[mcp]>=0.18.0" monte-neo-mcp
+uvx monte-neo mcp          # v0.20.0+: the MCP SDK is a default dependency
+# older pin: uvx --from "monte-neo[mcp]>=0.18.0" monte-neo-mcp
 ```
+
+Monte-Neo is published to the official MCP Registry as `io.github.NeoZorK/monte-neo` (`server.json`),
+so registry-aware clients can install it by name.
 
 For HTTP clients, add `--transport streamable-http`.
 

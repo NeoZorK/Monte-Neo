@@ -488,7 +488,9 @@ def test_misc_one_liners(sample_ohlcv, tmp_path):
     # signal factory mlx _sma empty branch - hard; just golden
     sf.build_sma_cross_grid_numba_golden(np.linspace(1, 2, 50), [(3, 8)])
 
-    # sweep / trades / export / portfolio_lite / downloader
+    # sweep / trades / export / portfolio_lite / downloader (no real network: client creation fails)
+    no_network = patch("monte_neo.data.downloader._require_spot", side_effect=RuntimeError("offline"))
+    no_network.start()
     for mod in (sw, bt, ex, pl, dl):
         for name, obj in list(vars(mod).items()):
             if not callable(obj):
@@ -504,6 +506,7 @@ def test_misc_one_liners(sample_ohlcv, tmp_path):
                     pass
             except Exception:
                 pass
+    no_network.stop()
 
     # charts line 95: non-astype index
     cg = ChartGenerator()

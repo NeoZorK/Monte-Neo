@@ -103,6 +103,11 @@ Release, either way:
 
 Do not create the GitHub Release by hand; `publish.yml` creates it.
 
+`publish.yml` also publishes `server.json` to the official MCP Registry (`mcp-registry` job, GitHub
+OIDC login). The registry checks for the `mcp-name: io.github.NeoZorK/monte-neo` marker in the PyPI
+README. The versions in `server.json` must equal the package version; `tests/unit/test_integrations.py`
+checks this.
+
 On https://pypi.org/manage/account/publishing/ add a pending publisher:
 
 | Field | Value |

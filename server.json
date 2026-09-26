@@ -1,0 +1,30 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.NeoZorK/monte-neo",
+  "title": "Monte-Neo strategy verifier",
+  "description": "Verify trading-strategy backtests before you trust them: look-ahead probes, trading costs, Deflated Sharpe, walk-forward, reproducible certificates.",
+  "repository": {
+    "url": "https://github.com/NeoZorK/Monte-Neo",
+    "source": "github"
+  },
+  "websiteUrl": "https://neozork.github.io/Monte-Neo/",
+  "version": "0.20.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "monte-neo",
+      "version": "0.20.0",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp"
+        }
+      ]
+    }
+  ]
+}

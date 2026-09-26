@@ -62,6 +62,9 @@ class BinanceDownloader:
         "ignore",
     ]
 
+    # Bounded backoff: a persistent 429 must fail, never hang forever.
+    MAX_RATE_LIMIT_RETRIES = 5
+
     def __init__(
         self,
         api_key: str | None = None,
@@ -98,6 +101,7 @@ class BinanceDownloader:
     ) -> list[list[str | int | float]]:
         klines: list[list[str | int | float]] = []
         current_start = start_ms
+        rate_limit_hits = 0
         while current_start < end_ms:
             try:
                 batch = self.client.klines(
@@ -122,6 +126,11 @@ class BinanceDownloader:
                 current_start = next_start
             except Exception as e:
                 if "429" in str(e) or "rate limit" in str(e).lower():
+                    rate_limit_hits += 1
+                    if rate_limit_hits > self.MAX_RATE_LIMIT_RETRIES:
+                        raise RuntimeError(
+                            f"Binance rate limit persisted after {self.MAX_RATE_LIMIT_RETRIES} retries"
+                        ) from e
                     logger.warning("Rate limit hit, sleeping for 10 seconds...")
                     time.sleep(10)
                     continue
