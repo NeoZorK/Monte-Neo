@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.32.0)
+# Monte-Neo Roadmap (v0.32.1)
 
 Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier for agent-built strategies).
 
@@ -69,6 +69,9 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 
 ## v0.32.0 — public bench run tooling
 - [x] `bench prepare` / `bench collect` (aliased clean workspaces) + headless runner with transcripts
+
+## v0.32.1 — health fixes
+- [x] Release smoke test runs again (in publish.yml) and exercises the product; integration pins raised; MCP server version
 
 ## Next (v0.33+)
 - [ ] First public bench run (owner runs it; tooling ready in v0.32.0): Claude Code / Codex / Gemini CLI / Cursor → published leaderboard

@@ -117,3 +117,24 @@ def test_referenced_assets_exist():
             if not (root_dir / "docs" / "assets" / name).is_file():
                 missing.add(f"{src.relative_to(root_dir)} -> docs/assets/{name}")
     assert not missing, f"referenced assets missing from the tree: {sorted(missing)}"
+
+
+def test_version_is_the_same_everywhere():
+    """Every place that names the release must match src/monte_neo/_version.py."""
+    import json
+
+    root = find_root()
+    ver = re.search(r'__version__ = "v([^"]+)"', (root / "src/monte_neo/_version.py").read_text()).group(1)
+    server = json.loads((root / "server.json").read_text())
+    found = {
+        "server.json": server["version"],
+        "server.json packages": server["packages"][0]["version"],
+        "claude plugin": json.loads((root / "integrations/claude-code/.claude-plugin/plugin.json").read_text())["version"],
+        "gemini extension": json.loads((root / "integrations/gemini/gemini-extension.json").read_text())["version"],
+        "CITATION.cff": re.search(r'^version: "([^"]+)"', (root / "CITATION.cff").read_text(), re.M).group(1),
+        "installation.md": re.search(r"Current release: \*\*v([^*]+)\*\*", (root / "docs/setup/installation.md").read_text()).group(1),
+        "README action pin": re.search(r"NeoZorK/Monte-Neo@v([0-9.]+)", (root / "README.md").read_text()).group(1),
+        "CHANGELOG top": re.search(r"^## \[v([^\]]+)\]", (root / "docs/project/CHANGELOG.md").read_text(), re.M).group(1),
+    }
+    wrong = {k: v for k, v in found.items() if v != ver}
+    assert not wrong, f"expected {ver}: {wrong}"

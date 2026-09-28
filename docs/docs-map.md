@@ -1,4 +1,4 @@
-# Monte-Neo v0.32.0
+# Monte-Neo v0.32.1
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -23,7 +23,7 @@ A simplified guide to the Monte-Neo file structure.
 - .github/workflows/verify-action.yml - Self-test of action.yml (leaky strategy must be rejected)
 - .github/workflows/publish.yml - Tag-driven PyPI publish + GitHub Release from CHANGELOG
 - .github/workflows/release.yml - Manual release: version check, tag as NeoZorK, start publish
-- scripts/verify_pypi_install.sh - Local/CI PyPI install verify helper
+- scripts/verify_pypi_install.sh - Installs a release from PyPI into a clean venv and runs verify, recheck, signing, bench and MCP (run by publish.yml after each release and weekly)
 - CONTRIBUTING.md - Root pointer to contributing guide
 - .gitignore - Git exclusion rules
 - .env.example - Environment variables template
@@ -34,10 +34,10 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/project-structure.md - Deep dive into physical directory layout
 - docs/project/features.md - Detailed overview of framework features
 - docs/project/dynamic_indicators.md - Explanation of dynamic indicator generation
-- docs/project/ROADMAP.md - Development roadmap and milestones (v0.32.0)
+- docs/project/ROADMAP.md - Development roadmap and milestones (v0.32.1)
 - docs/project/PRODUCT_STRATEGY_RU.md - Product strategy: agent-native strategy verifier niche, moat, roadmap (RU, internal)
 - docs/project/CLEANUP_CANDIDATES_RU.md - Cleanup candidate list with evidence, awaiting owner approval (RU, internal)
-- docs/project/CHANGELOG.md - Release changelog (current: v0.32.0)
+- docs/project/CHANGELOG.md - Release changelog (current: v0.32.1)
 - docs/project/backtest_engine.md - Fee-aware research bar engine
 - docs/project/oms_engine.md - Paper OMS (bar + tick/L2) + venue adapters
 - docs/assets/monteneo-logo.png - Project logo (original, with the old tagline)
@@ -90,7 +90,7 @@ A simplified guide to the Monte-Neo file structure.
 - docker/docker-compose.yml - Docker Compose service definitions
 
 ### Source Code (src/monte_neo/)
-- src/monte_neo/_version.py - Central version management (v0.32.0)
+- src/monte_neo/_version.py - Central version management (v0.32.1)
 - src/monte_neo/verify/ - Strategy verifier (ingest, look-ahead probes, lint, costs, stats, checks, verdict, grid + walk-forward, certificate recheck)
 - src/monte_neo/mcp/ - MCP server (monte-neo-mcp) + agent-facing tool functions
 - src/monte_neo/cli/verify_cmd.py - `monte-neo verify` command (CI exit codes)
