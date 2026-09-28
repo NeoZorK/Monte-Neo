@@ -13,6 +13,7 @@ from monte_neo._version import __version__
 from monte_neo.mcp.tools import SERVER_INSTRUCTIONS, TOOLS
 
 SERVER_NAME = "monte-neo"
+WEBSITE_URL = "https://neozork.github.io/Monte-Neo/"
 
 
 def _server_class() -> Any:
@@ -33,7 +34,16 @@ def _server_class() -> Any:
 def build_server() -> Any:
     """Create the MCP server with every verifier tool registered."""
     cls = _server_class()
-    server = cls(name=SERVER_NAME, instructions=SERVER_INSTRUCTIONS)
+    try:
+        # SDK 2.x reports version and website to clients during initialize.
+        server = cls(
+            name=SERVER_NAME,
+            instructions=SERVER_INSTRUCTIONS,
+            version=__version__.lstrip("v"),
+            website_url=WEBSITE_URL,
+        )
+    except TypeError:  # SDK 1.x FastMCP has no version / website_url arguments
+        server = cls(name=SERVER_NAME, instructions=SERVER_INSTRUCTIONS)
     for fn in TOOLS:
         server.tool()(fn)
     return server
