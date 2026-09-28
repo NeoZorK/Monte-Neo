@@ -3,6 +3,25 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.32.1] — 2026-09-28
+
+### Fixed
+- **Release smoke test never ran after v0.17.7.** GitHub does not start other workflows from a release
+  created with `GITHUB_TOKEN`, so `pypi-smoke.yml` stopped firing when releases moved into `publish.yml`.
+  `publish.yml` now has a `pypi-smoke` job that installs the version it just published from PyPI.
+- **The smoke test checked the wrong things.** `scripts/verify_pypi_install.sh` pinned 0.22.0 by default and
+  only imported research modules. It now installs the given or latest version and runs the product:
+  `verify` on a leaky strategy (must exit 2), `--recheck`, `--grid`, key generation, signing and
+  `--check-signature`, `bench init / prepare / collect` and scoring, and the MCP server and tools.
+- **Agent integrations could stay on an old verifier.** The Claude Code, Codex, Gemini CLI and Cursor configs
+  pinned `monte-neo[mcp]>=0.18.0`, and `uvx` keeps a cached environment that satisfies the pin. The floor
+  is now `>=0.32.0`, so existing installs pick up `check_signature` and the current lint rules.
+- **The MCP server reported an empty version.** It now sends its version and the docs URL to clients.
+
+### Added
+- A test that every place naming the release (server.json, plugin and extension manifests, CITATION,
+  installation guide, README action pin, CHANGELOG) matches `_version.py`.
+
 ## [v0.32.0] — 2026-09-26
 
 ### Added

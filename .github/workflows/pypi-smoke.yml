@@ -39,14 +39,14 @@ jobs:
           elif [ "${EVENT_NAME}" = "release" ] && [ -n "${RELEASE_TAG:-}" ]; then
             V="${RELEASE_TAG#v}"
           else
-            # schedule or empty dispatch → script default (pinned current)
+            # schedule or empty dispatch → latest release on PyPI
             V=""
           fi
           echo "ver=${V}" >> "$GITHUB_OUTPUT"
           if [ -n "${V}" ]; then
             echo "Resolved PyPI version: ${V}"
           else
-            echo "Using script default version"
+            echo "Using the latest release on PyPI"
           fi
 
       - name: Verify PyPI bare install
@@ -55,10 +55,9 @@ jobs:
           VERIFY_PYPI_SLEEP_SECS: "20"
         run: |
           set -euo pipefail
-          chmod +x scripts/verify_pypi_install.sh
           if [ -n "${{ steps.ver.outputs.ver }}" ]; then
-            ./scripts/verify_pypi_install.sh "${{ steps.ver.outputs.ver }}"
+            bash scripts/verify_pypi_install.sh "${{ steps.ver.outputs.ver }}"
           else
-            ./scripts/verify_pypi_install.sh
+            bash scripts/verify_pypi_install.sh
           fi
 
