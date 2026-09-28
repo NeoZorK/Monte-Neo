@@ -2,32 +2,42 @@
 # Smoke: install monte-neo from PyPI into a clean venv and run the product the way a user does.
 # Usage: ./scripts/verify_pypi_install.sh [version]     (no version = latest on PyPI)
 # Example: ./scripts/verify_pypi_install.sh 0.32.0
-# Handles PyPI CDN lag with retries/sleeps.
+# Installs the exact wheel from the PyPI JSON API (the simple index can lag a fresh upload).
 set -euo pipefail
 VER="${1:-}"
 VER="${VER#v}"
-SPEC="monte-neo[sign]"
-if [ -n "$VER" ]; then SPEC="monte-neo[sign]==${VER}"; fi
 DIR="$(mktemp -d)"
 trap 'rm -rf "$DIR"' EXIT
 python3 -m venv "$DIR/venv"
 "$DIR/venv/bin/pip" install -q --upgrade pip
 
+# Resolve the wheel through PyPI's JSON API and install that exact file: pip's simple index is
+# served from a CDN cache that can lag a fresh upload by many minutes.
 MAX_ATTEMPTS="${VERIFY_PYPI_MAX_ATTEMPTS:-8}"
 SLEEP_SECS="${VERIFY_PYPI_SLEEP_SECS:-20}"
+API="https://pypi.org/pypi/monte-neo/json"
+if [ -n "$VER" ]; then API="https://pypi.org/pypi/monte-neo/${VER}/json"; fi
 attempt=1
 while true; do
-  if "$DIR/venv/bin/pip" install -q --no-cache-dir "$SPEC"; then
+  WHEEL="$(python3 - "$API" <<'PY' 2>/dev/null || true
+import json, sys, urllib.request
+with urllib.request.urlopen(sys.argv[1], timeout=30) as r:
+    data = json.load(r)
+print(next(u["url"] for u in data["urls"] if u["filename"].endswith(".whl")))
+PY
+)"
+  if [ -n "$WHEEL" ] && "$DIR/venv/bin/pip" install -q --no-cache-dir "monte-neo[sign] @ ${WHEEL}"; then
     break
   fi
   if [ "$attempt" -ge "$MAX_ATTEMPTS" ]; then
-    echo "verify_pypi_install: failed to install ${SPEC} after ${MAX_ATTEMPTS} attempts" >&2
+    echo "verify_pypi_install: could not install monte-neo ${VER:-latest} after ${MAX_ATTEMPTS} attempts" >&2
     exit 1
   fi
-  echo "verify_pypi_install: attempt ${attempt}/${MAX_ATTEMPTS} failed (CDN lag?); sleeping ${SLEEP_SECS}s..."
+  echo "verify_pypi_install: attempt ${attempt}/${MAX_ATTEMPTS} failed (not on PyPI yet?); sleeping ${SLEEP_SECS}s..."
   sleep "$SLEEP_SECS"
   attempt=$((attempt + 1))
 done
+SPEC="monte-neo ${VER:-latest} (${WHEEL##*/})"
 
 BIN="$DIR/venv/bin"
 cd "$DIR"

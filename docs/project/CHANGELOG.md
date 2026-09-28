@@ -3,6 +3,13 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [Unreleased]
+
+### Fixed
+- `scripts/verify_pypi_install.sh` installs the exact wheel from the PyPI JSON API. The release smoke job
+  of v0.32.1 failed because pip's simple index, served from a CDN cache, still listed only 0.32.0 more
+  than 15 minutes after the upload; the published 0.32.1 itself passes every check.
+
 ## [v0.32.1] — 2026-09-28
 
 ### Fixed
