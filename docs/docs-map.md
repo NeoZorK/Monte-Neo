@@ -45,6 +45,7 @@ A simplified guide to the Monte-Neo file structure.
 - docs/assets/social-preview.png - 1280×640 banner: README hero and GitHub social preview
 - docs/assets/demo-verify.gif - Animated demo: leaky agent strategy → fix → honest verdict (scripts/make_demo_gif.py)
 - docs/project/MARKETING_PLAN_RU.md - Marketing plan: goals, audiences, channels, launch order (RU, internal)
+- docs/project/PRODUCT_PLAN_RU.md - Audit of v0.35 and the product plan: risks, report, traps, integrations, security check, speed and Metal, stages (RU, internal)
 - docs/marketing/launch-kit.md - Ready-to-post launch texts, GitHub About text, catalogue entries
 - docs/marketing/article-six-ways.md - Article draft: six ways an agent's backtest lies
 - docs/project/BRANCHING.md - Branch and version policy

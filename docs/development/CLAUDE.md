@@ -1,7 +1,10 @@
-# 🤖 Monte-Neo Development (v0.0.7)
+# 🤖 Monte-Neo Development
 
 ## Project Overview
-Monte-Neo is a Monte Carlo indicator generator framework.
+Monte-Neo is an independent verifier for trading strategies written by AI agents and humans
+(`src/monte_neo/verify/`, CLI `monte-neo verify`, MCP server, GitHub Action). The research engine
+(indicator generator, Monte Carlo, MLX/Metal) is a frozen lane: bug fixes only.
+Product plan (RU, internal): `docs/project/PRODUCT_PLAN_RU.md`.
 
 ## Key Commands
 ```bash
@@ -44,8 +47,9 @@ docker-compose -f docker/docker-compose.yml exec monte-neo bash
 6. **Maintain Index**: Always update `docs/docs-map.md` when files change.
 
 ## Versioning Strategy
-Primary version source: `src/monte_neo/_version.py`.
-Pattern: `v0.0.1` -> `v0.0.2` -> ... -> `v0.0.7`.
+Primary version source: `src/monte_neo/_version.py`. Feature releases raise the minor version,
+bug-fix and security releases the patch version. Release cadence (at most 2 feature releases a day;
+fixes any time): see `docs/development/rules.md`.
 
 ## Coding Style
 - Imports: standard, third-party, local. `from __future__ import annotations` required.
