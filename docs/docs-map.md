@@ -1,4 +1,4 @@
-# Monte-Neo v0.35.0
+# Monte-Neo v0.35.1
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -34,10 +34,10 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/project-structure.md - Deep dive into physical directory layout
 - docs/project/features.md - Detailed overview of framework features
 - docs/project/dynamic_indicators.md - Explanation of dynamic indicator generation
-- docs/project/ROADMAP.md - Development roadmap and milestones (v0.35.0)
+- docs/project/ROADMAP.md - Development roadmap and milestones (v0.35.1)
 - docs/project/PRODUCT_STRATEGY_RU.md - Product strategy: agent-native strategy verifier niche, moat, roadmap (RU, internal)
 - docs/project/CLEANUP_CANDIDATES_RU.md - Cleanup candidate list with evidence, awaiting owner approval (RU, internal)
-- docs/project/CHANGELOG.md - Release changelog (current: v0.35.0)
+- docs/project/CHANGELOG.md - Release changelog (current: v0.35.1)
 - docs/project/backtest_engine.md - Fee-aware research bar engine
 - docs/project/oms_engine.md - Paper OMS (bar + tick/L2) + venue adapters
 - docs/assets/monteneo-logo.png - Project logo (original, with the old tagline)
@@ -45,6 +45,7 @@ A simplified guide to the Monte-Neo file structure.
 - docs/assets/social-preview.png - 1280×640 banner: README hero and GitHub social preview
 - docs/assets/demo-verify.gif - Animated demo: leaky agent strategy → fix → honest verdict (scripts/make_demo_gif.py)
 - docs/project/MARKETING_PLAN_RU.md - Marketing plan: goals, audiences, channels, launch order (RU, internal)
+- docs/project/PRODUCT_PLAN_RU.md - Audit of v0.35 and the product plan: risks, report, traps, integrations, security check, speed and Metal, stages (RU, internal)
 - docs/marketing/launch-kit.md - Ready-to-post launch texts, GitHub About text, catalogue entries
 - docs/marketing/article-six-ways.md - Article draft: six ways an agent's backtest lies
 - docs/project/BRANCHING.md - Branch and version policy
@@ -89,7 +90,7 @@ A simplified guide to the Monte-Neo file structure.
 - docker/docker-compose.yml - Docker Compose service definitions
 
 ### Source Code (src/monte_neo/)
-- src/monte_neo/_version.py - Central version management (v0.35.0)
+- src/monte_neo/_version.py - Central version management (v0.35.1)
 - src/monte_neo/verify/ - Strategy verifier (ingest, single and universe markets, look-ahead probes, outside-data watch, lint, benchmark and breakdown, HTML report, costs, stats, checks, verdict, grid + walk-forward, certificate recheck)
 - src/monte_neo/mcp/ - MCP server (monte-neo-mcp) + agent-facing tool functions
 - src/monte_neo/cli/verify_cmd.py - `monte-neo verify` command (CI exit codes)
@@ -168,7 +169,8 @@ A simplified guide to the Monte-Neo file structure.
 
 #### Interface (cli/)
 - src/monte_neo/cli/__init__.py - CLI module exports
-- src/monte_neo/cli/app.py - CLI entry point and argument parsing
+- src/monte_neo/cli/entry.py - `monte-neo` entry point: dispatches verify / bench / mcp / --version without loading the research CLI
+- src/monte_neo/cli/app.py - Interactive research CLI and its argument parsing
 - src/monte_neo/cli/menu.py - Interactive arrow-navigation menu
 - src/monte_neo/cli/progress.py - Rich progress bars and ETA
 - src/monte_neo/cli/styles.py - Terminal styling and themes

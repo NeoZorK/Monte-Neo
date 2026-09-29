@@ -12,3 +12,9 @@ All changes pushed to public repositories are authored by **NeoZorK** only:
   no "Generated with ..." footers in commits, PR titles/bodies, PR comments, reviews, issues or release notes.
 - Squash-merge commit messages must not carry AI trailers either.
 - `.claude/settings.json` disables Claude Code's built-in attribution; do not re-enable it.
+
+## Release cadence (mandatory)
+
+- Feature releases (new minor or major version): **at most 2 per calendar day (UTC)**.
+- Patch releases with bug fixes or security fixes: any time, no limit.
+- Every release needs the owner's explicit approval. Details: [docs/development/rules.md](docs/development/rules.md).
