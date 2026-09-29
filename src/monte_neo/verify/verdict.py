@@ -13,11 +13,22 @@ import numpy as np
 import pandas as pd
 
 from monte_neo._version import __version__
-from monte_neo.backtest.bar_engine import run_bar_backtest
 from monte_neo.backtest.model import ExecutionModel
 from monte_neo.verify import checks as rows
+from monte_neo.verify.breakdown import buy_and_hold, periods, regimes, series
 from monte_neo.verify.costs import breakeven_cost_bps, delay_scan
-from monte_neo.verify.ingest import OHLC_COLS, SignalFn, call_signal_fn, load_ohlcv, load_signal_fn, load_signals
+from monte_neo.verify.engine import simulate
+from monte_neo.verify.ingest import (
+    OHLC_COLS,
+    POSITION_MODES,
+    SignalFn,
+    load_ohlcv,
+    load_signal_fn,
+    load_signal_values,
+    resolve_positions,
+    signal_values,
+    to_positions,
+)
 from monte_neo.verify.io_guard import IOWatch
 from monte_neo.verify.lint import lint_source
 from monte_neo.verify.lookahead import (
@@ -78,6 +89,7 @@ def verify_strategy(
     holdout_fraction: float = 0.3,
     min_trades: int = 30,
     probe_checks: int = 24,
+    positions: str = "auto",
     extra_checks: list[dict[str, Any]] | None = None,
     extra: dict[str, Any] | None = None,
     io_watch: IOWatch | None = None,
@@ -88,6 +100,9 @@ def verify_strategy(
     ``strategy`` (``file.py[:func]``) / ``signal_fn``. Code enables the
     look-ahead probes; ``source`` (or the strategy file) enables static lint.
     ``n_trials`` is how many variants were tried before picking this one.
+    ``positions`` reads the signal as ``sign`` (+1 / 0 / -1), ``weight`` (fraction of
+    equity in [-1, 1]) or ``auto`` (weights when all values are in [-1, 1] and some
+    are fractional).
     ``extra_checks`` / ``extra`` let wrappers (e.g. grid search) add check
     rows and report sections that take part in the verdict and certificate.
     ``io_watch`` lets a wrapper pass the watch that already covered the strategy
@@ -99,6 +114,8 @@ def verify_strategy(
         raise ValueError(f"min_trades must be >= 1, got {min_trades}")
     if not 0.0 < float(holdout_fraction) < 1.0:
         raise ValueError(f"holdout_fraction must be between 0 and 1, got {holdout_fraction}")
+    if positions not in POSITION_MODES:
+        raise ValueError(f"positions must be one of {POSITION_MODES}, got {positions!r}")
     df = load_ohlcv(ohlcv)
     n = len(df)
     # Every knob that can change the verdict goes into the certificate, so a recheck
@@ -108,6 +125,7 @@ def verify_strategy(
         "holdout_fraction": float(holdout_fraction),
         "probe_checks": int(probe_checks),
         "periods_per_year": float(periods_per_year) if periods_per_year else None,
+        "positions": positions,
     }
     if io_watch is None:
         io_watch = IOWatch(tuple(p for p in (df.attrs.get("source_path"),) if p))
@@ -126,15 +144,21 @@ def verify_strategy(
         return _report(checks, {}, df, None, src, model, n_trials, settings)
 
     with io_watch:
-        sig = call_signal_fn(fn, df) if fn is not None else load_signals(signals, n)
+        values = signal_values(fn(df.copy())) if fn is not None else load_signal_values(signals)
+        if values.size != n:
+            raise ValueError(f"signal length {values.size} != bar count {n}")
+        # One reading for every probe and backtest: resolved once from the full signal.
+        mode = resolve_positions(values, positions)
+        settings["positions"] = mode
+        sig = to_positions(values, mode)
         determinism = truncation = perturbation = None
         if fn is not None:
-            determinism = probe_determinism(fn, df, full=sig)
-            truncation = probe_truncation(fn, df, n_checks=probe_checks, full=sig)
-            perturbation = probe_perturbation(fn, df, n_checks=max(2, probe_checks // 4), full=sig)
+            determinism = probe_determinism(fn, df, full=sig, positions=mode)
+            truncation = probe_truncation(fn, df, n_checks=probe_checks, full=sig, positions=mode)
+            perturbation = probe_perturbation(fn, df, n_checks=max(2, probe_checks // 4), full=sig, positions=mode)
     lint = lint_source(src) if src else None
 
-    run = run_bar_backtest(ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"], sig, model=model)
+    run = simulate(ohlc, sig, model)
     rets = bar_returns(run["equity"], start=model.warmup_bars)
     ppy = float(periods_per_year) if periods_per_year else infer_periods_per_year(df.get("timestamp"))
     trials = np.asarray(trial_sharpes, dtype=np.float64) if trial_sharpes is not None else None
@@ -147,6 +171,10 @@ def verify_strategy(
     accuracy = implausible_accuracy(ohlc["open"], ohlc["close"], traded)
     total_return = float(run["total_return"])
     n_closed = int(run["n_closed_trades"])
+    bench = buy_and_hold(ohlc, model, np.ones(n, dtype=np.int64), ppy)
+    timestamps = df.get("timestamp")
+    by_period = periods(run["equity"], bench["equity"], traded, timestamps, model.warmup_bars, ppy)
+    by_regime = regimes(run["equity"], ohlc["close"], model.warmup_bars, ppy)
 
     checks = [
         integrity,
@@ -159,6 +187,8 @@ def verify_strategy(
         *rows.economics_rows(model, total_return, breakeven, delay),
         rows.timing_row(timing),
         *rows.statistics_rows(dsr, n_closed, int(min_trades), trials_declared=n_trials is not None, holdout=holdout),
+        rows.period_row(by_period, total_return),
+        rows.benchmark_row(total_return, dsr["sharpe_annualized"], bench),
         *(extra_checks or []),
     ]
     metrics = {
@@ -167,15 +197,27 @@ def verify_strategy(
         "max_drawdown": float(run["max_drawdown"]),
         "n_fills": int(run["n_trades"]),
         "n_closed_trades": n_closed,
+        "positions": mode,
         "exposure": float(np.mean(traded != 0)),
+        "mean_abs_position": float(np.mean(np.abs(traded))),
         "sharpe_annualized": dsr["sharpe_annualized"],
         "psr": dsr["psr"],
         "deflated_sharpe": dsr["deflated_sharpe"],
         "breakeven_cost_bps": float(breakeven["breakeven_bps"]),
         "hit_rate": accuracy.get("hit_rate"),
         "timing_p_value": timing["p_value"] if timing else None,
+        "benchmark_total_return": bench["total_return"],
+        "benchmark_sharpe_annualized": bench["sharpe_annualized"],
     }
-    return _report(checks, metrics, df, sig, src, model, n_trials, settings, extra)
+    sections = {
+        "benchmark": {
+            "description": "long every bar after warm-up, same costs",
+            **{k: bench[k] for k in ("total_return", "max_drawdown", "sharpe_annualized")},
+        },
+        "breakdown": {**by_period, **by_regime},
+        "series": series(run["equity"], bench["equity"], timestamps, model.warmup_bars),
+    }
+    return _report(checks, metrics, df, sig, src, model, n_trials, settings, extra, sections)
 
 
 def _report(
@@ -188,6 +230,7 @@ def _report(
     n_trials: int | None,
     settings: dict[str, Any],
     extra: dict[str, Any] | None = None,
+    sections: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     verdict = aggregate_verdict(checks)
     data_bytes = np.ascontiguousarray(df[list(OHLC_COLS)].to_numpy(dtype=np.float64)).tobytes()
@@ -218,6 +261,7 @@ def _report(
             "reproducibility": repro,
             "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
             "disclaimer": DISCLAIMER,
+            **(sections or {}),  # derived from the hashed inputs: not part of the certificate id
             **(extra or {}),
         }
     )

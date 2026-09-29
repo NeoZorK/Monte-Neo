@@ -39,8 +39,9 @@ def _model(ohlcv_path: str, commission_bps: float, slippage_bps: float, side_mod
 
 
 def _compact(report: dict[str, Any]) -> dict[str, Any]:
-    """Keep details only for failing / warning checks (saves agent context)."""
+    """Keep details only for failing / warning checks and drop chart series (saves agent context)."""
     out = dict(report)
+    out.pop("series", None)
     out["checks"] = [
         c if c["status"] in ("fail", "warn") else {k: v for k, v in c.items() if k != "details"}
         for c in report["checks"]
@@ -57,13 +58,14 @@ def verify_strategy(
     slippage_bps: float = 5.0,
     side_mode: str | None = None,
     warmup_bars: int | None = None,
+    positions: str = "auto",
     compact: bool = True,
 ) -> dict[str, Any]:
     """Verify a strategy backtest and return a strategy-verdict/1 certificate.
 
     Args:
         ohlcv_path: CSV/Parquet with open, high, low, close (optional timestamp).
-        signals_path: Positions per bar (+1 long, 0 flat, -1 short) as CSV/Parquet/NPY.
+        signals_path: Positions per bar (+1 long, 0 flat, -1 short, or weights in [-1, 1]) as CSV/Parquet/NPY.
         strategy_path: Python file 'path.py[:func]' defining func(df) -> positions.
             Enables look-ahead probes and static lint. Runs with your permissions.
         n_trials: Number of variants tried before choosing this one (selection bias).
@@ -71,6 +73,8 @@ def verify_strategy(
         slippage_bps: Slippage per side in basis points.
         side_mode: 'long_flat' or 'long_short' (default inferred).
         warmup_bars: Bars skipped before trading (default min(60, n/10)).
+        positions: 'sign' (+1/0/-1), 'weight' (fraction of equity in [-1, 1]) or 'auto'
+            (weights when all values are in [-1, 1] and some are fractional).
         compact: Drop details of passing checks to keep the response short.
     """
     from monte_neo.verify import verify_strategy as _verify
@@ -78,7 +82,7 @@ def verify_strategy(
     if not signals_path and not strategy_path:
         return {"error": "provide signals_path or strategy_path"}
     df, model = _model(ohlcv_path, commission_bps, slippage_bps, side_mode, warmup_bars, signals_path)
-    report = _verify(df, signals=signals_path, strategy=strategy_path, model=model, n_trials=n_trials)
+    report = _verify(df, signals=signals_path, strategy=strategy_path, model=model, n_trials=n_trials, positions=positions)
     return _compact(report) if compact else report
 
 
@@ -90,6 +94,7 @@ def verify_grid(
     slippage_bps: float = 5.0,
     side_mode: str | None = None,
     folds: int = 4,
+    positions: str = "auto",
     compact: bool = True,
 ) -> dict[str, Any]:
     """Run the parameter search inside the verifier and verify the best combo.
@@ -106,12 +111,13 @@ def verify_grid(
         slippage_bps: Slippage per side in basis points.
         side_mode: 'long_flat' or 'long_short' (default long_short).
         folds: Walk-forward folds.
+        positions: 'sign', 'weight' or 'auto' (see verify_strategy).
         compact: Drop details of passing checks to keep the response short.
     """
     from monte_neo.verify import verify_grid as _verify_grid
 
     df, model = _model(ohlcv_path, commission_bps, slippage_bps, side_mode, None, None)
-    report = _verify_grid(df, grid, strategy=strategy_path, model=model, folds=folds)
+    report = _verify_grid(df, grid, strategy=strategy_path, model=model, folds=folds, positions=positions)
     return _compact(report) if compact else report
 
 
@@ -200,6 +206,7 @@ def cost_stress(
     commission_bps: float = 5.0,
     slippage_bps: float = 5.0,
     side_mode: str | None = None,
+    positions: str = "auto",
 ) -> dict[str, Any]:
     """Break-even cost (bps per side) and returns under 0/1/2 bars of execution delay.
 
@@ -210,23 +217,29 @@ def cost_stress(
         commission_bps: Commission per side in basis points.
         slippage_bps: Slippage per side in basis points.
         side_mode: 'long_flat' or 'long_short' (default inferred).
+        positions: 'sign', 'weight' or 'auto' (see verify_strategy).
     """
     from monte_neo.verify import (
         breakeven_cost_bps,
-        call_signal_fn,
         delay_scan,
         load_signal_fn,
-        load_signals,
+        load_signal_values,
+        resolve_positions,
+        signal_values,
         to_jsonable,
+        to_positions,
     )
 
     if not signals_path and not strategy_path:
         return {"error": "provide signals_path or strategy_path"}
     df, model = _model(ohlcv_path, commission_bps, slippage_bps, side_mode, None, signals_path)
     if strategy_path:
-        sig = call_signal_fn(load_signal_fn(strategy_path)[0], df)
+        values = signal_values(load_signal_fn(strategy_path)[0](df.copy()))
     else:
-        sig = load_signals(signals_path, len(df))
+        values = load_signal_values(signals_path)
+    if values.size != len(df):
+        return {"error": f"signal length {values.size} != bar count {len(df)}"}
+    sig = to_positions(values, resolve_positions(values, positions))
     ohlc = {k: df[k].to_numpy() for k in ("open", "high", "low", "close")}
     return to_jsonable({"breakeven": breakeven_cost_bps(ohlc, sig, model), "delay": delay_scan(ohlc, sig, model)})
 
@@ -248,7 +261,11 @@ def verifier_manifest() -> dict[str, Any]:
         "execution": {
             "fill": "signal on bar t fills at open of bar t+1",
             "costs": "commission_bps + slippage_bps per side on fill notional",
-            "positions": "+1 long, 0 flat, -1 short; any number is reduced to its sign; NaN = flat",
+            "positions": (
+                "signs (+1 long, 0 flat, -1 short; any number is reduced to its sign) or weights "
+                "(fraction of equity in [-1, 1], e.g. 0.5 = long half); 'auto' reads weights when all values "
+                "are in [-1, 1] and some are fractional; NaN = flat"
+            ),
         },
         "verdicts": {
             "PASS": "no problems found",

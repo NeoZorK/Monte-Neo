@@ -55,19 +55,25 @@ def recheck_certificate(
     df = load_ohlcv(ohlcv)
     data_bytes = np.ascontiguousarray(df[list(OHLC_COLS)].to_numpy(dtype=np.float64)).tobytes()
     grid = cert.get("grid")
+    settings = repro.get("settings") or {}  # absent before v0.34.0: the defaults applied
+    mode = settings.get("positions") or "sign"  # before v0.35.0 every signal was read as signs
+    if mode == "auto":  # the data check stopped the run before the signal was read
+        mode = "sign"
     fn = source = None
     if strategy is not None:
         fn, source = load_signal_fn(strategy)
         best = (grid or {}).get("best_params") or {}
-        sig = call_signal_fn(partial(fn, **best), df)
+        sig = call_signal_fn(partial(fn, **best), df, mode)
     elif signals is not None:
-        sig = load_signals(signals, len(df))
+        sig = load_signals(signals, len(df), mode)
     else:
         raise ValueError("provide signals or strategy used for the certificate")
 
     inputs = {
         "data_sha256": _sha(data_bytes) == repro.get("data_sha256"),
-        "signals_sha256": _sha(np.ascontiguousarray(sig).tobytes()) == repro.get("signals_sha256"),
+        # None: the run stopped at the data check before reading the signal.
+        "signals_sha256": repro.get("signals_sha256") is None
+        or _sha(np.ascontiguousarray(sig).tobytes()) == repro["signals_sha256"],
         "source_sha256": repro.get("source_sha256") is None
         or (source is not None and _sha(source.encode("utf-8")) == repro["source_sha256"]),
     }
@@ -87,7 +93,6 @@ def recheck_certificate(
         report.update(reproduced=False, reason="grid spec not recorded (certificate older than v0.20.0)")
         return report
     model = ExecutionModel(**repro["model"])
-    settings = repro.get("settings") or {}  # absent before v0.34.0: the defaults applied
     if grid is not None and fn is not None:
         again = verify_grid(df, grid["spec"], signal_fn=fn, source=source, model=model, folds=grid["folds"], **settings)
     else:

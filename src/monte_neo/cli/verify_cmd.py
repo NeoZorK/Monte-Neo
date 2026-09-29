@@ -29,13 +29,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--ohlcv", help="OHLCV table (.csv / .parquet) with open, high, low, close[, timestamp]")
     src = p.add_mutually_exclusive_group()
-    src.add_argument("--signals", help="Positions per bar (.csv / .parquet / .npy): +1 long, 0 flat, -1 short")
+    src.add_argument("--signals", help="Positions per bar (.csv / .parquet / .npy): +1 long, 0 flat, -1 short, or weights in [-1, 1]")
     src.add_argument("--strategy", help="Strategy file 'path.py[:func]' with func(df) -> positions (default func: signal)")
     p.add_argument("--n-trials", type=int, default=None, help="How many variants were tried before this one")
     p.add_argument("--grid", help="Parameter grid as JSON or a .json file, e.g. '{\"fast\": [10, 20], \"slow\": [50, 100]}' (needs --strategy)")
     p.add_argument("--folds", type=int, default=4, help="Walk-forward folds for --grid (default 4)")
     p.add_argument("--commission-bps", type=float, default=5.0, help="Commission per side in bps (default 5)")
     p.add_argument("--slippage-bps", type=float, default=5.0, help="Slippage per side in bps (default 5)")
+    p.add_argument(
+        "--positions", choices=["auto", "sign", "weight"], default="auto",
+        help="Read signals as signs (+1/0/-1), as weights (fraction of equity in [-1, 1]) or auto (default: weights when all values are in [-1, 1] and some are fractional)",
+    )
     p.add_argument("--side-mode", choices=["long_flat", "long_short"], default=None, help="Default: long_short if signals contain shorts")
     p.add_argument("--warmup-bars", type=int, default=None, help="Bars ignored before trading (default min(60, n/10))")
     p.add_argument("--periods-per-year", type=float, default=None, help="Bars per year for annualization (default: inferred)")
@@ -75,6 +79,9 @@ def _render_text(report: dict[str, Any], console: Console) -> None:
             f" · Sharpe(ann) {m['sharpe_annualized']:.2f} · DSR {m['deflated_sharpe']:.3f}"
             f" · break-even {m['breakeven_cost_bps']:.1f} bps"
         )
+    by_period = (report.get("breakdown") or {}).get("periods") or []
+    if by_period:
+        console.print("periods: " + " · ".join(f"{p['period']} {p['return']:+.1%}" for p in by_period[:12]))
     for action in report["next_actions"]:
         console.print(f"[yellow]→ {action}[/]")
     console.print(f"[dim]{report['disclaimer']}[/]")
@@ -154,7 +161,10 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
             warmup_bars=args.warmup_bars,
             n_bars=len(df),
         )
-        common = {"model": model, "periods_per_year": args.periods_per_year, "min_trades": args.min_trades}
+        common = {
+            "model": model, "periods_per_year": args.periods_per_year, "min_trades": args.min_trades,
+            "positions": args.positions,
+        }
         if args.grid:
             report = verify_grid(df, _load_grid(args.grid), strategy=args.strategy, folds=args.folds, **common)
         else:

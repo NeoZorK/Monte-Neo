@@ -24,6 +24,7 @@ NEXT_ACTIONS: dict[str, str] = {
     "cost_margin": "Edge barely covers costs: cut turnover or test with higher slippage before trusting it.",
     "delay_sensitivity": "Profit disappears with one bar of execution delay: the edge lives in fill timing.",
     "timing_significance": "The profit comes from market exposure, not timing: shifted copies of the same positions earn as much. Compare with buy-and-hold at the same exposure, or find a signal that beats its own shifted copies.",
+    "period_consistency": "The profit comes from one period: find out what happened there (a regime, an event, a data error) and test on more history.",
     "sample_size": "Too few closed trades for statistics: test on more history or more instruments.",
     "deflated_sharpe": "Sharpe does not survive the number of variants tried: test out-of-sample or reduce the search space.",
     "trials_disclosed": "Pass n_trials = number of variants you tried (parameters, rules, assets) so selection bias is priced in.",
@@ -188,6 +189,35 @@ def timing_row(timing: dict[str, Any] | None) -> dict[str, Any]:
     return check("timing_significance", "statistics", timing["status"], summary, timing)
 
 
+def benchmark_row(total_return: float, sharpe: float, bench: dict[str, Any]) -> dict[str, Any]:
+    """Buy-and-hold on the same data and costs, for context (never changes the verdict)."""
+    summary = (
+        f"buy & hold {bench['total_return']:+.2%} (Sharpe {bench['sharpe_annualized']:.2f})"
+        f" vs strategy {total_return:+.2%} (Sharpe {sharpe:.2f})"
+    )
+    details = {k: bench[k] for k in ("total_return", "max_drawdown", "sharpe_annualized")}
+    details["excess_return"] = total_return - bench["total_return"]
+    return check("benchmark", "statistics", "info", summary, details)
+
+
+def period_row(breakdown: dict[str, Any], total_return: float) -> dict[str, Any]:
+    """Warn when the whole profit comes from one period."""
+    rows = breakdown["periods"]
+    if total_return <= 0.0:
+        return check("period_consistency", "statistics", "skip", "not profitable after costs")
+    if len(rows) < 3:
+        return check("period_consistency", "statistics", "skip", "fewer than 3 periods")
+    rets = np.array([r["return"] for r in rows])
+    best = int(np.argmax(rets))
+    rest = float(np.prod(np.delete(1.0 + rets, best)) - 1.0)
+    positive = int(np.count_nonzero(rets > 0))
+    details = {"best_period": rows[best]["period"], "return_without_best": rest, "positive_periods": positive, "periods": len(rows)}
+    if rest <= 0.0:
+        summary = f"profit comes from one period ({rows[best]['period']}); the other {len(rows) - 1} return {rest:+.2%}"
+        return check("period_consistency", "statistics", "warn", summary, details)
+    return check("period_consistency", "statistics", "pass", f"profitable in {positive} of {len(rows)} periods", details)
+
+
 def statistics_rows(
     dsr: dict[str, Any], n_closed: int, min_trades: int, trials_declared: bool, holdout: dict[str, Any]
 ) -> list[dict[str, Any]]:
@@ -235,11 +265,13 @@ def next_actions(checks: list[dict[str, Any]]) -> list[str]:
 __all__ = [
     "NEXT_ACTIONS",
     "accuracy_row",
+    "benchmark_row",
     "check",
     "data_integrity",
     "economics_rows",
     "lint_row",
     "next_actions",
+    "period_row",
     "probe_row",
     "statistics_rows",
     "timing_row",

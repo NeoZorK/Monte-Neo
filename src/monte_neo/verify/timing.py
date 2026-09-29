@@ -17,12 +17,16 @@ import numpy as np
 
 from monte_neo.backtest.core_numba import run_terminal_return
 from monte_neo.backtest.model import ExecutionModel
+from monte_neo.verify.engine import is_weights
+from monte_neo.verify.engine import total_return as _weights_return
 
 N_SHIFTS = 200
 ALPHA = 0.05
 
 
 def _terminal_return(ohlc: dict[str, np.ndarray], signals: np.ndarray, model: ExecutionModel) -> float:
+    if is_weights(signals):
+        return _weights_return(ohlc, signals, model)
     n = signals.size
     return float(
         run_terminal_return(
@@ -48,8 +52,9 @@ def timing_significance(
     ``p = (1 + #shifts with return >= actual) / (n_shifts + 1)``. Shifts start at 5% of
     the sample (at least 10 bars) so a shifted copy never overlaps its own timing.
     """
-    sig = np.ascontiguousarray(signals, dtype=np.int64)
-    n = sig.size
+    sig = np.asarray(signals)
+    sig = np.ascontiguousarray(sig if is_weights(sig) else sig.astype(np.int64))
+    n = sig.shape[0]
     ohlc = {k: np.ascontiguousarray(v, dtype=np.float64) for k, v in ohlc.items()}
     actual = _terminal_return(ohlc, sig, model)
     lo = max(10, n // 20)
@@ -57,7 +62,8 @@ def timing_significance(
     if hi <= lo or not np.any(sig):
         return {"status": "skip", "p_value": None, "actual_return": actual, "n_shifts": 0}
     offsets = np.unique(np.linspace(lo, hi, num=int(n_shifts)).astype(np.int64))
-    shifted = np.array([_terminal_return(ohlc, np.roll(sig, int(k)), model) for k in offsets])
+    # Shift along time only: a multi-instrument matrix keeps its cross-section together.
+    shifted = np.array([_terminal_return(ohlc, np.roll(sig, int(k), axis=0), model) for k in offsets])
     beaten = int(np.count_nonzero(shifted < actual))
     p_value = float((1 + np.count_nonzero(shifted >= actual)) / (offsets.size + 1))
     return {
