@@ -155,6 +155,8 @@ def implausible_accuracy(
 ) -> dict[str, Any]:
     """Next-bar direction hit rate of active signals (leakage smell test).
 
+    Arrays may be ``(bars,)`` or ``(bars, instruments)``; missing prices count as no move.
+
     ``fail`` needs a hit rate of at least ``max_hit_rate`` that is also far from
     chance (binomial z >= ``min_z``); a high but not significant rate is a ``warn``,
     so an honest strategy with few active bars is not accused of look-ahead.
@@ -162,11 +164,11 @@ def implausible_accuracy(
     o = np.asarray(open_, dtype=np.float64)
     c = np.asarray(close, dtype=np.float64)
     s = np.sign(np.asarray(signals, dtype=np.float64))  # direction only: weights count by their sign
-    if s.size < 3:
+    if s.shape[0] < 3:
         return {"status": "skip", "hit_rate": None, "active_bars": 0}
     pos = s[:-1]
-    rate_cc, n_cc = _hit_rate(pos, c[1:] - c[:-1])
-    rate_oc, n_oc = _hit_rate(pos, c[1:] - o[1:])
+    rate_cc, n_cc = _hit_rate(pos, np.nan_to_num(c[1:] - c[:-1]))
+    rate_oc, n_oc = _hit_rate(pos, np.nan_to_num(c[1:] - o[1:]))
     rate, n = (rate_cc, n_cc) if rate_cc >= rate_oc else (rate_oc, n_oc)
     z = (rate - 0.5) * 2.0 * float(np.sqrt(n)) if n else 0.0
     if n < min_active:

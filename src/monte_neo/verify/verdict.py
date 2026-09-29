@@ -19,24 +19,16 @@ from monte_neo.verify.breakdown import buy_and_hold, periods, regimes, series
 from monte_neo.verify.costs import breakeven_cost_bps, delay_scan
 from monte_neo.verify.engine import simulate
 from monte_neo.verify.ingest import (
-    OHLC_COLS,
     POSITION_MODES,
     SignalFn,
     load_ohlcv,
     load_signal_fn,
-    load_signal_values,
     resolve_positions,
-    signal_values,
     to_positions,
 )
 from monte_neo.verify.io_guard import IOWatch
 from monte_neo.verify.lint import lint_source
-from monte_neo.verify.lookahead import (
-    implausible_accuracy,
-    probe_determinism,
-    probe_perturbation,
-    probe_truncation,
-)
+from monte_neo.verify.market import SingleMarket, UniverseMarket, market_for
 from monte_neo.verify.schema import DISCLAIMER, VERDICT_SCHEMA_ID, aggregate_verdict, to_jsonable
 from monte_neo.verify.stats import bar_returns, deflated_sharpe, infer_periods_per_year, sharpe_per_bar
 from monte_neo.verify.timing import timing_significance
@@ -117,7 +109,8 @@ def verify_strategy(
     if positions not in POSITION_MODES:
         raise ValueError(f"positions must be one of {POSITION_MODES}, got {positions!r}")
     df = load_ohlcv(ohlcv)
-    n = len(df)
+    market = market_for(df)
+    n = market.n_bars
     # Every knob that can change the verdict goes into the certificate, so a recheck
     # reruns the same test and a reader sees e.g. a lowered min_trades.
     settings = {
@@ -136,48 +129,45 @@ def verify_strategy(
     model = model or _default_model(n)
     if n < model.warmup_bars + 2:
         raise ValueError(f"need at least warmup_bars + 2 = {model.warmup_bars + 2} bars, got {n}")
-    ohlc = {k: df[k].to_numpy(dtype=np.float64) for k in OHLC_COLS}
+    ohlc = market.ohlc
 
-    integrity = rows.data_integrity(ohlc, df.get("timestamp"))
+    integrity = market.integrity()
     if integrity["status"] == "fail":
         checks = [integrity]
-        return _report(checks, {}, df, None, src, model, n_trials, settings)
+        return _report(checks, {}, market, None, src, model, n_trials, settings)
 
     with io_watch:
-        values = signal_values(fn(df.copy())) if fn is not None else load_signal_values(signals)
-        if values.size != n:
-            raise ValueError(f"signal length {values.size} != bar count {n}")
+        values = market.read_values(fn, signals)
         # One reading for every probe and backtest: resolved once from the full signal.
         mode = resolve_positions(values, positions)
         settings["positions"] = mode
-        sig = to_positions(values, mode)
+        full = to_positions(values, mode)  # per row: what the probes compare and the hash covers
+        sig, traded = market.positions(values, mode, model)
         determinism = truncation = perturbation = None
         if fn is not None:
-            determinism = probe_determinism(fn, df, full=sig, positions=mode)
-            truncation = probe_truncation(fn, df, n_checks=probe_checks, full=sig, positions=mode)
-            perturbation = probe_perturbation(fn, df, n_checks=max(2, probe_checks // 4), full=sig, positions=mode)
+            determinism, truncation, perturbation = market.probes(fn, full, mode, probe_checks)
     lint = lint_source(src) if src else None
 
     run = simulate(ohlc, sig, model)
     rets = bar_returns(run["equity"], start=model.warmup_bars)
-    ppy = float(periods_per_year) if periods_per_year else infer_periods_per_year(df.get("timestamp"))
+    timestamps = market.timestamps
+    ppy = float(periods_per_year) if periods_per_year else infer_periods_per_year(timestamps)
     trials = np.asarray(trial_sharpes, dtype=np.float64) if trial_sharpes is not None else None
     dsr = deflated_sharpe(rets, n_trials=int(n_trials or 1), trial_sharpes=trials, periods_per_year=ppy)
     holdout = _holdout(rets, holdout_fraction)
     breakeven = breakeven_cost_bps(ohlc, sig, model)
     delay = delay_scan(ohlc, sig, model)
     timing = timing_significance(ohlc, sig, model) if run["total_return"] > 0.0 else None
-    traded = sig if model.side_mode == "long_short" else np.maximum(sig, 0)
-    accuracy = implausible_accuracy(ohlc["open"], ohlc["close"], traded)
+    accuracy = market.accuracy(traded)
     total_return = float(run["total_return"])
     n_closed = int(run["n_closed_trades"])
-    bench = buy_and_hold(ohlc, model, np.ones(n, dtype=np.int64), ppy)
-    timestamps = df.get("timestamp")
+    bench = buy_and_hold(ohlc, model, market.benchmark_positions(), ppy)
     by_period = periods(run["equity"], bench["equity"], traded, timestamps, model.warmup_bars, ppy)
-    by_regime = regimes(run["equity"], ohlc["close"], model.warmup_bars, ppy)
+    by_regime = regimes(run["equity"], market.market_close(), model.warmup_bars, ppy)
 
     checks = [
         integrity,
+        *market.universe_checks(),
         rows.probe_row("determinism", determinism, "determinism"),
         rows.probe_row("lookahead_truncation", truncation, "truncation probe"),
         rows.probe_row("lookahead_perturbation", perturbation, "future-perturbation probe"),
@@ -191,6 +181,7 @@ def verify_strategy(
         rows.benchmark_row(total_return, dsr["sharpe_annualized"], bench),
         *(extra_checks or []),
     ]
+    active = np.abs(traded) if traded.ndim == 1 else np.abs(traded).sum(axis=1)
     metrics = {
         "bars": n,
         "total_return": total_return,
@@ -198,8 +189,8 @@ def verify_strategy(
         "n_fills": int(run["n_trades"]),
         "n_closed_trades": n_closed,
         "positions": mode,
-        "exposure": float(np.mean(traded != 0)),
-        "mean_abs_position": float(np.mean(np.abs(traded))),
+        "exposure": float(np.mean(active != 0)),
+        "mean_abs_position": float(np.mean(active)),
         "sharpe_annualized": dsr["sharpe_annualized"],
         "psr": dsr["psr"],
         "deflated_sharpe": dsr["deflated_sharpe"],
@@ -208,22 +199,23 @@ def verify_strategy(
         "timing_p_value": timing["p_value"] if timing else None,
         "benchmark_total_return": bench["total_return"],
         "benchmark_sharpe_annualized": bench["sharpe_annualized"],
+        **market.describe(traded),
     }
     sections = {
         "benchmark": {
-            "description": "long every bar after warm-up, same costs",
+            "description": market.benchmark_description,
             **{k: bench[k] for k in ("total_return", "max_drawdown", "sharpe_annualized")},
         },
         "breakdown": {**by_period, **by_regime},
         "series": series(run["equity"], bench["equity"], timestamps, model.warmup_bars),
     }
-    return _report(checks, metrics, df, sig, src, model, n_trials, settings, extra, sections)
+    return _report(checks, metrics, market, full, src, model, n_trials, settings, extra, sections)
 
 
 def _report(
     checks: list[dict[str, Any]],
     metrics: dict[str, Any],
-    df: pd.DataFrame,
+    market: SingleMarket | UniverseMarket,
     sig: np.ndarray | None,
     src: str | None,
     model: ExecutionModel,
@@ -233,7 +225,7 @@ def _report(
     sections: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     verdict = aggregate_verdict(checks)
-    data_bytes = np.ascontiguousarray(df[list(OHLC_COLS)].to_numpy(dtype=np.float64)).tobytes()
+    data_bytes = market.data_bytes()
     repro = {
         "engine": "monte-neo",
         "engine_version": __version__,
@@ -244,6 +236,8 @@ def _report(
         "n_trials": int(n_trials or 1),
         "settings": settings,
     }
+    if market.kind == "universe":
+        repro["universe"] = {"symbols": len(market.symbols), "bars": market.n_bars}
     if extra:
         repro["extra_sha256"] = _sha256(json.dumps(to_jsonable(extra), sort_keys=True).encode())
     cert_id = _sha256(json.dumps({"r": repro, "v": verdict}, sort_keys=True, default=str).encode())[:16]

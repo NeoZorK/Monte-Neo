@@ -83,6 +83,29 @@ def _on_groupby(node: ast.AST) -> bool:
     return False
 
 
+def _is_timestamp_column(node: ast.AST | None) -> bool:
+    """``"timestamp"``, ``df["timestamp"]`` or ``df.timestamp``: the exact bar time, not a derived date."""
+    if isinstance(node, ast.Constant):
+        return node.value == "timestamp"
+    if isinstance(node, ast.Subscript):
+        return _is_timestamp_column(node.slice)
+    return isinstance(node, ast.Attribute) and node.attr == "timestamp"
+
+
+def _grouped_by_timestamp(node: ast.AST) -> bool:
+    """A chain grouped by the exact timestamp: every group is one cross-section of a universe,
+    so ranks and aggregates compare symbols at the same moment (no later rows)."""
+    while isinstance(node, ast.Attribute | ast.Subscript | ast.Call):
+        if isinstance(node, ast.Call):
+            if isinstance(node.func, ast.Attribute) and node.func.attr == "groupby":
+                key = node.args[0] if node.args else _kw(node, "by")
+                return _is_timestamp_column(key)
+            node = node.func
+        else:
+            node = node.value
+    return False
+
+
 def _is_series_chain(node: ast.AST) -> bool:
     """A column or a chain of element-wise calls on it, with no window / groupby / resample step."""
     while isinstance(node, ast.Attribute | ast.Subscript | ast.Call):
@@ -294,7 +317,7 @@ class _Visitor(ast.NodeVisitor):
                 _is_reversed(node.func.value) or (node.args and _is_reversed(node.args[0]))
             ):
                 self._add(node, "reversed_cumulative", "fail", f"{attr} over a reversed series accumulates future values")
-            elif attr in _GROUP_AGGS and _on_groupby(node.func.value):
+            elif attr in _GROUP_AGGS and _on_groupby(node.func.value) and not _grouped_by_timestamp(node.func.value):
                 if id(node) not in self._shifted_aggs:
                     self._add(node, "group_aggregate", "warn", f"groupby().{attr}() includes later rows of each group; shift(1) to use completed groups")
             elif attr == "sort_values" and not node.args and _kw(node, "by") is None:
@@ -319,7 +342,7 @@ class _Visitor(ast.NodeVisitor):
                 self._add(node, "full_sample_fit", "warn", "model fit on the whole series leaks future statistics unless done walk-forward")
             elif attr in _WINDOW_METHODS and _is_reversed(node.func.value):
                 self._add(node, "reversed_window", "fail", "window over a reversed series looks into the future")
-            elif attr == "rank" and not self._on_window(node.func.value):
+            elif attr == "rank" and not self._on_window(node.func.value) and not _grouped_by_timestamp(node.func.value):
                 self._add(node, "full_sample_rank", "warn", "rank over the whole series compares bars with future values")
             elif (
                 attr in _NUMPY_STATS
@@ -332,7 +355,7 @@ class _Visitor(ast.NodeVisitor):
                 self._add(node, "full_sample_stat", "warn", f"np.{attr} over a whole array includes future bars")
             elif attr in _STAT_METHODS and self._is_series_ref(node.func.value):
                 self._add(node, "full_sample_stat", "warn", "whole-series statistic includes future bars (use rolling/expanding)")
-            elif attr == "transform" and node.args and _is_str(node.args[0], _GROUP_AGGS):
+            elif attr == "transform" and node.args and _is_str(node.args[0], _GROUP_AGGS) and not _grouped_by_timestamp(node.func.value):
                 self._add(node, "group_aggregate", "warn", "group aggregate broadcasts values from later rows of the same group")
         elif isinstance(node.func, ast.Name):
             name = node.func.id

@@ -20,7 +20,8 @@ import pandas as pd
 from monte_neo._version import __version__
 from monte_neo.backtest.model import ExecutionModel
 from monte_neo.verify.grid import verify_grid
-from monte_neo.verify.ingest import OHLC_COLS, call_signal_fn, load_ohlcv, load_signal_fn, load_signals
+from monte_neo.verify.ingest import load_ohlcv, load_signal_fn, to_positions
+from monte_neo.verify.market import market_for
 from monte_neo.verify.schema import VERDICT_SCHEMA_ID
 from monte_neo.verify.verdict import verify_strategy
 
@@ -53,7 +54,8 @@ def recheck_certificate(
     cert = load_certificate(certificate)
     repro = cert["reproducibility"]
     df = load_ohlcv(ohlcv)
-    data_bytes = np.ascontiguousarray(df[list(OHLC_COLS)].to_numpy(dtype=np.float64)).tobytes()
+    market = market_for(df)
+    data_bytes = market.data_bytes()
     grid = cert.get("grid")
     settings = repro.get("settings") or {}  # absent before v0.34.0: the defaults applied
     mode = settings.get("positions") or "sign"  # before v0.35.0 every signal was read as signs
@@ -63,9 +65,9 @@ def recheck_certificate(
     if strategy is not None:
         fn, source = load_signal_fn(strategy)
         best = (grid or {}).get("best_params") or {}
-        sig = call_signal_fn(partial(fn, **best), df, mode)
+        sig = to_positions(market.read_values(partial(fn, **best), None), mode)
     elif signals is not None:
-        sig = load_signals(signals, len(df), mode)
+        sig = to_positions(market.read_values(None, signals), mode)
     else:
         raise ValueError("provide signals or strategy used for the certificate")
 

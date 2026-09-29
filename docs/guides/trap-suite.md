@@ -11,7 +11,7 @@ statuses that must appear.
 
 ## Catalogue
 
-51 traps, 23 honest controls, 2 parameterized strategies for `verify_grid` and a data-snooping test.
+54 traps, 25 honest controls, 2 parameterized strategies for `verify_grid` and a data-snooping test.
 "Caught by" lists the checks that flag each trap on the random-walk dataset. "lint (warn)" is a
 warning only; the dynamic probes produce the `REJECT`.
 
@@ -107,6 +107,19 @@ file read and network connection made while strategy code runs.
 |------|-------------|-----------|
 | `reads_dataset_file` | Loads the full CSV at import and reads 20 bars ahead of each `df` row | outside data, lint |
 
+### Universes (several symbols)
+
+A table with a `symbol` column is a universe: `signal(df)` returns a weight per row. The probes
+cut and rewrite the future of every symbol at once, so a leak through another symbol is caught
+too. A universe in which no symbol stops trading is flagged for survivorship bias.
+
+| File | How it lies | Caught by |
+|------|-------------|-----------|
+| `xs_next_return_rank` | Ranks symbols by the next bar's return (`groupby("symbol").shift(-1)`) | truncation, perturbation, lint, implausible accuracy |
+| `xs_market_future_join` | Joins tomorrow's average return of all symbols onto today's rows | truncation, perturbation |
+| `xs_symbol_history_rank` | Ranks each symbol's price against its whole history | perturbation, lint (warn) |
+| survivors only (test) | Every symbol trades until the last bar | survivorship (warn) |
+
 ### Economics
 
 | File | How it lies | Caught by |
@@ -143,6 +156,8 @@ leaks.
 | `rolling_polyfit_slope` | `np.polyfit` inside `rolling(30).apply`: each fit sees one window |
 | `rsi_loop` | Wilder RSI updated bar by bar |
 | `expanding_quantile_breakout` | A real edge on momentum data: hit rate ~0.6 must not be called look-ahead |
+| `xs_momentum_rank` | Universe: past 20-bar return ranked within each timestamp (`groupby(df["timestamp"]).rank()`) |
+| `xs_equal_weight` | Universe: `+1` on every symbol; the gross cap turns it into equal weights |
 | `expanding_max_breakout` | `expanding().max().shift(1)` |
 
 Grid strategies: `sma_params`, `momentum_params`.

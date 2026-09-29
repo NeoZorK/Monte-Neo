@@ -23,6 +23,7 @@ SERVER_INSTRUCTIONS = (
 
 def _model(ohlcv_path: str, commission_bps: float, slippage_bps: float, side_mode: str | None, warmup_bars: int | None, signals_path: str | None) -> tuple[Any, Any]:
     from monte_neo.verify import load_ohlcv, load_signals, model_from_costs
+    from monte_neo.verify.market import bar_count
 
     df = load_ohlcv(ohlcv_path)
     if side_mode is None:
@@ -33,7 +34,7 @@ def _model(ohlcv_path: str, commission_bps: float, slippage_bps: float, side_mod
         slippage_bps=slippage_bps,
         side_mode=side_mode,
         warmup_bars=warmup_bars,
-        n_bars=len(df),
+        n_bars=bar_count(df),
     )
     return df, model
 
@@ -166,29 +167,24 @@ def probe_lookahead(ohlcv_path: str, strategy_path: str) -> dict[str, Any]:
         ohlcv_path: CSV/Parquet with open, high, low, close.
         strategy_path: Python file 'path.py[:func]' defining func(df) -> positions.
     """
-    from monte_neo.verify import (
-        call_signal_fn,
-        lint_source,
-        load_ohlcv,
-        load_signal_fn,
-        probe_determinism,
-        probe_perturbation,
-        probe_truncation,
-        to_jsonable,
-    )
+    from monte_neo.verify import lint_source, load_ohlcv, load_signal_fn, resolve_positions, to_jsonable, to_positions
     from monte_neo.verify.io_guard import IOWatch
+    from monte_neo.verify.market import market_for
 
     df = load_ohlcv(ohlcv_path)
+    market = market_for(df)  # one instrument, or a universe probed across all symbols at once
     watch = IOWatch((df.attrs["source_path"],))
     with watch:
         fn, source = load_signal_fn(strategy_path)
-        full = call_signal_fn(fn, df)
-        report: dict[str, Any] = {
-            "static_lint": lint_source(source),
-            "determinism": probe_determinism(fn, df, full=full),
-            "truncation": probe_truncation(fn, df, full=full),
-            "perturbation": probe_perturbation(fn, df, full=full),
-        }
+        values = market.read_values(fn, None)
+        mode = resolve_positions(values, "auto")
+        determinism, truncation, perturbation = market.probes(fn, to_positions(values, mode), mode, 24)
+    report: dict[str, Any] = {
+        "static_lint": lint_source(source),
+        "determinism": determinism,
+        "truncation": truncation,
+        "perturbation": perturbation,
+    }
     outside = bool(watch.files or watch.connections)
     report["external_data"] = {
         "status": "fail" if outside else "pass", "files": watch.files, "connections": watch.connections,
@@ -219,29 +215,20 @@ def cost_stress(
         side_mode: 'long_flat' or 'long_short' (default inferred).
         positions: 'sign', 'weight' or 'auto' (see verify_strategy).
     """
-    from monte_neo.verify import (
-        breakeven_cost_bps,
-        delay_scan,
-        load_signal_fn,
-        load_signal_values,
-        resolve_positions,
-        signal_values,
-        to_jsonable,
-        to_positions,
-    )
+    from monte_neo.verify import breakeven_cost_bps, delay_scan, load_signal_fn, resolve_positions, to_jsonable
+    from monte_neo.verify.market import market_for
 
     if not signals_path and not strategy_path:
         return {"error": "provide signals_path or strategy_path"}
     df, model = _model(ohlcv_path, commission_bps, slippage_bps, side_mode, None, signals_path)
-    if strategy_path:
-        values = signal_values(load_signal_fn(strategy_path)[0](df.copy()))
-    else:
-        values = load_signal_values(signals_path)
-    if values.size != len(df):
-        return {"error": f"signal length {values.size} != bar count {len(df)}"}
-    sig = to_positions(values, resolve_positions(values, positions))
-    ohlc = {k: df[k].to_numpy() for k in ("open", "high", "low", "close")}
-    return to_jsonable({"breakeven": breakeven_cost_bps(ohlc, sig, model), "delay": delay_scan(ohlc, sig, model)})
+    market = market_for(df)
+    fn = load_signal_fn(strategy_path)[0] if strategy_path else None
+    try:
+        values = market.read_values(fn, signals_path)
+    except ValueError as exc:
+        return {"error": str(exc)}
+    sig = market.positions(values, resolve_positions(values, positions), model)[0]
+    return to_jsonable({"breakeven": breakeven_cost_bps(market.ohlc, sig, model), "delay": delay_scan(market.ohlc, sig, model)})
 
 
 def verdict_schema() -> dict[str, Any]:

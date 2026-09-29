@@ -121,6 +121,10 @@ def _weight_core(  # pragma: no cover  # njit body; covered through run_weight_b
                     traded_notional += abs(dq * px)
                     qty[s] = desired
                     fills += 1
+                    if np.isnan(last_px[s]):
+                        # First trade of a newly listed instrument: its fill is the only price known,
+                        # and the next orders in this loop value the position with it.
+                        last_px[s] = fill
             applied[s] = target
 
     for s in range(m):

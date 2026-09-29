@@ -75,7 +75,7 @@ A simplified guide to the Monte-Neo file structure.
 - docs/guides/agents.md - Use the verifier from Claude Code / Codex / Gemini / Cursor / GitHub Actions
 - docs/guides/honesty-bench.md - Agent Backtest Honesty Bench: layout, metrics, fair-play rules
 - docs/verify.md - Browser page that checks a certificate's Ed25519 signature (docs/assets/verify-certificate.js)
-- docs/guides/trap-suite.md - Trap Suite catalogue (51 traps, 23 honest controls) and how to contribute a trap
+- docs/guides/trap-suite.md - Trap Suite catalogue (54 traps, 25 honest controls) and how to contribute a trap
 - src/monte_neo/bench/ - Honesty Bench (verify agent submissions, compare claims, leaderboard; v1 tasks + answer key)
 - src/monte_neo/cli/bench_cmd.py - `monte-neo bench` command
 - scripts/make_example_bench.py - Builds an example bench from the Trap Suite

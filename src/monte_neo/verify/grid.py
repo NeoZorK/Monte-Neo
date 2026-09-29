@@ -21,15 +21,13 @@ from monte_neo.backtest.model import ExecutionModel
 from monte_neo.verify.checks import check
 from monte_neo.verify.engine import simulate
 from monte_neo.verify.ingest import (
-    OHLC_COLS,
     SignalFn,
     load_ohlcv,
     load_signal_fn,
     resolve_positions,
-    signal_values,
-    to_positions,
 )
 from monte_neo.verify.io_guard import IOWatch
+from monte_neo.verify.market import SingleMarket, UniverseMarket, market_for
 from monte_neo.verify.stats import bar_returns, sharpe_per_bar
 from monte_neo.verify.verdict import _default_model, verify_strategy
 
@@ -54,18 +52,20 @@ def expand_grid(grid: dict[str, list[Any]]) -> list[dict[str, Any]]:
 
 
 def _trial_returns(
-    fn: SignalFn, df: pd.DataFrame, combos: list[dict[str, Any]], model: ExecutionModel, positions: str
+    fn: SignalFn, market: SingleMarket | UniverseMarket, combos: list[dict[str, Any]], model: ExecutionModel, positions: str
 ) -> tuple[np.ndarray, str]:
     """Per-bar returns of every combo, read with one positions mode for the whole grid."""
-    ohlc = {k: df[k].to_numpy(dtype=np.float64) for k in OHLC_COLS}
     values = []
     for params in combos:
-        raw = signal_values(partial(fn, **params)(df.copy()))
-        if raw.size != len(df):
-            raise ValueError(f"signal length {raw.size} != bar count {len(df)} for {params}")
-        values.append(raw)
+        try:
+            values.append(market.read_values(partial(fn, **params), None))
+        except ValueError as exc:
+            raise ValueError(f"{exc} for {params}") from exc
     mode = resolve_positions(np.concatenate(values), positions)
-    rows = [bar_returns(simulate(ohlc, to_positions(v, mode), model)["equity"], start=model.warmup_bars) for v in values]
+    rows = [
+        bar_returns(simulate(market.ohlc, market.positions(v, mode, model)[0], model)["equity"], start=model.warmup_bars)
+        for v in values
+    ]
     return np.vstack(rows), mode
 
 
@@ -165,11 +165,12 @@ def verify_grid(
             source = source if source is not None else text
     if signal_fn is None:
         raise ValueError("verify_grid needs strategy= or signal_fn=")
-    model = model or _default_model(len(df))
+    market = market_for(df)
+    model = model or _default_model(market.n_bars)
     combos = expand_grid(grid)
     positions = verify_kwargs.pop("positions", "auto")
     with io_watch:
-        returns, mode = _trial_returns(signal_fn, df, combos, model, positions)
+        returns, mode = _trial_returns(signal_fn, market, combos, model, positions)
     sharpes = np.array([sharpe_per_bar(r) for r in returns])
     order = np.argsort(-sharpes)
     best = combos[int(order[0])]

@@ -131,6 +131,7 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
         verify_grid,
         verify_strategy,
     )
+    from monte_neo.verify.market import bar_count
 
     console = console or Console()
     if args.schema:
@@ -159,7 +160,7 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
             slippage_bps=args.slippage_bps,
             side_mode=_side_mode(args),
             warmup_bars=args.warmup_bars,
-            n_bars=len(df),
+            n_bars=bar_count(df),
         )
         common = {
             "model": model, "periods_per_year": args.periods_per_year, "min_trades": args.min_trades,

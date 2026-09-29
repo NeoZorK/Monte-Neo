@@ -16,6 +16,7 @@ NEXT_ACTIONS: dict[str, str] = {
     "determinism": "Make the signal deterministic: seed every RNG and avoid wall-clock or I/O inside signal().",
     "lookahead_truncation": "The signal at bar t changes when later bars are removed: compute features only from rows <= t (no shift(-k), centered windows, bfill or full-sample stats).",
     "lookahead_perturbation": "Past signals change when the future is rewritten: remove whole-series statistics (mean/std/min/max over all rows) and future-dependent fills.",
+    "survivorship": "Build the universe point-in-time: include the symbols that were delisted or dropped during the test, or the backtest only trades survivors.",
     "external_data": "signal() must use only the df it is given: pass parameters as function defaults and do not load data from files or the network, which the look-ahead probes cannot see.",
     "lookahead_static_lint": "Fix the flagged source lines (negative shift, center=True, backward fill) and re-run verify.",
     "implausible_accuracy": "Next-bar hit rate is too high to be real: look for leakage of the next bar's close/open into the signal.",
@@ -57,7 +58,7 @@ def _time_order(timestamps: Any) -> tuple[int, int]:
     return int(np.count_nonzero(steps < 0)), int(np.count_nonzero(steps == 0))
 
 
-def data_integrity(ohlc: dict[str, np.ndarray], timestamps: Any = None) -> dict[str, Any]:
+def data_integrity(ohlc: dict[str, np.ndarray], timestamps: Any = None, *, duplicates: int = 0) -> dict[str, Any]:
     """NaN, non-positive prices, inverted bars and bars out of time order.
 
     Rows must run oldest-first: on newest-first data ``shift(1)`` reads the next bar,
@@ -69,6 +70,7 @@ def data_integrity(ohlc: dict[str, np.ndarray], timestamps: Any = None) -> dict[
     n_nonpos = int(np.count_nonzero(np.nan_to_num(stacked, nan=1.0) <= 0.0))
     n_inverted = int(np.count_nonzero(np.nan_to_num(h) < np.nan_to_num(l)))
     n_backward, n_repeated = _time_order(timestamps)
+    n_repeated += int(duplicates)  # a universe passes repeated (timestamp, symbol) rows here
     problems = [
         (n_nan, "NaN"),
         (n_nonpos, "non-positive"),
@@ -112,6 +114,22 @@ def external_data_row(files: list[str] | None, connections: list[str] | None) ->
     return check(
         "external_data", "lookahead", "fail", "outside data: reads " + ", ".join(found),
         {"files": files, "connections": connections},
+    )
+
+
+def survivorship_row(symbols: list[str], first_bar: np.ndarray, last_bar: np.ndarray, n_bars: int) -> dict[str, Any]:
+    """A universe where no symbol stops trading was probably picked from today's survivors."""
+    dropped = [s for s, last in zip(symbols, last_bar, strict=True) if last < n_bars - 1]
+    listed_late = int(np.count_nonzero(np.asarray(first_bar) > 0))
+    details = {"symbols": len(symbols), "stopped_trading": dropped[:20], "stopped_count": len(dropped), "listed_late": listed_late}
+    if len(symbols) < 2:
+        return check("survivorship", "integrity", "skip", "survivorship: one symbol", details)
+    if not dropped:
+        summary = f"all {len(symbols)} symbols trade until the last bar: delisted names may be missing (survivorship bias)"
+        return check("survivorship", "integrity", "warn", summary, details)
+    return check(
+        "survivorship", "integrity", "pass",
+        f"{len(dropped)} of {len(symbols)} symbols stop trading before the end (delistings included)", details,
     )
 
 
@@ -274,5 +292,6 @@ __all__ = [
     "period_row",
     "probe_row",
     "statistics_rows",
+    "survivorship_row",
     "timing_row",
 ]

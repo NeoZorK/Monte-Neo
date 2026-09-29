@@ -41,12 +41,20 @@ def load_ohlcv(source: pd.DataFrame | str | Path) -> pd.DataFrame:
 
     A ``timestamp`` / ``time`` / ``date`` column (or DatetimeIndex) is kept as
     ``timestamp`` when present; it sets bars per year and must run oldest-first.
+    A ``symbol`` (or ``ticker`` / ``asset`` / ``instrument``) column makes the table
+    a universe: one row per timestamp and symbol.
     """
     df = source.copy() if isinstance(source, pd.DataFrame) else _read_table(Path(source))
     if not isinstance(source, pd.DataFrame):
         # Lets the outside-data watch recognise this file under any name or suffix.
         df.attrs["source_path"] = str(Path(source).resolve())
     df.columns = [str(c).strip().lower() for c in df.columns]
+    if "symbol" not in df.columns:
+        # A universe: one row per (timestamp, symbol).
+        for alias in ("ticker", "asset", "instrument"):
+            if alias in df.columns:
+                df = df.rename(columns={alias: "symbol"})
+                break
     missing = [c for c in OHLC_COLS if c not in df.columns]
     if missing:
         raise ValueError(f"OHLCV is missing columns: {missing}")

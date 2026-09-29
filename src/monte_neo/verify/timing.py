@@ -64,15 +64,18 @@ def timing_significance(
     offsets = np.unique(np.linspace(lo, hi, num=int(n_shifts)).astype(np.int64))
     # Shift along time only: a multi-instrument matrix keeps its cross-section together.
     shifted = np.array([_terminal_return(ohlc, np.roll(sig, int(k), axis=0), model) for k in offsets])
+    shifted = shifted[np.isfinite(shifted)]  # defensive: a copy without a finite result is not evidence
+    if shifted.size == 0:
+        return {"status": "skip", "p_value": None, "actual_return": actual, "n_shifts": 0}
     beaten = int(np.count_nonzero(shifted < actual))
-    p_value = float((1 + np.count_nonzero(shifted >= actual)) / (offsets.size + 1))
+    p_value = float((1 + np.count_nonzero(shifted >= actual)) / (shifted.size + 1))
     return {
         "status": "pass" if p_value <= alpha else "warn",
         "p_value": p_value,
         "alpha": float(alpha),
         "actual_return": actual,
-        "n_shifts": int(offsets.size),
-        "share_beaten": beaten / offsets.size,
+        "n_shifts": int(shifted.size),
+        "share_beaten": beaten / shifted.size,
         "shifted_median_return": float(np.median(shifted)),
     }
 

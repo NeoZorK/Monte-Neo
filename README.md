@@ -102,7 +102,7 @@ The run used a synthetic random walk; output shortened.
 | **Integrity** | Broken OHLCV (NaN, bad prices, bars out of time order), non-deterministic signals |
 
 Every rule is backed by the [Trap Suite](https://neozork.github.io/Monte-Neo/guides/trap-suite/):
-51 strategies that are known to lie and 23 honest controls. It runs on every build, so the
+54 strategies that are known to lie and 25 honest controls. It runs on every build, so the
 verifier cannot silently stop catching a leak or start accusing honest code.
 
 ## Where to use it
@@ -118,7 +118,7 @@ verifier cannot silently stop catching a leak or start accusing honest code.
 ## Why Monte-Neo
 
 - **Independent.** It checks code it did not write, with probes that do not trust the strategy's own numbers.
-- **Careful with accusations.** 23 honest strategies (loops, windows, resampling, fits inside rolling windows, a real edge with a high hit rate) must never be flagged for look-ahead, on every build.
+- **Careful with accusations.** 25 honest strategies (loops, windows, resampling, fits inside rolling windows, a real edge with a high hit rate) must never be flagged for look-ahead, on every build.
 - **Built for agents.** An MCP server, a Claude Code plugin with a skill, a slash command and a reminder hook, plus rules for Codex, Gemini CLI and Cursor. Every failed check returns a `next_action` the agent can act on.
 - **Reproducible.** The same data, code and `n_trials` always give the same `certificate_id`. Anyone can reproduce a certificate with `--recheck`.
 - **Signed.** Ed25519 signatures show who issued a certificate and that nobody edited it.
