@@ -40,7 +40,6 @@
 
 ## Release cadence
 
-- **Feature releases: at most 2 per calendar day (UTC).** Batch further features into the next day's release.
-- **Patch releases with bug fixes and security fixes: any time, no limit.** Do not hold a fix back
-  to respect the cadence.
+- **No limit on how often releases are published.** Feature releases, patch releases and security
+  fixes go out at any time (the owner cancelled the earlier "2 feature releases a day" rule on 2026-09-29).
 - Every release still needs the owner's explicit approval, and CI must be green on the merged commit.
