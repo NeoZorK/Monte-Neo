@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -32,9 +34,13 @@ def planted_momentum_ohlcv(n: int = 5000, phi: float = 0.15, sigma: float = 0.00
 
 
 @pytest.fixture(scope="session")
-def random_walk() -> pd.DataFrame:
-    """Minute bars without any edge."""
-    return synthetic_ohlcv(3000, seed=1)
+def random_walk(tmp_path_factory: pytest.TempPathFactory) -> pd.DataFrame:
+    """Minute bars without any edge (also on disk for the reads_dataset_file trap)."""
+    df = synthetic_ohlcv(3000, seed=1)
+    path = tmp_path_factory.mktemp("trap-data") / "prices.csv"
+    df.to_csv(path, index=False)
+    os.environ["MONTE_NEO_TRAP_DATA"] = str(path)
+    return df
 
 
 @pytest.fixture(scope="session")

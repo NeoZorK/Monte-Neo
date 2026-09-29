@@ -87,6 +87,27 @@ def test_verify_bad_data_short_circuits(df) -> None:
     assert report["metrics"] == {} and report["reproducibility"]["signals_sha256"] is None
 
 
+def test_data_integrity_time_order() -> None:
+    ohlc = {k: np.ones(4) for k in ("open", "high", "low", "close")}
+    assert rows.data_integrity(ohlc)["status"] == "pass"
+    stamps = pd.date_range("2024-01-01", periods=4, freq="h")
+    assert rows.data_integrity(ohlc, stamps)["status"] == "pass"
+    newest_first = rows.data_integrity(ohlc, stamps[::-1])
+    assert newest_first["status"] == "fail" and newest_first["details"]["out_of_order_timestamps"] == 3
+    assert "3 out-of-order timestamp" in newest_first["summary"]
+    repeated = rows.data_integrity(ohlc, [1, 2, 2, 3])
+    assert repeated["status"] == "fail" and repeated["details"]["duplicate_timestamps"] == 1
+    # Unparseable stamps are ignored rather than reported.
+    assert rows.data_integrity(ohlc, ["x", "2024-01-01", "y", "2024-01-02"])["status"] == "pass"
+
+
+def test_verify_rejects_newest_first_data(df) -> None:
+    report = verify_strategy(df.iloc[::-1], signals=np.ones(len(df)))
+    assert report["verdict"] == "REJECT"
+    assert [c["id"] for c in report["checks"]] == ["data_integrity"]
+    assert "sort bars oldest-first" in report["next_actions"][0]
+
+
 def test_verify_signals_only(df) -> None:
     sig = (df["close"] > df["close"].rolling(30).mean()).astype(int)
     report = verify_strategy(df, signals=sig, n_trials=3, trial_sharpes=[0.0, 0.01, 0.02], periods_per_year=365)

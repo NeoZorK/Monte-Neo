@@ -57,11 +57,12 @@ monte-neo verify --schema          # print the JSON schema
 
 | id | category | fails / warns when |
 |----|----------|--------------------|
-| `data_integrity` | integrity | NaN, non-positive prices or `high < low` (fail, stops the run early) |
+| `data_integrity` | integrity | NaN, non-positive prices, `high < low`, timestamps out of order (newest-first data) or duplicated (fail, stops the run early) |
 | `determinism` | integrity | two runs of `signal(df)` on the same data disagree |
 | `lookahead_truncation` | lookahead | `signal(df[:t+1])[-1] != signal(df)[t]` at any checkpoint |
 | `lookahead_perturbation` | lookahead | rewriting bars after `t` (future returns mirrored) changes signals up to `t` |
-| `lookahead_static_lint` | lookahead | `shift(-k)`, `center=True`, `bfill`, windows over `x[::-1]` (fail); full-series `fit`/`polyfit`, `rank`, `mean`/`std`/`max`…, group `transform("last")`, `x[i + k]` (warn) |
+| `external_data` | lookahead | strategy code (import or `signal()`) reads a data file (`.csv`, `.parquet`, `.npy`…, or the OHLCV file itself) or opens a network connection: the probes rewrite `df` and cannot see data loaded elsewhere |
+| `lookahead_static_lint` | lookahead | `shift(-k)`, `center=True`, `bfill`, windows over `x[::-1]`, data loaders (`read_csv`, `np.load`, `open`, network imports) outside `if __name__ == "__main__":` (fail); full-series `fit`/`polyfit`, `rank`, `mean`/`std`/`max`…, group `transform("last")`, `x[i + k]` (warn) |
 | `implausible_accuracy` | lookahead | next-bar direction hit rate ≥ 0.60 over ≥ 100 active bars |
 | `costs_modeled` | economics | zero commission and slippage (warn) |
 | `net_profitability` | economics | total return ≤ 0 after costs |

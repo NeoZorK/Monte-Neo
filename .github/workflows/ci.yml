@@ -35,3 +35,32 @@ jobs:
 
       - name: Run verifier Trap Suite
         run: uv run pytest tests/traps -W ignore
+
+  # The verifier (CLI, MCP server, GitHub Action, bench) is pure Python: check it on the
+  # platform and Python versions users install it on, not only on the Apple research stack.
+  verifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --python ${{ matrix.python-version }} --extra mcp --extra sign --group dev
+
+      - name: Verifier tests and Trap Suite
+        run: >-
+          uv run pytest -W ignore tests/traps tests/unit/test_bench_*.py tests/unit/test_verify_*.py
+          tests/unit/test_integrations.py tests/unit/test_maintenance.py

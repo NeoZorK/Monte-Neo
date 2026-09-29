@@ -8,7 +8,10 @@ Thanks for helping improve Monte-Neo. Keep changes small, local-Mac friendly, an
 2. `uv sync --extra apple --extra plot --extra data --extra mcp --extra sign --group dev` (omit `--extra apple` on Linux CI)
 3. Branch from `main`: `feat/…` or `fix/…`
 4. `uv run ruff check .` and `uv run pytest tests/unit -W ignore`
-5. Open a PR against `main` — CI `test` must be green
+   - The full unit suite needs macOS with MLX. On Linux, run the verifier suite that CI runs on
+     Python 3.11–3.13: `uv sync --extra mcp --extra sign --group dev`, then
+     `uv run pytest -W ignore tests/traps tests/unit/test_bench_*.py tests/unit/test_verify_*.py tests/unit/test_integrations.py tests/unit/test_maintenance.py`
+5. Open a PR against `main` — CI `test` and `verifier` must be green
 
 ## What belongs here
 

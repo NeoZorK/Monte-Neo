@@ -2,18 +2,21 @@
 
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 import numpy as np
+import pandas as pd
 
 from monte_neo.backtest.model import ExecutionModel
 
 # Fix-it hints an agent can act on, keyed by check id.
 NEXT_ACTIONS: dict[str, str] = {
-    "data_integrity": "Clean the OHLCV: drop NaN rows, non-positive prices and bars with high < low.",
+    "data_integrity": "Clean the OHLCV: sort bars oldest-first, drop duplicate timestamps, NaN rows, non-positive prices and bars with high < low.",
     "determinism": "Make the signal deterministic: seed every RNG and avoid wall-clock or I/O inside signal().",
     "lookahead_truncation": "The signal at bar t changes when later bars are removed: compute features only from rows <= t (no shift(-k), centered windows, bfill or full-sample stats).",
     "lookahead_perturbation": "Past signals change when the future is rewritten: remove whole-series statistics (mean/std/min/max over all rows) and future-dependent fills.",
+    "external_data": "signal() must use only the df it is given: pass parameters as function defaults and do not load data from files or the network, which the look-ahead probes cannot see.",
     "lookahead_static_lint": "Fix the flagged source lines (negative shift, center=True, backward fill) and re-run verify.",
     "implausible_accuracy": "Next-bar hit rate is too high to be real: look for leakage of the next bar's close/open into the signal.",
     "costs_modeled": "Re-run with realistic costs (e.g. commission_bps=5, slippage_bps=5 for liquid crypto).",
@@ -35,18 +38,52 @@ def check(
     return {"id": check_id, "category": category, "status": status, "summary": summary, "details": details or {}}
 
 
-def data_integrity(ohlc: dict[str, np.ndarray]) -> dict[str, Any]:
-    """NaN, non-positive prices and inverted bars."""
+def _time_order(timestamps: Any) -> tuple[int, int]:
+    """Count backward steps and repeated stamps; unparseable stamps are ignored."""
+    if timestamps is None:
+        return 0, 0
+    values = pd.Series(np.asarray(timestamps))
+    if pd.api.types.is_numeric_dtype(values):
+        ts = pd.to_numeric(values, errors="coerce").dropna().to_numpy(dtype=np.float64)
+    else:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            parsed = pd.to_datetime(values, utc=True, errors="coerce").dropna()
+        ts = parsed.to_numpy(dtype="datetime64[ns]").astype(np.int64)
+    steps = np.diff(ts)
+    return int(np.count_nonzero(steps < 0)), int(np.count_nonzero(steps == 0))
+
+
+def data_integrity(ohlc: dict[str, np.ndarray], timestamps: Any = None) -> dict[str, Any]:
+    """NaN, non-positive prices, inverted bars and bars out of time order.
+
+    Rows must run oldest-first: on newest-first data ``shift(1)`` reads the next bar,
+    a look-ahead the row-order probes cannot see.
+    """
     o, h, l, c = (ohlc[k] for k in ("open", "high", "low", "close"))
     stacked = np.vstack([o, h, l, c])
     n_nan = int(np.count_nonzero(~np.isfinite(stacked)))
     n_nonpos = int(np.count_nonzero(np.nan_to_num(stacked, nan=1.0) <= 0.0))
     n_inverted = int(np.count_nonzero(np.nan_to_num(h) < np.nan_to_num(l)))
-    bad = n_nan + n_nonpos + n_inverted
-    summary = "OHLCV is clean" if not bad else f"{n_nan} NaN, {n_nonpos} non-positive, {n_inverted} high<low values"
+    n_backward, n_repeated = _time_order(timestamps)
+    problems = [
+        (n_nan, "NaN"),
+        (n_nonpos, "non-positive"),
+        (n_inverted, "high<low"),
+        (n_backward, "out-of-order timestamp"),
+        (n_repeated, "duplicate timestamp"),
+    ]
+    found = [f"{count} {label}" for count, label in problems if count]
+    summary = ", ".join(found) + " values" if found else "OHLCV is clean"
     return check(
-        "data_integrity", "integrity", "fail" if bad else "pass", summary,
-        {"nan_values": n_nan, "non_positive_values": n_nonpos, "inverted_bars": n_inverted},
+        "data_integrity", "integrity", "fail" if found else "pass", summary,
+        {
+            "nan_values": n_nan,
+            "non_positive_values": n_nonpos,
+            "inverted_bars": n_inverted,
+            "out_of_order_timestamps": n_backward,
+            "duplicate_timestamps": n_repeated,
+        },
     )
 
 
@@ -60,6 +97,19 @@ def probe_row(check_id: str, probe: dict[str, Any] | None, what: str) -> dict[st
     if check_id == "determinism":
         summary = "signal() is not deterministic" if status == "fail" else "signal() is deterministic"
     return check(check_id, category, status, summary, probe)
+
+
+def external_data_row(files: list[str] | None, connections: list[str] | None) -> dict[str, Any]:
+    """Data the strategy read outside ``df`` (``None`` means no strategy code ran)."""
+    if files is None or connections is None:
+        return check("external_data", "lookahead", "skip", "outside data: needs strategy code (signal function)")
+    if not files and not connections:
+        return check("external_data", "lookahead", "pass", "outside data: none read (df only)")
+    found = [*(f"file {name}" for name in files), *(f"network {host}" for host in connections)]
+    return check(
+        "external_data", "lookahead", "fail", "outside data: reads " + ", ".join(found),
+        {"files": files, "connections": connections},
+    )
 
 
 def lint_row(lint: dict[str, Any] | None) -> dict[str, Any]:
