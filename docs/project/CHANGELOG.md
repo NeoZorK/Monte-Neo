@@ -3,6 +3,16 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [Unreleased]
+
+### Added
+- **The verifier runs without Numba.** Where Numba cannot be installed (PyPy, WebAssembly, a Python without
+  Numba wheels, `--no-deps`), the same engine source runs as plain Python: certificates are identical bit for
+  bit (tested end to end in a process without Numba), only the speed differs (about 50-200x slower for a
+  profitable strategy, see `docs/api/verify.md`). A warning with the install hint appears from 20 000 bars.
+  Numba is now a CPython-only dependency and has an extra: `pip install "monte-neo[fast]"`. Nothing is
+  downloaded at run time.
+
 ## [v0.36.1] — 2026-09-29
 
 ### Fixed

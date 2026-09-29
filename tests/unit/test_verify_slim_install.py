@@ -38,3 +38,12 @@ def test_base_dependencies_leave_out_research_packages() -> None:
         assert name not in base
         assert any(dep.startswith(name) for dep in project["optional-dependencies"]["research"])
     assert project["optional-dependencies"]["parquet"] == ["pyarrow>=23.0.1"]
+
+
+def test_numba_is_optional_off_cpython_and_has_a_fast_extra() -> None:
+    import tomllib
+
+    project = tomllib.loads((Path(__file__).parents[2] / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+    numba = next(dep for dep in project["dependencies"] if dep.startswith("numba"))
+    assert "CPython" in numba and "emscripten" in numba
+    assert project["optional-dependencies"]["fast"] == ["numba>=0.58"]

@@ -37,6 +37,7 @@ monte-neo --version
 
 | Extra | When |
 |-------|------|
+| `fast` | Numba, where the base install skipped it (PyPy, WebAssembly) or could not load it; about 100x faster engines |
 | `parquet` | Read `.parquet` tables (pyarrow, about 150 MB); CSV works without it |
 | `research` | Interactive research CLI, data storage and native build (pyarrow, questionary, prompt-toolkit, pyyaml, python-dotenv, pybind11) |
 | `sign` | Ed25519 certificate signing |

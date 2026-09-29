@@ -34,7 +34,8 @@ dependencies = [
     # Verifier core: engine (numba), tables, CLI output
     "numpy>=1.24",
     "pandas>=2.0",
-    "numba>=0.58",
+    # Numba compiles the engines (about 100x faster); without it (PyPy, WebAssembly) the same code runs as Python
+    "numba>=0.58; platform_python_implementation == 'CPython' and sys_platform != 'emscripten'",
     "rich>=13.0",
     # MCP server for coding agents (`monte-neo mcp`, `monte-neo-mcp`)
     "mcp>=1.10",
@@ -42,6 +43,10 @@ dependencies = [
 
 
 [project.optional-dependencies]
+# Numba, where the base install skipped it or failed to load it
+fast = [
+    "numba>=0.58",
+]
 # Read .parquet tables (about 150 MB)
 parquet = [
     "pyarrow>=23.0.1",

@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 
 from monte_neo._version import __version__
+from monte_neo.backtest.jit import warn_if_slow
 from monte_neo.backtest.model import ExecutionModel
 from monte_neo.verify import checks as rows
 from monte_neo.verify.breakdown import buy_and_hold, periods, regimes, series
@@ -185,6 +186,7 @@ def _checks_and_report(
     n = market.n_bars
     if fn is None and signals is None:
         raise ValueError("provide signals or strategy code (strategy= / signal_fn=)")
+    warn_if_slow(n)
     model = model or _default_model(n)
     if n < model.warmup_bars + 2:
         raise ValueError(f"need at least warmup_bars + 2 = {model.warmup_bars + 2} bars, got {n}")

@@ -9,9 +9,8 @@ from __future__ import annotations
 from typing import Any, Literal
 
 import numpy as np
-from numba import njit, prange
 
-from monte_neo.backtest.jit import njit_cached
+from monte_neo.backtest.jit import njit, njit_cached, prange
 
 DeviceName = Literal["auto", "cpu_numba", "mlx"]
 

@@ -314,6 +314,24 @@ out = export_signals(o, h, l, c, positions, model=model, include_equity=True)
 out["signal"]  # sha256, exposure, position_changes, has_short
 ```
 
+## Without Numba
+
+The engines are compiled with Numba, which is installed by default on CPython. Where Numba is not
+available (PyPy, WebAssembly, a Python version without Numba wheels, `pip install --no-deps`), the
+same source runs as plain Python: **certificates are identical bit for bit**, only the speed
+differs. Nothing is downloaded at run time. Add Numba later with `pip install "monte-neo[fast]"`.
+
+Measured on 4 cores (one instrument, a strategy that makes a profit, so the timing test runs):
+
+| Bars | With Numba | Without: signs | Without: weights |
+|-----:|-----------:|---------------:|-----------------:|
+| 5 000 | 0.5 s | 2.4 s | 8 s |
+| 20 000 | 0.2 s | 9 s | 34 s |
+| 100 000 | 1 s | 46 s | 170 s |
+
+A strategy that loses money skips the timing test and is about 4-10 times faster than the figures
+above. Runs of 20 000 bars or more without Numba print a warning with the install hint.
+
 ## Security note
 
 `strategy=` imports and runs the Python file with your permissions, as if you had run

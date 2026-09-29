@@ -1239,7 +1239,7 @@ name = "monte-neo"
 source = { editable = "." }
 dependencies = [
     { name = "mcp" },
-    { name = "numba" },
+    { name = "numba", marker = "platform_python_implementation == 'CPython' and sys_platform != 'emscripten'" },
     { name = "numpy" },
     { name = "pandas" },
     { name = "rich" },
@@ -1282,6 +1282,9 @@ dev = [
     { name = "setuptools" },
     { name = "twine" },
     { name = "types-pyyaml" },
+]
+fast = [
+    { name = "numba" },
 ]
 full = [
     { name = "binance-connector" },
@@ -1397,7 +1400,8 @@ requires-dist = [
     { name = "mplfinance", marker = "extra == 'full'" },
     { name = "mplfinance", marker = "extra == 'plot'" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.5" },
-    { name = "numba", specifier = ">=0.58" },
+    { name = "numba", marker = "platform_python_implementation == 'CPython' and sys_platform != 'emscripten'", specifier = ">=0.58" },
+    { name = "numba", marker = "extra == 'fast'", specifier = ">=0.58" },
     { name = "numpy", specifier = ">=1.24" },
     { name = "pandas", specifier = ">=2.0" },
     { name = "pandas-stubs", marker = "extra == 'dev'" },
@@ -1459,7 +1463,7 @@ requires-dist = [
     { name = "uvicorn", marker = "extra == 'full'", specifier = ">=0.49.0" },
     { name = "uvicorn", marker = "extra == 'server'", specifier = ">=0.49.0" },
 ]
-provides-extras = ["apple", "data", "dev", "full", "mcp", "ml", "parquet", "plot", "research", "server", "sign"]
+provides-extras = ["apple", "data", "dev", "fast", "full", "mcp", "ml", "parquet", "plot", "research", "server", "sign"]
 
 [package.metadata.requires-dev]
 dev = [
