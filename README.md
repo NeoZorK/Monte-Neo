@@ -66,7 +66,7 @@ the truth: on a random walk, the strategy has no edge after costs.
 
 ```console
 $ monte-neo verify --ohlcv prices.csv --strategy agent_strategy.py --n-trials 40
-REJECT  certificate b71434e156f55a3e
+REJECT  certificate f9e6fc7c5cee8bbd
   check                    category    status  summary
   data_integrity           integrity   pass    OHLCV is clean
   lookahead_truncation     lookahead   fail    truncation probe: LEAK DETECTED
@@ -75,7 +75,7 @@ REJECT  certificate b71434e156f55a3e
   implausible_accuracy     lookahead   fail    next-bar hit rate 1.000 over 2999 bars (z 54.8)
   net_profitability        economics   fail    net total return -64.97% after costs
   deflated_sharpe          statistics  fail    deflated Sharpe 0.000 over 40 trial(s)
-  ...                                          (11 more checks)
+  ...                                          (12 more checks)
 → The signal at bar t changes when later bars are removed: compute features only from rows <= t
   (no shift(-k), centered windows, bfill or full-sample stats).
 → Fix the flagged source lines (negative shift, center=True, backward fill) and re-run verify. Lines: 6.
@@ -99,11 +99,11 @@ The run used a synthetic random walk; output shortened.
 | **Look-ahead** | Truncation probe (does bar *t* change when later bars are removed?), future-perturbation probe, outside-data watch (files or network read by the strategy), static AST lint (21 rules), implausible hit rate |
 | **Economics** | Net return after commission and slippage, break-even cost in bps, one- and two-bar execution delay |
 | **Statistics** | Probabilistic and Deflated Sharpe priced by `n_trials`, Monte Carlo timing test (does the signal beat shifted copies of itself, or just ride the market?), sample size, holdout consistency; for grid searches, walk-forward out-of-sample and parameter-plateau checks |
-| **Integrity** | Broken OHLCV (NaN, bad prices, bars out of time order), non-deterministic signals, survivorship bias in a universe |
+| **Integrity** | Broken OHLCV (NaN, bad prices, bars out of time order), bad data that makes fake profit (one-bar spikes, frozen prices, unadjusted splits, gaps in time), non-deterministic signals, survivorship bias in a universe |
 | **Context** | Buy-and-hold on the same data and costs, results by year / quarter / month and by market regime, a warning when one period makes all the profit |
 
 Every rule is backed by the [Trap Suite](https://neozork.github.io/Monte-Neo/guides/trap-suite/):
-54 strategies that are known to lie and 25 honest controls. It runs on every build, so the
+55 strategies that are known to lie and 25 honest controls. It runs on every build, so the
 verifier cannot silently stop catching a leak or start accusing honest code.
 
 ## Where to use it
@@ -198,7 +198,7 @@ MCP tools: `verify_strategy`, `verify_grid`, `probe_lookahead`, `cost_stress`,
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.35.1
+- uses: NeoZorK/Monte-Neo@v0.36.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py
@@ -240,6 +240,8 @@ browser with one click; nothing is uploaded.
 ```bash
 pip install monte-neo              # verifier, CLI and MCP server
 pip install "monte-neo[sign]"      # + Ed25519 certificate signing
+pip install "monte-neo[parquet]"   # + read .parquet tables
+pip install "monte-neo[research]"  # + interactive research CLI
 pip install "monte-neo[plot]"      # + charts
 pip install "monte-neo[apple]"     # + Metal / MLX research engine (Apple Silicon)
 pip install "monte-neo[full]"      # everything

@@ -21,8 +21,6 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from monte_neo.backtest.export_signals import normalize_positions
-
 OHLC_COLS = ("open", "high", "low", "close")
 SignalFn = Callable[[pd.DataFrame], Any]
 
@@ -30,7 +28,10 @@ SignalFn = Callable[[pd.DataFrame], Any]
 def _read_table(path: Path) -> pd.DataFrame:
     suffix = path.suffix.lower()
     if suffix == ".parquet":
-        return pd.read_parquet(path)
+        try:
+            return pd.read_parquet(path)
+        except ImportError as exc:
+            raise ImportError("reading .parquet needs pyarrow: pip install 'monte-neo[parquet]' (or use .csv)") from exc
     if suffix in (".csv", ".txt"):
         return pd.read_csv(path)
     raise ValueError(f"unsupported table format: {path.suffix} (use .csv or .parquet)")
@@ -107,6 +108,8 @@ def to_positions(values: np.ndarray, positions: str) -> np.ndarray:
         return np.clip(np.nan_to_num(values, nan=0.0, posinf=1.0, neginf=-1.0), -1.0, 1.0)
     if positions != "sign":
         raise ValueError(f"positions must be 'sign' or 'weight' here, got {positions!r}")
+    from monte_neo.backtest.export_signals import normalize_positions  # keeps this module light for workers
+
     return normalize_positions(values)
 
 

@@ -16,7 +16,7 @@ import pandas as pd
 
 from monte_neo.backtest.model import ExecutionModel
 from monte_neo.verify.engine import simulate
-from monte_neo.verify.stats import bar_returns, sharpe_per_bar
+from monte_neo.verify.stats import bar_returns, sharpe_per_bar, timestamp_series
 
 MAX_SERIES_POINTS = 400
 EQUAL_SEGMENTS = 4
@@ -50,7 +50,7 @@ def _parse_times(timestamps: Any, n: int) -> pd.DatetimeIndex | None:
         return None
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        parsed = pd.to_datetime(pd.Series(np.asarray(timestamps)), utc=True, errors="coerce")
+        parsed = pd.to_datetime(timestamp_series(timestamps), utc=True, errors="coerce")
     if parsed.isna().any() or len(parsed) != n:
         return None
     return pd.DatetimeIndex(parsed)
@@ -60,22 +60,29 @@ def _period_bounds(times: pd.DatetimeIndex | None, start: int, n: int) -> tuple[
     """``(frequency, [(label, first_bar, last_bar), ...])`` covering bars ``start .. n-1``."""
     if times is not None:
         span = times[n - 1] - times[start]
+        year, month = np.asarray(times.year), np.asarray(times.month)
+        quarter = (month - 1) // 3 + 1
         if span >= 3 * 365 * _DAY:
-            freq, keys = "year", [str(t.year) for t in times]
+            freq, codes = "year", year
         elif span >= 180 * _DAY:
-            freq, keys = "quarter", [f"{t.year}-Q{(t.month - 1) // 3 + 1}" for t in times]
+            freq, codes = "quarter", year * 10 + quarter
         elif span >= 60 * _DAY:
-            freq, keys = "month", [f"{t.year}-{t.month:02d}" for t in times]
+            freq, codes = "month", year * 100 + month
         else:
-            freq, keys = "", []
-        if freq:
-            bounds: list[tuple[str, int, int]] = []
-            first = start
-            for i in range(start + 1, n + 1):
-                if i == n or keys[i] != keys[first]:
-                    bounds.append((keys[first], first, i - 1))
-                    first = i
-            return freq, bounds
+            freq, codes = "", None
+        if codes is not None:
+            # A period starts wherever the calendar code changes (vectorized: no loop over bars).
+            firsts = np.concatenate([[start], np.flatnonzero(np.diff(codes[start:]) != 0) + start + 1])
+            lasts = np.concatenate([firsts[1:] - 1, [n - 1]])
+
+            def label(i: int) -> str:
+                if freq == "year":
+                    return str(year[i])
+                if freq == "quarter":
+                    return f"{year[i]}-Q{quarter[i]}"
+                return f"{year[i]}-{month[i]:02d}"
+
+            return freq, [(label(int(a)), int(a), int(b)) for a, b in zip(firsts, lasts, strict=True)]
     edges = np.linspace(start, n, EQUAL_SEGMENTS + 1).astype(int)
     bounds = [(f"bars {a}-{b - 1}", int(a), int(b - 1)) for a, b in zip(edges[:-1], edges[1:], strict=True) if b > a]
     return "segment", bounds

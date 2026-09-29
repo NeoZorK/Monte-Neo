@@ -39,6 +39,18 @@ def _model(ohlcv_path: str, commission_bps: float, slippage_bps: float, side_mod
     return df, model
 
 
+def _strategy(strategy_path: str, df: Any, market: Any, timeout: float | None, jobs: int, isolate: bool) -> tuple[Any, str, Any]:
+    """(signal function or worker runner, source text, runner to close or None)."""
+    from monte_neo.verify.ingest import load_signal_fn
+    from monte_neo.verify.verdict import _runner_for
+
+    runner = _runner_for(strategy_path, market, df, jobs, timeout, isolate)
+    if runner is not None:
+        return runner, runner.path.read_text(encoding="utf-8"), runner
+    fn, source = load_signal_fn(strategy_path)
+    return fn, source, None
+
+
 def _compact(report: dict[str, Any]) -> dict[str, Any]:
     """Keep details only for failing / warning checks and drop chart series (saves agent context)."""
     out = dict(report)
@@ -60,6 +72,9 @@ def verify_strategy(
     side_mode: str | None = None,
     warmup_bars: int | None = None,
     positions: str = "auto",
+    timeout: float = 300.0,
+    jobs: int = 1,
+    isolate: bool = False,
     compact: bool = True,
 ) -> dict[str, Any]:
     """Verify a strategy backtest and return a strategy-verdict/1 certificate.
@@ -76,6 +91,9 @@ def verify_strategy(
         warmup_bars: Bars skipped before trading (default min(60, n/10)).
         positions: 'sign' (+1/0/-1), 'weight' (fraction of equity in [-1, 1]) or 'auto'
             (weights when all values are in [-1, 1] and some are fractional).
+        timeout: Seconds allowed per signal() call; the strategy runs in a worker process.
+        jobs: Worker processes for the probe calls (raise for slow strategies).
+        isolate: Block network, subprocesses and file writes for the strategy.
         compact: Drop details of passing checks to keep the response short.
     """
     from monte_neo.verify import verify_strategy as _verify
@@ -83,7 +101,10 @@ def verify_strategy(
     if not signals_path and not strategy_path:
         return {"error": "provide signals_path or strategy_path"}
     df, model = _model(ohlcv_path, commission_bps, slippage_bps, side_mode, warmup_bars, signals_path)
-    report = _verify(df, signals=signals_path, strategy=strategy_path, model=model, n_trials=n_trials, positions=positions)
+    runs = {"timeout": timeout, "jobs": jobs, "isolate": isolate} if strategy_path else {}
+    report = _verify(
+        df, signals=signals_path, strategy=strategy_path, model=model, n_trials=n_trials, positions=positions, **runs
+    )
     return _compact(report) if compact else report
 
 
@@ -96,6 +117,9 @@ def verify_grid(
     side_mode: str | None = None,
     folds: int = 4,
     positions: str = "auto",
+    timeout: float = 300.0,
+    jobs: int = 1,
+    isolate: bool = False,
     compact: bool = True,
 ) -> dict[str, Any]:
     """Run the parameter search inside the verifier and verify the best combo.
@@ -113,12 +137,18 @@ def verify_grid(
         side_mode: 'long_flat' or 'long_short' (default long_short).
         folds: Walk-forward folds.
         positions: 'sign', 'weight' or 'auto' (see verify_strategy).
+        timeout: Seconds allowed per signal() call; the strategy runs in worker processes.
+        jobs: Worker processes (the grid's combos run in parallel).
+        isolate: Block network, subprocesses and file writes for the strategy.
         compact: Drop details of passing checks to keep the response short.
     """
     from monte_neo.verify import verify_grid as _verify_grid
 
     df, model = _model(ohlcv_path, commission_bps, slippage_bps, side_mode, None, None)
-    report = _verify_grid(df, grid, strategy=strategy_path, model=model, folds=folds, positions=positions)
+    report = _verify_grid(
+        df, grid, strategy=strategy_path, model=model, folds=folds, positions=positions,
+        timeout=timeout, jobs=jobs, isolate=isolate,
+    )
     return _compact(report) if compact else report
 
 
@@ -127,6 +157,8 @@ def recheck_certificate(
     ohlcv_path: str,
     signals_path: str | None = None,
     strategy_path: str | None = None,
+    timeout: float = 300.0,
+    isolate: bool = False,
 ) -> dict[str, Any]:
     """Reproduce a strategy-verdict/1 certificate from its original inputs.
 
@@ -135,13 +167,16 @@ def recheck_certificate(
         ohlcv_path: The same OHLCV file that was verified.
         signals_path: The same positions file (or use strategy_path).
         strategy_path: The same strategy file that was verified.
+        timeout: Seconds allowed per signal() call; the strategy runs in a worker process.
+        isolate: Block network, subprocesses and file writes for the strategy.
     """
     from monte_neo.verify import recheck_certificate as _recheck
     from monte_neo.verify import to_jsonable
 
     if not signals_path and not strategy_path:
         return {"error": "provide signals_path or strategy_path"}
-    return to_jsonable(_recheck(certificate_path, ohlcv_path, signals=signals_path, strategy=strategy_path))
+    runs = {"timeout": timeout, "isolate": isolate} if strategy_path else {}
+    return to_jsonable(_recheck(certificate_path, ohlcv_path, signals=signals_path, strategy=strategy_path, **runs))
 
 
 def check_signature(certificate_path: str, public_key: str | None = None) -> dict[str, Any]:
@@ -160,25 +195,41 @@ def check_signature(certificate_path: str, public_key: str | None = None) -> dic
         return {"error": str(exc)}
 
 
-def probe_lookahead(ohlcv_path: str, strategy_path: str) -> dict[str, Any]:
+def probe_lookahead(
+    ohlcv_path: str, strategy_path: str, timeout: float = 300.0, jobs: int = 1, isolate: bool = False
+) -> dict[str, Any]:
     """Look-ahead probes only: static lint, outside data, determinism, truncation, future perturbation.
 
     Args:
         ohlcv_path: CSV/Parquet with open, high, low, close.
         strategy_path: Python file 'path.py[:func]' defining func(df) -> positions.
+        timeout: Seconds allowed per signal() call; the strategy runs in a worker process.
+        jobs: Worker processes for the probe calls.
+        isolate: Block network, subprocesses and file writes for the strategy.
     """
-    from monte_neo.verify import lint_source, load_ohlcv, load_signal_fn, resolve_positions, to_jsonable, to_positions
+    from monte_neo.verify import lint_source, load_ohlcv, resolve_positions, to_jsonable, to_positions
     from monte_neo.verify.io_guard import IOWatch
     from monte_neo.verify.market import market_for
 
     df = load_ohlcv(ohlcv_path)
     market = market_for(df)  # one instrument, or a universe probed across all symbols at once
     watch = IOWatch((df.attrs["source_path"],))
-    with watch:
-        fn, source = load_signal_fn(strategy_path)
-        values = market.read_values(fn, None)
-        mode = resolve_positions(values, "auto")
-        determinism, truncation, perturbation = market.probes(fn, to_positions(values, mode), mode, 24)
+    runner = None
+    try:
+        with watch:
+            fn, source, runner = _strategy(strategy_path, df, market, timeout, jobs, isolate)
+            values = market.read_values(fn, None)
+            mode = resolve_positions(values, "auto")
+            determinism, truncation, perturbation = market.probes(fn, to_positions(values, mode), mode, 24)
+    finally:
+        if runner is not None:
+            runner.close()
+    for name in runner.files if runner is not None else []:
+        if name not in watch.files:
+            watch.files.append(name)
+    for host in runner.connections if runner is not None else []:
+        if host not in watch.connections:
+            watch.connections.append(host)
     report: dict[str, Any] = {
         "static_lint": lint_source(source),
         "determinism": determinism,
@@ -203,6 +254,7 @@ def cost_stress(
     slippage_bps: float = 5.0,
     side_mode: str | None = None,
     positions: str = "auto",
+    timeout: float = 300.0,
 ) -> dict[str, Any]:
     """Break-even cost (bps per side) and returns under 0/1/2 bars of execution delay.
 
@@ -214,19 +266,25 @@ def cost_stress(
         slippage_bps: Slippage per side in basis points.
         side_mode: 'long_flat' or 'long_short' (default inferred).
         positions: 'sign', 'weight' or 'auto' (see verify_strategy).
+        timeout: Seconds allowed for the signal() call; the strategy runs in a worker process.
     """
-    from monte_neo.verify import breakeven_cost_bps, delay_scan, load_signal_fn, resolve_positions, to_jsonable
+    from monte_neo.verify import breakeven_cost_bps, delay_scan, resolve_positions, to_jsonable
     from monte_neo.verify.market import market_for
 
     if not signals_path and not strategy_path:
         return {"error": "provide signals_path or strategy_path"}
     df, model = _model(ohlcv_path, commission_bps, slippage_bps, side_mode, None, signals_path)
     market = market_for(df)
-    fn = load_signal_fn(strategy_path)[0] if strategy_path else None
+    fn, runner = None, None
     try:
+        if strategy_path:
+            fn, _, runner = _strategy(strategy_path, df, market, timeout, 1, False)
         values = market.read_values(fn, signals_path)
     except ValueError as exc:
         return {"error": str(exc)}
+    finally:
+        if runner is not None:
+            runner.close()
     sig = market.positions(values, resolve_positions(values, positions), model)[0]
     return to_jsonable({"breakeven": breakeven_cost_bps(market.ohlc, sig, model), "delay": delay_scan(market.ohlc, sig, model)})
 

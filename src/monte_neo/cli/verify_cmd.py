@@ -43,6 +43,15 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--side-mode", choices=["long_flat", "long_short"], default=None, help="Default: long_short if signals contain shorts")
     p.add_argument("--warmup-bars", type=int, default=None, help="Bars ignored before trading (default min(60, n/10))")
     p.add_argument("--periods-per-year", type=float, default=None, help="Bars per year for annualization (default: inferred)")
+    p.add_argument(
+        "--jobs", default="1",
+        help="Worker processes for the strategy's probe calls: a number or 'auto' (default 1: run in this process)",
+    )
+    p.add_argument("--timeout", type=float, default=None, help="Seconds allowed per signal() call (runs the strategy in a worker)")
+    p.add_argument(
+        "--isolate", action="store_true",
+        help="Run the strategy in a worker without network, subprocesses, file writes or secrets in the environment",
+    )
     p.add_argument("--min-trades", type=int, default=30, help="Minimum closed trades for statistics (default 30)")
     p.add_argument("--out", help="Write the strategy-verdict/1 JSON certificate to this path")
     p.add_argument("--html", help="Also write a self-contained HTML report (charts, checks, periods) to this path")
@@ -54,6 +63,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--public-key", help="Expected signer for --check-signature: 'ed25519:<base64>' or a .pub file")
     p.add_argument("--format", choices=["text", "json"], default="text", help="stdout format (default text)")
     p.add_argument("--schema", action="store_true", help="Print the strategy-verdict/1 JSON schema and exit")
+    p.add_argument(
+        "--precompile", action="store_true",
+        help="Compile and cache the backtest engines (about 5 s once), e.g. when building a Docker image, and exit",
+    )
     return p
 
 
@@ -123,6 +136,23 @@ def _run_signing(args: argparse.Namespace, console: Console) -> int:
     return 0 if signature_ok(result) else 5
 
 
+def precompile() -> float:
+    """Run both engines once on tiny data so numba writes its cache; returns the seconds taken."""
+    import time
+
+    import numpy as np
+
+    from monte_neo.backtest import synthetic_ohlcv
+    from monte_neo.verify import verify_strategy
+
+    start = time.perf_counter()
+    df = synthetic_ohlcv(300, seed=0)
+    signs = np.sign(np.sin(np.arange(len(df)) / 7.0))
+    verify_strategy(df, signals=signs)  # sign engine
+    verify_strategy(df, signals=0.5 * signs)  # target-weight engine
+    return time.perf_counter() - start
+
+
 def run(args: argparse.Namespace, console: Console | None = None) -> int:
     """Execute a parsed ``verify`` command."""
     from monte_neo.verify import (
@@ -138,6 +168,9 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
     console = console or Console()
     if args.schema:
         console.print_json(data=VERDICT_JSON_SCHEMA)
+        return 0
+    if args.precompile:
+        console.print(f"engines compiled and cached in {precompile():.1f} s")
         return 0
     if args.keygen or args.check_signature:
         return _run_signing(args, console)
@@ -160,7 +193,10 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
         return 3
     if args.recheck:
         try:
-            result = recheck_certificate(args.recheck, args.ohlcv, signals=args.signals, strategy=args.strategy)
+            result = recheck_certificate(
+                args.recheck, args.ohlcv, signals=args.signals, strategy=args.strategy,
+                jobs=args.jobs, timeout=args.timeout, isolate=args.isolate,
+            )
         except Exception as exc:
             console.print(f"[red]recheck failed: {exc}[/]")
             return 3
@@ -181,6 +217,9 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
         common = {
             "model": model, "periods_per_year": args.periods_per_year, "min_trades": args.min_trades,
             "positions": args.positions,
+            "jobs": args.jobs,
+            "timeout": args.timeout,
+            "isolate": args.isolate,
         }
         if args.grid:
             report = verify_grid(df, _load_grid(args.grid), strategy=args.strategy, folds=args.folds, **common)

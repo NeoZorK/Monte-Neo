@@ -37,7 +37,18 @@ monte-neo verify --ohlcv btc_1h.csv --signals positions.npy --format json --out 
 monte-neo verify --ohlcv btc_1h.csv --strategy my_strategy.py --html report.html   # HTML report too
 monte-neo verify --render verdict.json --html report.html                         # HTML from a certificate
 monte-neo verify --schema          # print the JSON schema
+monte-neo verify --ohlcv btc_1h.csv --strategy heavy_ml.py --jobs auto --timeout 120   # parallel probes, time limit
+monte-neo verify --ohlcv btc_1h.csv --strategy their_code.py --isolate                 # no network, writes or secrets
+monte-neo verify --precompile      # compile and cache the engines once (Docker images, CI caches)
 ```
+
+- `--jobs N|auto`: run the look-ahead probes of a strategy file in N worker processes. Helps when
+  one `signal()` call takes a noticeable time (ML models); a light strategy is faster with the default 1.
+- `--timeout SECONDS`: a `signal()` call that runs longer ends the run with an error instead of hanging.
+  The MCP server uses 300 s by default, the GitHub Action 600 s.
+- `--isolate`: the strategy runs in worker processes without network, subprocesses, file writes
+  outside the temp dir and secrets in the environment (see the security note).
+- `--precompile`: the first run in a new environment compiles the engines (about 4-5 s, then cached).
 
 | Exit code | Meaning |
 |-----------|---------|
@@ -62,6 +73,7 @@ monte-neo verify --schema          # print the JSON schema
 | id | category | fails / warns when |
 |----|----------|--------------------|
 | `data_integrity` | integrity | NaN, non-positive prices, `high < low`, open or close outside high-low by more than 0.1% (smaller gaps are counted as vendor rounding), timestamps out of order (newest-first data) or duplicated, repeated (timestamp, symbol) rows in a universe (fail, stops the run early) |
+| `data_quality` | integrity | well-formed but suspicious prices: one-bar spikes (a move over max(20 x robust scale, 5%) that the next bar takes back by 75%), frozen prices (runs of 5+ flat bars over 2% of the data), split-like jumps (open / previous close near 2, 3, 4, 5, 10, 20 or the inverse), gaps in time (beyond the usual nights and weekends), more than 5% of bars without volume (warn); fail when more than half of the profit comes from spikes in instruments the strategy held |
 | `survivorship` | integrity | universe only: every symbol trades until the last bar, so delisted names are probably missing (warn) |
 | `determinism` | integrity | two runs of `signal(df)` on the same data disagree |
 | `lookahead_truncation` | lookahead | `signal(df[:t+1]) != signal(df)[:t+1]` at any checkpoint (the whole prefix is compared; checkpoints are spread evenly and also placed where the position changes) |
@@ -306,3 +318,31 @@ out["signal"]  # sha256, exposure, position_changes, has_short
 
 `strategy=` imports and runs the Python file with your permissions, as if you had run
 it yourself. Only verify code you would run yourself.
+
+`--isolate` (API `isolate=True`) guards against careless or buggy code: the strategy is loaded and
+called only in worker processes, where an audit hook blocks network access, subprocesses, signals to
+other processes and file writes outside the temp dir, and the environment keeps no secrets (only
+`PATH`, `HOME`, locale and temp variables). It is **not** a security boundary against a determined
+attacker: native code or ctypes can get around Python audit hooks.
+
+To verify code you do not trust (a marketplace, a prop firm, a competition), run the verifier in a
+throw-away container without network and with the data mounted read-only:
+
+```dockerfile
+# Dockerfile: the verifier with its engines compiled at build time
+FROM python:3.12-slim
+RUN pip install --no-cache-dir monte-neo && monte-neo verify --precompile
+USER nobody
+```
+
+```bash
+docker build -t monte-neo-verify .
+docker run --rm --network none --read-only --tmpfs /tmp \
+  --memory 4g --cpus 2 --pids-limit 256 \
+  -v "$PWD/data:/data:ro" -v "$PWD/submission:/code:ro" -v "$PWD/out:/out" \
+  monte-neo-verify monte-neo verify --ohlcv /data/prices.csv --strategy /code/strategy.py \
+    --isolate --timeout 300 --out /out/verdict.json
+```
+
+The container has no network, a read-only file system (except `/tmp` and `/out`) and limits on
+memory, CPU and processes; `--isolate` and `--timeout` still apply inside it.

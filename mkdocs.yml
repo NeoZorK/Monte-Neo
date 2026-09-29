@@ -79,15 +79,16 @@ nav:
       - Trap Suite: guides/trap-suite.md
       - Verify a certificate: verify.md
       - FAQ: guides/FAQ.md
-      - Performance: development/performance.md
       - Contributing: development/contributing.md
   - Articles:
       - Six ways your agent's backtest lies: marketing/article-six-ways.md
   - API:
       - Strategy verifier: api/verify.md
+  - Research (frozen):
       - Research export: api/export.md
       - Research policy: api/policy.md
       - Holdout: api/holdout.md
+      - Research performance: development/performance.md
   - Project:
       - Changelog: project/CHANGELOG.md
       - Roadmap: project/ROADMAP.md

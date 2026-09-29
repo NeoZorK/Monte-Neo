@@ -6,7 +6,7 @@ import os
 
 import pandas as pd
 import pytest
-from trap_data import planted_momentum_ohlcv, universe_ohlcv
+from trap_data import bad_tick_ohlcv, planted_momentum_ohlcv, universe_ohlcv
 
 from monte_neo.backtest import synthetic_ohlcv
 
@@ -31,3 +31,9 @@ def planted() -> pd.DataFrame:
 def universe() -> pd.DataFrame:
     """Six daily random walks: one listed late, one delisted."""
     return universe_ohlcv()
+
+
+@pytest.fixture(scope="session")
+def bad_ticks() -> pd.DataFrame:
+    """Hourly random walk with 40 one-bar bad ticks."""
+    return bad_tick_ohlcv()

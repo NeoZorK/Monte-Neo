@@ -3,7 +3,9 @@
 ## From PyPI (recommended)
 
 ```bash
-pip install monte-neo                 # research-core (slim)
+pip install monte-neo                 # verifier, CLI (verify, bench) and MCP server (about 330 MB)
+pip install "monte-neo[parquet]"      # + read .parquet tables
+pip install "monte-neo[research]"     # + interactive research CLI (`monte-neo` without a command)
 pip install "monte-neo[apple]"        # Metal / MLX (Apple Silicon macOS)
 ```
 
@@ -14,7 +16,7 @@ monte-neo --version
 python -c "import monte_neo; print(monte_neo.__version__)"
 ```
 
-Current release: **v0.35.1** on [PyPI](https://pypi.org/project/monte-neo/).
+Current release: **v0.36.0** on [PyPI](https://pypi.org/project/monte-neo/).
 
 Docs site: [neozork.github.io/Monte-Neo](https://neozork.github.io/Monte-Neo/).
 
@@ -35,6 +37,9 @@ monte-neo --version
 
 | Extra | When |
 |-------|------|
+| `parquet` | Read `.parquet` tables (pyarrow, about 150 MB); CSV works without it |
+| `research` | Interactive research CLI, data storage and native build (pyarrow, questionary, prompt-toolkit, pyyaml, python-dotenv, pybind11) |
+| `sign` | Ed25519 certificate signing |
 | `apple` | Metal / MLX on **macOS** (`sys_platform == 'darwin'`) |
 | `plot` | Charts / visualization helpers |
 | `data` | Binance downloader / websocket |
@@ -49,7 +54,7 @@ pip install "monte-neo[data]"
 pip install "monte-neo[full]"
 ```
 
-Missing plot/data imports raise a clear “install monte-neo[…]” error.
+Missing optional packages raise a clear “install monte-neo[…]” error (plot, data, parquet, research CLI).
 
 ## From source (developers)
 
@@ -79,7 +84,7 @@ Safe rehearsal:
 # download the wheel only from TestPyPI, install without resolving deps there
 pip download --no-deps -d /tmp/mn-wheels \
   --index-url https://test.pypi.org/simple/ \
-  monte-neo==0.35.1
+  monte-neo==0.36.0
 pip install --no-deps /tmp/mn-wheels/monte_neo-*.whl
 # runtime deps still come from real PyPI:
 pip install numpy pandas pyarrow numba rich questionary prompt-toolkit pyyaml python-dotenv pybind11
