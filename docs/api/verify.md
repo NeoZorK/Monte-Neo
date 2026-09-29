@@ -314,6 +314,24 @@ out = export_signals(o, h, l, c, positions, model=model, include_equity=True)
 out["signal"]  # sha256, exposure, position_changes, has_short
 ```
 
+## Without Numba
+
+The engines are compiled with Numba, which is installed by default on CPython. Where Numba is not
+available (PyPy, WebAssembly, a Python version without Numba wheels, `pip install --no-deps`), the
+same source runs as plain Python: **certificates are identical bit for bit**, only the speed
+differs. Nothing is downloaded at run time. Add Numba later with `pip install "monte-neo[fast]"`.
+
+Measured on 4 cores (one instrument, a strategy that makes a profit, so the timing test runs):
+
+| Bars | With Numba | Without: signs | Without: weights |
+|-----:|-----------:|---------------:|-----------------:|
+| 5 000 | 0.5 s | 2.4 s | 8 s |
+| 20 000 | 0.2 s | 9 s | 34 s |
+| 100 000 | 1 s | 46 s | 170 s |
+
+A strategy that loses money skips the timing test and is about 4-10 times faster than the figures
+above. Runs of 20 000 bars or more without Numba print a warning with the install hint.
+
 ## Security note
 
 `strategy=` imports and runs the Python file with your permissions, as if you had run
@@ -321,7 +339,7 @@ it yourself. Only verify code you would run yourself.
 
 `--isolate` (API `isolate=True`) guards against careless or buggy code: the strategy is loaded and
 called only in worker processes, where an audit hook blocks network access, subprocesses, signals to
-other processes and file writes outside the temp dir, and the environment keeps no secrets (only
+other processes, links (`os.symlink`, `os.link`) and file writes outside the temp dir (both ends of a rename count), and the environment keeps no secrets (only
 `PATH`, `HOME`, locale and temp variables). It is **not** a security boundary against a determined
 attacker: native code or ctypes can get around Python audit hooks.
 
@@ -344,3 +362,11 @@ The container has no network, a read-only file system (except `/tmp` and `/out`)
 memory, CPU and processes; `--isolate` and `--timeout` still apply inside it. Every run starts from
 the image: a file a strategy writes to `/tmp` is gone after the run. Tested with a strategy that tries
 to open a connection and write into `/code`: both are blocked, and the check finishes in about 2 s.
+
+### Inputs are limited
+
+Every input has a size limit with a clear error: price tables 2 GB (raise it with `MONTE_NEO_MAX_INPUT_MB`),
+certificates 64 MB, strategy files 5 MB. Certificate JSON is read strictly (no duplicate keys, no `NaN`,
+nesting up to 100 levels), and the browser verification page applies the same rules. The MCP tool
+`render_report` writes only `.html` / `.htm` files. See [SECURITY.md](https://github.com/NeoZorK/Monte-Neo/blob/main/SECURITY.md)
+for the threat model and how to report a vulnerability.

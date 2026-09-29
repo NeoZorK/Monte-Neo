@@ -28,6 +28,7 @@ from monte_neo.verify.ingest import (
     resolve_positions,
 )
 from monte_neo.verify.io_guard import IOWatch
+from monte_neo.verify.limits import read_source
 from monte_neo.verify.market import SingleMarket, UniverseMarket, market_for
 from monte_neo.verify.stats import bar_returns, sharpe_per_bar
 from monte_neo.verify.verdict import _default_model, _runner_for, verify_strategy
@@ -172,7 +173,7 @@ def verify_grid(
     runner = _runner_for(strategy, market, df, jobs, timeout, isolate)
     if runner is not None:
         signal_fn = runner  # workers import the strategy; this process only reads its source
-        source = source if source is not None else runner.path.read_text(encoding="utf-8")
+        source = source if source is not None else read_source(runner.path)
     else:
         if timeout is not None or isolate or resolve_jobs(jobs) > 1:
             raise ValueError("jobs, timeout and isolate need strategy code in a file (strategy='file.py')")

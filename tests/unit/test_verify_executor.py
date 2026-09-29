@@ -60,6 +60,29 @@ def test_isolation_blocks_side_effects(df, tmp_path: Path, body: str, message: s
         verify_strategy(df, strategy=_write(tmp_path, "bad", body), isolate=True)
 
 
+@pytest.mark.parametrize(
+    "attack",
+    [
+        # Move a temp file over a file outside the temp dir.
+        "import os, tempfile\nsrc = os.path.join(tempfile.gettempdir(), 'mn-src.txt')\nopen(src, 'w').write('pwned')\nos.rename(src, VICTIM)",
+        "import os, tempfile\nsrc = os.path.join(tempfile.gettempdir(), 'mn-src2.txt')\nopen(src, 'w').write('pwned')\nos.replace(src, VICTIM)",
+        # Link out of the temp dir, then write through the link.
+        "import os, tempfile\nlink = os.path.join(tempfile.gettempdir(), 'mn-link')\nos.symlink(VICTIM, link)\nopen(link, 'w').write('pwned')",
+        "import os, tempfile\nlink = os.path.join(tempfile.gettempdir(), 'mn-hard')\nos.link(VICTIM, link)\nopen(link, 'a').write('pwned')",
+    ],
+)
+def test_isolation_cannot_reach_files_through_links_or_renames(df, tmp_path: Path, attack: str) -> None:
+    victim = Path.cwd() / "mn-isolation-victim.txt"
+    victim.write_text("original", encoding="utf-8")
+    try:
+        body = f"VICTIM = {str(victim)!r}\n\ndef signal(df):\n" + "".join(f"    {line}\n" for line in attack.replace("VICTIM", "VICTIM").split("\n")) + "    return df['close'] * 0\n"
+        with pytest.raises(StrategyError, match="isolated run"):
+            verify_strategy(df, strategy=_write(tmp_path, "escape", body), isolate=True)
+        assert victim.read_text(encoding="utf-8") == "original"
+    finally:
+        victim.unlink(missing_ok=True)
+
+
 def test_isolation_hides_secrets_and_allows_temp_files(df, tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("MONTE_NEO_TEST_SECRET", "x")
     body = (

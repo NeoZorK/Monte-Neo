@@ -6,9 +6,9 @@ import time
 from typing import Any
 
 import numpy as np
-from numba import njit, prange
 
 from monte_neo.backtest.core_numba import run_terminal_return
+from monte_neo.backtest.jit import njit, prange
 from monte_neo.backtest.memory_plan import decide_research_accelerator
 from monte_neo.backtest.metal_economics import (
     metal_economics_eligible,

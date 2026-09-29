@@ -17,8 +17,10 @@ def test_parquet_without_pyarrow_names_the_extra(monkeypatch: pytest.MonkeyPatch
         raise ImportError("Unable to find a usable engine")
 
     monkeypatch.setattr(pd, "read_parquet", missing)
+    path = tmp_path / "prices.parquet"
+    path.write_bytes(b"x")
     with pytest.raises(ImportError, match=r"monte-neo\[parquet\]"):
-        _read_table(tmp_path / "prices.parquet")
+        _read_table(path)
 
 
 def test_research_cli_without_extras_names_the_extra(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
@@ -38,3 +40,12 @@ def test_base_dependencies_leave_out_research_packages() -> None:
         assert name not in base
         assert any(dep.startswith(name) for dep in project["optional-dependencies"]["research"])
     assert project["optional-dependencies"]["parquet"] == ["pyarrow>=23.0.1"]
+
+
+def test_numba_is_optional_off_cpython_and_has_a_fast_extra() -> None:
+    import tomllib
+
+    project = tomllib.loads((Path(__file__).parents[2] / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+    numba = next(dep for dep in project["dependencies"] if dep.startswith("numba"))
+    assert "CPython" in numba and "emscripten" in numba
+    assert project["optional-dependencies"]["fast"] == ["numba>=0.58"]

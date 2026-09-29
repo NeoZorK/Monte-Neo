@@ -103,8 +103,10 @@ def _render_text(report: dict[str, Any], console: Console) -> None:
 
 
 def _load_grid(spec: str) -> dict[str, list[Any]]:
-    text = Path(spec).read_text(encoding="utf-8") if spec.endswith(".json") and Path(spec).is_file() else spec
-    grid = json.loads(text)
+    from monte_neo.verify.limits import MAX_GRID_BYTES, loads_strict, read_text_limited
+
+    text = read_text_limited(spec, MAX_GRID_BYTES, "grid") if spec.endswith(".json") and Path(spec).is_file() else spec
+    grid = loads_strict(text)
     if not isinstance(grid, dict):
         raise ValueError("--grid must be a JSON object {name: [values]}")
     return grid

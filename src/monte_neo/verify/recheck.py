@@ -9,7 +9,6 @@ input hashes, re-runs the verifier with the recorded execution model and
 from __future__ import annotations
 
 import hashlib
-import json
 from functools import partial
 from pathlib import Path
 from typing import Any
@@ -22,6 +21,7 @@ from monte_neo.backtest.model import ExecutionModel
 from monte_neo.verify.executor import ProcessRunner
 from monte_neo.verify.grid import verify_grid
 from monte_neo.verify.ingest import load_ohlcv, load_signal_fn, to_positions
+from monte_neo.verify.limits import MAX_CERTIFICATE_BYTES, loads_strict, read_source, read_text_limited
 from monte_neo.verify.market import market_for
 from monte_neo.verify.schema import VERDICT_SCHEMA_ID
 from monte_neo.verify.verdict import _runner_for, verify_strategy
@@ -35,7 +35,9 @@ def _sha(data: bytes) -> str:
 
 def load_certificate(source: dict[str, Any] | str | Path) -> dict[str, Any]:
     """Certificate dict from a dict or a JSON file; validates the schema id."""
-    cert = source if isinstance(source, dict) else json.loads(Path(source).read_text(encoding="utf-8"))
+    cert = source if isinstance(source, dict) else loads_strict(read_text_limited(source, MAX_CERTIFICATE_BYTES, "certificate"))
+    if not isinstance(cert, dict):
+        raise ValueError("a certificate must be a JSON object")
     if cert.get("schema") != VERDICT_SCHEMA_ID:
         raise ValueError(f"not a {VERDICT_SCHEMA_ID} certificate")
     return cert
@@ -92,7 +94,7 @@ def _recheck(
     source = None
     best = (grid or {}).get("best_params") or {}
     if runner is not None:
-        fn, source = runner, runner.path.read_text(encoding="utf-8")
+        fn, source = runner, read_source(runner.path)
         sig = to_positions(market.read_values(runner.with_params(best), None), mode)
     elif strategy is not None:
         fn, source = load_signal_fn(strategy)

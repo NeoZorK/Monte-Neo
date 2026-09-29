@@ -66,3 +66,42 @@ def test_canonical_payload_and_signature_match(tmp_path) -> None:
     assert res["good"]["key_id"] == keys["key_id"]
     assert res["noKey"]["valid"] is True and res["noKey"]["key_matches"] is None
     assert res["bad"]["valid"] is False
+
+
+def test_page_rejects_ambiguous_json_like_python() -> None:
+    """One meaning everywhere: duplicate keys, bad escapes, raw control characters and deep nesting fail."""
+    bad = ['{"a":1,"a":2}', '{"a":"\\u00zz"}', '{"a":"x\ty"}', "[" * 200 + "]" * 200, '{"a": 1} x']
+    res = _node(
+        """
+const out = input.map((t) => { try { v.parse(t); return "accepted"; } catch (e) { return "rejected"; } });
+console.log(JSON.stringify(out));""",
+        bad,  # type: ignore[arg-type]
+    )
+    assert res == ["rejected"] * len(bad)
+    ok = _node('console.log(JSON.stringify(input.map((t) => { v.parse(t); return "ok"; })))', ['{"a":[1,2,{"b":null}]}', "[1.5e3]"])  # type: ignore[arg-type]
+    assert ok == ["ok", "ok"]
+    import monte_neo.verify.limits as limits
+
+    for text in bad[:2] + bad[3:4]:
+        with pytest.raises(ValueError):
+            limits.loads_strict(text)
+    with pytest.raises(ValueError):  # NaN / Infinity are not JSON either
+        limits.loads_strict('{"a": NaN}')
+
+
+def test_page_needs_the_issuers_key_for_a_green_tick() -> None:
+    """A certificate signed with the forger's own key is intact, but must not look trusted."""
+    res = _node(
+        """
+const cases = [
+  {signed: false, valid: false, key_matches: null},
+  {signed: true, valid: false, key_matches: null},
+  {signed: true, valid: true, key_matches: null},
+  {signed: true, valid: true, key_matches: false},
+  {signed: true, valid: true, key_matches: true},
+];
+console.log(JSON.stringify(cases.map(v.statusHeadline)));""",
+        {},
+    )
+    assert [h[:1] for h in res] == ["⚠", "❌", "⚠", "❌", "✅"]
+    assert "not verified" in res[2]

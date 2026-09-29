@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.36.1)
+# Monte-Neo Roadmap (v0.37.0)
 
 Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier for agent-built strategies).
 
@@ -100,7 +100,12 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 - [x] Journal-free engine path (checks of high-turnover strategies 9.8 s -> 0.5 s), numba cache fallback in read-only environments
 - [x] Docker image for untrusted code (docker/verify/Dockerfile), release cadence limit removed
 
-## Next (v0.37+)
+## v0.37.0 — security audit, runs without Numba
+- [x] Security audit (isolation bypass, certificate key handling, verification page, input limits), SECURITY.md threat model
+- [x] Supply chain: Actions pinned by SHA, Bandit + pip-audit + Scorecard workflows, SBOM
+- [x] Verifier runs without Numba (identical results), Numba as CPython-only dependency with a `fast` extra
+
+## Next (v0.38+)
 - [ ] First public bench run (owner runs it; tooling ready in v0.32.0): Claude Code / Codex / Gemini CLI / Cursor → published leaderboard
 - [~] Publish to MCP catalogues: official registry (done), glama / smithery / mcp.so / mcpmarket (owner submits; texts in docs/marketing/launch-kit.md)
 - [x] Signed certificates (v0.25.0), signing in the GitHub Action (v0.27.0), public verification page (v0.29.0)
