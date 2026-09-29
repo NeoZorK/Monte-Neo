@@ -66,7 +66,7 @@ the truth: on a random walk, the strategy has no edge after costs.
 
 ```console
 $ monte-neo verify --ohlcv prices.csv --strategy agent_strategy.py --n-trials 40
-REJECT  certificate 41370df6a05eefd9
+REJECT  certificate c563a03868fe3a31
   check                    category    status  summary
   data_integrity           integrity   pass    OHLCV is clean
   lookahead_truncation     lookahead   fail    truncation probe: LEAK DETECTED
@@ -171,8 +171,11 @@ monte-neo verify --ohlcv btc_1h.csv --strategy sma.py --grid '{"fast": [10, 20],
 monte-neo verify --ohlcv universe.csv --strategy xs_momentum.py --html report.html
 ```
 
-The HTML report shows the equity against buy-and-hold with the drawdown, every check, results by
-period and market regime, and the hashes to reproduce the run. It is one file with no scripts.
+The HTML report is a tear sheet in one file with no scripts: the reason for the verdict in one sentence,
+equity on a log scale against buy-and-hold, drawdown, rolling Sharpe, a monthly heat map, the timing test,
+sensitivity to costs, trade statistics, the evidence for a leak (bars and source lines), every check, results
+by period and market regime, and the hashes to reproduce the run. It prints to PDF from the browser.
+See the [example reports](https://neozork.github.io/Monte-Neo/gallery/).
 
 ## Use it from your coding agent
 
@@ -198,7 +201,7 @@ MCP tools: `verify_strategy`, `verify_grid`, `probe_lookahead`, `cost_stress`,
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.37.0
+- uses: NeoZorK/Monte-Neo@v0.38.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py
