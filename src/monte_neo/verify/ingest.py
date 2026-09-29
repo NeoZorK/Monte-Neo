@@ -1,7 +1,13 @@
 """Load OHLCV, signals and strategy callables for the verifier.
 
-Signals are target positions per bar: ``+1`` long, ``0`` flat, ``-1`` short.
-Any numeric input is reduced to its sign; NaN means flat.
+Signals are target positions per bar. Two readings exist:
+
+* ``sign``: ``+1`` long, ``0`` flat, ``-1`` short; any number is reduced to its sign.
+* ``weight``: a fraction of equity in ``[-1, 1]`` (``0.5`` = long half the equity);
+  values outside are clipped.
+
+``auto`` (the verifier's default) picks ``weight`` when every value lies in
+``[-1, 1]`` and at least one is fractional, else ``sign``. NaN means flat.
 """
 
 from __future__ import annotations
@@ -35,12 +41,20 @@ def load_ohlcv(source: pd.DataFrame | str | Path) -> pd.DataFrame:
 
     A ``timestamp`` / ``time`` / ``date`` column (or DatetimeIndex) is kept as
     ``timestamp`` when present; it sets bars per year and must run oldest-first.
+    A ``symbol`` (or ``ticker`` / ``asset`` / ``instrument``) column makes the table
+    a universe: one row per timestamp and symbol.
     """
     df = source.copy() if isinstance(source, pd.DataFrame) else _read_table(Path(source))
     if not isinstance(source, pd.DataFrame):
         # Lets the outside-data watch recognise this file under any name or suffix.
         df.attrs["source_path"] = str(Path(source).resolve())
     df.columns = [str(c).strip().lower() for c in df.columns]
+    if "symbol" not in df.columns:
+        # A universe: one row per (timestamp, symbol).
+        for alias in ("ticker", "asset", "instrument"):
+            if alias in df.columns:
+                df = df.rename(columns={alias: "symbol"})
+                break
     missing = [c for c in OHLC_COLS if c not in df.columns]
     if missing:
         raise ValueError(f"OHLCV is missing columns: {missing}")
@@ -57,24 +71,58 @@ def load_ohlcv(source: pd.DataFrame | str | Path) -> pd.DataFrame:
     return df.reset_index(drop=True)
 
 
-def normalize_signals(signals: Any, n_bars: int | None = None) -> np.ndarray:
-    """Reduce any numeric signal to int64 positions in ``{-1, 0, 1}``."""
+POSITION_MODES = ("auto", "sign", "weight")
+
+
+def signal_values(signals: Any) -> np.ndarray:
+    """Raw float values of a signal (array, Series, list or DataFrame with a ``signal`` column)."""
     if isinstance(signals, pd.DataFrame):
         col = "signal" if "signal" in signals.columns else signals.columns[-1]
         signals = signals[col]
-    out = normalize_positions(signals)
-    if n_bars is not None and out.size != int(n_bars):
-        raise ValueError(f"signal length {out.size} != bar count {int(n_bars)}")
-    return out
+    return np.asarray(signals, dtype=np.float64).reshape(-1)
 
 
-def load_signals(source: Any, n_bars: int | None = None) -> np.ndarray:
-    """Load signals from an array-like or a ``.csv`` / ``.parquet`` / ``.npy`` file."""
+def resolve_positions(values: np.ndarray, positions: str = "auto") -> str:
+    """``sign`` or ``weight`` for ``values`` under the requested mode."""
+    if positions not in POSITION_MODES:
+        raise ValueError(f"positions must be one of {POSITION_MODES}, got {positions!r}")
+    if positions != "auto":
+        return positions
+    finite = values[np.isfinite(values)]
+    if finite.size and np.all(np.abs(finite) <= 1.0) and np.any(finite != np.round(finite)):
+        return "weight"
+    return "sign"
+
+
+def to_positions(values: np.ndarray, positions: str) -> np.ndarray:
+    """int64 signs in ``{-1, 0, 1}`` (``sign``) or float64 weights clipped to ``[-1, 1]`` (``weight``)."""
+    if positions == "weight":
+        return np.clip(np.nan_to_num(values, nan=0.0, posinf=1.0, neginf=-1.0), -1.0, 1.0)
+    if positions != "sign":
+        raise ValueError(f"positions must be 'sign' or 'weight' here, got {positions!r}")
+    return normalize_positions(values)
+
+
+def normalize_signals(signals: Any, n_bars: int | None = None, positions: str = "sign") -> np.ndarray:
+    """Positions from any numeric signal: signs (default) or weights; ``auto`` decides from the values."""
+    values = signal_values(signals)
+    if n_bars is not None and values.size != int(n_bars):
+        raise ValueError(f"signal length {values.size} != bar count {int(n_bars)}")
+    return to_positions(values, resolve_positions(values, positions))
+
+
+def load_signal_values(source: Any) -> np.ndarray:
+    """Raw signal values from an array-like or a ``.csv`` / ``.parquet`` / ``.npy`` file."""
     if isinstance(source, str | Path):
         path = Path(source)
         data: Any = np.load(path) if path.suffix.lower() == ".npy" else _read_table(path)
-        return normalize_signals(data, n_bars)
-    return normalize_signals(source, n_bars)
+        return signal_values(data)
+    return signal_values(source)
+
+
+def load_signals(source: Any, n_bars: int | None = None, positions: str = "sign") -> np.ndarray:
+    """Load positions from an array-like or a ``.csv`` / ``.parquet`` / ``.npy`` file."""
+    return normalize_signals(load_signal_values(source), n_bars, positions)
 
 
 def load_signal_fn(spec: str | Path) -> tuple[SignalFn, str]:
@@ -108,17 +156,22 @@ def load_signal_fn(spec: str | Path) -> tuple[SignalFn, str]:
     return fn, source
 
 
-def call_signal_fn(fn: SignalFn, df: pd.DataFrame) -> np.ndarray:
+def call_signal_fn(fn: SignalFn, df: pd.DataFrame, positions: str = "sign") -> np.ndarray:
     """Run ``fn`` on a private copy of ``df`` and normalize its output."""
-    return normalize_signals(fn(df.copy()), len(df))
+    return normalize_signals(fn(df.copy()), len(df), positions)
 
 
 __all__ = [
     "OHLC_COLS",
+    "POSITION_MODES",
     "SignalFn",
     "call_signal_fn",
     "load_ohlcv",
     "load_signal_fn",
+    "load_signal_values",
     "load_signals",
     "normalize_signals",
+    "resolve_positions",
+    "signal_values",
+    "to_positions",
 ]

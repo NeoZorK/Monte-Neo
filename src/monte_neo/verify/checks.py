@@ -16,6 +16,7 @@ NEXT_ACTIONS: dict[str, str] = {
     "determinism": "Make the signal deterministic: seed every RNG and avoid wall-clock or I/O inside signal().",
     "lookahead_truncation": "The signal at bar t changes when later bars are removed: compute features only from rows <= t (no shift(-k), centered windows, bfill or full-sample stats).",
     "lookahead_perturbation": "Past signals change when the future is rewritten: remove whole-series statistics (mean/std/min/max over all rows) and future-dependent fills.",
+    "survivorship": "Build the universe point-in-time: include the symbols that were delisted or dropped during the test, or the backtest only trades survivors.",
     "external_data": "signal() must use only the df it is given: pass parameters as function defaults and do not load data from files or the network, which the look-ahead probes cannot see.",
     "lookahead_static_lint": "Fix the flagged source lines (negative shift, center=True, backward fill) and re-run verify.",
     "implausible_accuracy": "Next-bar hit rate is too high to be real: look for leakage of the next bar's close/open into the signal.",
@@ -24,6 +25,7 @@ NEXT_ACTIONS: dict[str, str] = {
     "cost_margin": "Edge barely covers costs: cut turnover or test with higher slippage before trusting it.",
     "delay_sensitivity": "Profit disappears with one bar of execution delay: the edge lives in fill timing.",
     "timing_significance": "The profit comes from market exposure, not timing: shifted copies of the same positions earn as much. Compare with buy-and-hold at the same exposure, or find a signal that beats its own shifted copies.",
+    "period_consistency": "The profit comes from one period: find out what happened there (a regime, an event, a data error) and test on more history.",
     "sample_size": "Too few closed trades for statistics: test on more history or more instruments.",
     "deflated_sharpe": "Sharpe does not survive the number of variants tried: test out-of-sample or reduce the search space.",
     "trials_disclosed": "Pass n_trials = number of variants you tried (parameters, rules, assets) so selection bias is priced in.",
@@ -56,7 +58,7 @@ def _time_order(timestamps: Any) -> tuple[int, int]:
     return int(np.count_nonzero(steps < 0)), int(np.count_nonzero(steps == 0))
 
 
-def data_integrity(ohlc: dict[str, np.ndarray], timestamps: Any = None) -> dict[str, Any]:
+def data_integrity(ohlc: dict[str, np.ndarray], timestamps: Any = None, *, duplicates: int = 0) -> dict[str, Any]:
     """NaN, non-positive prices, inverted bars and bars out of time order.
 
     Rows must run oldest-first: on newest-first data ``shift(1)`` reads the next bar,
@@ -68,6 +70,7 @@ def data_integrity(ohlc: dict[str, np.ndarray], timestamps: Any = None) -> dict[
     n_nonpos = int(np.count_nonzero(np.nan_to_num(stacked, nan=1.0) <= 0.0))
     n_inverted = int(np.count_nonzero(np.nan_to_num(h) < np.nan_to_num(l)))
     n_backward, n_repeated = _time_order(timestamps)
+    n_repeated += int(duplicates)  # a universe passes repeated (timestamp, symbol) rows here
     problems = [
         (n_nan, "NaN"),
         (n_nonpos, "non-positive"),
@@ -111,6 +114,22 @@ def external_data_row(files: list[str] | None, connections: list[str] | None) ->
     return check(
         "external_data", "lookahead", "fail", "outside data: reads " + ", ".join(found),
         {"files": files, "connections": connections},
+    )
+
+
+def survivorship_row(symbols: list[str], first_bar: np.ndarray, last_bar: np.ndarray, n_bars: int) -> dict[str, Any]:
+    """A universe where no symbol stops trading was probably picked from today's survivors."""
+    dropped = [s for s, last in zip(symbols, last_bar, strict=True) if last < n_bars - 1]
+    listed_late = int(np.count_nonzero(np.asarray(first_bar) > 0))
+    details = {"symbols": len(symbols), "stopped_trading": dropped[:20], "stopped_count": len(dropped), "listed_late": listed_late}
+    if len(symbols) < 2:
+        return check("survivorship", "integrity", "skip", "survivorship: one symbol", details)
+    if not dropped:
+        summary = f"all {len(symbols)} symbols trade until the last bar: delisted names may be missing (survivorship bias)"
+        return check("survivorship", "integrity", "warn", summary, details)
+    return check(
+        "survivorship", "integrity", "pass",
+        f"{len(dropped)} of {len(symbols)} symbols stop trading before the end (delistings included)", details,
     )
 
 
@@ -188,6 +207,35 @@ def timing_row(timing: dict[str, Any] | None) -> dict[str, Any]:
     return check("timing_significance", "statistics", timing["status"], summary, timing)
 
 
+def benchmark_row(total_return: float, sharpe: float, bench: dict[str, Any]) -> dict[str, Any]:
+    """Buy-and-hold on the same data and costs, for context (never changes the verdict)."""
+    summary = (
+        f"buy & hold {bench['total_return']:+.2%} (Sharpe {bench['sharpe_annualized']:.2f})"
+        f" vs strategy {total_return:+.2%} (Sharpe {sharpe:.2f})"
+    )
+    details = {k: bench[k] for k in ("total_return", "max_drawdown", "sharpe_annualized")}
+    details["excess_return"] = total_return - bench["total_return"]
+    return check("benchmark", "statistics", "info", summary, details)
+
+
+def period_row(breakdown: dict[str, Any], total_return: float) -> dict[str, Any]:
+    """Warn when the whole profit comes from one period."""
+    rows = breakdown["periods"]
+    if total_return <= 0.0:
+        return check("period_consistency", "statistics", "skip", "not profitable after costs")
+    if len(rows) < 3:
+        return check("period_consistency", "statistics", "skip", "fewer than 3 periods")
+    rets = np.array([r["return"] for r in rows])
+    best = int(np.argmax(rets))
+    rest = float(np.prod(np.delete(1.0 + rets, best)) - 1.0)
+    positive = int(np.count_nonzero(rets > 0))
+    details = {"best_period": rows[best]["period"], "return_without_best": rest, "positive_periods": positive, "periods": len(rows)}
+    if rest <= 0.0:
+        summary = f"profit comes from one period ({rows[best]['period']}); the other {len(rows) - 1} return {rest:+.2%}"
+        return check("period_consistency", "statistics", "warn", summary, details)
+    return check("period_consistency", "statistics", "pass", f"profitable in {positive} of {len(rows)} periods", details)
+
+
 def statistics_rows(
     dsr: dict[str, Any], n_closed: int, min_trades: int, trials_declared: bool, holdout: dict[str, Any]
 ) -> list[dict[str, Any]]:
@@ -235,12 +283,15 @@ def next_actions(checks: list[dict[str, Any]]) -> list[str]:
 __all__ = [
     "NEXT_ACTIONS",
     "accuracy_row",
+    "benchmark_row",
     "check",
     "data_integrity",
     "economics_rows",
     "lint_row",
     "next_actions",
+    "period_row",
     "probe_row",
     "statistics_rows",
+    "survivorship_row",
     "timing_row",
 ]

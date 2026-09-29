@@ -60,7 +60,7 @@ certificate that can be signed.
 ## Learn more
 
 - [Verifier API](api/verify.md): checks, verdicts, certificates, re-checks and signatures
-- [Trap Suite](guides/trap-suite.md): 51 strategies that lie and 23 honest controls, and how to add yours
+- [Trap Suite](guides/trap-suite.md): 54 strategies that lie and 25 honest controls, and how to add yours
 - [Honesty Bench](guides/honesty-bench.md): score how honestly agents report backtests
 - [Verify a certificate](verify.md): check a signed certificate in your browser
 - [Six ways your agent's backtest lies](marketing/article-six-ways.md): the traps, with numbers

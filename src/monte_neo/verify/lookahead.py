@@ -34,10 +34,12 @@ def _status(mismatches: list[dict[str, Any]], checked: int) -> str:
     return "fail" if mismatches else "pass"
 
 
-def probe_determinism(fn: SignalFn, df: pd.DataFrame, full: np.ndarray | None = None) -> dict[str, Any]:
+def probe_determinism(
+    fn: SignalFn, df: pd.DataFrame, full: np.ndarray | None = None, *, positions: str = "sign"
+) -> dict[str, Any]:
     """Two runs on identical input must give identical signals."""
-    first = call_signal_fn(fn, df) if full is None else full
-    second = call_signal_fn(fn, df)
+    first = call_signal_fn(fn, df, positions) if full is None else full
+    second = call_signal_fn(fn, df, positions)
     diff = np.flatnonzero(first != second)
     return {
         "status": "fail" if diff.size else "pass",
@@ -64,6 +66,7 @@ def probe_truncation(
     n_checks: int = 24,
     start: int | None = None,
     full: np.ndarray | None = None,
+    positions: str = "sign",
 ) -> dict[str, Any]:
     """Compare ``signal(df[:t+1])`` with ``signal(df)[:t+1]`` at checkpoints.
 
@@ -71,17 +74,17 @@ def probe_truncation(
     evenly and also placed on bars where the position changes, so sparse signals
     (a few entries) are tested where they act.
     """
-    sig = call_signal_fn(fn, df) if full is None else full
+    sig = call_signal_fn(fn, df, positions) if full is None else full
     even = _checkpoints(len(df), n_checks, start)
     points = np.union1d(even, _decision_points(sig, len(df), n_checks, start))
     mismatches: list[dict[str, Any]] = []
     for t in points:
-        head = call_signal_fn(fn, df.iloc[: int(t) + 1].reset_index(drop=True))
+        head = call_signal_fn(fn, df.iloc[: int(t) + 1].reset_index(drop=True), positions)
         diff = np.flatnonzero(head != sig[: int(t) + 1])
         if diff.size:
             bar = int(diff[0])
             mismatches.append(
-                {"checkpoint": int(t), "bar": bar, "full": int(sig[bar]), "truncated": int(head[bar]), "changed_bars": int(diff.size)}
+                {"checkpoint": int(t), "bar": bar, "full": sig[bar].item(), "truncated": head[bar].item(), "changed_bars": int(diff.size)}
             )
     return {
         "status": _status(mismatches, int(points.size)),
@@ -114,13 +117,14 @@ def probe_perturbation(
     n_checks: int = 6,
     start: int | None = None,
     full: np.ndarray | None = None,
+    positions: str = "sign",
 ) -> dict[str, Any]:
     """Rewrite the future after ``t``; the past signals must stay identical."""
-    sig = call_signal_fn(fn, df) if full is None else full
+    sig = call_signal_fn(fn, df, positions) if full is None else full
     points = _checkpoints(len(df), n_checks, start)
     mismatches: list[dict[str, Any]] = []
     for t in points:
-        alt = call_signal_fn(fn, mirror_future(df, int(t)))
+        alt = call_signal_fn(fn, mirror_future(df, int(t)), positions)
         diff = np.flatnonzero(alt[: int(t) + 1] != sig[: int(t) + 1])
         if diff.size:
             mismatches.append({"checkpoint": int(t), "first_changed_bar": int(diff[0]), "changed_bars": int(diff.size)})
@@ -151,18 +155,20 @@ def implausible_accuracy(
 ) -> dict[str, Any]:
     """Next-bar direction hit rate of active signals (leakage smell test).
 
+    Arrays may be ``(bars,)`` or ``(bars, instruments)``; missing prices count as no move.
+
     ``fail`` needs a hit rate of at least ``max_hit_rate`` that is also far from
     chance (binomial z >= ``min_z``); a high but not significant rate is a ``warn``,
     so an honest strategy with few active bars is not accused of look-ahead.
     """
     o = np.asarray(open_, dtype=np.float64)
     c = np.asarray(close, dtype=np.float64)
-    s = np.asarray(signals, dtype=np.int64)
-    if s.size < 3:
+    s = np.sign(np.asarray(signals, dtype=np.float64))  # direction only: weights count by their sign
+    if s.shape[0] < 3:
         return {"status": "skip", "hit_rate": None, "active_bars": 0}
     pos = s[:-1]
-    rate_cc, n_cc = _hit_rate(pos, c[1:] - c[:-1])
-    rate_oc, n_oc = _hit_rate(pos, c[1:] - o[1:])
+    rate_cc, n_cc = _hit_rate(pos, np.nan_to_num(c[1:] - c[:-1]))
+    rate_oc, n_oc = _hit_rate(pos, np.nan_to_num(c[1:] - o[1:]))
     rate, n = (rate_cc, n_cc) if rate_cc >= rate_oc else (rate_oc, n_oc)
     z = (rate - 0.5) * 2.0 * float(np.sqrt(n)) if n else 0.0
     if n < min_active:

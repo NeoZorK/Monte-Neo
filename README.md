@@ -66,7 +66,7 @@ the truth: on a random walk, the strategy has no edge after costs.
 
 ```console
 $ monte-neo verify --ohlcv prices.csv --strategy agent_strategy.py --n-trials 40
-REJECT  certificate eed98a910cb7c1ca
+REJECT  certificate 76d78110dc0f0c72
   check                    category    status  summary
   data_integrity           integrity   pass    OHLCV is clean
   lookahead_truncation     lookahead   fail    truncation probe: LEAK DETECTED
@@ -75,7 +75,7 @@ REJECT  certificate eed98a910cb7c1ca
   implausible_accuracy     lookahead   fail    next-bar hit rate 1.000 over 2999 bars (z 54.8)
   net_profitability        economics   fail    net total return -64.97% after costs
   deflated_sharpe          statistics  fail    deflated Sharpe 0.000 over 40 trial(s)
-  ...                                          (9 more checks)
+  ...                                          (11 more checks)
 → The signal at bar t changes when later bars are removed: compute features only from rows <= t
   (no shift(-k), centered windows, bfill or full-sample stats).
 → Fix the flagged source lines (negative shift, center=True, backward fill) and re-run verify. Lines: 6.
@@ -99,10 +99,11 @@ The run used a synthetic random walk; output shortened.
 | **Look-ahead** | Truncation probe (does bar *t* change when later bars are removed?), future-perturbation probe, outside-data watch (files or network read by the strategy), static AST lint (21 rules), implausible hit rate |
 | **Economics** | Net return after commission and slippage, break-even cost in bps, one- and two-bar execution delay |
 | **Statistics** | Probabilistic and Deflated Sharpe priced by `n_trials`, Monte Carlo timing test (does the signal beat shifted copies of itself, or just ride the market?), sample size, holdout consistency; for grid searches, walk-forward out-of-sample and parameter-plateau checks |
-| **Integrity** | Broken OHLCV (NaN, bad prices, bars out of time order), non-deterministic signals |
+| **Integrity** | Broken OHLCV (NaN, bad prices, bars out of time order), non-deterministic signals, survivorship bias in a universe |
+| **Context** | Buy-and-hold on the same data and costs, results by year / quarter / month and by market regime, a warning when one period makes all the profit |
 
 Every rule is backed by the [Trap Suite](https://neozork.github.io/Monte-Neo/guides/trap-suite/):
-51 strategies that are known to lie and 23 honest controls. It runs on every build, so the
+54 strategies that are known to lie and 25 honest controls. It runs on every build, so the
 verifier cannot silently stop catching a leak or start accusing honest code.
 
 ## Where to use it
@@ -118,7 +119,7 @@ verifier cannot silently stop catching a leak or start accusing honest code.
 ## Why Monte-Neo
 
 - **Independent.** It checks code it did not write, with probes that do not trust the strategy's own numbers.
-- **Careful with accusations.** 23 honest strategies (loops, windows, resampling, fits inside rolling windows, a real edge with a high hit rate) must never be flagged for look-ahead, on every build.
+- **Careful with accusations.** 25 honest strategies (loops, windows, resampling, fits inside rolling windows, a real edge with a high hit rate) must never be flagged for look-ahead, on every build.
 - **Built for agents.** An MCP server, a Claude Code plugin with a skill, a slash command and a reminder hook, plus rules for Codex, Gemini CLI and Cursor. Every failed check returns a `next_action` the agent can act on.
 - **Reproducible.** The same data, code and `n_trials` always give the same `certificate_id`. Anyone can reproduce a certificate with `--recheck`.
 - **Signed.** Ed25519 signatures show who issued a certificate and that nobody edited it.
@@ -138,7 +139,8 @@ monte-neo verify --ohlcv btc_1h.csv --strategy my_strategy.py --n-trials 12 --ou
 ```
 
 `my_strategy.py` defines `signal(df)`, which returns one position per bar: `+1` long, `0` flat,
-`-1` short. The position decided on bar *t* is filled at the open of bar *t + 1*.
+`-1` short, or a weight such as `0.5` (half the equity long). The position decided on bar *t* is
+filled at the open of bar *t + 1*.
 
 ```python
 def signal(df):
@@ -162,6 +164,16 @@ print(report["verdict"], report["next_actions"])
 monte-neo verify --ohlcv btc_1h.csv --strategy sma.py --grid '{"fast": [10, 20], "slow": [80, 120]}'
 ```
 
+**Several symbols, and a report for people**
+
+```bash
+# universe.csv: timestamp, symbol, open, high, low, close; signal(df) returns a weight per row
+monte-neo verify --ohlcv universe.csv --strategy xs_momentum.py --html report.html
+```
+
+The HTML report shows the equity against buy-and-hold with the drawdown, every check, results by
+period and market regime, and the hashes to reproduce the run. It is one file with no scripts.
+
 ## Use it from your coding agent
 
 **Claude Code** (plugin with the MCP server, the `verify-strategy` skill and `/verify`):
@@ -181,12 +193,12 @@ It is also listed in the official MCP Registry as `io.github.NeoZorK/monte-neo`.
 client: [Use from agents](https://neozork.github.io/Monte-Neo/guides/agents/).
 
 MCP tools: `verify_strategy`, `verify_grid`, `probe_lookahead`, `cost_stress`,
-`recheck_certificate`, `check_signature`, `verdict_schema`, `verifier_manifest`.
+`recheck_certificate`, `check_signature`, `render_report`, `verdict_schema`, `verifier_manifest`.
 
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.34.0
+- uses: NeoZorK/Monte-Neo@v0.35.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py

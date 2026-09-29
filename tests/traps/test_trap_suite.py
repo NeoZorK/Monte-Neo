@@ -94,6 +94,12 @@ TRAPS = [
     ("rolling_polyfit_slope", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
     ("loop_slice_crossover", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
     ("rsi_loop", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
+    # Universe (symbol column): cross-sectional leaks and honest cross-sectional code.
+    ("xs_next_return_rank", "universe", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "fail", "survivorship": "pass"}),
+    ("xs_market_future_join", "universe", {"REJECT"}, {"lookahead_truncation": "fail"}),
+    ("xs_symbol_history_rank", "universe", {"REJECT"}, {"lookahead_perturbation": "fail", "lookahead_static_lint": "warn"}),
+    ("xs_momentum_rank", "universe", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
+    ("xs_equal_weight", "universe", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
     # A strong real edge: a high hit rate alone must not be called look-ahead.
     ("expanding_quantile_breakout", "planted", {"NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"implausible_accuracy": "pass"}),
 ]
@@ -103,7 +109,7 @@ HONEST = {"high_turnover", "sma_cross", "momentum", "expanding_zscore", "resampl
           "cut_fixed_bins", "hour_running_high", "rolling_min_periods",
           "rolling_apply_span", "hour_open_ref", "expanding_max_breakout",
           "loop_window_breakout", "rolling_polyfit_slope", "loop_slice_crossover", "rsi_loop",
-          "expanding_quantile_breakout"}
+          "expanding_quantile_breakout", "xs_momentum_rank", "xs_equal_weight"}
 # Parameterized strategies exercised through verify_grid (not in TRAPS).
 GRID_STRATEGIES = {"sma_params", "momentum_params"}
 
@@ -135,6 +141,14 @@ def test_trap_verdict(name: str, dataset: str, verdicts: set[str], required: dic
     if name in HONEST:
         # Honest code must never be accused of look-ahead (false positives kill trust).
         assert all(statuses[c] != "fail" for c in LOOKAHEAD_IDS), report["reasons"]
+
+
+def test_survivors_only_universe_is_flagged() -> None:
+    from trap_data import universe_ohlcv
+
+    survivors = verify_strategy(universe_ohlcv(delist=False), strategy=STRATEGY_DIR / "xs_equal_weight.py")
+    assert _statuses(survivors)["survivorship"] == "warn"
+    assert survivors["verdict"] != "PASS"
 
 
 def test_data_snooping_is_priced_by_n_trials(random_walk) -> None:

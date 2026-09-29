@@ -7,13 +7,8 @@ from typing import Any
 
 import numpy as np
 
-from monte_neo.backtest.bar_engine import run_bar_backtest
 from monte_neo.backtest.model import ExecutionModel
-
-
-def _total_return(ohlc: dict[str, np.ndarray], signals: np.ndarray, model: ExecutionModel) -> float:
-    out = run_bar_backtest(ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"], signals, model=model)
-    return float(out["total_return"])
+from monte_neo.verify.engine import total_return as _total_return
 
 
 def breakeven_cost_bps(
@@ -45,13 +40,14 @@ def breakeven_cost_bps(
 
 
 def delay_signals(signals: np.ndarray, delay: int) -> np.ndarray:
-    """Shift positions ``delay`` bars later (flat while waiting)."""
-    s = np.asarray(signals, dtype=np.int64)
+    """Shift positions ``delay`` bars later along time (flat while waiting); keeps weights as floats."""
+    s = np.asarray(signals)
+    s = s if s.dtype.kind == "f" else s.astype(np.int64)
     d = max(0, int(delay))
     if d == 0:
         return s.copy()
     out = np.zeros_like(s)
-    if d < s.size:
+    if d < s.shape[0]:
         out[d:] = s[:-d]
     return out
 

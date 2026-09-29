@@ -6,13 +6,19 @@ Entry point: :func:`verify_strategy` → ``strategy-verdict/1`` report.
 from __future__ import annotations
 
 from monte_neo.verify.costs import breakeven_cost_bps, delay_scan, delay_signals
+from monte_neo.verify.engine import simulate
 from monte_neo.verify.grid import expand_grid, verify_grid, walk_forward
 from monte_neo.verify.ingest import (
+    POSITION_MODES,
     call_signal_fn,
     load_ohlcv,
     load_signal_fn,
+    load_signal_values,
     load_signals,
     normalize_signals,
+    resolve_positions,
+    signal_values,
+    to_positions,
 )
 from monte_neo.verify.lint import lint_source
 from monte_neo.verify.lookahead import (
@@ -47,6 +53,7 @@ from monte_neo.verify.stats import (
 from monte_neo.verify.verdict import model_from_costs, verify_strategy
 
 __all__ = [
+    "POSITION_MODES",
     "RECHECK_SCHEMA_ID",
     "SIGNATURE_CHECK_SCHEMA_ID",
     "VERDICTS",
@@ -69,6 +76,7 @@ __all__ = [
     "load_certificate",
     "load_ohlcv",
     "load_signal_fn",
+    "load_signal_values",
     "load_signals",
     "mirror_future",
     "model_from_costs",
@@ -78,9 +86,13 @@ __all__ = [
     "probe_perturbation",
     "probe_truncation",
     "recheck_certificate",
+    "resolve_positions",
     "sharpe_per_bar",
     "sign_certificate",
+    "signal_values",
+    "simulate",
     "to_jsonable",
+    "to_positions",
     "verify_grid",
     "verify_strategy",
     "walk_forward",
