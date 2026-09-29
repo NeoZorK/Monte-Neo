@@ -66,7 +66,7 @@ the truth: on a random walk, the strategy has no edge after costs.
 
 ```console
 $ monte-neo verify --ohlcv prices.csv --strategy agent_strategy.py --n-trials 40
-REJECT  certificate b71434e156f55a3e
+REJECT  certificate f9e6fc7c5cee8bbd
   check                    category    status  summary
   data_integrity           integrity   pass    OHLCV is clean
   lookahead_truncation     lookahead   fail    truncation probe: LEAK DETECTED
@@ -75,7 +75,7 @@ REJECT  certificate b71434e156f55a3e
   implausible_accuracy     lookahead   fail    next-bar hit rate 1.000 over 2999 bars (z 54.8)
   net_profitability        economics   fail    net total return -64.97% after costs
   deflated_sharpe          statistics  fail    deflated Sharpe 0.000 over 40 trial(s)
-  ...                                          (11 more checks)
+  ...                                          (12 more checks)
 → The signal at bar t changes when later bars are removed: compute features only from rows <= t
   (no shift(-k), centered windows, bfill or full-sample stats).
 → Fix the flagged source lines (negative shift, center=True, backward fill) and re-run verify. Lines: 6.
@@ -198,7 +198,7 @@ MCP tools: `verify_strategy`, `verify_grid`, `probe_lookahead`, `cost_stress`,
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.35.1
+- uses: NeoZorK/Monte-Neo@v0.36.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py

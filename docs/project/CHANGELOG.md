@@ -3,7 +3,7 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
-## [Unreleased]
+## [v0.36.0] — 2026-09-29
 
 ### Added
 - **Data quality check (`data_quality`).** Data can be well formed and still wrong. The new check looks for
