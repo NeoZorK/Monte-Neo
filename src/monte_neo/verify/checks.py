@@ -220,7 +220,8 @@ def timing_row(timing: dict[str, Any] | None) -> dict[str, Any]:
         f"beats {timing['share_beaten']:.0%} of {timing['n_shifts']} shifted copies of its positions"
         f" (p {timing['p_value']:.3f})"
     )
-    return check("timing_significance", "statistics", timing["status"], summary, timing)
+    details = {k: v for k, v in timing.items() if k != "shifted_returns"}  # the report keeps the distribution
+    return check("timing_significance", "statistics", timing["status"], summary, details)
 
 
 def benchmark_row(total_return: float, sharpe: float, bench: dict[str, Any]) -> dict[str, Any]:

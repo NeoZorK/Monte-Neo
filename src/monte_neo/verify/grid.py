@@ -218,6 +218,7 @@ def _search_and_verify(
             "n_combos": len(combos),
             "best_params": best,
             "top": [{"params": combos[int(i)], "sharpe_per_bar": float(sharpes[i])} for i in order[:TOP_K]],
+            "combo_sharpes": [round(float(s), 5) for s in sharpes],  # in expand_grid order, for the report's heat map
             "walk_forward": wf,
             "plateau": peak,
         }

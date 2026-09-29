@@ -31,7 +31,7 @@ def _no_active_content(page: str) -> None:
 def test_page_structure(report) -> None:
     page = render_html(report)
     _no_active_content(page)
-    assert page.startswith("<!doctype html>") and page.count("<svg") == 2
+    assert page.startswith("<!doctype html>") and page.count("<svg") >= 3
     assert f"Monte-Neo verdict {report['verdict']}" in page and report["certificate_id"] in page
     for check in report["checks"]:
         assert check["id"] in page

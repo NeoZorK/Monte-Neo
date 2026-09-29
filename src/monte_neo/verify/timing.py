@@ -77,6 +77,7 @@ def timing_significance(
         "n_shifts": int(shifted.size),
         "share_beaten": beaten / shifted.size,
         "shifted_median_return": float(np.median(shifted)),
+        "shifted_returns": [round(float(v), 5) for v in shifted],  # for the report's histogram
     }
 
 
