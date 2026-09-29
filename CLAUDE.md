@@ -13,8 +13,8 @@ All changes pushed to public repositories are authored by **NeoZorK** only:
 - Squash-merge commit messages must not carry AI trailers either.
 - `.claude/settings.json` disables Claude Code's built-in attribution; do not re-enable it.
 
-## Release cadence (mandatory)
+## Release cadence
 
-- Feature releases (new minor or major version): **at most 2 per calendar day (UTC)**.
-- Patch releases with bug fixes or security fixes: any time, no limit.
-- Every release needs the owner's explicit approval. Details: [docs/development/rules.md](docs/development/rules.md).
+- Releases (feature, patch, security) can be published **at any time**: there is no limit per day.
+- Every release needs the owner's explicit approval, and CI must be green on the merged commit.
+  Details: [docs/development/rules.md](docs/development/rules.md).

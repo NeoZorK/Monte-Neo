@@ -96,3 +96,42 @@ def test_cli_package_is_lazy() -> None:
     assert cli.ProgressTracker.__name__ == "ProgressTracker"
     with pytest.raises(AttributeError):
         cli.nothing_here  # noqa: B018
+
+
+def test_journal_free_engine_matches_full_backtest() -> None:
+    """The verifier's journal-free path returns the same numbers as the full backtest, bit for bit."""
+    from monte_neo.backtest import synthetic_ohlcv
+    from monte_neo.backtest.bar_engine import run_bar_backtest, run_bar_equity
+    from monte_neo.backtest.model import ExecutionModel
+
+    df = synthetic_ohlcv(2000, seed=4)
+    ohlc = [df[k].to_numpy() for k in ("open", "high", "low", "close")]
+    signal = np.where(np.arange(len(df)) % 3 == 0, 1, -1)
+    model = ExecutionModel(commission_bps=5.0, slippage_bps=5.0, side_mode="long_short", warmup_bars=20)
+    full = run_bar_backtest(*ohlc, signal, model=model)
+    lean = run_bar_equity(*ohlc, signal, model=model)
+    assert np.array_equal(full["equity"], lean["equity"])
+    for key in ("total_return", "max_drawdown", "n_trades", "n_closed_trades", "final_cash"):
+        assert full[key] == lean[key]
+    assert lean["n_closed_trades"] > 500
+
+
+def test_engines_compile_without_a_writable_cache(monkeypatch) -> None:
+    """No writable cache location (read-only container): compile in memory instead of failing."""
+    import monte_neo.backtest.jit as jit
+
+    real = jit.njit
+
+    def no_cache(*args, **kwargs):
+        if kwargs.get("cache"):
+            raise RuntimeError("cannot cache function: no locator available")
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(jit, "njit", no_cache)
+
+    def add_one(x):
+        return x + 1
+
+    compiled = jit.njit_cached(add_one)
+    assert compiled(1) == 2
+    assert compiled.py_func is add_one

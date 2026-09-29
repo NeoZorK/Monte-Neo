@@ -20,14 +20,14 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
-from numba import njit
 
+from monte_neo.backtest.jit import njit_cached
 from monte_neo.backtest.model import ExecutionModel
 
 __all__ = ["normalize_weights", "run_weight_backtest"]
 
 
-@njit(cache=True)
+@njit_cached
 def _weight_core(  # pragma: no cover  # njit body; covered through run_weight_backtest
     open_: np.ndarray,
     close: np.ndarray,

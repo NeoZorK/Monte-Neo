@@ -5,8 +5,10 @@ from __future__ import annotations
 import numpy as np
 from numba import njit
 
+from monte_neo.backtest.jit import njit_cached
 
-@njit(cache=True)
+
+@njit_cached
 def walk_book_market(
     side: int,
     qty: float,
