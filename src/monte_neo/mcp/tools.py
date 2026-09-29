@@ -154,7 +154,7 @@ def check_signature(certificate_path: str, public_key: str | None = None) -> dic
 
 
 def probe_lookahead(ohlcv_path: str, strategy_path: str) -> dict[str, Any]:
-    """Look-ahead probes only: static lint, determinism, truncation, future perturbation.
+    """Look-ahead probes only: static lint, outside data, determinism, truncation, future perturbation.
 
     Args:
         ohlcv_path: CSV/Parquet with open, high, low, close.
@@ -170,18 +170,25 @@ def probe_lookahead(ohlcv_path: str, strategy_path: str) -> dict[str, Any]:
         probe_truncation,
         to_jsonable,
     )
+    from monte_neo.verify.io_guard import IOWatch
 
     df = load_ohlcv(ohlcv_path)
-    fn, source = load_signal_fn(strategy_path)
-    full = call_signal_fn(fn, df)
-    report: dict[str, Any] = {
-        "static_lint": lint_source(source),
-        "determinism": probe_determinism(fn, df, full=full),
-        "truncation": probe_truncation(fn, df, full=full),
-        "perturbation": probe_perturbation(fn, df, full=full),
+    watch = IOWatch((df.attrs["source_path"],))
+    with watch:
+        fn, source = load_signal_fn(strategy_path)
+        full = call_signal_fn(fn, df)
+        report: dict[str, Any] = {
+            "static_lint": lint_source(source),
+            "determinism": probe_determinism(fn, df, full=full),
+            "truncation": probe_truncation(fn, df, full=full),
+            "perturbation": probe_perturbation(fn, df, full=full),
+        }
+    outside = bool(watch.files or watch.connections)
+    report["external_data"] = {
+        "status": "fail" if outside else "pass", "files": watch.files, "connections": watch.connections,
     }
     report["leak_detected"] = any(
-        report[k]["status"] == "fail" for k in ("static_lint", "truncation", "perturbation")
+        report[k]["status"] == "fail" for k in ("static_lint", "external_data", "truncation", "perturbation")
     )
     return to_jsonable(report)
 

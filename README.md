@@ -66,16 +66,16 @@ the truth: on a random walk, the strategy has no edge after costs.
 
 ```console
 $ monte-neo verify --ohlcv prices.csv --strategy agent_strategy.py --n-trials 40
-REJECT  certificate 21b4083334dde8a1
+REJECT  certificate eed98a910cb7c1ca
   check                    category    status  summary
   data_integrity           integrity   pass    OHLCV is clean
   lookahead_truncation     lookahead   fail    truncation probe: LEAK DETECTED
   lookahead_perturbation   lookahead   fail    future-perturbation probe: LEAK DETECTED
   lookahead_static_lint    lookahead   fail    static lint: negative_shift
-  implausible_accuracy     lookahead   fail    next-bar hit rate 1.000
+  implausible_accuracy     lookahead   fail    next-bar hit rate 1.000 over 2999 bars (z 54.8)
   net_profitability        economics   fail    net total return -64.97% after costs
   deflated_sharpe          statistics  fail    deflated Sharpe 0.000 over 40 trial(s)
-  ...                                          (8 more checks)
+  ...                                          (9 more checks)
 → The signal at bar t changes when later bars are removed: compute features only from rows <= t
   (no shift(-k), centered windows, bfill or full-sample stats).
 → Fix the flagged source lines (negative shift, center=True, backward fill) and re-run verify. Lines: 6.
@@ -98,11 +98,11 @@ The run used a synthetic random walk; output shortened.
 |--------|--------|
 | **Look-ahead** | Truncation probe (does bar *t* change when later bars are removed?), future-perturbation probe, outside-data watch (files or network read by the strategy), static AST lint (21 rules), implausible hit rate |
 | **Economics** | Net return after commission and slippage, break-even cost in bps, one- and two-bar execution delay |
-| **Statistics** | Probabilistic and Deflated Sharpe priced by `n_trials`, sample size, holdout consistency, walk-forward out-of-sample check for grid searches |
+| **Statistics** | Probabilistic and Deflated Sharpe priced by `n_trials`, Monte Carlo timing test (does the signal beat shifted copies of itself, or just ride the market?), sample size, holdout consistency; for grid searches, walk-forward out-of-sample and parameter-plateau checks |
 | **Integrity** | Broken OHLCV (NaN, bad prices, bars out of time order), non-deterministic signals |
 
 Every rule is backed by the [Trap Suite](https://neozork.github.io/Monte-Neo/guides/trap-suite/):
-51 strategies that are known to lie and 18 honest controls. It runs on every build, so the
+51 strategies that are known to lie and 23 honest controls. It runs on every build, so the
 verifier cannot silently stop catching a leak or start accusing honest code.
 
 ## Where to use it
@@ -118,6 +118,7 @@ verifier cannot silently stop catching a leak or start accusing honest code.
 ## Why Monte-Neo
 
 - **Independent.** It checks code it did not write, with probes that do not trust the strategy's own numbers.
+- **Careful with accusations.** 23 honest strategies (loops, windows, resampling, fits inside rolling windows, a real edge with a high hit rate) must never be flagged for look-ahead, on every build.
 - **Built for agents.** An MCP server, a Claude Code plugin with a skill, a slash command and a reminder hook, plus rules for Codex, Gemini CLI and Cursor. Every failed check returns a `next_action` the agent can act on.
 - **Reproducible.** The same data, code and `n_trials` always give the same `certificate_id`. Anyone can reproduce a certificate with `--recheck`.
 - **Signed.** Ed25519 signatures show who issued a certificate and that nobody edited it.
@@ -185,7 +186,7 @@ MCP tools: `verify_strategy`, `verify_grid`, `probe_lookahead`, `cost_stress`,
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.33.0
+- uses: NeoZorK/Monte-Neo@v0.34.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py

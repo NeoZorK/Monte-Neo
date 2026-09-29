@@ -28,6 +28,7 @@ from monte_neo.verify.lookahead import (
 )
 from monte_neo.verify.schema import DISCLAIMER, VERDICT_SCHEMA_ID, aggregate_verdict, to_jsonable
 from monte_neo.verify.stats import bar_returns, deflated_sharpe, infer_periods_per_year, sharpe_per_bar
+from monte_neo.verify.timing import timing_significance
 
 
 def _sha256(*parts: bytes) -> str:
@@ -50,7 +51,8 @@ def _holdout(rets: np.ndarray, fraction: float) -> dict[str, Any]:
 
 
 def _default_model(n_bars: int) -> ExecutionModel:
-    return ExecutionModel(warmup_bars=max(0, min(60, n_bars // 10)))
+    # Signals are +1 / 0 / -1 everywhere (CLI, MCP, docs): shorts must trade by default.
+    return ExecutionModel(side_mode="long_short", warmup_bars=max(0, min(60, n_bars // 10)))
 
 
 def _resolve_strategy(
@@ -78,6 +80,7 @@ def verify_strategy(
     probe_checks: int = 24,
     extra_checks: list[dict[str, Any]] | None = None,
     extra: dict[str, Any] | None = None,
+    io_watch: IOWatch | None = None,
 ) -> dict[str, Any]:
     """Verify one strategy and return a ``strategy-verdict/1`` report.
 
@@ -87,10 +90,27 @@ def verify_strategy(
     ``n_trials`` is how many variants were tried before picking this one.
     ``extra_checks`` / ``extra`` let wrappers (e.g. grid search) add check
     rows and report sections that take part in the verdict and certificate.
+    ``io_watch`` lets a wrapper pass the watch that already covered the strategy
+    import (grid search), so data read at import still counts.
     """
+    if n_trials is not None and int(n_trials) < 1:
+        raise ValueError(f"n_trials must be >= 1 (the chosen variant counts), got {n_trials}")
+    if int(min_trades) < 1:
+        raise ValueError(f"min_trades must be >= 1, got {min_trades}")
+    if not 0.0 < float(holdout_fraction) < 1.0:
+        raise ValueError(f"holdout_fraction must be between 0 and 1, got {holdout_fraction}")
     df = load_ohlcv(ohlcv)
     n = len(df)
-    io_watch = IOWatch((ohlcv,) if isinstance(ohlcv, str | Path) else ())
+    # Every knob that can change the verdict goes into the certificate, so a recheck
+    # reruns the same test and a reader sees e.g. a lowered min_trades.
+    settings = {
+        "min_trades": int(min_trades),
+        "holdout_fraction": float(holdout_fraction),
+        "probe_checks": int(probe_checks),
+        "periods_per_year": float(periods_per_year) if periods_per_year else None,
+    }
+    if io_watch is None:
+        io_watch = IOWatch(tuple(p for p in (df.attrs.get("source_path"),) if p))
     with io_watch:
         fn, src = _resolve_strategy(strategy, signal_fn, source)
     if fn is None and signals is None:
@@ -103,7 +123,7 @@ def verify_strategy(
     integrity = rows.data_integrity(ohlc, df.get("timestamp"))
     if integrity["status"] == "fail":
         checks = [integrity]
-        return _report(checks, {}, df, None, src, model, n_trials)
+        return _report(checks, {}, df, None, src, model, n_trials, settings)
 
     with io_watch:
         sig = call_signal_fn(fn, df) if fn is not None else load_signals(signals, n)
@@ -122,7 +142,9 @@ def verify_strategy(
     holdout = _holdout(rets, holdout_fraction)
     breakeven = breakeven_cost_bps(ohlc, sig, model)
     delay = delay_scan(ohlc, sig, model)
-    accuracy = implausible_accuracy(ohlc["open"], ohlc["close"], sig)
+    timing = timing_significance(ohlc, sig, model) if run["total_return"] > 0.0 else None
+    traded = sig if model.side_mode == "long_short" else np.maximum(sig, 0)
+    accuracy = implausible_accuracy(ohlc["open"], ohlc["close"], traded)
     total_return = float(run["total_return"])
     n_closed = int(run["n_closed_trades"])
 
@@ -135,6 +157,7 @@ def verify_strategy(
         rows.lint_row(lint),
         rows.accuracy_row(accuracy),
         *rows.economics_rows(model, total_return, breakeven, delay),
+        rows.timing_row(timing),
         *rows.statistics_rows(dsr, n_closed, int(min_trades), trials_declared=n_trials is not None, holdout=holdout),
         *(extra_checks or []),
     ]
@@ -144,14 +167,15 @@ def verify_strategy(
         "max_drawdown": float(run["max_drawdown"]),
         "n_fills": int(run["n_trades"]),
         "n_closed_trades": n_closed,
-        "exposure": float(np.mean(sig != 0)),
+        "exposure": float(np.mean(traded != 0)),
         "sharpe_annualized": dsr["sharpe_annualized"],
         "psr": dsr["psr"],
         "deflated_sharpe": dsr["deflated_sharpe"],
         "breakeven_cost_bps": float(breakeven["breakeven_bps"]),
         "hit_rate": accuracy.get("hit_rate"),
+        "timing_p_value": timing["p_value"] if timing else None,
     }
-    return _report(checks, metrics, df, sig, src, model, n_trials, extra)
+    return _report(checks, metrics, df, sig, src, model, n_trials, settings, extra)
 
 
 def _report(
@@ -162,6 +186,7 @@ def _report(
     src: str | None,
     model: ExecutionModel,
     n_trials: int | None,
+    settings: dict[str, Any],
     extra: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     verdict = aggregate_verdict(checks)
@@ -174,6 +199,7 @@ def _report(
         "source_sha256": _sha256(src.encode("utf-8")) if src else None,
         "model": model.to_dict(),
         "n_trials": int(n_trials or 1),
+        "settings": settings,
     }
     if extra:
         repro["extra_sha256"] = _sha256(json.dumps(to_jsonable(extra), sort_keys=True).encode())
@@ -201,7 +227,7 @@ def model_from_costs(
     *,
     commission_bps: float = 5.0,
     slippage_bps: float = 5.0,
-    side_mode: str = "long_flat",
+    side_mode: str = "long_short",
     warmup_bars: int | None = None,
     n_bars: int | None = None,
 ) -> ExecutionModel:

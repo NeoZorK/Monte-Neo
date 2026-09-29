@@ -3,6 +3,55 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.34.0] — 2026-09-29
+
+A full audit of the verifier. Each fix below has a regression test.
+
+### Added
+- **`timing_significance` check (Monte Carlo).** A long-biased strategy on rising data could pass every check
+  without any skill: it was just in the market while prices rose. The verifier now shifts the strategy's own
+  positions circularly against the prices by 200 evenly spaced offsets, which keeps exposure, trade count and
+  holding periods and destroys only the timing. If the net return does not beat 95% of the shifted copies, the
+  check warns that the profit comes from market exposure. A planted real edge beats 100% of them (p = 0.005).
+- **`parameter_plateau` check for `verify_grid`.** The best combo is compared with its neighbours (one parameter
+  one step away in the grid). If they keep less than half of its Sharpe, the best combo is an isolated peak.
+- Five honest controls in the Trap Suite (23 in total): loops over trailing slices, `np.polyfit` inside
+  `rolling().apply`, Wilder RSI in a loop, and a strong real edge with a hit rate near 0.6.
+- `action.yml`: `fail-on: PASS_WITH_WARNINGS` for strict CI; an unknown `fail-on` value is an input error.
+
+### Fixed
+- **Shorts were ignored in the Python API.** `verify_strategy` and `verify_grid` without `model=` used a
+  long-only model, so `-1` positions were never traded while `exposure` still counted them. The CLI and MCP
+  server already defaulted to long/short; the Python API now does too, and `exposure` counts traded positions.
+- **Certificates did not record their thresholds.** `--min-trades 1` could turn `NEEDS_MORE_EVIDENCE` into `PASS`
+  and nothing in the certificate showed it; `--recheck` then reported "verdict differs". The reproducibility
+  block now has `settings` (`min_trades`, `holdout_fraction`, `probe_checks`, `periods_per_year`), which is part
+  of the certificate id and is reused by the re-check.
+- **Re-check across releases** said only "certificate id differs". It now says which release issued the
+  certificate and gives the `pip install monte-neo==X` command to re-check with it.
+- **The GitHub Action claimed `n_trials` was declared** when it was not: the `n-trials` input defaulted to 1 and
+  was always passed. It is now empty by default, and the certificate says `n_trials not declared`.
+- **Truncation probe missed sparse leaks.** It compared only the last bar at 24 evenly spaced points, so a
+  strategy that enters on a few percent of bars could slip through. It now compares the whole prefix and adds
+  checkpoints on the bars where the position changes.
+- **False look-ahead alarms.** A real strong edge (hit rate 0.60 over 539 bars) was rejected by
+  `implausible_accuracy`; it now needs a hit rate of 0.70 and binomial z ≥ 3.5, and a high but insignificant rate
+  is only a warning. The lint no longer calls `c[i - 20:i].max()` (a moving window) or code inside a function
+  passed to `rolling().apply` a whole-sample statistic. A corpus of 25 honest strategy styles on minute, hourly
+  and daily data now raises no look-ahead flag.
+- **Annualized Sharpe was inflated for markets that close.** Bars per year came from the median bar step on a
+  24/7 calendar: daily stocks got 365 instead of ~252 (Sharpe × 1.2), hourly stocks ~8766 instead of ~1640
+  (× 2.3). With 30 days of data or more it now counts bars per elapsed year.
+- `delay_sensitivity` said "survives 1 bar execution delay" for strategies that lose money; it is now skipped
+  when there is no profit, like `cost_margin`.
+- The lint row said "static lint: clean" when the strategy did not parse; it now shows the syntax error.
+- **Outside-data watch gaps:** the OHLCV file is recognised under any name (also `.txt`) for CLI and MCP runs,
+  `verify_grid` watches the strategy import, and the MCP tool `probe_lookahead` reports `external_data`.
+- **Honesty Bench:** a non-numeric claim (`"total_return": "none"`) crashed the whole scoring run; claims are
+  now parsed leniently. Reading data outside `df` counts as look-ahead on the leaderboard.
+- Invalid settings (`n_trials < 1`, `min_trades < 1`, `holdout_fraction` outside (0, 1), `folds < 1`) are input
+  errors instead of silently changing the result.
+
 ## [v0.33.0] — 2026-09-29
 
 ### Added
@@ -30,7 +79,7 @@ Version source of truth: `src/monte_neo/_version.py`.
 
 ### Changed
 - Honesty Bench v1 prompt states that `signal()` must compute positions from `df` only.
-- Agent integrations say the same and require `monte-neo[mcp]>=0.33.0`.
+- Agent integrations say the same and require `monte-neo[mcp]>=0.34.0`.
 
 ## [v0.32.1] — 2026-09-28
 
