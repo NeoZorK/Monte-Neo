@@ -96,7 +96,7 @@ The run used a synthetic random walk; output shortened.
 
 | Family | Checks |
 |--------|--------|
-| **Look-ahead** | Truncation probe (does bar *t* change when later bars are removed?), future-perturbation probe, outside-data watch (files or network read by the strategy), static AST lint (21 rules), implausible hit rate |
+| **Look-ahead** | Truncation probe (does bar *t* change when later bars are removed?), future-perturbation probe, outside-data watch (files or network read by the strategy), static AST lint (23 rules), implausible hit rate |
 | **Economics** | Net return after commission and slippage, break-even cost in bps, one- and two-bar execution delay, a spread estimate from high and low next to the modeled cost, capacity from volume |
 | **Statistics** | Probabilistic and Deflated Sharpe priced by `n_trials`, Monte Carlo timing test (does the signal beat shifted copies of itself, or just ride the market?), sample size, holdout consistency, bootstrap confidence intervals and the minimum track record length; for grid searches, walk-forward out-of-sample, parameter-plateau and probability-of-backtest-overfitting (PBO) checks |
 | **Integrity** | Broken OHLCV (NaN, bad prices, bars out of time order), bad data that makes fake profit (one-bar spikes, frozen prices, unadjusted splits, gaps in time), non-deterministic signals, survivorship bias in a universe |
@@ -104,7 +104,7 @@ The run used a synthetic random walk; output shortened.
 | **Context** | Buy-and-hold on the same data and costs, results by year / quarter / month and by market regime, a warning when one period makes all the profit |
 
 Every rule is backed by the [Trap Suite](https://neozork.github.io/Monte-Neo/guides/trap-suite/):
-55 strategies that are known to lie and 25 honest controls. It runs on every build, so the
+80 strategies that are known to lie and 35 honest controls. It runs on every build, so the
 verifier cannot silently stop catching a leak or start accusing honest code.
 
 ## Where to use it
@@ -120,7 +120,7 @@ verifier cannot silently stop catching a leak or start accusing honest code.
 ## Why Monte-Neo
 
 - **Independent.** It checks code it did not write, with probes that do not trust the strategy's own numbers.
-- **Careful with accusations.** 25 honest strategies (loops, windows, resampling, fits inside rolling windows, a real edge with a high hit rate) must never be flagged for look-ahead, on every build.
+- **Careful with accusations.** 35 honest strategies (loops, windows, resampling, fits inside rolling windows, a real edge with a high hit rate) must never be flagged for look-ahead, on every build.
 - **Built for agents.** An MCP server, a Claude Code plugin with a skill, a slash command and a reminder hook, plus rules for Codex, Gemini CLI and Cursor. Every failed check returns a `next_action` the agent can act on.
 - **Reproducible.** The same data, code and `n_trials` always give the same `certificate_id`. Anyone can reproduce a certificate with `--recheck`.
 - **Signed.** Ed25519 signatures show who issued a certificate and that nobody edited it.
@@ -202,7 +202,7 @@ MCP tools: `verify_strategy`, `verify_grid`, `probe_lookahead`, `cost_stress`,
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.39.0
+- uses: NeoZorK/Monte-Neo@v0.40.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py

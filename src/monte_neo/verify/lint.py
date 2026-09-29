@@ -25,6 +25,9 @@ _TRANSFORMS = {"fft", "rfft", "fftn", "rfftn", "dct", "hilbert", "detrend"}
 _FULL_RANKS = {"qcut", "argsort"}
 _BUILTIN_STATS = {"max", "min", "sum", "sorted"}
 _FORWARD_INDEXER = "FixedForwardWindowIndexer"
+# Cross-validation splitters that train on later data (TimeSeriesSplit is the safe one).
+_SPLITTERS = {"KFold", "StratifiedKFold", "GroupKFold", "RepeatedKFold", "ShuffleSplit", "StratifiedShuffleSplit", "GroupShuffleSplit"}
+_SHUFFLE_SPLITTERS = {"ShuffleSplit", "StratifiedShuffleSplit", "GroupShuffleSplit"}
 # Whole-series methods reported even when called on a derived series (e.g. close.round(-1).mode()).
 _WHOLE_STATS = {"describe", "agg", "aggregate", "mode", "value_counts"}
 _WHOLE_RANKS = {"nlargest", "nsmallest"}
@@ -188,6 +191,10 @@ def _is_false(node: ast.AST | None) -> bool:
     return isinstance(node, ast.Constant) and node.value is False
 
 
+def _is_true(node: ast.AST | None) -> bool:
+    return isinstance(node, ast.Constant) and node.value is True
+
+
 def _is_str(node: ast.AST | None, values: set[str]) -> bool:
     return isinstance(node, ast.Constant) and isinstance(node.value, str) and node.value in values
 
@@ -272,6 +279,21 @@ class _Visitor(ast.NodeVisitor):
         if node.module and node.module.split(".")[0] in _NETWORK_MODULES:
             self._external(node, f"from {node.module} import")
 
+    def _split_rules(self, node: ast.Call) -> None:
+        """Train/test splits that mix the future into training (shuffled splits, k-fold without time order)."""
+        name = node.func.id if isinstance(node.func, ast.Name) else node.func.attr if isinstance(node.func, ast.Attribute) else ""
+        shuffle = _kw(node, "shuffle")
+        if name == "train_test_split" and not _is_false(shuffle):
+            severity = "fail" if _is_true(shuffle) else "warn"
+            how = "shuffle=True" if _is_true(shuffle) else "shuffles by default"
+            self._add(node, "shuffled_split", severity, f"train_test_split {how}: rows of a time series are split at random, so training sees the future; use shuffle=False or a time split")
+        elif name in _SPLITTERS:
+            random = _is_true(shuffle) or name in _SHUFFLE_SPLITTERS
+            self._add(
+                node, "kfold_split", "fail" if random else "warn",
+                f"{name} {'shuffles rows' if random else 'trains on later folds'} of a time series; use TimeSeriesSplit with a gap (embargo)",
+            )
+
     def visit_Call(self, node: ast.Call) -> Any:
         if isinstance(node.func, ast.Name) and node.func.id == "open":
             self._external(node, "open()")
@@ -280,6 +302,7 @@ class _Visitor(ast.NodeVisitor):
             or (node.func.attr == "load" and isinstance(node.func.value, ast.Name) and node.func.value.id in {"np", "numpy"})
         ):
             self._external(node, f"{node.func.attr}()")
+        self._split_rules(node)
         if isinstance(node.func, ast.Attribute):
             attr = node.func.attr
             if attr == "shift":

@@ -3,6 +3,20 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.40.0] — 2026-09-29
+
+### Added
+- **Trap Suite: 80 traps and 35 honest controls** (was 55 and 25). New traps cover machine-learning pipelines
+  (shuffled and K-fold splits, whole-sample PCA, k-means, k-NN, feature selection, hyper-parameter tuning,
+  scaling, winsorizing, volatility targeting, start-date picking), calendar joins (`transform("last")`,
+  `merge_asof`, `resample(closed="right")`, whole-day VWAP), universes (future volatility rank, whole-sample
+  winners, today's membership applied to the past, total-sample normalisation) and honest code on damaged data
+  (unadjusted split, frozen feed, outages). Each trap has an honest twin that must never be flagged.
+- **Two lint rules:** `shuffled_split` (`train_test_split` without `shuffle=False`; fail when `shuffle=True`) and
+  `kfold_split` (K-fold and shuffle splitters on a time series; fail for `shuffle=True` and `ShuffleSplit`).
+  The lint now has 23 rules.
+- Test datasets `frozen_feed`, `unadjusted_split` and `feed_outages`.
+
 ## [v0.39.0] — 2026-09-29
 
 ### Added
