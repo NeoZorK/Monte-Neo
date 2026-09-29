@@ -34,7 +34,7 @@ def load_ohlcv(source: pd.DataFrame | str | Path) -> pd.DataFrame:
     """Return a DataFrame with lower-case float ``open/high/low/close`` columns.
 
     A ``timestamp`` / ``time`` / ``date`` column (or DatetimeIndex) is kept as
-    ``timestamp`` when present; it is only used to infer bars per year.
+    ``timestamp`` when present; it sets bars per year and must run oldest-first.
     """
     df = source.copy() if isinstance(source, pd.DataFrame) else _read_table(Path(source))
     df.columns = [str(c).strip().lower() for c in df.columns]

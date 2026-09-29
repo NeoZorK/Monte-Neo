@@ -15,7 +15,7 @@ strategy performance to the user until Monte-Neo has verified it.
    `open, high, low, close` (and `timestamp` if available).
 2. Put the strategy in a Python file with a function `signal(df) -> positions`
    (`+1` long, `0` flat, `-1` short, one value per row of `df`). Only use pandas / numpy
-   inside it. If the strategy cannot be expressed that way, save the positions to a
+   inside it, and compute everything from `df` (no file or network reads). If the strategy cannot be expressed that way, save the positions to a
    `.npy` / `.csv` file instead (look-ahead probes then cannot run).
 3. Count how many variants you tried (parameter sets, rules, assets). That is `n_trials`.
    If you tuned parameters, expose them as keyword arguments (`signal(df, fast=20, slow=80)`)

@@ -3,12 +3,34 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
-## [Unreleased]
+## [v0.33.0] — 2026-09-29
+
+### Added
+- **`external_data` check (lookahead).** The probes rewrite `df` and compare signals, so a strategy that
+  ignores `df` and loads the dataset itself saw the untouched future and passed them: a strategy that read
+  the CSV at import and looked 49 bars ahead got `PASS_WITH_WARNINGS`. While strategy code runs (import,
+  `signal()`, probes), a `sys.audit` hook now records reads of data files (`.csv`, `.parquet`, `.npy`, …, and
+  the OHLCV file itself) and network connections; any of them fails the check and the verdict is `REJECT`.
+  Library and interpreter files are ignored, so importing scipy, scikit-learn or matplotlib inside `signal()`
+  is fine. Certificates list file base names only, never local directories.
+- **Lint rule `external_data` (rule 21).** `pd.read_*`, `np.load` / `loadtxt` / `genfromtxt`, `open()`,
+  `Path.read_text` / `read_bytes` and network imports (`requests`, `urllib`, `yfinance`, `ccxt`, …) fail the lint.
+  Code under `if __name__ == "__main__":` is skipped: agents keep local runs there.
+- Trap `reads_dataset_file`: invisible to both dynamic probes, caught by the new check (51 traps).
+- CI job `verifier` runs the verifier, bench and Trap Suite tests on Ubuntu with Python 3.11, 3.12 and 3.13.
+  The main job ran only on macOS with Python 3.11, while the package is used on Linux and claims 3.11–3.13.
 
 ### Fixed
+- **Newest-first data passed as clean.** Many exports list bars newest-first. On such data `shift(1)` reads the
+  next bar, a look-ahead the row-order probes cannot see, and `data_integrity` still said "OHLCV is clean".
+  It now fails on timestamps that go backwards or repeat, with a hint to sort oldest-first.
 - `scripts/verify_pypi_install.sh` installs the exact wheel from the PyPI JSON API. The release smoke job
   of v0.32.1 failed because pip's simple index, served from a CDN cache, still listed only 0.32.0 more
   than 15 minutes after the upload; the published 0.32.1 itself passes every check.
+
+### Changed
+- Honesty Bench v1 prompt states that `signal()` must compute positions from `df` only.
+- Agent integrations say the same and require `monte-neo[mcp]>=0.33.0`.
 
 ## [v0.32.1] — 2026-09-28
 

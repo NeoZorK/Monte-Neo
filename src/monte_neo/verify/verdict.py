@@ -18,6 +18,7 @@ from monte_neo.backtest.model import ExecutionModel
 from monte_neo.verify import checks as rows
 from monte_neo.verify.costs import breakeven_cost_bps, delay_scan
 from monte_neo.verify.ingest import OHLC_COLS, SignalFn, call_signal_fn, load_ohlcv, load_signal_fn, load_signals
+from monte_neo.verify.io_guard import IOWatch
 from monte_neo.verify.lint import lint_source
 from monte_neo.verify.lookahead import (
     implausible_accuracy,
@@ -89,7 +90,9 @@ def verify_strategy(
     """
     df = load_ohlcv(ohlcv)
     n = len(df)
-    fn, src = _resolve_strategy(strategy, signal_fn, source)
+    io_watch = IOWatch((ohlcv,) if isinstance(ohlcv, str | Path) else ())
+    with io_watch:
+        fn, src = _resolve_strategy(strategy, signal_fn, source)
     if fn is None and signals is None:
         raise ValueError("provide signals or strategy code (strategy= / signal_fn=)")
     model = model or _default_model(n)
@@ -97,17 +100,18 @@ def verify_strategy(
         raise ValueError(f"need at least warmup_bars + 2 = {model.warmup_bars + 2} bars, got {n}")
     ohlc = {k: df[k].to_numpy(dtype=np.float64) for k in OHLC_COLS}
 
-    integrity = rows.data_integrity(ohlc)
+    integrity = rows.data_integrity(ohlc, df.get("timestamp"))
     if integrity["status"] == "fail":
         checks = [integrity]
         return _report(checks, {}, df, None, src, model, n_trials)
 
-    sig = call_signal_fn(fn, df) if fn is not None else load_signals(signals, n)
-    determinism = truncation = perturbation = None
-    if fn is not None:
-        determinism = probe_determinism(fn, df, full=sig)
-        truncation = probe_truncation(fn, df, n_checks=probe_checks, full=sig)
-        perturbation = probe_perturbation(fn, df, n_checks=max(2, probe_checks // 4), full=sig)
+    with io_watch:
+        sig = call_signal_fn(fn, df) if fn is not None else load_signals(signals, n)
+        determinism = truncation = perturbation = None
+        if fn is not None:
+            determinism = probe_determinism(fn, df, full=sig)
+            truncation = probe_truncation(fn, df, n_checks=probe_checks, full=sig)
+            perturbation = probe_perturbation(fn, df, n_checks=max(2, probe_checks // 4), full=sig)
     lint = lint_source(src) if src else None
 
     run = run_bar_backtest(ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"], sig, model=model)
@@ -127,6 +131,7 @@ def verify_strategy(
         rows.probe_row("determinism", determinism, "determinism"),
         rows.probe_row("lookahead_truncation", truncation, "truncation probe"),
         rows.probe_row("lookahead_perturbation", perturbation, "future-perturbation probe"),
+        rows.external_data_row(*((io_watch.files, io_watch.connections) if fn is not None else (None, None))),
         rows.lint_row(lint),
         rows.accuracy_row(accuracy),
         *rows.economics_rows(model, total_return, breakeven, delay),

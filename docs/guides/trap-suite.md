@@ -11,7 +11,7 @@ statuses that must appear.
 
 ## Catalogue
 
-50 traps, 18 honest controls, 2 parameterized strategies for `verify_grid` and a data-snooping test.
+51 traps, 18 honest controls, 2 parameterized strategies for `verify_grid` and a data-snooping test.
 "Caught by" lists the checks that flag each trap on the random-walk dataset. "lint (warn)" is a
 warning only; the dynamic probes produce the `REJECT`.
 
@@ -96,6 +96,16 @@ runs the strategy instead of only reading it.
 |------|-------------|-----------|
 | `dataset_fraction` | `np.arange(len(df)) / len(df)`: a bar's position depends on how many bars come later | truncation |
 | `block_mean_reshape` | `reshape(-1, 60).mean(axis=1).repeat(60)`: every bar sees the rest of its block | truncation, perturbation |
+
+### Invisible to the dynamic probes
+
+The probes rewrite `df` and compare signals. A strategy that ignores `df` and loads the dataset
+itself sees the untouched future, so the probes pass. The outside-data watch records every data
+file read and network connection made while strategy code runs.
+
+| File | How it lies | Caught by |
+|------|-------------|-----------|
+| `reads_dataset_file` | Loads the full CSV at import and reads 20 bars ahead of each `df` row | outside data, lint |
 
 ### Economics
 

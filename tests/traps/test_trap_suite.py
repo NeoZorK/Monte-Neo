@@ -15,7 +15,7 @@ from monte_neo.verify import model_from_costs, verify_grid, verify_strategy
 
 STRATEGY_DIR = Path(__file__).parent / "strategies"
 
-LOOKAHEAD_IDS = ("lookahead_truncation", "lookahead_perturbation", "lookahead_static_lint", "implausible_accuracy")
+LOOKAHEAD_IDS = ("lookahead_truncation", "lookahead_perturbation", "external_data", "lookahead_static_lint", "implausible_accuracy")
 
 # name, dataset, allowed verdicts, required check statuses
 TRAPS = [
@@ -70,6 +70,8 @@ TRAPS = [
     # Invisible to the static lint: only the dynamic probes catch these.
     ("dataset_fraction", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "pass"}),
     ("block_mean_reshape", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "pass"}),
+    # Invisible to the dynamic probes: only the outside-data watch (and lint) catch it.
+    ("reads_dataset_file", "random_walk", {"REJECT"}, {"lookahead_truncation": "pass", "lookahead_perturbation": "pass", "external_data": "fail", "lookahead_static_lint": "fail"}),
     ("sma_cross", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE"}, {}),
     ("resample_shifted", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
     ("expanding_rank", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),

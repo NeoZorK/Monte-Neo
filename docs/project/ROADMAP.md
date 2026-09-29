@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.32.1)
+# Monte-Neo Roadmap (v0.33.0)
 
 Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier for agent-built strategies).
 
@@ -73,7 +73,11 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 ## v0.32.1 — health fixes
 - [x] Release smoke test runs again (in publish.yml) and exercises the product; integration pins raised; MCP server version
 
-## Next (v0.33+)
+## v0.33.0 — data read around the probes
+- [x] `external_data` check: strategy code that loads data files or opens network connections is rejected (runtime audit hook + lint rule 21)
+- [x] `data_integrity` rejects newest-first, shuffled or duplicated timestamps; CI runs the verifier on Linux, Python 3.11–3.13
+
+## Next (v0.34+)
 - [ ] First public bench run (owner runs it; tooling ready in v0.32.0): Claude Code / Codex / Gemini CLI / Cursor → published leaderboard
 - [ ] Trap Suite beyond 50: multi-asset input (universe) for survivorship and cross-asset join traps
 - [~] Publish to MCP catalogues: official registry (done), glama / smithery / mcp.so / mcpmarket (owner submits; texts in docs/marketing/launch-kit.md)
