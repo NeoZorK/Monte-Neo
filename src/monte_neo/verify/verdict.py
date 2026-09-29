@@ -13,12 +13,13 @@ import numpy as np
 import pandas as pd
 
 from monte_neo._version import __version__
+from monte_neo.backtest.bar_engine import run_bar_backtest
 from monte_neo.backtest.jit import warn_if_slow
 from monte_neo.backtest.model import ExecutionModel
 from monte_neo.verify import checks as rows
 from monte_neo.verify.breakdown import buy_and_hold, periods, regimes, series
 from monte_neo.verify.costs import breakeven_cost_bps, delay_scan
-from monte_neo.verify.engine import simulate
+from monte_neo.verify.engine import is_weights, simulate
 from monte_neo.verify.executor import ProcessRunner, resolve_jobs, split_spec
 from monte_neo.verify.ingest import (
     POSITION_MODES,
@@ -33,6 +34,7 @@ from monte_neo.verify.limits import read_source
 from monte_neo.verify.lint import lint_source
 from monte_neo.verify.market import SingleMarket, UniverseMarket, market_for
 from monte_neo.verify.quality import data_quality, quality_row, spike_profit_share
+from monte_neo.verify.report_data import MAX_TRADES_FOR_STATS, build_charts
 from monte_neo.verify.schema import DISCLAIMER, VERDICT_SCHEMA_ID, aggregate_verdict, to_jsonable
 from monte_neo.verify.stats import bar_returns, deflated_sharpe, infer_periods_per_year, sharpe_per_bar
 from monte_neo.verify.timing import timing_significance
@@ -273,8 +275,19 @@ def _checks_and_report(
         },
         "breakdown": {**by_period, **by_regime},
         "series": series(run["equity"], bench["equity"], timestamps, model.warmup_bars),
+        "charts": build_charts(
+            run=run, ohlc=ohlc, positions=sig, model=model, timestamps=timestamps, periods_per_year=ppy,
+            timing=timing, trades=_trade_journal(ohlc, sig, model, n_closed),
+        ),
     }
     return _report(checks, metrics, market, full, src, model, n_trials, settings, extra, sections)
+
+
+def _trade_journal(ohlc: dict[str, np.ndarray], sig: np.ndarray, model: ExecutionModel, n_closed: int) -> list[dict[str, Any]] | None:
+    """Closed trades for the report (sign engine only; skipped for very active strategies, where the journal is slow)."""
+    if is_weights(sig) or n_closed == 0 or n_closed > MAX_TRADES_FOR_STATS:
+        return None
+    return list(run_bar_backtest(ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"], sig, model=model)["trades"])
 
 
 def _outside_data(io_watch: IOWatch, fn: Any) -> tuple[list[str], list[str]]:

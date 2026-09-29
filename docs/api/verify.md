@@ -173,11 +173,21 @@ Every report has:
 
 ### HTML report
 
-`--html report.html` writes a self-contained page next to the certificate: equity against
-buy-and-hold with the drawdown, every check, what to fix, periods, regimes, the grid search and
-the hashes needed to reproduce the run. It has no scripts and loads nothing from the network.
-`--render verdict.json --html report.html` renders a certificate someone sent you. MCP tool:
-`render_report`. The GitHub Action writes it too (output `html-report`).
+`--html report.html` writes a self-contained tear sheet next to the certificate:
+
+- a one-sentence reason for the verdict, and a card per check family (integrity, look-ahead, economics, statistics);
+- equity on a log scale against buy-and-hold, the drawdown, rolling Sharpe and a monthly-returns heat map;
+- the distribution of returns, the timing test (200 shifted copies against the real return) and net return against trading costs;
+- trade statistics (win rate, profit factor, average win and loss, holding time, streaks; sign strategies);
+- what to fix, the evidence for a leak (the bars where the signal changed, the flagged source lines), every check, periods, regimes, the parameter heat map of a grid search, and the hashes needed to reproduce the run.
+
+It has no scripts, loads nothing from the network, adapts to dark mode and prints to PDF from the browser.
+See the [example reports](../gallery.md). `--render verdict.json --html report.html` renders a
+certificate someone sent you. MCP tool: `render_report`. The GitHub Action writes it too (output `html-report`).
+
+The data behind the charts is in the certificate's `charts` section (about 10 KB: monthly returns, a histogram, rolling
+Sharpe, the cost curve, the shifted-copy returns and trade statistics). Like `series`, `benchmark` and `breakdown` it is
+derived from the hashed inputs and is not part of `certificate_id`.
 
 ### Timing significance
 

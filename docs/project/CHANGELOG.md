@@ -3,6 +3,25 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.38.0] — 2026-09-29
+
+### Added
+- **The HTML report is now a tear sheet.** A one-sentence reason for the verdict, a card per check family, equity on a
+  log scale with the drawdown, rolling Sharpe, a monthly-returns heat map, the distribution of returns, the timing
+  test (200 shifted copies against the real return), net return against trading costs, trade statistics (win rate,
+  profit factor, average win and loss, holding time, streaks), the evidence for a leak (the bars where the signal
+  changed and the flagged source lines with the code), a parameter heat map for grid searches, and a print
+  stylesheet (PDF from the browser). Still one file: no scripts, no network.
+- **`charts` section in the certificate** (about 10 KB) with the data behind the charts. It is derived from the
+  hashed inputs and is not part of `certificate_id`, so existing certificates and IDs are unchanged.
+  Grid certificates also record `combo_sharpes`.
+- **Gallery of example reports** (`docs/gallery.md`, `scripts/make_report_gallery.py`): a leak, no edge, an honest
+  strategy, a parameter search, a universe and bad ticks.
+
+### Fixed
+- A malformed or hostile certificate (numbers where lists are expected, text in chart data) could crash the HTML
+  renderer; every chart now validates its input.
+
 ## [v0.37.0] — 2026-09-29
 
 ### Security

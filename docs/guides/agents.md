@@ -42,7 +42,7 @@ reporting results. It fires once per file per session and never blocks an edit.
 MCP server only:
 
 ```bash
-claude mcp add monte-neo -- uvx --from "monte-neo[mcp]>=0.37.0" monte-neo-mcp
+claude mcp add monte-neo -- uvx --from "monte-neo[mcp]>=0.38.0" monte-neo-mcp
 ```
 
 ## Codex (OpenAI)
@@ -69,7 +69,7 @@ Use this stdio command:
 
 ```bash
 uvx monte-neo mcp          # v0.20.0+: the MCP SDK is a default dependency
-# older pin: uvx --from "monte-neo[mcp]>=0.37.0" monte-neo-mcp
+# older pin: uvx --from "monte-neo[mcp]>=0.38.0" monte-neo-mcp
 ```
 
 Monte-Neo is published to the official MCP Registry as `io.github.NeoZorK/monte-neo` (`server.json`),
@@ -80,7 +80,7 @@ For HTTP clients, add `--transport streamable-http`.
 ## GitHub Actions
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.37.0
+- uses: NeoZorK/Monte-Neo@v0.38.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py
