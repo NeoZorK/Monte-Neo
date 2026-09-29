@@ -58,7 +58,10 @@ def test_check_rows() -> None:
     econ = {r["id"]: r for r in rows.economics_rows(ExecutionModel(), -0.1, {"breakeven_bps": 0.0}, {"status": "warn"})}
     assert econ["net_profitability"]["status"] == "fail"
     assert econ["cost_margin"]["status"] == "skip"
+    assert econ["delay_sensitivity"]["status"] == "skip"  # nothing to survive when it loses money
+    econ = {r["id"]: r for r in rows.economics_rows(ExecutionModel(), 0.1, {"breakeven_bps": 50.0}, {"status": "warn"})}
     assert econ["delay_sensitivity"]["summary"].startswith("profit vanishes")
+    assert rows.lint_row({"status": "skip", "findings": [], "error": "syntax error: x (line 1)"})["summary"] == "static lint: syntax error: x (line 1)"
     dsr = {"deflated_sharpe": 0.7, "n_trials": 3}
     ho = {"train_sharpe": 0.1, "holdout_sharpe": -0.1}
     stats = {r["id"]: r for r in rows.statistics_rows(dsr, 5, 30, True, ho)}

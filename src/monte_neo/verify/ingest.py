@@ -37,6 +37,9 @@ def load_ohlcv(source: pd.DataFrame | str | Path) -> pd.DataFrame:
     ``timestamp`` when present; it sets bars per year and must run oldest-first.
     """
     df = source.copy() if isinstance(source, pd.DataFrame) else _read_table(Path(source))
+    if not isinstance(source, pd.DataFrame):
+        # Lets the outside-data watch recognise this file under any name or suffix.
+        df.attrs["source_path"] = str(Path(source).resolve())
     df.columns = [str(c).strip().lower() for c in df.columns]
     missing = [c for c in OHLC_COLS if c not in df.columns]
     if missing:

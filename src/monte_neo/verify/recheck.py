@@ -87,12 +87,13 @@ def recheck_certificate(
         report.update(reproduced=False, reason="grid spec not recorded (certificate older than v0.20.0)")
         return report
     model = ExecutionModel(**repro["model"])
+    settings = repro.get("settings") or {}  # absent before v0.34.0: the defaults applied
     if grid is not None and fn is not None:
-        again = verify_grid(df, grid["spec"], signal_fn=fn, source=source, model=model, folds=grid["folds"])
+        again = verify_grid(df, grid["spec"], signal_fn=fn, source=source, model=model, folds=grid["folds"], **settings)
     else:
         again = verify_strategy(
             df, signals=sig if fn is None else None, signal_fn=fn, source=source,
-            model=model, n_trials=repro.get("n_trials"),
+            model=model, n_trials=repro.get("n_trials"), **settings,
         )
     same_verdict = again["verdict"] == cert.get("verdict")
     same_id = again["certificate_id"] == cert.get("certificate_id")
@@ -104,7 +105,14 @@ def recheck_certificate(
         reproduced=bool(same_verdict and same_id),
     )
     if not report["reproduced"]:
-        report["reason"] = "verdict differs" if not same_verdict else "certificate id differs"
+        if repro.get("engine_version") != __version__:
+            # The engine version is part of the certificate id, and checks change between releases.
+            report["reason"] = (
+                f"certificate was issued by monte-neo {repro.get('engine_version')}; this is {__version__}. "
+                f"Recheck with the same version: pip install monte-neo=={str(repro.get('engine_version')).lstrip('v')}"
+            )
+        else:
+            report["reason"] = "verdict differs" if not same_verdict else "certificate id differs"
     return report
 
 

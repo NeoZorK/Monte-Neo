@@ -59,20 +59,22 @@ monte-neo verify --schema          # print the JSON schema
 |----|----------|--------------------|
 | `data_integrity` | integrity | NaN, non-positive prices, `high < low`, timestamps out of order (newest-first data) or duplicated (fail, stops the run early) |
 | `determinism` | integrity | two runs of `signal(df)` on the same data disagree |
-| `lookahead_truncation` | lookahead | `signal(df[:t+1])[-1] != signal(df)[t]` at any checkpoint |
+| `lookahead_truncation` | lookahead | `signal(df[:t+1]) != signal(df)[:t+1]` at any checkpoint (the whole prefix is compared; checkpoints are spread evenly and also placed where the position changes) |
 | `lookahead_perturbation` | lookahead | rewriting bars after `t` (future returns mirrored) changes signals up to `t` |
 | `external_data` | lookahead | strategy code (import or `signal()`) reads a data file (`.csv`, `.parquet`, `.npy`…, or the OHLCV file itself) or opens a network connection: the probes rewrite `df` and cannot see data loaded elsewhere |
 | `lookahead_static_lint` | lookahead | `shift(-k)`, `center=True`, `bfill`, windows over `x[::-1]`, data loaders (`read_csv`, `np.load`, `open`, network imports) outside `if __name__ == "__main__":` (fail); full-series `fit`/`polyfit`, `rank`, `mean`/`std`/`max`…, group `transform("last")`, `x[i + k]` (warn) |
-| `implausible_accuracy` | lookahead | next-bar direction hit rate ≥ 0.60 over ≥ 100 active bars |
+| `implausible_accuracy` | lookahead | next-bar direction hit rate ≥ 0.70 over ≥ 100 active bars and binomial z ≥ 3.5 (fail); a high rate that is not significant is a warn |
 | `costs_modeled` | economics | zero commission and slippage (warn) |
 | `net_profitability` | economics | total return ≤ 0 after costs |
 | `cost_margin` | economics | break-even cost < 2× the modeled per-side cost (warn) |
-| `delay_sensitivity` | economics | profitable, but loses money with one extra bar of execution delay (warn) |
+| `delay_sensitivity` | economics | profitable, but loses money with one extra bar of execution delay (warn); skip when not profitable |
+| `timing_significance` | statistics | the net return does not beat 95% of 200 circular shifts of the same positions (warn): the profit comes from market exposure, not timing; skip when not profitable |
 | `sample_size` | statistics | fewer than `min_trades` (default 30) closed trades |
 | `deflated_sharpe` | statistics | Deflated Sharpe < 0.5 (fail) or < 0.95 (warn) |
 | `trials_disclosed` | statistics | `n_trials` not declared (info only) |
 | `holdout_consistency` | statistics | Sharpe positive in the first 70% and ≤ 0 in the last 30% (warn) |
 | `walk_forward_oos` | statistics | `verify_grid` only: walk-forward out-of-sample Sharpe ≤ 0 (fail) or < 50% of the in-sample best (warn) |
+| `parameter_plateau` | statistics | `verify_grid` only: the best combo's neighbours (one parameter one step away) keep < 50% of its Sharpe (warn): an isolated peak |
 
 ### Execution semantics
 
@@ -82,6 +84,11 @@ The verifier uses the same fee-aware research-bar engine as the rest of Monte-Ne
 - Commission and slippage are charged in bps per side on fill notional.
 - Default costs: 5 + 5 bps per side.
 - Default warm-up: `min(60, n_bars / 10)` bars.
+- Positions are `+1` long, `0` flat, `-1` short, and shorts trade by default (`side_mode="long_short"`).
+  Pass `model_from_costs(side_mode="long_flat")` to ignore short signals.
+- Bars per year (for the annualized Sharpe) are counted over the elapsed time when the data
+  spans 30 days or more, so weekends and nights are priced in: daily stocks give about 252.
+  Shorter samples use the median bar step. `--periods-per-year` overrides it.
 
 Sharpe statistics use per-bar returns after warm-up.
 
@@ -89,6 +96,16 @@ Sharpe statistics use per-bar returns after warm-up.
 - **Deflated Sharpe** is the probability that the true Sharpe is above the expected
   maximum Sharpe of `n_trials` zero-skill strategies. It uses the Bailey & López de Prado
   formulas with skew and kurtosis adjustments.
+
+### Timing significance
+
+A long-biased strategy on rising data can pass every other check without any skill: it is
+simply in the market while prices go up. The verifier shifts the strategy's own positions
+circularly against the prices by 200 evenly spaced offsets. A shift keeps the exposure, the
+number of trades and the holding periods, and destroys only the timing. The p-value is the
+share of shifted copies that earn at least as much as the real one. The offsets are fixed,
+so the result is reproducible. Selection over many variants is priced by the Deflated Sharpe,
+not here.
 
 ### Why `n_trials` matters
 
@@ -108,7 +125,7 @@ from monte_neo.verify import verify_grid
 # my_strategy.py:  def signal(df, fast=20, slow=80): ...
 report = verify_grid("btc_1h.csv", {"fast": [10, 20, 40], "slow": [80, 120, 200]},
                      strategy="my_strategy.py", folds=4)
-report["grid"]  # n_combos, best_params, top, walk_forward
+report["grid"]  # n_combos, best_params, top, walk_forward, plateau
 ```
 
 What `verify_grid` does:
@@ -118,6 +135,8 @@ What `verify_grid` does:
 - Verifies that best combo with `n_trials = n_combos` and the measured Sharpe spread across trials.
 - Runs an **anchored walk-forward**: parameters are re-chosen on past folds only and scored on
   the next fold. Its out-of-sample Sharpe becomes the `walk_forward_oos` check.
+- Compares the best combo with its neighbours in the grid (`parameter_plateau`): a strategy
+  that works only at one exact setting is fitted to noise.
 
 CLI: `monte-neo verify --ohlcv data.csv --strategy my_strategy.py --grid '{"fast":[10,20],"slow":[80,120]}'`
 (or `--grid grid.json`). MCP tool: `verify_grid`.
@@ -134,14 +153,18 @@ CLI: `monte-neo verify --ohlcv data.csv --strategy my_strategy.py --grid '{"fast
   "metrics": {"total_return": -0.04, "deflated_sharpe": 0.11, "breakeven_cost_bps": 0.0},
   "next_actions": ["The signal at bar t changes when later bars are removed: ..."],
   "reproducibility": {"engine_version": "v0.18.0", "data_sha256": "...", "signals_sha256": "...",
-                      "source_sha256": "...", "model": {}, "n_trials": 1},
+                      "source_sha256": "...", "model": {}, "n_trials": 1,
+                      "settings": {"min_trades": 30, "holdout_fraction": 0.3, "probe_checks": 24,
+                                   "periods_per_year": null}},
   "generated_at": "2026-09-26T12:00:00+00:00",
   "disclaimer": "..."
 }
 ```
 
 `certificate_id` is derived from the reproducibility block and the verdict. The same
-data, signals, code, model and `n_trials` always give the same id.
+data, signals, code, model, `n_trials` and settings always give the same id. `settings`
+records every threshold that can change the verdict (for example a lowered `min_trades`),
+so a reader sees it and a re-check reuses it.
 
 ### Re-checking a certificate
 
@@ -160,9 +183,11 @@ recheck_certificate("verdict.json", "btc_1h.csv", strategy="my_strategy.py")["re
 How the re-check works:
 
 1. It compares the data, signal and source hashes with the certificate.
-2. It re-runs the verifier with the recorded execution model and `n_trials`. For a grid
-   certificate, it re-runs the recorded grid search.
-3. It compares the verdict and the `certificate_id`.
+2. It re-runs the verifier with the recorded execution model, `n_trials` and settings. For a
+   grid certificate, it re-runs the recorded grid search.
+3. It compares the verdict and the `certificate_id`. The engine version is part of the id, so
+   a certificate from another release is re-checked with that release; the result names the
+   `pip install monte-neo==X` command.
 
 The result is `strategy-recheck/1`. `monte-neo verify --recheck` exits with code 4 when the
 certificate is not reproduced. MCP tool: `recheck_certificate`.

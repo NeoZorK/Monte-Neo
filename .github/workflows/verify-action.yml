@@ -51,10 +51,30 @@ jobs:
         env:
           OUTCOME: ${{ steps.leaky.outcome }}
           VERDICT: ${{ steps.leaky.outputs.verdict }}
+          CERT: ${{ steps.leaky.outputs.certificate }}
         run: |
           echo "outcome=$OUTCOME verdict=$VERDICT"
           test "$OUTCOME" = "failure"
           test "$VERDICT" = "REJECT"
+          # n-trials was not given: the certificate must not claim it was declared.
+          python -c "import json,sys; c={r['id']: r['status'] for r in json.load(open(sys.argv[1]))['checks']}; assert c['trials_disclosed'] == 'info', c" "$CERT"
+
+      - name: Unknown fail-on is an input error
+        id: badfail
+        continue-on-error: true
+        uses: ./
+        with:
+          ohlcv: sample.csv
+          strategy: tests/traps/strategies/sma_cross.py
+          fail-on: WHATEVER
+
+      - name: Assert input error
+        env:
+          OUTCOME: ${{ steps.badfail.outcome }}
+          VERDICT: ${{ steps.badfail.outputs.verdict }}
+        run: |
+          test "$OUTCOME" = "failure"
+          test -z "$VERDICT"
 
       - name: Create a throwaway signing key
         id: key

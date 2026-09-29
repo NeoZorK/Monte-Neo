@@ -23,10 +23,12 @@ NEXT_ACTIONS: dict[str, str] = {
     "net_profitability": "The strategy loses money after costs: reduce turnover or find a stronger edge.",
     "cost_margin": "Edge barely covers costs: cut turnover or test with higher slippage before trusting it.",
     "delay_sensitivity": "Profit disappears with one bar of execution delay: the edge lives in fill timing.",
+    "timing_significance": "The profit comes from market exposure, not timing: shifted copies of the same positions earn as much. Compare with buy-and-hold at the same exposure, or find a signal that beats its own shifted copies.",
     "sample_size": "Too few closed trades for statistics: test on more history or more instruments.",
     "deflated_sharpe": "Sharpe does not survive the number of variants tried: test out-of-sample or reduce the search space.",
     "trials_disclosed": "Pass n_trials = number of variants you tried (parameters, rules, assets) so selection bias is priced in.",
     "holdout_consistency": "Recent (holdout) performance does not confirm the earlier sample: check for regime dependence or overfit.",
+    "parameter_plateau": "The best parameters are an isolated peak: neighbouring values do much worse. Prefer a region where nearby parameters also work.",
     "walk_forward_oos": "Parameters picked on past folds do not hold on the next fold: shrink the grid or prefer robust parameter plateaus.",
 }
 
@@ -117,14 +119,20 @@ def lint_row(lint: dict[str, Any] | None) -> dict[str, Any]:
     if lint is None:
         return check("lookahead_static_lint", "lookahead", "skip", "static lint: no source provided")
     rules = sorted({f["rule"] for f in lint["findings"]})
-    summary = "static lint: clean" if not rules else f"static lint: {', '.join(rules)}"
+    if lint["status"] == "skip":
+        summary = f"static lint: {lint.get('error', 'not run')}"
+    else:
+        summary = "static lint: clean" if not rules else f"static lint: {', '.join(rules)}"
     return check("lookahead_static_lint", "lookahead", lint["status"], summary, lint)
 
 
 def accuracy_row(acc: dict[str, Any]) -> dict[str, Any]:
     """Wrap the implausible-accuracy smell test."""
     rate = acc.get("hit_rate")
-    summary = "next-bar hit rate: too few active bars" if acc["status"] == "skip" else f"next-bar hit rate {rate:.3f}"
+    if acc["status"] == "skip":
+        summary = "next-bar hit rate: too few active bars"
+    else:
+        summary = f"next-bar hit rate {rate:.3f} over {acc.get('active_bars', 0)} bars (z {acc.get('z_score', 0.0):.1f})"
     return check("implausible_accuracy", "lookahead", acc["status"], summary, acc)
 
 
@@ -154,14 +162,30 @@ def economics_rows(
             f"break-even cost {be:.2f} bps per side vs {side_cost:.2f} modeled", breakeven,
         )
     rows.append(margin)
-    rows.append(
-        check(
-            "delay_sensitivity", "economics", delay["status"],
-            "profit vanishes with 1 bar delay" if delay["status"] == "warn" else "survives 1 bar execution delay",
-            delay,
+    if total_return <= 0.0:
+        rows.append(check("delay_sensitivity", "economics", "skip", "not profitable after costs", delay))
+    else:
+        rows.append(
+            check(
+                "delay_sensitivity", "economics", delay["status"],
+                "profit vanishes with 1 bar delay" if delay["status"] == "warn" else "survives 1 bar execution delay",
+                delay,
+            )
         )
-    )
     return rows
+
+
+def timing_row(timing: dict[str, Any] | None) -> dict[str, Any]:
+    """Timing significance against circular shifts (``None``: not profitable, not run)."""
+    if timing is None:
+        return check("timing_significance", "statistics", "skip", "not profitable after costs")
+    if timing["status"] == "skip":
+        return check("timing_significance", "statistics", "skip", "timing: no positions or too few bars", timing)
+    summary = (
+        f"beats {timing['share_beaten']:.0%} of {timing['n_shifts']} shifted copies of its positions"
+        f" (p {timing['p_value']:.3f})"
+    )
+    return check("timing_significance", "statistics", timing["status"], summary, timing)
 
 
 def statistics_rows(
@@ -218,4 +242,5 @@ __all__ = [
     "next_actions",
     "probe_row",
     "statistics_rows",
+    "timing_row",
 ]
