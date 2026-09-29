@@ -5,12 +5,12 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
-from numba import njit
 
+from monte_neo.backtest.jit import njit_cached
 from monte_neo.backtest.model import ExecutionModel
 
 
-@njit(cache=True)
+@njit_cached
 def _portfolio_core(  # pragma: no cover  # njit body; covered via public API / subprocess
     open_: np.ndarray,
     high: np.ndarray,

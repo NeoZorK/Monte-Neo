@@ -89,6 +89,7 @@ A simplified guide to the Monte-Neo file structure.
 ### Docker (docker/)
 - docker/Dockerfile - Multi-stage Docker build using uv
 - docker/docker-compose.yml - Docker Compose service definitions
+- docker/verify/Dockerfile - Verifier image for untrusted strategy code (engines precompiled, runs as nobody)
 
 ### Source Code (src/monte_neo/)
 - src/monte_neo/_version.py - Central version management (v0.36.0)

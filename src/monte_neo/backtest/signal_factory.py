@@ -11,10 +11,12 @@ from typing import Any, Literal
 import numpy as np
 from numba import njit, prange
 
+from monte_neo.backtest.jit import njit_cached
+
 DeviceName = Literal["auto", "cpu_numba", "mlx"]
 
 
-@njit(cache=True)
+@njit_cached
 def _sma_cross_one(close: np.ndarray, fast: int, slow: int) -> np.ndarray:  # pragma: no cover  # njit body; covered via public API / subprocess
     n = close.shape[0]
     out = np.zeros(n, dtype=np.int64)

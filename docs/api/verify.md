@@ -328,15 +328,11 @@ attacker: native code or ctypes can get around Python audit hooks.
 To verify code you do not trust (a marketplace, a prop firm, a competition), run the verifier in a
 throw-away container without network and with the data mounted read-only:
 
-```dockerfile
-# Dockerfile: the verifier with its engines compiled at build time
-FROM python:3.12-slim
-RUN pip install --no-cache-dir monte-neo && monte-neo verify --precompile
-USER nobody
-```
+The repository ships the image: [`docker/verify/Dockerfile`](https://github.com/NeoZorK/Monte-Neo/blob/main/docker/verify/Dockerfile)
+(`python:3.12-slim`, the verifier compiled at build time, runs as `nobody`).
 
 ```bash
-docker build -t monte-neo-verify .
+docker build -t monte-neo-verify docker/verify    # add --build-arg VERSION=X.Y.Z to pin a release
 docker run --rm --network none --read-only --tmpfs /tmp \
   --memory 4g --cpus 2 --pids-limit 256 \
   -v "$PWD/data:/data:ro" -v "$PWD/submission:/code:ro" -v "$PWD/out:/out" \
@@ -345,4 +341,6 @@ docker run --rm --network none --read-only --tmpfs /tmp \
 ```
 
 The container has no network, a read-only file system (except `/tmp` and `/out`) and limits on
-memory, CPU and processes; `--isolate` and `--timeout` still apply inside it.
+memory, CPU and processes; `--isolate` and `--timeout` still apply inside it. Every run starts from
+the image: a file a strategy writes to `/tmp` is gone after the run. Tested with a strategy that tries
+to open a connection and write into `/code`: both are blocked, and the check finishes in about 2 s.
