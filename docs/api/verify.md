@@ -61,7 +61,7 @@ monte-neo verify --schema          # print the JSON schema
 
 | id | category | fails / warns when |
 |----|----------|--------------------|
-| `data_integrity` | integrity | NaN, non-positive prices, `high < low`, timestamps out of order (newest-first data) or duplicated, repeated (timestamp, symbol) rows in a universe (fail, stops the run early) |
+| `data_integrity` | integrity | NaN, non-positive prices, `high < low`, open or close outside high-low by more than 0.1% (smaller gaps are counted as vendor rounding), timestamps out of order (newest-first data) or duplicated, repeated (timestamp, symbol) rows in a universe (fail, stops the run early) |
 | `survivorship` | integrity | universe only: every symbol trades until the last bar, so delisted names are probably missing (warn) |
 | `determinism` | integrity | two runs of `signal(df)` on the same data disagree |
 | `lookahead_truncation` | lookahead | `signal(df[:t+1]) != signal(df)[:t+1]` at any checkpoint (the whole prefix is compared; checkpoints are spread evenly and also placed where the position changes) |

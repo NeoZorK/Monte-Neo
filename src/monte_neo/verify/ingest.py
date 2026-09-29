@@ -76,10 +76,17 @@ POSITION_MODES = ("auto", "sign", "weight")
 
 def signal_values(signals: Any) -> np.ndarray:
     """Raw float values of a signal (array, Series, list or DataFrame with a ``signal`` column)."""
+    if signals is None:
+        raise ValueError("signal() returned None: return one position per row of df (array or Series)")
     if isinstance(signals, pd.DataFrame):
         col = "signal" if "signal" in signals.columns else signals.columns[-1]
         signals = signals[col]
-    return np.asarray(signals, dtype=np.float64).reshape(-1)
+    if np.ndim(signals) == 0:
+        raise ValueError(f"signal() returned a single value ({signals!r}): return one position per row of df")
+    try:
+        return np.asarray(signals, dtype=np.float64).reshape(-1)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"positions must be numbers (+1 / 0 / -1 or weights in [-1, 1]): {exc}") from exc
 
 
 def resolve_positions(values: np.ndarray, positions: str = "auto") -> str:

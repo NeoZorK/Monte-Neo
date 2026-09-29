@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.35.0)
+# Monte-Neo Roadmap (v0.35.1)
 
 Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier for agent-built strategies).
 
@@ -86,6 +86,9 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 - [x] Universes (symbol column): cross-sectional probes, survivorship check, equal-weight benchmark, 3 traps + 2 honest controls
 - [x] Buy-and-hold benchmark, results by period and market regime, period_consistency check
 - [x] Self-contained HTML report (CLI --html / --render, MCP render_report, Action output)
+
+## v0.35.1 — audit fixes
+- [x] Broken OHLC bars, MCP error reasons, clear input errors, fast CLI start
 
 ## Next (v0.36+)
 - [ ] First public bench run (owner runs it; tooling ready in v0.32.0): Claude Code / Codex / Gemini CLI / Cursor → published leaderboard

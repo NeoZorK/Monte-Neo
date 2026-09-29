@@ -1,4 +1,4 @@
-# 📜 Monte-Neo Rules (v0.0.7)
+# 📜 Monte-Neo Rules
 
 ## Authorship (public repositories)
 
@@ -32,5 +32,15 @@
 
 ## Versioning
 
-- Centralized in `src/monte_neo/_version.py`.
-- Pattern: `v0.0.1` -> `v0.0.2` -> ... -> `v0.0.7` (patch increments during initial development).
+- Centralized in `src/monte_neo/_version.py`; every place that names the release must match it
+  (`tests/unit/test_maintenance.py::test_version_is_the_same_everywhere`).
+- Semantic versions: a **feature release** raises the minor (or major) version (`v0.35.0` -> `v0.36.0`);
+  a **patch release** raises the patch version (`v0.35.0` -> `v0.35.1`) and carries only bug fixes
+  or security fixes.
+
+## Release cadence
+
+- **Feature releases: at most 2 per calendar day (UTC).** Batch further features into the next day's release.
+- **Patch releases with bug fixes and security fixes: any time, no limit.** Do not hold a fix back
+  to respect the cadence.
+- Every release still needs the owner's explicit approval, and CI must be green on the merged commit.

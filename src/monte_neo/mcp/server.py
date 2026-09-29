@@ -6,7 +6,9 @@ Works with the MCP Python SDK 2.x (``MCPServer``) and 1.x (``FastMCP``).
 from __future__ import annotations
 
 import argparse
+import functools
 import sys
+from collections.abc import Callable
 from typing import Any
 
 from monte_neo._version import __version__
@@ -31,6 +33,24 @@ def _server_class() -> Any:
         raise SystemExit('MCP SDK missing: pip install "monte-neo[mcp]"') from exc
 
 
+def reporting_errors(fn: Callable[..., dict[str, Any]]) -> Callable[..., dict[str, Any]]:
+    """Return input errors to the agent as ``{"error": ...}`` instead of a bare tool failure.
+
+    The SDK answers an exception with "Error executing tool <name>" and drops the reason,
+    so an agent cannot tell a wrong path from a broken strategy. ``functools.wraps`` keeps
+    the signature and annotations the SDK builds the tool schema from.
+    """
+
+    @functools.wraps(fn)
+    def wrapper(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        try:
+            return fn(*args, **kwargs)
+        except Exception as exc:
+            return {"error": f"{type(exc).__name__}: {exc}", "tool": fn.__name__}
+
+    return wrapper
+
+
 def build_server() -> Any:
     """Create the MCP server with every verifier tool registered."""
     cls = _server_class()
@@ -45,7 +65,7 @@ def build_server() -> Any:
     except TypeError:  # SDK 1.x FastMCP has no version / website_url arguments
         server = cls(name=SERVER_NAME, instructions=SERVER_INSTRUCTIONS)
     for fn in TOOLS:
-        server.tool()(fn)
+        server.tool()(reporting_errors(fn))
     return server
 
 
