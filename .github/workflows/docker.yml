@@ -25,9 +25,11 @@ jobs:
     env:
       TAG: ${{ github.event.inputs.version || github.event.workflow_run.head_branch }}
     steps:
+      # Always the default branch: this job can push packages, so it never checks out the commit that
+      # triggered the Publish run. Only docker/verify is used, and the release itself comes from PyPI.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
       - name: Check the tag
         run: |
           case "$TAG" in v[0-9]*.[0-9]*.[0-9]*) ;; *) echo "not a release tag: $TAG"; exit 1;; esac
