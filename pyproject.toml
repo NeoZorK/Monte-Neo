@@ -152,7 +152,7 @@ dev = [
 ]
 
 [project.scripts]
-monte-neo = "monte_neo.cli.app:main"
+monte-neo = "monte_neo.cli.entry:main"
 monte-neo-verify = "monte_neo.cli.verify_cmd:main"
 monte-neo-mcp = "monte_neo.mcp.server:main"
 

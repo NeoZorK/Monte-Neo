@@ -117,6 +117,9 @@ class UniverseMarket:
             parsed = pd.to_datetime(df["timestamp"], utc=True, errors="coerce")
         if parsed.isna().any():
             raise ValueError(f"{int(parsed.isna().sum())} timestamps could not be parsed")
+        missing = df["symbol"].isna()
+        if missing.any():
+            raise ValueError(f"{int(missing.sum())} rows have no symbol")
         symbols = df["symbol"].astype(str).to_numpy()
         stamps = parsed.to_numpy(dtype="datetime64[ns]").astype(np.int64)
         order = np.lexsort((symbols, stamps))
@@ -138,6 +141,9 @@ class UniverseMarket:
             self.ohlc[k] = m
         keys = self.t_idx.astype(np.int64) * len(self.symbols) + self.s_idx
         self.duplicates = int(keys.size - np.unique(keys).size)
+        # Rows of each symbol in time order (the table is sorted by time, so a stable sort keeps it).
+        self._by_symbol = np.argsort(self.s_idx, kind="stable")
+        self._symbol_bounds = np.searchsorted(self.s_idx[self._by_symbol], np.arange(len(self.symbols) + 1))
 
     # -- data -----------------------------------------------------------------
     def integrity(self) -> dict[str, Any]:
@@ -237,12 +243,11 @@ class UniverseMarket:
         close = out["close"].to_numpy(dtype=np.float64)
         factor = np.ones(close.size)
         for s in range(len(self.symbols)):
-            idx = np.flatnonzero(self.s_idx == s)
-            before = idx[self.t_idx[idx] <= t]
-            after = idx[self.t_idx[idx] > t]
-            if before.size and after.size:
-                anchor = close[before[-1]]
-                factor[after] = (anchor / close[after]) ** 2  # exp(-2 * (log c - log anchor))
+            idx = self._by_symbol[self._symbol_bounds[s] : self._symbol_bounds[s + 1]]
+            k = int(np.searchsorted(self.t_idx[idx], t, side="right"))
+            if 0 < k < idx.size:
+                after = idx[k:]
+                factor[after] = (close[idx[k - 1]] / close[after]) ** 2  # exp(-2 * (log c - log anchor))
         for col in OHLC_COLS:
             out[col] = out[col].to_numpy(dtype=np.float64) * factor
         return out

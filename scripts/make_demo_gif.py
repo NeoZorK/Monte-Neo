@@ -36,7 +36,7 @@ SCENES: list[list[list[Part]]] = [
     [[p('# The agent reports: "Found a profitable strategy!"', DIM)]],
     [[p("$ ", GRN), p("monte-neo verify --ohlcv prices.csv --strategy agent_strategy.py --n-trials 40")]],
     [
-        [p("REJECT", RED, True), p("  certificate 76d78110dc0f0c72", DIM)],
+        [p("REJECT", RED, True), p("  certificate b71434e156f55a3e", DIM)],
         check("lookahead_truncation", "fail", "truncation probe: LEAK DETECTED"),
         check("lookahead_perturbation", "fail", "future-perturbation probe: LEAK DETECTED"),
         check("lookahead_static_lint", "fail", "static lint: negative_shift"),
@@ -51,7 +51,7 @@ SCENES: list[list[list[Part]]] = [
     ],
     [[p("")], [p("$ ", GRN), p("monte-neo verify --ohlcv prices.csv --strategy fixed_strategy.py --n-trials 2")]],
     [
-        [p("REJECT", RED, True), p("  certificate 7d73793300525fc3", DIM)],
+        [p("REJECT", RED, True), p("  certificate 0d9686c33071fc43", DIM)],
         check("lookahead_truncation", "pass", "truncation probe: no leak detected"),
         check("lookahead_perturbation", "pass", "future-perturbation probe: no leak detected"),
         check("net_profitability", "fail", "net total return -95.19% after costs"),

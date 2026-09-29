@@ -12,7 +12,7 @@ from monte_neo.backtest.model import ExecutionModel
 
 # Fix-it hints an agent can act on, keyed by check id.
 NEXT_ACTIONS: dict[str, str] = {
-    "data_integrity": "Clean the OHLCV: sort bars oldest-first, drop duplicate timestamps, NaN rows, non-positive prices and bars with high < low.",
+    "data_integrity": "Clean the OHLCV: sort bars oldest-first, drop duplicate timestamps, NaN rows, non-positive prices and broken bars (high < low, open or close outside high-low).",
     "determinism": "Make the signal deterministic: seed every RNG and avoid wall-clock or I/O inside signal().",
     "lookahead_truncation": "The signal at bar t changes when later bars are removed: compute features only from rows <= t (no shift(-k), centered windows, bfill or full-sample stats).",
     "lookahead_perturbation": "Past signals change when the future is rewritten: remove whole-series statistics (mean/std/min/max over all rows) and future-dependent fills.",
@@ -58,8 +58,13 @@ def _time_order(timestamps: Any) -> tuple[int, int]:
     return int(np.count_nonzero(steps < 0)), int(np.count_nonzero(steps == 0))
 
 
+# Open or close outside [low, high] by more than this share of the price is a broken bar.
+# Smaller gaps are vendor rounding: counted in the details, not failed.
+OHLC_TOLERANCE = 1e-3
+
+
 def data_integrity(ohlc: dict[str, np.ndarray], timestamps: Any = None, *, duplicates: int = 0) -> dict[str, Any]:
-    """NaN, non-positive prices, inverted bars and bars out of time order.
+    """NaN, non-positive prices, inconsistent bars and bars out of time order.
 
     Rows must run oldest-first: on newest-first data ``shift(1)`` reads the next bar,
     a look-ahead the row-order probes cannot see.
@@ -69,12 +74,19 @@ def data_integrity(ohlc: dict[str, np.ndarray], timestamps: Any = None, *, dupli
     n_nan = int(np.count_nonzero(~np.isfinite(stacked)))
     n_nonpos = int(np.count_nonzero(np.nan_to_num(stacked, nan=1.0) <= 0.0))
     n_inverted = int(np.count_nonzero(np.nan_to_num(h) < np.nan_to_num(l)))
+    with np.errstate(invalid="ignore"):
+        above = np.fmax(o, c) - h  # open or close above the high
+        below = l - np.fmin(o, c)  # open or close below the low
+        gap = np.nan_to_num(np.fmax(above, below) / np.abs(c), nan=0.0)
+    n_outside = int(np.count_nonzero(gap > OHLC_TOLERANCE))
+    n_rounding = int(np.count_nonzero((gap > 0.0) & (gap <= OHLC_TOLERANCE)))
     n_backward, n_repeated = _time_order(timestamps)
     n_repeated += int(duplicates)  # a universe passes repeated (timestamp, symbol) rows here
     problems = [
         (n_nan, "NaN"),
         (n_nonpos, "non-positive"),
         (n_inverted, "high<low"),
+        (n_outside, "open/close outside high-low"),
         (n_backward, "out-of-order timestamp"),
         (n_repeated, "duplicate timestamp"),
     ]
@@ -86,6 +98,8 @@ def data_integrity(ohlc: dict[str, np.ndarray], timestamps: Any = None, *, dupli
             "nan_values": n_nan,
             "non_positive_values": n_nonpos,
             "inverted_bars": n_inverted,
+            "open_close_outside_range": n_outside,
+            "rounding_outside_range": n_rounding,
             "out_of_order_timestamps": n_backward,
             "duplicate_timestamps": n_repeated,
         },

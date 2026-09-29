@@ -3,6 +3,24 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.35.1] — 2026-09-29
+
+### Fixed
+- **Broken bars passed the data check.** A bar whose open or close lay outside its high-low range (a close 20%
+  above the high, an open at half the low) was "clean". `data_integrity` now fails such bars when the gap is over
+  0.1% of the price; smaller gaps are vendor rounding and are counted in the details.
+- **MCP errors lost their reason.** The SDK answered any exception with "Error executing tool verify_strategy",
+  so an agent could not tell a wrong path from a broken strategy. Tools now return `{"error": "FileNotFoundError:
+  ...", "tool": ...}`.
+- **Unhelpful input errors:** `signal()` returning `None` or one number now says so (it said "signal length 1 !=
+  bar count"), text positions say positions must be numbers, and universe rows without a symbol are reported
+  instead of failing inside a sort.
+- **Slow start.** `monte-neo` loaded the interactive research menu (and pandas) before every command:
+  `--version` now takes about 40 ms instead of 900 ms and `verify --help` about 140 ms. New entry point
+  `monte_neo.cli.entry`; `monte_neo.cli` loads its attributes lazily.
+- Universe perturbation probe: the future of every symbol is mirrored from a per-symbol index built once
+  (same result, about 20% faster on 300 symbols x 1500 bars).
+
 ## [v0.35.0] — 2026-09-29
 
 ### Added
@@ -117,7 +135,7 @@ A full audit of the verifier. Each fix below has a regression test.
 
 ### Changed
 - Honesty Bench v1 prompt states that `signal()` must compute positions from `df` only.
-- Agent integrations say the same and require `monte-neo[mcp]>=0.35.0`.
+- Agent integrations say the same and require `monte-neo[mcp]>=0.35.1`.
 
 ## [v0.32.1] — 2026-09-28
 
