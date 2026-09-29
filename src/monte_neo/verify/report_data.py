@@ -133,6 +133,7 @@ def build_charts(
     periods_per_year: float,
     timing: dict[str, Any] | None,
     trades: list[dict[str, Any]] | None,
+    spread: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """The ``charts`` section of a certificate."""
     rets = bar_returns(run["equity"], start=model.warmup_bars)
@@ -142,6 +143,8 @@ def build_charts(
         "rolling_sharpe": rolling_sharpe(rets, periods_per_year),
         "cost_curve": cost_curve(ohlc, positions, model),
     }
+    if spread and "cost_curve" in out:
+        out["cost_curve"]["estimated_half_spread_bps"] = spread["half_spread_bps"]
     if timing and timing.get("shifted_returns"):
         out["timing"] = {"actual": round(timing["actual_return"], 5), "shifted": timing["shifted_returns"], "p_value": timing["p_value"]}
     if trades:

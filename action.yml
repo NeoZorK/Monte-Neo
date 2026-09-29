@@ -45,6 +45,9 @@ inputs:
     description: "Read signals as sign (+1/0/-1), weight (fraction of equity in [-1, 1]) or auto (default)"
     required: false
     default: auto
+  claim:
+    description: "What was claimed, as a JSON file path or JSON text (e.g. '{\"sharpe\": 2.1, \"total_return\": 0.85}'): a claim better than the verified result fails the check"
+    required: false
   grid:
     description: "Parameter grid as JSON (e.g. '{\"fast\": [10, 20]}'); the verifier runs the search and walk-forward"
     required: false
@@ -122,6 +125,7 @@ runs:
         MN_SLIPPAGE: ${{ inputs.slippage-bps }}
         MN_FAIL_ON: ${{ inputs.fail-on }}
         MN_GRID: ${{ inputs.grid }}
+        MN_CLAIM: ${{ inputs.claim }}
         MN_POSITIONS: ${{ inputs.positions }}
         MN_TIMEOUT: ${{ inputs.timeout }}
         MN_JOBS: ${{ inputs.jobs }}
@@ -141,6 +145,7 @@ runs:
         extra=()
         if [ -n "$MN_TRIALS" ]; then extra=(--n-trials "$MN_TRIALS"); fi
         if [ -n "$MN_GRID" ]; then extra=(--grid "$MN_GRID"); fi
+        if [ -n "$MN_CLAIM" ]; then extra+=(--claim "$MN_CLAIM"); fi
         if [ -n "$MN_STRATEGY" ]; then
           extra+=(--jobs "$MN_JOBS")
           if [ -n "$MN_TIMEOUT" ]; then extra+=(--timeout "$MN_TIMEOUT"); fi

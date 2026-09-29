@@ -192,7 +192,7 @@ def test_evidence_for_external_data_and_data_quality() -> None:
 def test_grid_heat_map(grid_report: dict) -> None:
     assert len(grid_report["grid"]["combo_sharpes"]) == 4
     page = render_html(grid_report)
-    assert "Sharpe per bar: rows lookback" in page and page.count("<svg") == 8
+    assert "Sharpe per bar: rows lookback" in page and page.count("<svg") == 9
 
 
 def test_grid_heat_map_two_parameters_and_hidden_ones() -> None:
@@ -290,3 +290,16 @@ def test_gallery_reports_are_static_and_linked() -> None:
         assert "<script" not in page.lower() and "Content-Security-Policy" in page
         assert f"assets/reports/{path.name}" in gallery
         assert ("Evidence" in page) == (path.stem in {"leak", "bad-ticks"})  # only leaks and bad data have evidence
+
+
+def test_pbo_chart_and_grid_section(grid_report: dict) -> None:
+    block = grid_report["grid"]["pbo"]
+    svg = charts.pbo_chart(block)
+    assert svg.count("<rect") == 21 and f"PBO {block['pbo']:.2f}" in svg
+    assert "Where the winner of the search ranks" in render_html(grid_report)
+    assert 'stroke="var(--bad)"' in charts.pbo_chart({**block, "pbo": 0.8}) and 'stroke="var(--good)"' in charts.pbo_chart({**block, "pbo": 0.1})
+    for junk in (None, {}, {"pbo": 0.2}, {"pbo": "x", "logit_hist": {"limit": 4, "counts": [1, 2, 3]}}, {"pbo": 0.2, "logit_hist": {"limit": 0, "counts": [1, 2, 3]}}, {"pbo": 0.2, "logit_hist": "no"}):
+        assert charts.pbo_chart(junk) == ""
+    no_pbo = copy.deepcopy(grid_report)
+    no_pbo["grid"]["pbo"] = {}
+    assert "Where the winner of the search ranks" not in render_html(no_pbo)

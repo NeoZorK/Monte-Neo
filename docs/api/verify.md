@@ -64,7 +64,7 @@ monte-neo verify --precompile      # compile and cache the engines once (Docker 
 | Verdict | Rule |
 |---------|------|
 | `REJECT` | Any **integrity**, **lookahead** or **economics** check failed |
-| `NEEDS_MORE_EVIDENCE` | Only **statistics** checks failed |
+| `NEEDS_MORE_EVIDENCE` | Only **statistics** or **claim** checks failed |
 | `PASS_WITH_WARNINGS` | No failures, at least one warning |
 | `PASS` | Everything passed |
 
@@ -92,8 +92,41 @@ monte-neo verify --precompile      # compile and cache the engines once (Docker 
 | `holdout_consistency` | statistics | Sharpe positive in the first 70% and ≤ 0 in the last 30% (warn) |
 | `period_consistency` | statistics | with 3 or more periods (years, quarters, months or equal segments): removing the best period leaves no profit (warn) |
 | `benchmark` | statistics | info only: buy-and-hold (equal weight for a universe) on the same data and costs, next to the strategy |
+| `sharpe_confidence` | statistics | info only: 95% interval of the annualized Sharpe and of the total return from a circular block bootstrap (1000 resamples, fixed seed), and the share of resamples with a positive Sharpe |
+| `track_record` | statistics | info only: the Minimum Track Record Length, how many bars the observed Sharpe needs to be positive at 95%, next to the bars the sample has |
+| `spread_estimate` | economics | info only: a rough spread estimate from high and low (Corwin-Schultz) next to the slippage the backtest charged; says when the model looks optimistic |
+| `capacity` | economics | info only, single instrument with a `volume` column: the capital at which 90% of the fills stay within 1%, 5% and 10% of the bar's traded value |
+| `claim_consistency` | claim | only with `--claim`: a claimed Sharpe, return, drawdown, trade count, win rate or profit factor is better than the verified one by more than a tolerance (fail) |
 | `walk_forward_oos` | statistics | `verify_grid` only: walk-forward out-of-sample Sharpe ≤ 0 (fail) or < 50% of the in-sample best (warn) |
+| `pbo` | statistics | `verify_grid` only: the probability of backtest overfitting (CSCV) is 0.5 or more: the best combination in training ranks below the median in testing (warn) |
 | `parameter_plateau` | statistics | `verify_grid` only: the best combo's neighbours (one parameter one step away) keep < 50% of its Sharpe (warn): an isolated peak |
+
+### How sure are we, and what was claimed
+
+- **Confidence.** The certificate's `metrics` carry `sharpe_ci95`, `return_ci95` and `min_track_record_bars`. The
+  bootstrap uses blocks of about the cube root of the sample, so autocorrelated returns keep their structure, and
+  a fixed seed, so a certificate can be reproduced. These rows are context: the Deflated Sharpe decides.
+- **PBO.** `verify_grid` splits the sample into 16 slices and, for each of the 12,870 ways to use half as
+  training and half as testing, ranks the combination that won in training among all combinations in testing
+  (Bailey, Borwein, Lopez de Prado and Zhu, 2015). PBO is the share of splits where the winner ranks below the
+  median. It is a probability with real noise: about 0.4 on average for pure noise and near 0 for a strong
+  edge that every combination shares.
+- **Costs and capacity.** The spread estimate is biased upward in volatile bars (a few bps at 0.3% bars, about
+  15 bps at 1% bars): read it as an order of magnitude. Capacity takes `volume` in instrument units
+  (traded value = volume x close) and does not model market impact.
+- **Claims.** `--claim claim.json` (or `claim=` in Python and MCP, `claim:` in the Action) compares reported
+  numbers with verified ones. All keys are optional: `sharpe` (annualized), `total_return` (fraction: `0.85` or `"85%"`),
+  `max_drawdown`, `n_trades`, `win_rate` (`0.62` or `62`), `profit_factor`. A number that is better than the verified one by more
+  than a tolerance (Sharpe 0.3 or 10%, return 2 points or 10%, drawdown 2 points or 10%, trades 2 or 5%, win rate 3
+  points, profit factor 0.1 + 10%) fails `claim_consistency` and the verdict becomes `NEEDS_MORE_EVIDENCE`: the
+  strategy may be fine, its report cannot be trusted. Win rate and profit factor need a trade journal (sign strategies on one
+  instrument); for weights and universes they are reported as not verifiable. The claim is stored in the
+  certificate's `reproducibility.settings`, so `--recheck` compares the same claim.
+
+```bash
+echo '{"sharpe": 2.1, "total_return": 0.85, "max_drawdown": 0.12, "n_trades": 300}' > claim.json
+monte-neo verify --ohlcv btc_1h.csv --strategy my_strategy.py --claim claim.json
+```
 
 ### Execution semantics
 

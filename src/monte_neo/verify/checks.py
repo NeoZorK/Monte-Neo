@@ -33,6 +33,8 @@ NEXT_ACTIONS: dict[str, str] = {
     "trials_disclosed": "Pass n_trials = number of variants you tried (parameters, rules, assets) so selection bias is priced in.",
     "holdout_consistency": "Recent (holdout) performance does not confirm the earlier sample: check for regime dependence or overfit.",
     "parameter_plateau": "The best parameters are an isolated peak: neighbouring values do much worse. Prefer a region where nearby parameters also work.",
+    "claim_consistency": "The claimed numbers are better than the backtest reproduces: report the verified Sharpe, return, drawdown and trade count instead of the claimed ones.",
+    "pbo": "The winner of the parameter search usually ranks below the median on unseen data: shrink the search space, prefer a parameter plateau, or confirm on new data before trusting the best combination.",
     "walk_forward_oos": "Parameters picked on past folds do not hold on the next fold: shrink the grid or prefer robust parameter plateaus.",
 }
 

@@ -127,6 +127,15 @@ too. A universe in which no symbol stops trading is flagged for survivorship bia
 | `high_turnover` | Honest code, but the edge cannot pay its costs | net profitability |
 | data snooping (test) | Best of 200 random strategies with `n_trials` hidden | deflated Sharpe once `n_trials` is declared |
 
+### Bad reports
+
+Honest code on honest data can still come with an inflated report. `--claim` compares the reported numbers with the
+verified ones.
+
+| Trap | How it lies | Caught by |
+|------|-------------|-----------|
+| overclaim (test) | Momentum with a real edge, reported with a Sharpe and a return far above what the backtest reproduces | claim consistency |
+
 ### Bad data
 
 Honest code can still earn fake money when the prices are wrong. The `bad_ticks` dataset is an
