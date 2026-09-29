@@ -13,16 +13,25 @@
   "use strict";
 
   // ---- JSON parser that keeps number lexemes ------------------------------------
+  const MAX_DEPTH = 100;
+  const MAX_CERT_BYTES = 8 * 1024 * 1024;
+  const FETCH_TIMEOUT_MS = 15000;
+
   function parse(text) {
     let i = 0;
+    let depth = 0;
     const ws = () => { while (i < text.length && " \t\n\r".includes(text[i])) i++; };
     const fail = (msg) => { throw new SyntaxError(msg + " at position " + i); };
 
     function value() {
       ws();
       const c = text[i];
-      if (c === "{") return object();
-      if (c === "[") return array();
+      if (c === "{" || c === "[") {
+        if (++depth > MAX_DEPTH) fail("nested too deeply");
+        const node = c === "{" ? object() : array();
+        depth--;
+        return node;
+      }
       if (c === '"') return { t: "str", v: string() };
       if (c === "-" || (c >= "0" && c <= "9")) return number();
       for (const lit of ["true", "false", "null"]) {
@@ -37,6 +46,8 @@
         ws(); if (text[i] !== '"') fail("expected key");
         const k = string(); ws();
         if (text[i] !== ":") fail("expected ':'"); i++;
+        // Python rejects duplicate keys too: a file must have one meaning everywhere.
+        if (entries.some(([seen]) => seen === k)) fail("duplicate key " + JSON.stringify(k));
         entries.push([k, value()]); ws();
         if (text[i] === ",") { i++; continue; }
         if (text[i] === "}") { i++; return { t: "obj", entries }; }
@@ -59,12 +70,15 @@
         if (i >= text.length) fail("unterminated string");
         const c = text[i++];
         if (c === '"') return out;
+        if (c < " ") fail("control character in string");
         if (c !== "\\") { out += c; continue; }
         const e = text[i++];
         const map = { '"': '"', "\\": "\\", "/": "/", b: "\b", f: "\f", n: "\n", r: "\r", t: "\t" };
         if (e in map) { out += map[e]; continue; }
         if (e !== "u") fail("bad escape");
-        out += String.fromCharCode(parseInt(text.slice(i, i + 4), 16)); i += 4;
+        const hexDigits = text.slice(i, i + 4);
+        if (!/^[0-9a-fA-F]{4}$/.test(hexDigits)) fail("bad unicode escape");
+        out += String.fromCharCode(parseInt(hexDigits, 16)); i += 4;
       }
     }
     function number() {
@@ -157,6 +171,19 @@
     return raw;
   }
 
+  /**
+   * The verdict line for a check result. A green tick needs the issuer's key: a certificate
+   * signed with the forger's own key is "intact" too, so without an expected key the page
+   * says the signer is not verified.
+   */
+  function statusHeadline(result) {
+    if (!result.signed) return "⚠️ Certificate is not signed";
+    if (!result.valid) return "❌ Signature check failed";
+    if (result.key_matches === true) return "✅ Valid signature from the expected key";
+    if (result.key_matches === false) return "❌ Signed by a different key than the one expected";
+    return "⚠️ Signature is intact, but the signer is not verified (anyone can sign with their own key)";
+  }
+
   /** Same result fields as Python check_signature (strategy-signature-check/1). */
   async function checkSignature(certText, expectedKey) {
     const subtle = (root.crypto || globalThis.crypto).subtle;
@@ -193,7 +220,7 @@
     return result;
   }
 
-  const api = { parse, canonicalPayload, pyFloatRepr, checkSignature };
+  const api = { parse, canonicalPayload, pyFloatRepr, checkSignature, statusHeadline };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.MonteNeoVerify = api;
 
@@ -207,13 +234,14 @@
 
   function render(out, result, certText) {
     out.replaceChildren();
-    const ok = result.valid && result.key_matches !== false;
-    const head = ok
-      ? (result.key_matches ? "✅ Valid signature from the expected key" : "✅ Valid signature (integrity only)")
-      : (result.signed ? "❌ Signature check failed" : "⚠️ Certificate is not signed");
-    out.append(el("p", head, "mn-verify-status"));
-    if (!ok && result.signed) {
-      out.append(el("p", "Do not trust the fields below: they are what the file says, and the file was changed after signing or signed by someone else."));
+    const ok = result.valid && result.key_matches === true;
+    out.append(el("p", statusHeadline(result), "mn-verify-status"));
+    if (!ok) {
+      out.append(el("p", "Do not trust the fields below: they are what the file says. " + (result.valid
+        ? "Compare the signing key id with the issuer's published key before relying on them."
+        : "The file was changed after signing, signed by someone else, or is not signed.")));
+    } else {
+      out.append(el("p", "The expected key came from the link or from you: trust this result only if that key is the issuer's published key."));
     }
     const rows = [
       ["Verdict", result.verdict], ["Certificate id", result.certificate_id],
@@ -268,9 +296,20 @@
     const url = params.get("cert");
     if (url && /^https:\/\//.test(url)) {
       out.replaceChildren(el("p", "Loading " + url + " …"));
-      fetch(url).then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
-        .then((text) => { certBox.value = text; return run(); })
-        .catch((err) => out.replaceChildren(el("p", "❌ Could not load the certificate: " + err.message)));
+      const abort = new AbortController();
+      const timer = setTimeout(() => abort.abort(), FETCH_TIMEOUT_MS);
+      fetch(url, { signal: abort.signal, credentials: "omit", referrerPolicy: "no-referrer" })
+        .then((r) => {
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          if (Number(r.headers.get("content-length") || 0) > MAX_CERT_BYTES) throw new Error("file is too large");
+          return r.text();
+        })
+        .then((text) => {
+          if (text.length > MAX_CERT_BYTES) throw new Error("file is too large");
+          certBox.value = text; return run();
+        })
+        .catch((err) => out.replaceChildren(el("p", "❌ Could not load the certificate: " + err.message)))
+        .finally(() => clearTimeout(timer));
     }
   }
 

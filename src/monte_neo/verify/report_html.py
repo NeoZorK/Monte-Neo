@@ -13,6 +13,9 @@ from pathlib import Path
 from typing import Any
 
 VERIFY_PAGE = "https://neozork.github.io/Monte-Neo/verify/"
+# The report is static: no scripts, no network, no embedding. The policy keeps it that way even if a
+# future change lets untrusted text through.
+CSP = "default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'"
 _VERDICT_TONE = {"PASS": "good", "PASS_WITH_WARNINGS": "warn", "NEEDS_MORE_EVIDENCE": "note", "REJECT": "bad"}
 _STATUS_TONE = {"pass": "good", "warn": "warn", "fail": "bad", "skip": "mute", "info": "note"}
 
@@ -184,7 +187,7 @@ def render_html(report: dict[str, Any]) -> str:
         stats.append(_stat("symbols", str(universe.get("symbols"))))
     signed = (
         f'Signed with Ed25519 key <span class="mono">{_e(sig.get("key_id"))}</span>. '
-        f'Check it on the <a href="{VERIFY_PAGE}">verification page</a> or with '
+        f'Check it on the <a href="{VERIFY_PAGE}" rel="noopener noreferrer">verification page</a> or with '
         '<span class="mono">monte-neo verify --check-signature CERT --public-key KEY.pub</span>.'
         if isinstance(sig, dict)
         else "Not signed. Sign with <span class='mono'>monte-neo verify ... --sign KEY</span> to prove who issued it."
@@ -195,6 +198,8 @@ def render_html(report: dict[str, Any]) -> str:
     return (
         "<!doctype html><html lang='en'><head><meta charset='utf-8'>"
         "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+        f"<meta http-equiv='Content-Security-Policy' content=\"{CSP}\">"
+        "<meta name='referrer' content='no-referrer'>"
         f"<title>Monte-Neo verdict {_e(verdict)} · {_e(report.get('certificate_id', ''))}</title>"
         f"<style>{_CSS}</style></head><body><main>"
         f"<h1>Monte-Neo strategy verdict <span class='pill verdict {_VERDICT_TONE.get(verdict, 'mute')}'>{_e(verdict)}</span></h1>"

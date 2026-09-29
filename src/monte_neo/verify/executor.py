@@ -44,8 +44,10 @@ _BLOCKED_EVENTS = {
     "subprocess.Popen": _PROC, "os.system": _PROC, "os.exec": _PROC, "os.posix_spawn": _PROC,
     "os.spawn": _PROC, "os.fork": _PROC, "os.forkpty": _PROC, "os.startfile": _PROC,
     "os.kill": "signalling other processes",
+    # A link created in the temp dir would let a later write reach any file.
+    "os.symlink": "creating links", "os.link": "creating links",
 }
-_PATH_EVENTS = ("os.remove", "os.rename", "os.rmdir", "os.mkdir", "os.chmod", "os.chown", "os.truncate", "shutil.rmtree")
+_PATH_EVENTS = ("os.remove", "os.rmdir", "os.mkdir", "os.chmod", "os.chown", "os.truncate", "shutil.rmtree")
 
 
 class StrategyTimeoutError(ValueError):
@@ -108,14 +110,14 @@ def _lock_down() -> None:  # pragma: no cover - runs only in worker processes (t
     keep = {k: os.environ[k] for k in _SAFE_ENV if k in os.environ}
     os.environ.clear()
     os.environ.update(keep)
-    temp = os.path.join(os.path.abspath(tempfile.gettempdir()), "")
+    temp = os.path.join(os.path.realpath(tempfile.gettempdir()), "")
 
     def allowed_path(path: Any) -> bool:
         if isinstance(path, bytes):
             path = os.fsdecode(path)
         if not isinstance(path, str | os.PathLike):
             return True
-        full = os.path.abspath(os.fspath(path))
+        full = os.path.realpath(os.fspath(path))  # follows symlinks: a link cannot point out of the temp dir
         return full.startswith(temp) or f"{os.sep}__pycache__{os.sep}" in full
 
     def hook(event: str, args: tuple[Any, ...]) -> None:
@@ -131,6 +133,11 @@ def _lock_down() -> None:  # pragma: no cover - runs only in worker processes (t
                 raise PermissionError(f"isolated run: writing files is blocked ({path})")
         elif event in _PATH_EVENTS and args and not allowed_path(args[0]):
             raise PermissionError(f"isolated run: changing files is blocked ({event} {args[0]})")
+        elif event == "os.rename" and len(args) >= 2:
+            # Both ends count: moving a temp file over a real file overwrites it.
+            for end in args[:2]:
+                if not allowed_path(end):
+                    raise PermissionError(f"isolated run: changing files is blocked ({event} {end})")
 
     sys.addaudithook(hook)
 
@@ -164,7 +171,8 @@ def _call(task: tuple[Any, dict[str, Any]]) -> tuple[str, Any, list[str], list[s
     try:
         from monte_neo.verify.ingest import signal_values
 
-        assert _FRAME is not None
+        if _FRAME is None:  # pragma: no cover - the initializer always sets it
+            raise RuntimeError("worker has no table")
         if isinstance(target, Head):
             df = _FRAME.copy() if target.rows < 0 else _FRAME.iloc[: target.rows].reset_index(drop=True)
         else:

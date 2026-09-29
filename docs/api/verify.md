@@ -339,7 +339,7 @@ it yourself. Only verify code you would run yourself.
 
 `--isolate` (API `isolate=True`) guards against careless or buggy code: the strategy is loaded and
 called only in worker processes, where an audit hook blocks network access, subprocesses, signals to
-other processes and file writes outside the temp dir, and the environment keeps no secrets (only
+other processes, links (`os.symlink`, `os.link`) and file writes outside the temp dir (both ends of a rename count), and the environment keeps no secrets (only
 `PATH`, `HOME`, locale and temp variables). It is **not** a security boundary against a determined
 attacker: native code or ctypes can get around Python audit hooks.
 
@@ -362,3 +362,11 @@ The container has no network, a read-only file system (except `/tmp` and `/out`)
 memory, CPU and processes; `--isolate` and `--timeout` still apply inside it. Every run starts from
 the image: a file a strategy writes to `/tmp` is gone after the run. Tested with a strategy that tries
 to open a connection and write into `/code`: both are blocked, and the check finishes in about 2 s.
+
+### Inputs are limited
+
+Every input has a size limit with a clear error: price tables 2 GB (raise it with `MONTE_NEO_MAX_INPUT_MB`),
+certificates 64 MB, strategy files 5 MB. Certificate JSON is read strictly (no duplicate keys, no `NaN`,
+nesting up to 100 levels), and the browser verification page applies the same rules. The MCP tool
+`render_report` writes only `.html` / `.htm` files. See [SECURITY.md](https://github.com/NeoZorK/Monte-Neo/blob/main/SECURITY.md)
+for the threat model and how to report a vulnerability.

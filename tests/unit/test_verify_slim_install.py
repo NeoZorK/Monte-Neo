@@ -17,8 +17,10 @@ def test_parquet_without_pyarrow_names_the_extra(monkeypatch: pytest.MonkeyPatch
         raise ImportError("Unable to find a usable engine")
 
     monkeypatch.setattr(pd, "read_parquet", missing)
+    path = tmp_path / "prices.parquet"
+    path.write_bytes(b"x")
     with pytest.raises(ImportError, match=r"monte-neo\[parquet\]"):
-        _read_table(tmp_path / "prices.parquet")
+        _read_table(path)
 
 
 def test_research_cli_without_extras_names_the_extra(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:

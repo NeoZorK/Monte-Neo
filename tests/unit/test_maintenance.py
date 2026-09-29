@@ -138,3 +138,33 @@ def test_version_is_the_same_everywhere():
     }
     wrong = {k: v for k, v in found.items() if v != ver}
     assert not wrong, f"expected {ver}: {wrong}"
+
+
+def test_every_github_action_is_pinned_to_a_commit_sha() -> None:
+    """A moving tag can be re-pointed at malicious code: third-party Actions are pinned by SHA."""
+    import re
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    files = [*(root / ".github" / "workflows").glob("*.yml"), root / "action.yml"]
+    pattern = re.compile(r"^\s*(?:-\s*)?uses:\s*(\S+)(.*)$", re.MULTILINE)
+    checked = 0
+    for path in files:
+        for ref, rest in pattern.findall(path.read_text(encoding="utf-8")):
+            if ref.startswith("./"):
+                continue  # this repository's own action
+            checked += 1
+            assert re.fullmatch(r"[\w.-]+/[\w./-]+@[0-9a-f]{40}", ref), f"{path.name}: {ref} is not pinned to a SHA"
+            assert "#" in rest, f"{path.name}: {ref} needs a '# tag' comment so Dependabot can update it"
+    assert checked >= 20
+
+
+def test_workflows_grant_least_privilege() -> None:
+    """Every workflow starts from read-only permissions; jobs that need more say so explicitly."""
+    from pathlib import Path
+
+    import yaml
+
+    for path in (Path(__file__).resolve().parents[2] / ".github" / "workflows").glob("*.yml"):
+        workflow = yaml.safe_load(path.read_text(encoding="utf-8"))
+        assert workflow.get("permissions") in ({"contents": "read"}, "read-all"), f"{path.name} lacks a read-only default"

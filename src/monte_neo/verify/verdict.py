@@ -29,6 +29,7 @@ from monte_neo.verify.ingest import (
     to_positions,
 )
 from monte_neo.verify.io_guard import IOWatch
+from monte_neo.verify.limits import read_source
 from monte_neo.verify.lint import lint_source
 from monte_neo.verify.market import SingleMarket, UniverseMarket, market_for
 from monte_neo.verify.quality import data_quality, quality_row, spike_profit_share
@@ -134,7 +135,7 @@ def verify_strategy(
     runner = _runner_for(strategy, market, df, jobs, timeout, isolate)
     if runner is not None:
         # Workers load the strategy; this process only reads its source for the lint.
-        fn, src = runner, source if source is not None else runner.path.read_text(encoding="utf-8")
+        fn, src = runner, source if source is not None else read_source(runner.path)
     else:
         if (timeout is not None or isolate or resolve_jobs(jobs) > 1) and not isinstance(signal_fn, ProcessRunner):
             raise ValueError("jobs, timeout and isolate need strategy code in a file (strategy='file.py')")
