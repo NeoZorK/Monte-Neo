@@ -24,6 +24,8 @@ for action in report["next_actions"]:
 ```
 
 You can also pass `signals=` (an array or a `.npy`, `.csv` or `.parquet` file) instead of code.
+Positions can be signs (`+1` / `0` / `-1`) or weights (a fraction of equity in `[-1, 1]`, such as
+`0.5` or `-0.25`); see [Positions: signs or weights](#positions-signs-or-weights).
 Look-ahead probes need code (`strategy=` or `signal_fn=`). With signals alone, only the
 statistical smell test runs.
 
@@ -32,6 +34,8 @@ statistical smell test runs.
 ```bash
 monte-neo verify --ohlcv btc_1h.csv --strategy my_strategy.py --n-trials 40
 monte-neo verify --ohlcv btc_1h.csv --signals positions.npy --format json --out verdict.json
+monte-neo verify --ohlcv btc_1h.csv --strategy my_strategy.py --html report.html   # HTML report too
+monte-neo verify --render verdict.json --html report.html                         # HTML from a certificate
 monte-neo verify --schema          # print the JSON schema
 ```
 
@@ -57,7 +61,8 @@ monte-neo verify --schema          # print the JSON schema
 
 | id | category | fails / warns when |
 |----|----------|--------------------|
-| `data_integrity` | integrity | NaN, non-positive prices, `high < low`, timestamps out of order (newest-first data) or duplicated (fail, stops the run early) |
+| `data_integrity` | integrity | NaN, non-positive prices, `high < low`, timestamps out of order (newest-first data) or duplicated, repeated (timestamp, symbol) rows in a universe (fail, stops the run early) |
+| `survivorship` | integrity | universe only: every symbol trades until the last bar, so delisted names are probably missing (warn) |
 | `determinism` | integrity | two runs of `signal(df)` on the same data disagree |
 | `lookahead_truncation` | lookahead | `signal(df[:t+1]) != signal(df)[:t+1]` at any checkpoint (the whole prefix is compared; checkpoints are spread evenly and also placed where the position changes) |
 | `lookahead_perturbation` | lookahead | rewriting bars after `t` (future returns mirrored) changes signals up to `t` |
@@ -73,6 +78,8 @@ monte-neo verify --schema          # print the JSON schema
 | `deflated_sharpe` | statistics | Deflated Sharpe < 0.5 (fail) or < 0.95 (warn) |
 | `trials_disclosed` | statistics | `n_trials` not declared (info only) |
 | `holdout_consistency` | statistics | Sharpe positive in the first 70% and ≤ 0 in the last 30% (warn) |
+| `period_consistency` | statistics | with 3 or more periods (years, quarters, months or equal segments): removing the best period leaves no profit (warn) |
+| `benchmark` | statistics | info only: buy-and-hold (equal weight for a universe) on the same data and costs, next to the strategy |
 | `walk_forward_oos` | statistics | `verify_grid` only: walk-forward out-of-sample Sharpe ≤ 0 (fail) or < 50% of the in-sample best (warn) |
 | `parameter_plateau` | statistics | `verify_grid` only: the best combo's neighbours (one parameter one step away) keep < 50% of its Sharpe (warn): an isolated peak |
 
@@ -96,6 +103,69 @@ Sharpe statistics use per-bar returns after warm-up.
 - **Deflated Sharpe** is the probability that the true Sharpe is above the expected
   maximum Sharpe of `n_trials` zero-skill strategies. It uses the Bailey & López de Prado
   formulas with skew and kurtosis adjustments.
+
+### Positions: signs or weights
+
+`positions="auto"` (the default in the API, CLI `--positions`, MCP and the Action) reads the signal
+as **weights** when every value is in `[-1, 1]` and at least one is fractional, and as **signs**
+otherwise. Force either with `positions="sign"` or `positions="weight"`.
+
+- **Signs:** any number is reduced to its sign; `+1` is a full long, `-1` a full short.
+- **Weights:** the target fraction of equity, clipped to `[-1, 1]`. A weight that stays the same does
+  not trade; a change trades only the difference (a change of side closes the position first).
+  Costs are charged on the traded notional.
+
+Sign strategies run on the same engine as before, so their numbers do not change. Weights run on
+a target-weight engine that gives exactly the same equity as the sign engine on `+1 / 0 / -1`
+(tested bit for bit). The resolved mode is in `metrics.positions` and in the certificate settings.
+
+### Universes (several symbols)
+
+Give the verifier a long table with a `symbol` column (`ticker`, `asset` and `instrument` work too)
+and a `timestamp` column: one row per timestamp and symbol. The verifier sorts the rows by
+timestamp, then symbol, and passes that table to `signal(df)`, which returns one weight per row.
+
+```python
+# universe.csv: timestamp, symbol, open, high, low, close
+def signal(df):
+    past = df.groupby("symbol")["close"].pct_change(20)
+    rank = past.groupby(df["timestamp"]).rank(pct=True)   # rank within each timestamp
+    return (rank > 0.7).astype(int) - (rank <= 0.3).astype(int)
+```
+
+- **Weights per timestamp** are capped at a gross exposure of 1: `+1` on ten symbols becomes ten
+  longs of 10%. `metrics.gross_scaled_bars` counts the bars that were scaled.
+- **Missing bars** are allowed: a symbol trades only on bars with a price. A position still open
+  after a symbol's last price (a delisting) is closed at that price.
+- **Look-ahead probes** cut and rewrite the future of every symbol at once, so a leak through
+  another symbol (a join on the next day's market return) is caught like any other.
+- **Survivorship:** if every symbol trades until the last bar, the `survivorship` check warns that
+  the universe was probably picked from today's survivors.
+- **Signals files** for a universe are tables with `timestamp`, `symbol` and a `signal` column,
+  matched by key (missing rows are flat), or plain arrays in the sorted row order.
+- The benchmark is an equal-weight portfolio of every symbol with a price.
+- Row order in the input file does not matter: the certificate id is the same.
+
+### Benchmark and breakdown
+
+Every report has:
+
+- `benchmark`: buy-and-hold on the same data, costs and warm-up (equal weight for a universe),
+  and a `benchmark` info row with both returns and Sharpe ratios.
+- `breakdown.periods`: return, buy-and-hold return, Sharpe and exposure per year, quarter or month
+  (chosen from the span; four equal segments without timestamps).
+- `breakdown.regimes`: results in rising and falling, calm and volatile markets. A bar's regime is
+  set by the market's trailing return and volatility over the previous bars.
+- `series`: up to 400 points of the strategy and buy-and-hold equity (scaled to 1), for charts.
+  The MCP tools drop it from compact responses.
+
+### HTML report
+
+`--html report.html` writes a self-contained page next to the certificate: equity against
+buy-and-hold with the drawdown, every check, what to fix, periods, regimes, the grid search and
+the hashes needed to reproduce the run. It has no scripts and loads nothing from the network.
+`--render verdict.json --html report.html` renders a certificate someone sent you. MCP tool:
+`render_report`. The GitHub Action writes it too (output `html-report`).
 
 ### Timing significance
 

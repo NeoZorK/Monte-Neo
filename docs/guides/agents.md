@@ -12,10 +12,11 @@ Requirements: [uv](https://docs.astral.sh/uv/) (for `uvx`) and Python 3.11+.
 |------|---------|
 | `verify_strategy` | Full verification, returns a `strategy-verdict/1` certificate |
 | `verify_grid` | Runs the parameter search inside the verifier (counts `n_trials`) and adds a walk-forward check |
-| `probe_lookahead` | Look-ahead probes only (lint, truncation, perturbation, determinism) |
+| `probe_lookahead` | Look-ahead probes only (lint, outside data, truncation, perturbation, determinism); works on universes too |
 | `cost_stress` | Break-even cost and returns under 0, 1 and 2 bars of execution delay |
 | `recheck_certificate` | Reproduces a certificate from its original data and strategy or signals |
 | `check_signature` | Checks a certificate's Ed25519 signature, optionally against the issuer's public key |
+| `render_report` | Writes a certificate as a self-contained HTML report for people (equity vs buy & hold, checks, periods) |
 | `verdict_schema` | JSON schema of the certificate |
 | `verifier_manifest` | Execution semantics and the check catalogue |
 
@@ -41,7 +42,7 @@ reporting results. It fires once per file per session and never blocks an edit.
 MCP server only:
 
 ```bash
-claude mcp add monte-neo -- uvx --from "monte-neo[mcp]>=0.34.0" monte-neo-mcp
+claude mcp add monte-neo -- uvx --from "monte-neo[mcp]>=0.35.0" monte-neo-mcp
 ```
 
 ## Codex (OpenAI)
@@ -68,7 +69,7 @@ Use this stdio command:
 
 ```bash
 uvx monte-neo mcp          # v0.20.0+: the MCP SDK is a default dependency
-# older pin: uvx --from "monte-neo[mcp]>=0.34.0" monte-neo-mcp
+# older pin: uvx --from "monte-neo[mcp]>=0.35.0" monte-neo-mcp
 ```
 
 Monte-Neo is published to the official MCP Registry as `io.github.NeoZorK/monte-neo` (`server.json`),
@@ -79,7 +80,7 @@ For HTTP clients, add `--transport streamable-http`.
 ## GitHub Actions
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.34.0
+- uses: NeoZorK/Monte-Neo@v0.35.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py

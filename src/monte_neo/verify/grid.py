@@ -17,11 +17,17 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from monte_neo.backtest.bar_engine import run_bar_backtest
 from monte_neo.backtest.model import ExecutionModel
 from monte_neo.verify.checks import check
-from monte_neo.verify.ingest import OHLC_COLS, SignalFn, call_signal_fn, load_ohlcv, load_signal_fn
+from monte_neo.verify.engine import simulate
+from monte_neo.verify.ingest import (
+    SignalFn,
+    load_ohlcv,
+    load_signal_fn,
+    resolve_positions,
+)
 from monte_neo.verify.io_guard import IOWatch
+from monte_neo.verify.market import SingleMarket, UniverseMarket, market_for
 from monte_neo.verify.stats import bar_returns, sharpe_per_bar
 from monte_neo.verify.verdict import _default_model, verify_strategy
 
@@ -45,14 +51,22 @@ def expand_grid(grid: dict[str, list[Any]]) -> list[dict[str, Any]]:
     return combos
 
 
-def _trial_returns(fn: SignalFn, df: pd.DataFrame, combos: list[dict[str, Any]], model: ExecutionModel) -> np.ndarray:
-    o, h, l, c = (df[k].to_numpy(dtype=np.float64) for k in OHLC_COLS)
-    rows = []
+def _trial_returns(
+    fn: SignalFn, market: SingleMarket | UniverseMarket, combos: list[dict[str, Any]], model: ExecutionModel, positions: str
+) -> tuple[np.ndarray, str]:
+    """Per-bar returns of every combo, read with one positions mode for the whole grid."""
+    values = []
     for params in combos:
-        sig = call_signal_fn(partial(fn, **params), df)
-        run = run_bar_backtest(o, h, l, c, sig, model=model)
-        rows.append(bar_returns(run["equity"], start=model.warmup_bars))
-    return np.vstack(rows)
+        try:
+            values.append(market.read_values(partial(fn, **params), None))
+        except ValueError as exc:
+            raise ValueError(f"{exc} for {params}") from exc
+    mode = resolve_positions(np.concatenate(values), positions)
+    rows = [
+        bar_returns(simulate(market.ohlc, market.positions(v, mode, model)[0], model)["equity"], start=model.warmup_bars)
+        for v in values
+    ]
+    return np.vstack(rows), mode
 
 
 def walk_forward(returns: np.ndarray, folds: int = 4) -> dict[str, Any]:
@@ -151,10 +165,12 @@ def verify_grid(
             source = source if source is not None else text
     if signal_fn is None:
         raise ValueError("verify_grid needs strategy= or signal_fn=")
-    model = model or _default_model(len(df))
+    market = market_for(df)
+    model = model or _default_model(market.n_bars)
     combos = expand_grid(grid)
+    positions = verify_kwargs.pop("positions", "auto")
     with io_watch:
-        returns = _trial_returns(signal_fn, df, combos, model)
+        returns, mode = _trial_returns(signal_fn, market, combos, model, positions)
     sharpes = np.array([sharpe_per_bar(r) for r in returns])
     order = np.argsort(-sharpes)
     best = combos[int(order[0])]
@@ -181,6 +197,7 @@ def verify_grid(
         extra_checks=[walk_forward_row(wf, float(sharpes[order[0]])), plateau_row(peak)],
         extra=section,
         io_watch=io_watch,
+        positions=mode,
         **verify_kwargs,
     )
 

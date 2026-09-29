@@ -29,6 +29,10 @@ inputs:
     description: Slippage per side (bps)
     required: false
     default: "5"
+  positions:
+    description: "Read signals as sign (+1/0/-1), weight (fraction of equity in [-1, 1]) or auto (default)"
+    required: false
+    default: auto
   grid:
     description: "Parameter grid as JSON (e.g. '{\"fast\": [10, 20]}'); the verifier runs the search and walk-forward"
     required: false
@@ -50,7 +54,7 @@ inputs:
     required: false
     default: ""
   upload-certificate:
-    description: "Upload the certificate as a workflow artifact named monte-neo-certificate: 'true' or 'false'"
+    description: "Upload the certificate and its HTML report as a workflow artifact named monte-neo-certificate: 'true' or 'false'"
     required: false
     default: "false"
   python-version:
@@ -68,6 +72,9 @@ outputs:
   key-id:
     description: Key id of the signature (empty when the certificate is not signed)
     value: ${{ steps.verify.outputs.key-id }}
+  html-report:
+    description: Path of the self-contained HTML report (equity vs buy and hold, checks, periods)
+    value: ${{ steps.verify.outputs.html-report }}
 
 runs:
   using: composite
@@ -98,6 +105,7 @@ runs:
         MN_SLIPPAGE: ${{ inputs.slippage-bps }}
         MN_FAIL_ON: ${{ inputs.fail-on }}
         MN_GRID: ${{ inputs.grid }}
+        MN_POSITIONS: ${{ inputs.positions }}
         MN_COMMENT: ${{ inputs.comment }}
         MN_PR: ${{ github.event.pull_request.number }}
         MN_SIGNING_KEY: ${{ inputs.signing-key }}
@@ -114,6 +122,7 @@ runs:
         if [ -n "$MN_TRIALS" ]; then extra=(--n-trials "$MN_TRIALS"); fi
         if [ -n "$MN_GRID" ]; then extra=(--grid "$MN_GRID"); fi
         cert="$RUNNER_TEMP/strategy-verdict.json"
+        html="$RUNNER_TEMP/strategy-verdict.html"
         report="$RUNNER_TEMP/strategy-verdict.md"
         sign=()
         if [ -n "$MN_SIGNING_KEY" ]; then
@@ -123,13 +132,15 @@ runs:
           sign=(--sign "$key")
         fi
         monte-neo verify --ohlcv "$MN_OHLCV" "${src[@]}" ${extra[@]+"${extra[@]}"} \
-          --commission-bps "$MN_COMMISSION" --slippage-bps "$MN_SLIPPAGE" --out "$cert" ${sign[@]+"${sign[@]}"}
+          --commission-bps "$MN_COMMISSION" --slippage-bps "$MN_SLIPPAGE" --positions "$MN_POSITIONS" \
+          --out "$cert" --html "$html" ${sign[@]+"${sign[@]}"}
         code=$?
         if [ -n "$MN_SIGNING_KEY" ]; then rm -f "$key"; fi
         if [ "$code" -eq 3 ]; then exit 3; fi
         verdict=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['verdict'])" "$cert")
         echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
         echo "certificate=$cert" >> "$GITHUB_OUTPUT"
+        echo "html-report=$html" >> "$GITHUB_OUTPUT"
         key_id=$(python -c "import json,sys; print((json.load(open(sys.argv[1])).get('signature') or {}).get('key_id', ''))" "$cert")
         echo "key-id=$key_id" >> "$GITHUB_OUTPUT"
         python - "$cert" > "$report" <<'PY'
@@ -168,4 +179,6 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: monte-neo-certificate
-        path: ${{ steps.verify.outputs.certificate }}
+        path: |
+          ${{ steps.verify.outputs.certificate }}
+          ${{ steps.verify.outputs.html-report }}

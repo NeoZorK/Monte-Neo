@@ -12,9 +12,10 @@ strategy performance to the user until Monte-Neo has verified it.
 ## Steps
 
 1. Save the price data you backtested on as CSV or Parquet with columns
-   `open, high, low, close` (and `timestamp` if available).
+   `open, high, low, close` (and `timestamp` if available). For several symbols, save one long
+   table with `timestamp` and `symbol` columns (one row per timestamp and symbol).
 2. Put the strategy in a Python file with a function `signal(df) -> positions`
-   (`+1` long, `0` flat, `-1` short, one value per row of `df`). Only use pandas / numpy
+   (`+1` long, `0` flat, `-1` short, or a weight in `[-1, 1]` such as `0.5`; one value per row of `df`). Only use pandas / numpy
    inside it, and compute everything from `df` (no file or network reads). If the strategy cannot be expressed that way, save the positions to a
    `.npy` / `.csv` file instead (look-ahead probes then cannot run).
 3. Count how many variants you tried (parameter sets, rules, assets). That is `n_trials`.

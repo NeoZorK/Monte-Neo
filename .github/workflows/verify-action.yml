@@ -109,8 +109,11 @@ jobs:
         env:
           CERT: ${{ steps.signed.outputs.certificate }}
           KEY_ID: ${{ steps.signed.outputs.key-id }}
+          HTML: ${{ steps.signed.outputs.html-report }}
         run: |
           echo "key id: $KEY_ID"
           test -n "$KEY_ID"
           monte-neo verify --check-signature "$CERT"
+          grep -q "Monte-Neo strategy verdict" "$HTML"
+          grep -q "$KEY_ID" "$HTML"
           test ! -e "$RUNNER_TEMP/monte-neo-signing.key"

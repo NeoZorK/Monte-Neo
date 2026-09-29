@@ -82,7 +82,9 @@ def test_certificate_records_settings_and_recheck_uses_them(df, tmp_path: Path) 
     sig = (df["close"] > df["close"].rolling(20).mean()).astype(int).to_numpy()
     report = verify_strategy(df, signals=sig, min_trades=1, holdout_fraction=0.4)
     settings = report["reproducibility"]["settings"]
-    assert settings == {"min_trades": 1, "holdout_fraction": 0.4, "probe_checks": 24, "periods_per_year": None}
+    assert settings == {
+        "min_trades": 1, "holdout_fraction": 0.4, "probe_checks": 24, "periods_per_year": None, "positions": "sign",
+    }
     cert = tmp_path / "cert.json"
     cert.write_text(json.dumps(report), encoding="utf-8")
     again = recheck_certificate(cert, df, signals=sig)

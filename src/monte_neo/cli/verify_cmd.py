@@ -29,18 +29,24 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--ohlcv", help="OHLCV table (.csv / .parquet) with open, high, low, close[, timestamp]")
     src = p.add_mutually_exclusive_group()
-    src.add_argument("--signals", help="Positions per bar (.csv / .parquet / .npy): +1 long, 0 flat, -1 short")
+    src.add_argument("--signals", help="Positions per bar (.csv / .parquet / .npy): +1 long, 0 flat, -1 short, or weights in [-1, 1]")
     src.add_argument("--strategy", help="Strategy file 'path.py[:func]' with func(df) -> positions (default func: signal)")
     p.add_argument("--n-trials", type=int, default=None, help="How many variants were tried before this one")
     p.add_argument("--grid", help="Parameter grid as JSON or a .json file, e.g. '{\"fast\": [10, 20], \"slow\": [50, 100]}' (needs --strategy)")
     p.add_argument("--folds", type=int, default=4, help="Walk-forward folds for --grid (default 4)")
     p.add_argument("--commission-bps", type=float, default=5.0, help="Commission per side in bps (default 5)")
     p.add_argument("--slippage-bps", type=float, default=5.0, help="Slippage per side in bps (default 5)")
+    p.add_argument(
+        "--positions", choices=["auto", "sign", "weight"], default="auto",
+        help="Read signals as signs (+1/0/-1), as weights (fraction of equity in [-1, 1]) or auto (default: weights when all values are in [-1, 1] and some are fractional)",
+    )
     p.add_argument("--side-mode", choices=["long_flat", "long_short"], default=None, help="Default: long_short if signals contain shorts")
     p.add_argument("--warmup-bars", type=int, default=None, help="Bars ignored before trading (default min(60, n/10))")
     p.add_argument("--periods-per-year", type=float, default=None, help="Bars per year for annualization (default: inferred)")
     p.add_argument("--min-trades", type=int, default=30, help="Minimum closed trades for statistics (default 30)")
     p.add_argument("--out", help="Write the strategy-verdict/1 JSON certificate to this path")
+    p.add_argument("--html", help="Also write a self-contained HTML report (charts, checks, periods) to this path")
+    p.add_argument("--render", metavar="CERT", help="Render an existing certificate JSON as HTML (needs --html) and exit")
     p.add_argument("--recheck", help="Reproduce this certificate JSON from --ohlcv and --signals / --strategy")
     p.add_argument("--sign", metavar="KEY", help="Sign the certificate with this Ed25519 private key (PEM); needs monte-neo[sign]")
     p.add_argument("--keygen", metavar="PREFIX", help="Create PREFIX.key (private) and PREFIX.pub (public) and exit")
@@ -75,6 +81,9 @@ def _render_text(report: dict[str, Any], console: Console) -> None:
             f" · Sharpe(ann) {m['sharpe_annualized']:.2f} · DSR {m['deflated_sharpe']:.3f}"
             f" · break-even {m['breakeven_cost_bps']:.1f} bps"
         )
+    by_period = (report.get("breakdown") or {}).get("periods") or []
+    if by_period:
+        console.print("periods: " + " · ".join(f"{p['period']} {p['return']:+.1%}" for p in by_period[:12]))
     for action in report["next_actions"]:
         console.print(f"[yellow]→ {action}[/]")
     console.print(f"[dim]{report['disclaimer']}[/]")
@@ -124,6 +133,7 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
         verify_grid,
         verify_strategy,
     )
+    from monte_neo.verify.market import bar_count
 
     console = console or Console()
     if args.schema:
@@ -131,6 +141,20 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
         return 0
     if args.keygen or args.check_signature:
         return _run_signing(args, console)
+    if args.render:
+        from monte_neo.verify.recheck import load_certificate
+        from monte_neo.verify.report_html import write_html
+
+        if not args.html:
+            console.print("[red]--render needs --html PATH[/]")
+            return 3
+        try:
+            path = write_html(load_certificate(args.render), args.html)
+        except Exception as exc:
+            console.print(f"[red]render failed: {exc}[/]")
+            return 3
+        console.print(f"wrote {path}")
+        return 0
     if not args.ohlcv or not (args.signals or args.strategy):
         console.print("[red]verify needs --ohlcv and one of --signals / --strategy[/]")
         return 3
@@ -152,9 +176,12 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
             slippage_bps=args.slippage_bps,
             side_mode=_side_mode(args),
             warmup_bars=args.warmup_bars,
-            n_bars=len(df),
+            n_bars=bar_count(df),
         )
-        common = {"model": model, "periods_per_year": args.periods_per_year, "min_trades": args.min_trades}
+        common = {
+            "model": model, "periods_per_year": args.periods_per_year, "min_trades": args.min_trades,
+            "positions": args.positions,
+        }
         if args.grid:
             report = verify_grid(df, _load_grid(args.grid), strategy=args.strategy, folds=args.folds, **common)
         else:
@@ -172,6 +199,10 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
             return 3
     if args.out:
         Path(args.out).write_text(json.dumps(report, indent=2), encoding="utf-8")
+    if args.html:
+        from monte_neo.verify.report_html import write_html
+
+        write_html(report, args.html)
     if args.format == "json":
         console.print_json(data=report)
     else:

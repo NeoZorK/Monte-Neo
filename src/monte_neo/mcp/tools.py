@@ -23,6 +23,7 @@ SERVER_INSTRUCTIONS = (
 
 def _model(ohlcv_path: str, commission_bps: float, slippage_bps: float, side_mode: str | None, warmup_bars: int | None, signals_path: str | None) -> tuple[Any, Any]:
     from monte_neo.verify import load_ohlcv, load_signals, model_from_costs
+    from monte_neo.verify.market import bar_count
 
     df = load_ohlcv(ohlcv_path)
     if side_mode is None:
@@ -33,14 +34,15 @@ def _model(ohlcv_path: str, commission_bps: float, slippage_bps: float, side_mod
         slippage_bps=slippage_bps,
         side_mode=side_mode,
         warmup_bars=warmup_bars,
-        n_bars=len(df),
+        n_bars=bar_count(df),
     )
     return df, model
 
 
 def _compact(report: dict[str, Any]) -> dict[str, Any]:
-    """Keep details only for failing / warning checks (saves agent context)."""
+    """Keep details only for failing / warning checks and drop chart series (saves agent context)."""
     out = dict(report)
+    out.pop("series", None)
     out["checks"] = [
         c if c["status"] in ("fail", "warn") else {k: v for k, v in c.items() if k != "details"}
         for c in report["checks"]
@@ -57,13 +59,14 @@ def verify_strategy(
     slippage_bps: float = 5.0,
     side_mode: str | None = None,
     warmup_bars: int | None = None,
+    positions: str = "auto",
     compact: bool = True,
 ) -> dict[str, Any]:
     """Verify a strategy backtest and return a strategy-verdict/1 certificate.
 
     Args:
         ohlcv_path: CSV/Parquet with open, high, low, close (optional timestamp).
-        signals_path: Positions per bar (+1 long, 0 flat, -1 short) as CSV/Parquet/NPY.
+        signals_path: Positions per bar (+1 long, 0 flat, -1 short, or weights in [-1, 1]) as CSV/Parquet/NPY.
         strategy_path: Python file 'path.py[:func]' defining func(df) -> positions.
             Enables look-ahead probes and static lint. Runs with your permissions.
         n_trials: Number of variants tried before choosing this one (selection bias).
@@ -71,6 +74,8 @@ def verify_strategy(
         slippage_bps: Slippage per side in basis points.
         side_mode: 'long_flat' or 'long_short' (default inferred).
         warmup_bars: Bars skipped before trading (default min(60, n/10)).
+        positions: 'sign' (+1/0/-1), 'weight' (fraction of equity in [-1, 1]) or 'auto'
+            (weights when all values are in [-1, 1] and some are fractional).
         compact: Drop details of passing checks to keep the response short.
     """
     from monte_neo.verify import verify_strategy as _verify
@@ -78,7 +83,7 @@ def verify_strategy(
     if not signals_path and not strategy_path:
         return {"error": "provide signals_path or strategy_path"}
     df, model = _model(ohlcv_path, commission_bps, slippage_bps, side_mode, warmup_bars, signals_path)
-    report = _verify(df, signals=signals_path, strategy=strategy_path, model=model, n_trials=n_trials)
+    report = _verify(df, signals=signals_path, strategy=strategy_path, model=model, n_trials=n_trials, positions=positions)
     return _compact(report) if compact else report
 
 
@@ -90,6 +95,7 @@ def verify_grid(
     slippage_bps: float = 5.0,
     side_mode: str | None = None,
     folds: int = 4,
+    positions: str = "auto",
     compact: bool = True,
 ) -> dict[str, Any]:
     """Run the parameter search inside the verifier and verify the best combo.
@@ -106,12 +112,13 @@ def verify_grid(
         slippage_bps: Slippage per side in basis points.
         side_mode: 'long_flat' or 'long_short' (default long_short).
         folds: Walk-forward folds.
+        positions: 'sign', 'weight' or 'auto' (see verify_strategy).
         compact: Drop details of passing checks to keep the response short.
     """
     from monte_neo.verify import verify_grid as _verify_grid
 
     df, model = _model(ohlcv_path, commission_bps, slippage_bps, side_mode, None, None)
-    report = _verify_grid(df, grid, strategy=strategy_path, model=model, folds=folds)
+    report = _verify_grid(df, grid, strategy=strategy_path, model=model, folds=folds, positions=positions)
     return _compact(report) if compact else report
 
 
@@ -160,29 +167,24 @@ def probe_lookahead(ohlcv_path: str, strategy_path: str) -> dict[str, Any]:
         ohlcv_path: CSV/Parquet with open, high, low, close.
         strategy_path: Python file 'path.py[:func]' defining func(df) -> positions.
     """
-    from monte_neo.verify import (
-        call_signal_fn,
-        lint_source,
-        load_ohlcv,
-        load_signal_fn,
-        probe_determinism,
-        probe_perturbation,
-        probe_truncation,
-        to_jsonable,
-    )
+    from monte_neo.verify import lint_source, load_ohlcv, load_signal_fn, resolve_positions, to_jsonable, to_positions
     from monte_neo.verify.io_guard import IOWatch
+    from monte_neo.verify.market import market_for
 
     df = load_ohlcv(ohlcv_path)
+    market = market_for(df)  # one instrument, or a universe probed across all symbols at once
     watch = IOWatch((df.attrs["source_path"],))
     with watch:
         fn, source = load_signal_fn(strategy_path)
-        full = call_signal_fn(fn, df)
-        report: dict[str, Any] = {
-            "static_lint": lint_source(source),
-            "determinism": probe_determinism(fn, df, full=full),
-            "truncation": probe_truncation(fn, df, full=full),
-            "perturbation": probe_perturbation(fn, df, full=full),
-        }
+        values = market.read_values(fn, None)
+        mode = resolve_positions(values, "auto")
+        determinism, truncation, perturbation = market.probes(fn, to_positions(values, mode), mode, 24)
+    report: dict[str, Any] = {
+        "static_lint": lint_source(source),
+        "determinism": determinism,
+        "truncation": truncation,
+        "perturbation": perturbation,
+    }
     outside = bool(watch.files or watch.connections)
     report["external_data"] = {
         "status": "fail" if outside else "pass", "files": watch.files, "connections": watch.connections,
@@ -200,6 +202,7 @@ def cost_stress(
     commission_bps: float = 5.0,
     slippage_bps: float = 5.0,
     side_mode: str | None = None,
+    positions: str = "auto",
 ) -> dict[str, Any]:
     """Break-even cost (bps per side) and returns under 0/1/2 bars of execution delay.
 
@@ -210,25 +213,39 @@ def cost_stress(
         commission_bps: Commission per side in basis points.
         slippage_bps: Slippage per side in basis points.
         side_mode: 'long_flat' or 'long_short' (default inferred).
+        positions: 'sign', 'weight' or 'auto' (see verify_strategy).
     """
-    from monte_neo.verify import (
-        breakeven_cost_bps,
-        call_signal_fn,
-        delay_scan,
-        load_signal_fn,
-        load_signals,
-        to_jsonable,
-    )
+    from monte_neo.verify import breakeven_cost_bps, delay_scan, load_signal_fn, resolve_positions, to_jsonable
+    from monte_neo.verify.market import market_for
 
     if not signals_path and not strategy_path:
         return {"error": "provide signals_path or strategy_path"}
     df, model = _model(ohlcv_path, commission_bps, slippage_bps, side_mode, None, signals_path)
-    if strategy_path:
-        sig = call_signal_fn(load_signal_fn(strategy_path)[0], df)
-    else:
-        sig = load_signals(signals_path, len(df))
-    ohlc = {k: df[k].to_numpy() for k in ("open", "high", "low", "close")}
-    return to_jsonable({"breakeven": breakeven_cost_bps(ohlc, sig, model), "delay": delay_scan(ohlc, sig, model)})
+    market = market_for(df)
+    fn = load_signal_fn(strategy_path)[0] if strategy_path else None
+    try:
+        values = market.read_values(fn, signals_path)
+    except ValueError as exc:
+        return {"error": str(exc)}
+    sig = market.positions(values, resolve_positions(values, positions), model)[0]
+    return to_jsonable({"breakeven": breakeven_cost_bps(market.ohlc, sig, model), "delay": delay_scan(market.ohlc, sig, model)})
+
+
+def render_report(certificate_path: str, html_path: str) -> dict[str, Any]:
+    """Write a certificate as a self-contained HTML report for people (equity chart, checks, periods).
+
+    Args:
+        certificate_path: JSON certificate written by verify (--out) or saved from verify_strategy.
+        html_path: Where to write the .html file.
+    """
+    from monte_neo.verify.recheck import load_certificate
+    from monte_neo.verify.report_html import write_html
+
+    try:
+        path = write_html(load_certificate(certificate_path), html_path)
+    except Exception as exc:  # unreadable or not a certificate: report, do not crash the server
+        return {"error": str(exc)}
+    return {"html_path": str(path), "bytes": path.stat().st_size}
 
 
 def verdict_schema() -> dict[str, Any]:
@@ -248,7 +265,11 @@ def verifier_manifest() -> dict[str, Any]:
         "execution": {
             "fill": "signal on bar t fills at open of bar t+1",
             "costs": "commission_bps + slippage_bps per side on fill notional",
-            "positions": "+1 long, 0 flat, -1 short; any number is reduced to its sign; NaN = flat",
+            "positions": (
+                "signs (+1 long, 0 flat, -1 short; any number is reduced to its sign) or weights "
+                "(fraction of equity in [-1, 1], e.g. 0.5 = long half); 'auto' reads weights when all values "
+                "are in [-1, 1] and some are fractional; NaN = flat"
+            ),
         },
         "verdicts": {
             "PASS": "no problems found",
@@ -268,6 +289,7 @@ TOOLS: tuple[Callable[..., dict[str, Any]], ...] = (
     check_signature,
     probe_lookahead,
     cost_stress,
+    render_report,
     verdict_schema,
     verifier_manifest,
 )
@@ -279,6 +301,7 @@ __all__ = [
     "check_signature",
     "cost_stress",
     "probe_lookahead",
+    "render_report",
     "verdict_schema",
     "verifier_manifest",
     "verify_grid",
