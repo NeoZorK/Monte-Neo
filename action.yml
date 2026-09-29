@@ -18,9 +18,9 @@ inputs:
     required: false
     default: ""
   n-trials:
-    description: Number of variants tried before choosing this one
+    description: Number of variants tried before choosing this one (leave empty if unknown; the certificate then says it was not declared)
     required: false
-    default: "1"
+    default: ""
   commission-bps:
     description: Commission per side (bps)
     required: false
@@ -42,7 +42,7 @@ inputs:
     required: false
     default: ${{ github.token }}
   fail-on:
-    description: "Lowest verdict that fails the job: REJECT (default) or NEEDS_MORE_EVIDENCE"
+    description: "Lowest verdict that fails the job: REJECT (default), NEEDS_MORE_EVIDENCE or PASS_WITH_WARNINGS"
     required: false
     default: REJECT
   signing-key:
@@ -104,9 +104,14 @@ runs:
         GH_TOKEN: ${{ inputs.github-token }}
       run: |
         set +e
+        case "$MN_FAIL_ON" in
+          REJECT|NEEDS_MORE_EVIDENCE|PASS_WITH_WARNINGS) ;;
+          *) echo "::error::fail-on must be REJECT, NEEDS_MORE_EVIDENCE or PASS_WITH_WARNINGS (got '$MN_FAIL_ON')"; exit 3 ;;
+        esac
         src=(--signals "$MN_SIGNALS")
         if [ -n "$MN_STRATEGY" ]; then src=(--strategy "$MN_STRATEGY"); fi
-        extra=(--n-trials "$MN_TRIALS")
+        extra=()
+        if [ -n "$MN_TRIALS" ]; then extra=(--n-trials "$MN_TRIALS"); fi
         if [ -n "$MN_GRID" ]; then extra=(--grid "$MN_GRID"); fi
         cert="$RUNNER_TEMP/strategy-verdict.json"
         report="$RUNNER_TEMP/strategy-verdict.md"
@@ -117,8 +122,8 @@ runs:
           trap 'rm -f "$key"' EXIT
           sign=(--sign "$key")
         fi
-        monte-neo verify --ohlcv "$MN_OHLCV" "${src[@]}" "${extra[@]}" \
-          --commission-bps "$MN_COMMISSION" --slippage-bps "$MN_SLIPPAGE" --out "$cert" "${sign[@]}"
+        monte-neo verify --ohlcv "$MN_OHLCV" "${src[@]}" ${extra[@]+"${extra[@]}"} \
+          --commission-bps "$MN_COMMISSION" --slippage-bps "$MN_SLIPPAGE" --out "$cert" ${sign[@]+"${sign[@]}"}
         code=$?
         if [ -n "$MN_SIGNING_KEY" ]; then rm -f "$key"; fi
         if [ "$code" -eq 3 ]; then exit 3; fi
@@ -155,7 +160,8 @@ runs:
           fi
         fi
         if [ "$code" -eq 2 ]; then exit 2; fi
-        if [ "$code" -eq 1 ] && [ "$MN_FAIL_ON" = "NEEDS_MORE_EVIDENCE" ]; then exit 1; fi
+        if [ "$code" -eq 1 ] && [ "$MN_FAIL_ON" != "REJECT" ]; then exit 1; fi
+        if [ "$verdict" = "PASS_WITH_WARNINGS" ] && [ "$MN_FAIL_ON" = "PASS_WITH_WARNINGS" ]; then exit 1; fi
         exit 0
     - name: Upload certificate
       if: ${{ always() && inputs.upload-certificate == 'true' && steps.verify.outputs.certificate != '' }}

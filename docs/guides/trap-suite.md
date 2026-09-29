@@ -11,7 +11,7 @@ statuses that must appear.
 
 ## Catalogue
 
-51 traps, 18 honest controls, 2 parameterized strategies for `verify_grid` and a data-snooping test.
+51 traps, 23 honest controls, 2 parameterized strategies for `verify_grid` and a data-snooping test.
 "Caught by" lists the checks that flag each trap on the random-walk dataset. "lint (warn)" is a
 warning only; the dynamic probes produce the `REJECT`.
 
@@ -138,6 +138,11 @@ leaks.
 | `rolling_min_periods` | `rolling(50, min_periods=1)` |
 | `rolling_apply_span` | `rolling().apply(lambda w: w[-1] - w[0])`: `w[-1]` is the current bar |
 | `hour_open_ref` | `transform("first")`: the hour's first close is already known |
+| `loop_window_breakout` | Breakout in a loop over trailing slices `c[i - 20:i]` with an ATR stop |
+| `loop_slice_crossover` | SMA crossover computed in a loop from `c[i - 10:i + 1]` |
+| `rolling_polyfit_slope` | `np.polyfit` inside `rolling(30).apply`: each fit sees one window |
+| `rsi_loop` | Wilder RSI updated bar by bar |
+| `expanding_quantile_breakout` | A real edge on momentum data: hit rate ~0.6 must not be called look-ahead |
 | `expanding_max_breakout` | `expanding().max().shift(1)` |
 
 Grid strategies: `sma_params`, `momentum_params`.

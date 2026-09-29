@@ -9,6 +9,7 @@ scores them on the next fold, giving an out-of-sample Sharpe for the *process*.
 from __future__ import annotations
 
 import itertools
+import json
 from functools import partial
 from pathlib import Path
 from typing import Any
@@ -20,11 +21,14 @@ from monte_neo.backtest.bar_engine import run_bar_backtest
 from monte_neo.backtest.model import ExecutionModel
 from monte_neo.verify.checks import check
 from monte_neo.verify.ingest import OHLC_COLS, SignalFn, call_signal_fn, load_ohlcv, load_signal_fn
+from monte_neo.verify.io_guard import IOWatch
 from monte_neo.verify.stats import bar_returns, sharpe_per_bar
 from monte_neo.verify.verdict import _default_model, verify_strategy
 
 MAX_COMBOS = 512
 TOP_K = 5
+# Neighbours of the best combo must keep at least this share of its Sharpe (median).
+PLATEAU_MIN_RATIO = 0.5
 
 
 def expand_grid(grid: dict[str, list[Any]]) -> list[dict[str, Any]]:
@@ -75,6 +79,39 @@ def walk_forward(returns: np.ndarray, folds: int = 4) -> dict[str, Any]:
     }
 
 
+def _key(combo: dict[str, Any]) -> str:
+    # JSON, not a tuple: grid values may be lists, which are not hashable.
+    return json.dumps(combo, sort_keys=True, default=str)
+
+
+def plateau(grid: dict[str, list[Any]], combos: list[dict[str, Any]], sharpes: np.ndarray, best: int) -> dict[str, Any]:
+    """Sharpe of the best combo's neighbours: one parameter moved one step in the grid."""
+    index = {_key(c): i for i, c in enumerate(combos)}
+    neighbours: list[int] = []
+    for name, values in grid.items():
+        values = list(values)
+        pos = values.index(combos[best][name])
+        for step in (-1, 1):
+            if 0 <= pos + step < len(values):
+                moved = {**combos[best], name: values[pos + step]}
+                neighbours.append(index[_key(moved)])
+    best_sharpe = float(sharpes[best])
+    near = [float(sharpes[i]) for i in neighbours]
+    ratio = float(np.median(near)) / best_sharpe if near and best_sharpe > 0.0 else None
+    return {"best_sharpe_per_bar": best_sharpe, "neighbour_sharpes": near, "median_ratio": ratio}
+
+
+def plateau_row(info: dict[str, Any]) -> dict[str, Any]:
+    """Statistics check: is the best combo on a plateau or an isolated peak?"""
+    ratio = info["median_ratio"]
+    if ratio is None:
+        reason = "no neighbouring combos" if not info["neighbour_sharpes"] else "best combo is not profitable"
+        return check("parameter_plateau", "statistics", "skip", f"parameter plateau: {reason}", info)
+    status = "pass" if ratio >= PLATEAU_MIN_RATIO else "warn"
+    summary = f"neighbouring parameters keep {ratio:.0%} of the best Sharpe (median of {len(info['neighbour_sharpes'])})"
+    return check("parameter_plateau", "statistics", status, summary, info)
+
+
 def walk_forward_row(wf: dict[str, Any], in_sample_sharpe: float) -> dict[str, Any]:
     """Statistics check: does re-selecting on the past keep working on the next fold?"""
     oos = float(wf["oos_sharpe"])
@@ -104,19 +141,25 @@ def verify_grid(
     The verdict prices selection with the measured ``n_trials`` and trial
     Sharpe spread and adds a ``walk_forward_oos`` check.
     """
+    if int(folds) < 1:
+        raise ValueError(f"folds must be >= 1, got {folds}")
     df = load_ohlcv(ohlcv)
-    if strategy is not None:
-        signal_fn, text = load_signal_fn(strategy)
-        source = source if source is not None else text
+    io_watch = IOWatch(tuple(p for p in (df.attrs.get("source_path"),) if p))
+    with io_watch:
+        if strategy is not None:
+            signal_fn, text = load_signal_fn(strategy)
+            source = source if source is not None else text
     if signal_fn is None:
         raise ValueError("verify_grid needs strategy= or signal_fn=")
     model = model or _default_model(len(df))
     combos = expand_grid(grid)
-    returns = _trial_returns(signal_fn, df, combos, model)
+    with io_watch:
+        returns = _trial_returns(signal_fn, df, combos, model)
     sharpes = np.array([sharpe_per_bar(r) for r in returns])
     order = np.argsort(-sharpes)
     best = combos[int(order[0])]
     wf = walk_forward(returns, folds=folds)
+    peak = plateau(grid, combos, sharpes, int(order[0]))
     section = {
         "grid": {
             "spec": {k: list(v) for k, v in grid.items()},
@@ -125,6 +168,7 @@ def verify_grid(
             "best_params": best,
             "top": [{"params": combos[int(i)], "sharpe_per_bar": float(sharpes[i])} for i in order[:TOP_K]],
             "walk_forward": wf,
+            "plateau": peak,
         }
     }
     return verify_strategy(
@@ -134,10 +178,11 @@ def verify_grid(
         model=model,
         n_trials=len(combos),
         trial_sharpes=sharpes if len(combos) >= 2 else None,
-        extra_checks=[walk_forward_row(wf, float(sharpes[order[0]]))],
+        extra_checks=[walk_forward_row(wf, float(sharpes[order[0]])), plateau_row(peak)],
         extra=section,
+        io_watch=io_watch,
         **verify_kwargs,
     )
 
 
-__all__ = ["MAX_COMBOS", "expand_grid", "verify_grid", "walk_forward", "walk_forward_row"]
+__all__ = ["MAX_COMBOS", "expand_grid", "plateau", "plateau_row", "verify_grid", "walk_forward", "walk_forward_row"]

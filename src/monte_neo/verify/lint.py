@@ -122,6 +122,41 @@ class _InlineConstants(ast.NodeTransformer):
         return node
 
 
+def _is_window_slice(node: ast.AST) -> bool:
+    """``x[a:b]`` with a variable upper bound: a moving window such as ``c[i - 20:i]``.
+
+    A constant bound (``c[:1000]``) is a fixed block of the dataset, which is the
+    future for earlier bars, so it stays a whole-sample statistic.
+    """
+    return (
+        isinstance(node, ast.Subscript)
+        and isinstance(node.slice, ast.Slice)
+        and node.slice.upper is not None
+        and _const_number(node.slice.upper) is None
+    )
+
+
+def _window_functions(tree: ast.AST) -> tuple[set[str], set[int]]:
+    """Functions and lambdas passed to ``rolling(...).apply`` (they only see one window)."""
+    names: set[str] = set()
+    lambdas: set[int] = set()
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr in {"apply", "agg", "aggregate"}
+            and isinstance(node.func.value, ast.Call)
+            and isinstance(node.func.value.func, ast.Attribute)
+            and node.func.value.func.attr in _WINDOW_METHODS
+            and node.args
+        ):
+            if isinstance(node.args[0], ast.Name):
+                names.add(node.args[0].id)
+            elif isinstance(node.args[0], ast.Lambda):
+                lambdas.add(id(node.args[0]))
+    return names, lambdas
+
+
 def _is_true(node: ast.AST | None) -> bool:
     return isinstance(node, ast.Constant) and node.value is True
 
@@ -135,13 +170,19 @@ def _is_str(node: ast.AST | None, values: set[str]) -> bool:
 
 
 class _Visitor(ast.NodeVisitor):
-    def __init__(self, lines: list[str]) -> None:
+    def __init__(self, lines: list[str], window_names: set[str] | None = None, window_lambdas: set[int] | None = None) -> None:
         self.lines = lines
         self.findings: list[dict[str, Any]] = []
+        # Inside a rolling().apply function "whole series" means one window.
+        self._window_names = window_names or set()
+        self._window_lambdas = window_lambdas or set()
+        self._in_window = 0
         # Group aggregates followed by a positive shift use completed groups only.
         self._shifted_aggs: set[int] = set()
 
     def _add(self, node: ast.AST, rule: str, severity: str, message: str) -> None:
+        if self._in_window and rule.startswith("full_sample"):
+            return
         line = int(getattr(node, "lineno", 0))
         if any(f["rule"] == rule and f["line"] == line for f in self.findings):
             return  # one finding per rule and line (e.g. nested argsort calls)
@@ -160,9 +201,22 @@ class _Visitor(ast.NodeVisitor):
     def _on_window(node: ast.AST) -> bool:
         return isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr in _WINDOW_METHODS
 
+    def _windowed(self, node: ast.AST) -> Any:
+        self._in_window += 1
+        self.generic_visit(node)
+        self._in_window -= 1
+
+    def visit_Lambda(self, node: ast.Lambda) -> Any:
+        return self._windowed(node) if id(node) in self._window_lambdas else self.generic_visit(node)
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> Any:
+        return self._windowed(node) if node.name in self._window_names else self.generic_visit(node)
+
     @staticmethod
     def _is_series_ref(node: ast.AST) -> bool:
         """A plain column / variable (not a window or module call)."""
+        if _is_window_slice(node):
+            return False
         if isinstance(node, ast.Name):
             return node.id not in _MODULES
         return isinstance(node, ast.Subscript | ast.Attribute) and not (
@@ -273,6 +327,7 @@ class _Visitor(ast.NodeVisitor):
                 and node.func.value.id in ("np", "numpy")
                 and node.args
                 and not isinstance(node.args[0], ast.Call | ast.Constant | ast.List | ast.Tuple)
+                and not _is_window_slice(node.args[0])
             ):
                 self._add(node, "full_sample_stat", "warn", f"np.{attr} over a whole array includes future bars")
             elif attr in _STAT_METHODS and self._is_series_ref(node.func.value):
@@ -315,8 +370,9 @@ def lint_source(source: str) -> dict[str, Any]:
         tree = ast.parse(source)
     except SyntaxError as exc:
         return {"status": "skip", "findings": [], "error": f"syntax error: {exc.msg} (line {exc.lineno})"}
-    visitor = _Visitor(source.splitlines())
-    visitor.visit(_InlineConstants(tree).visit(tree))
+    tree = _InlineConstants(tree).visit(tree)
+    visitor = _Visitor(source.splitlines(), *_window_functions(tree))
+    visitor.visit(tree)
     severities = {f["severity"] for f in visitor.findings}
     status = "fail" if "fail" in severities else ("warn" if severities else "pass")
     return {"status": status, "findings": visitor.findings}

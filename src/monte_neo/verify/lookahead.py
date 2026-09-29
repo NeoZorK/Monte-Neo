@@ -46,6 +46,17 @@ def probe_determinism(fn: SignalFn, df: pd.DataFrame, full: np.ndarray | None = 
     }
 
 
+def _decision_points(sig: np.ndarray, n_bars: int, n_checks: int, start: int | None) -> np.ndarray:
+    """Bars where the position changes: a leak drives exactly these decisions."""
+    lo = max(2, int(start) if start is not None else n_bars // 10)
+    changes = np.flatnonzero(np.diff(sig) != 0) + 1
+    changes = changes[(changes >= lo) & (changes <= n_bars - 2)]
+    if changes.size == 0:
+        return np.zeros(0, dtype=np.int64)
+    picks = np.linspace(0, changes.size - 1, num=min(max(1, int(n_checks)), changes.size)).astype(np.int64)
+    return np.unique(changes[picks])
+
+
 def probe_truncation(
     fn: SignalFn,
     df: pd.DataFrame,
@@ -54,20 +65,30 @@ def probe_truncation(
     start: int | None = None,
     full: np.ndarray | None = None,
 ) -> dict[str, Any]:
-    """Compare ``signal(df[:t+1])[-1]`` with ``signal(df)[t]`` at checkpoints."""
+    """Compare ``signal(df[:t+1])`` with ``signal(df)[:t+1]`` at checkpoints.
+
+    A causal signal gives the same values on every prefix. Checkpoints are spread
+    evenly and also placed on bars where the position changes, so sparse signals
+    (a few entries) are tested where they act.
+    """
     sig = call_signal_fn(fn, df) if full is None else full
-    points = _checkpoints(len(df), n_checks, start)
+    even = _checkpoints(len(df), n_checks, start)
+    points = np.union1d(even, _decision_points(sig, len(df), n_checks, start))
     mismatches: list[dict[str, Any]] = []
     for t in points:
         head = call_signal_fn(fn, df.iloc[: int(t) + 1].reset_index(drop=True))
-        if int(head[-1]) != int(sig[t]):
-            mismatches.append({"bar": int(t), "full": int(sig[t]), "truncated": int(head[-1])})
+        diff = np.flatnonzero(head != sig[: int(t) + 1])
+        if diff.size:
+            bar = int(diff[0])
+            mismatches.append(
+                {"checkpoint": int(t), "bar": bar, "full": int(sig[bar]), "truncated": int(head[bar]), "changed_bars": int(diff.size)}
+            )
     return {
         "status": _status(mismatches, int(points.size)),
         "checkpoints": int(points.size),
         "mismatch_count": len(mismatches),
         "mismatches": mismatches[:MAX_REPORTED],
-        "first_mismatch_bar": mismatches[0]["bar"] if mismatches else None,
+        "first_mismatch_bar": min(m["bar"] for m in mismatches) if mismatches else None,
     }
 
 
@@ -124,10 +145,16 @@ def implausible_accuracy(
     close: np.ndarray,
     signals: np.ndarray,
     *,
-    max_hit_rate: float = 0.6,
+    max_hit_rate: float = 0.7,
     min_active: int = 100,
+    min_z: float = 3.5,
 ) -> dict[str, Any]:
-    """Next-bar direction hit rate of active signals (leakage smell test)."""
+    """Next-bar direction hit rate of active signals (leakage smell test).
+
+    ``fail`` needs a hit rate of at least ``max_hit_rate`` that is also far from
+    chance (binomial z >= ``min_z``); a high but not significant rate is a ``warn``,
+    so an honest strategy with few active bars is not accused of look-ahead.
+    """
     o = np.asarray(open_, dtype=np.float64)
     c = np.asarray(close, dtype=np.float64)
     s = np.asarray(signals, dtype=np.int64)
@@ -140,8 +167,10 @@ def implausible_accuracy(
     z = (rate - 0.5) * 2.0 * float(np.sqrt(n)) if n else 0.0
     if n < min_active:
         status = "skip"
+    elif rate >= max_hit_rate:
+        status = "fail" if z >= min_z else "warn"
     else:
-        status = "fail" if rate >= max_hit_rate else "pass"
+        status = "pass"
     return {
         "status": status,
         "hit_rate": rate,
@@ -150,6 +179,7 @@ def implausible_accuracy(
         "active_bars": n,
         "z_score": float(z),
         "max_hit_rate": float(max_hit_rate),
+        "min_z": float(min_z),
     }
 
 

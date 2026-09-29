@@ -16,6 +16,8 @@ import numpy as np
 import pandas as pd
 
 _EULER_GAMMA = 0.5772156649015329
+_YEAR_NS = 365.25 * 86_400e9
+_MIN_SPAN_NS = 30 * 86_400e9
 _NORMAL = NormalDist()
 
 
@@ -113,7 +115,12 @@ def deflated_sharpe(
 
 
 def infer_periods_per_year(timestamps: Any, default: float = 252.0) -> float:
-    """Bars per calendar year from timestamps (24/7 calendar); ``default`` if unknown."""
+    """Bars per year from timestamps; ``default`` if unknown.
+
+    Over 30 days or more this counts bars per elapsed year, so weekends, nights and
+    holidays are priced in (daily stocks give ~252, not 365). Shorter samples use the
+    median bar step on a 24/7 calendar.
+    """
     if timestamps is None:
         return default
     with warnings.catch_warnings():
@@ -122,10 +129,13 @@ def infer_periods_per_year(timestamps: Any, default: float = 252.0) -> float:
     if len(parsed) < 3:
         return default
     ts = parsed.to_numpy(dtype="datetime64[ns]").astype(np.int64)
+    span_ns = float(ts[-1] - ts[0])
+    if span_ns >= _MIN_SPAN_NS:
+        return float((ts.size - 1) * _YEAR_NS / span_ns)
     step_ns = float(np.median(np.diff(ts)))
     if not np.isfinite(step_ns) or step_ns <= 0.0:
         return default
-    return float(365.25 * 86_400e9 / step_ns)
+    return float(_YEAR_NS / step_ns)
 
 
 __all__ = [

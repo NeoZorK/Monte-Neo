@@ -90,12 +90,20 @@ TRAPS = [
     ("hour_open_ref", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
     ("expanding_max_breakout", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
     ("momentum", "planted", {"PASS", "PASS_WITH_WARNINGS"}, {"net_profitability": "pass", "deflated_sharpe": "pass"}),
+    ("loop_window_breakout", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
+    ("rolling_polyfit_slope", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
+    ("loop_slice_crossover", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
+    ("rsi_loop", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
+    # A strong real edge: a high hit rate alone must not be called look-ahead.
+    ("expanding_quantile_breakout", "planted", {"NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"implausible_accuracy": "pass"}),
 ]
 HONEST = {"high_turnover", "sma_cross", "momentum", "expanding_zscore", "resample_shifted", "expanding_rank", "cummax_drawdown",
           "ewm_cross", "convolve_causal", "rolling_quantile_band",
           "prev_hour_close_map", "bars_into_hour", "expanding_quantile_band",
           "cut_fixed_bins", "hour_running_high", "rolling_min_periods",
-          "rolling_apply_span", "hour_open_ref", "expanding_max_breakout"}
+          "rolling_apply_span", "hour_open_ref", "expanding_max_breakout",
+          "loop_window_breakout", "rolling_polyfit_slope", "loop_slice_crossover", "rsi_loop",
+          "expanding_quantile_breakout"}
 # Parameterized strategies exercised through verify_grid (not in TRAPS).
 GRID_STRATEGIES = {"sma_params", "momentum_params"}
 
