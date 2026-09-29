@@ -21,20 +21,23 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from monte_neo.verify.limits import check_size, read_source, table_limit_bytes
+
 OHLC_COLS = ("open", "high", "low", "close")
 SignalFn = Callable[[pd.DataFrame], Any]
 
 
 def _read_table(path: Path) -> pd.DataFrame:
     suffix = path.suffix.lower()
+    if suffix not in (".parquet", ".csv", ".txt"):
+        raise ValueError(f"unsupported table format: {path.suffix} (use .csv or .parquet)")
+    check_size(path, table_limit_bytes(), "table")
     if suffix == ".parquet":
         try:
             return pd.read_parquet(path)
         except ImportError as exc:
             raise ImportError("reading .parquet needs pyarrow: pip install 'monte-neo[parquet]' (or use .csv)") from exc
-    if suffix in (".csv", ".txt"):
-        return pd.read_csv(path)
-    raise ValueError(f"unsupported table format: {path.suffix} (use .csv or .parquet)")
+    return pd.read_csv(path)
 
 
 def load_ohlcv(source: pd.DataFrame | str | Path) -> pd.DataFrame:
@@ -125,7 +128,7 @@ def load_signal_values(source: Any) -> np.ndarray:
     """Raw signal values from an array-like or a ``.csv`` / ``.parquet`` / ``.npy`` file."""
     if isinstance(source, str | Path):
         path = Path(source)
-        data: Any = np.load(path) if path.suffix.lower() == ".npy" else _read_table(path)
+        data: Any = np.load(check_size(path, table_limit_bytes(), "table"), allow_pickle=False) if path.suffix.lower() == ".npy" else _read_table(path)
         return signal_values(data)
     return signal_values(source)
 
@@ -149,7 +152,7 @@ def load_signal_fn(spec: str | Path) -> tuple[SignalFn, str]:
     path = Path(path_str)
     if not path.is_file():
         raise FileNotFoundError(f"strategy file not found: {path}")
-    source = path.read_text(encoding="utf-8")
+    source = read_source(path)
     mod_name = f"_monte_neo_strategy_{abs(hash(path.resolve()))}"
     spec_obj = importlib.util.spec_from_file_location(mod_name, path)
     if spec_obj is None or spec_obj.loader is None:  # pragma: no cover - importlib edge

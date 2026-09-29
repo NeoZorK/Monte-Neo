@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 
 from monte_neo._version import __version__
+from monte_neo.backtest.jit import warn_if_slow
 from monte_neo.backtest.model import ExecutionModel
 from monte_neo.verify import checks as rows
 from monte_neo.verify.breakdown import buy_and_hold, periods, regimes, series
@@ -28,6 +29,7 @@ from monte_neo.verify.ingest import (
     to_positions,
 )
 from monte_neo.verify.io_guard import IOWatch
+from monte_neo.verify.limits import read_source
 from monte_neo.verify.lint import lint_source
 from monte_neo.verify.market import SingleMarket, UniverseMarket, market_for
 from monte_neo.verify.quality import data_quality, quality_row, spike_profit_share
@@ -133,7 +135,7 @@ def verify_strategy(
     runner = _runner_for(strategy, market, df, jobs, timeout, isolate)
     if runner is not None:
         # Workers load the strategy; this process only reads its source for the lint.
-        fn, src = runner, source if source is not None else runner.path.read_text(encoding="utf-8")
+        fn, src = runner, source if source is not None else read_source(runner.path)
     else:
         if (timeout is not None or isolate or resolve_jobs(jobs) > 1) and not isinstance(signal_fn, ProcessRunner):
             raise ValueError("jobs, timeout and isolate need strategy code in a file (strategy='file.py')")
@@ -185,6 +187,7 @@ def _checks_and_report(
     n = market.n_bars
     if fn is None and signals is None:
         raise ValueError("provide signals or strategy code (strategy= / signal_fn=)")
+    warn_if_slow(n)
     model = model or _default_model(n)
     if n < model.warmup_bars + 2:
         raise ValueError(f"need at least warmup_bars + 2 = {model.warmup_bars + 2} bars, got {n}")

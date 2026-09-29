@@ -18,6 +18,7 @@ import os
 from pathlib import Path
 from typing import Any
 
+from monte_neo.verify.limits import MAX_KEY_BYTES, read_text_limited
 from monte_neo.verify.recheck import load_certificate
 
 SIGNATURE_ALG = "ed25519"
@@ -88,11 +89,15 @@ def _load_private(key: str | Path | bytes) -> Any:
     return private_key
 
 
-def load_public_key(spec: str | Path) -> bytes:
-    """Raw public key from ``ed25519:<base64>`` text or a file containing it."""
+def load_public_key(spec: str | Path, *, allow_file: bool = True) -> bytes:
+    """Raw public key from ``ed25519:<base64>`` text or, when ``allow_file``, a file containing it.
+
+    The key embedded in a certificate is untrusted text and must never be read as a file
+    name (``allow_file=False``): otherwise a certificate could make the verifier open any path.
+    """
     text = str(spec).strip()
-    if not text.startswith(_PUB_PREFIX):
-        text = Path(spec).read_text(encoding="utf-8").strip()
+    if not text.startswith(_PUB_PREFIX) and allow_file:
+        text = read_text_limited(spec, MAX_KEY_BYTES, "public key").strip()
     if not text.startswith(_PUB_PREFIX):
         raise ValueError(f"public key must look like '{_PUB_PREFIX}<base64>'")
     raw = base64.b64decode(text[len(_PUB_PREFIX) :], validate=True)
@@ -144,13 +149,13 @@ def check_signature(
     try:
         if sig.get("alg") != SIGNATURE_ALG:
             raise ValueError(f"unsupported signature algorithm {sig.get('alg')!r}")
-        embedded = load_public_key(str(sig["public_key"]))
+        embedded = load_public_key(str(sig["public_key"]), allow_file=False)
         result["key_id"] = key_id(embedded)
         ed25519.Ed25519PublicKey.from_public_bytes(embedded).verify(
             base64.b64decode(str(sig["value"]), validate=True), canonical_payload(cert)
         )
         result["valid"] = True
-    except (InvalidSignature, ValueError, KeyError) as exc:
+    except (InvalidSignature, ValueError, KeyError, TypeError, AttributeError) as exc:  # malformed signature block
         result["reason"] = f"signature does not match: {exc}" if str(exc) else "signature does not match the certificate"
         return result
     if public_key is not None:

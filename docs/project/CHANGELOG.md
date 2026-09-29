@@ -3,6 +3,33 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.37.0] — 2026-09-29
+
+### Security
+Result of the security audit (details: `docs/project/SECURITY_AUDIT_RU.md`, policy and threat model: `SECURITY.md`).
+- **`--isolate` could be bypassed** by renaming a temp file over any file, or by creating a symbolic or hard link in
+  the temp dir and writing through it. Both ends of a rename are checked, links are blocked, paths are resolved
+  with `realpath`. Reproduced by four new tests. `--isolate` remains a guard, not a security boundary.
+- **A certificate could make the verifier open a file:** the public key inside a certificate was treated as a file
+  name. It is now only text; the key you pass to check against may still be a file.
+- **The verification page showed a green tick for a forger's own key.** A certificate signed with any key looked
+  "valid (integrity only)". Now only a match with the expected issuer key is green; otherwise it says the signer is
+  not verified. The page also rejects ambiguous JSON, limits the loaded file (8 MB, 15 s) and sends no referrer.
+- Strict certificate JSON (no duplicate keys, `NaN`, depth over 100), size limits for every input
+  (`MONTE_NEO_MAX_INPUT_MB` for tables), MCP `render_report` writes only `.html` / `.htm`, the HTML report has a
+  Content-Security-Policy.
+- Dependency `click` upgraded in the lock file (advisory PYSEC-2026-2132, transitive via `mcp`).
+- Supply chain: all GitHub Actions pinned to commit SHAs, read-only default permissions in every workflow, new
+  `security.yml` (Bandit, pip-audit) and `scorecard.yml` (OpenSSF Scorecard), CycloneDX SBOM attached to releases.
+
+### Added
+- **The verifier runs without Numba.** Where Numba cannot be installed (PyPy, WebAssembly, a Python without
+  Numba wheels, `--no-deps`), the same engine source runs as plain Python: certificates are identical bit for
+  bit (tested end to end in a process without Numba), only the speed differs (about 50-200x slower for a
+  profitable strategy, see `docs/api/verify.md`). A warning with the install hint appears from 20 000 bars.
+  Numba is now a CPython-only dependency and has an extra: `pip install "monte-neo[fast]"`. Nothing is
+  downloaded at run time.
+
 ## [v0.36.1] — 2026-09-29
 
 ### Fixed

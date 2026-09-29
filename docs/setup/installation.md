@@ -16,7 +16,7 @@ monte-neo --version
 python -c "import monte_neo; print(monte_neo.__version__)"
 ```
 
-Current release: **v0.36.1** on [PyPI](https://pypi.org/project/monte-neo/).
+Current release: **v0.37.0** on [PyPI](https://pypi.org/project/monte-neo/).
 
 Docs site: [neozork.github.io/Monte-Neo](https://neozork.github.io/Monte-Neo/).
 
@@ -37,6 +37,7 @@ monte-neo --version
 
 | Extra | When |
 |-------|------|
+| `fast` | Numba, where the base install skipped it (PyPy, WebAssembly) or could not load it; about 100x faster engines |
 | `parquet` | Read `.parquet` tables (pyarrow, about 150 MB); CSV works without it |
 | `research` | Interactive research CLI, data storage and native build (pyarrow, questionary, prompt-toolkit, pyyaml, python-dotenv, pybind11) |
 | `sign` | Ed25519 certificate signing |
@@ -84,7 +85,7 @@ Safe rehearsal:
 # download the wheel only from TestPyPI, install without resolving deps there
 pip download --no-deps -d /tmp/mn-wheels \
   --index-url https://test.pypi.org/simple/ \
-  monte-neo==0.36.1
+  monte-neo==0.37.0
 pip install --no-deps /tmp/mn-wheels/monte_neo-*.whl
 # runtime deps still come from real PyPI:
 pip install numpy pandas pyarrow numba rich questionary prompt-toolkit pyyaml python-dotenv pybind11

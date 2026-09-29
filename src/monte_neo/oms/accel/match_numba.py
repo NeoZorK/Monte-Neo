@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import numpy as np
-from numba import prange
 
-from monte_neo.backtest.jit import njit_cached
+from monte_neo.backtest.jit import njit_cached, prange
 
 
 @njit_cached

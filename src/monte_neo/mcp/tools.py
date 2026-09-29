@@ -42,11 +42,12 @@ def _model(ohlcv_path: str, commission_bps: float, slippage_bps: float, side_mod
 def _strategy(strategy_path: str, df: Any, market: Any, timeout: float | None, jobs: int, isolate: bool) -> tuple[Any, str, Any]:
     """(signal function or worker runner, source text, runner to close or None)."""
     from monte_neo.verify.ingest import load_signal_fn
+    from monte_neo.verify.limits import read_source
     from monte_neo.verify.verdict import _runner_for
 
     runner = _runner_for(strategy_path, market, df, jobs, timeout, isolate)
     if runner is not None:
-        return runner, runner.path.read_text(encoding="utf-8"), runner
+        return runner, read_source(runner.path), runner
     fn, source = load_signal_fn(strategy_path)
     return fn, source, None
 
@@ -296,9 +297,14 @@ def render_report(certificate_path: str, html_path: str) -> dict[str, Any]:
         certificate_path: JSON certificate written by verify (--out) or saved from verify_strategy.
         html_path: Where to write the .html file.
     """
+    from pathlib import Path
+
     from monte_neo.verify.recheck import load_certificate
     from monte_neo.verify.report_html import write_html
 
+    if Path(html_path).suffix.lower() not in (".html", ".htm"):
+        # An agent acting on injected instructions must not be able to overwrite arbitrary files.
+        return {"error": f"html_path must end with .html or .htm, got {Path(html_path).name!r}"}
     try:
         path = write_html(load_certificate(certificate_path), html_path)
     except Exception as exc:  # unreadable or not a certificate: report, do not crash the server

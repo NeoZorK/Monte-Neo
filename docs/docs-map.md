@@ -1,4 +1,4 @@
-# Monte-Neo v0.36.1
+# Monte-Neo v0.37.0
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -34,10 +34,10 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/project-structure.md - Deep dive into physical directory layout
 - docs/project/features.md - Detailed overview of framework features
 - docs/project/dynamic_indicators.md - Explanation of dynamic indicator generation
-- docs/project/ROADMAP.md - Development roadmap and milestones (v0.36.1)
+- docs/project/ROADMAP.md - Development roadmap and milestones (v0.37.0)
 - docs/project/PRODUCT_STRATEGY_RU.md - Product strategy: agent-native strategy verifier niche, moat, roadmap (RU, internal)
 - docs/project/CLEANUP_CANDIDATES_RU.md - Cleanup candidate list with evidence, awaiting owner approval (RU, internal)
-- docs/project/CHANGELOG.md - Release changelog (current: v0.36.1)
+- docs/project/CHANGELOG.md - Release changelog (current: v0.37.0)
 - docs/project/backtest_engine.md - Fee-aware research bar engine
 - docs/project/oms_engine.md - Paper OMS (bar + tick/L2) + venue adapters
 - docs/assets/monteneo-logo.png - Project logo (original, with the old tagline)
@@ -92,7 +92,7 @@ A simplified guide to the Monte-Neo file structure.
 - docker/verify/Dockerfile - Verifier image for untrusted strategy code (engines precompiled, runs as nobody)
 
 ### Source Code (src/monte_neo/)
-- src/monte_neo/_version.py - Central version management (v0.36.1)
+- src/monte_neo/_version.py - Central version management (v0.37.0)
 - src/monte_neo/verify/ - Strategy verifier (ingest, single and universe markets, data quality, look-ahead probes, outside-data watch, strategy workers (jobs, timeout, isolation), lint, benchmark and breakdown, HTML report, costs, stats, checks, verdict, grid + walk-forward, certificate recheck)
 - src/monte_neo/mcp/ - MCP server (monte-neo-mcp) + agent-facing tool functions
 - src/monte_neo/cli/verify_cmd.py - `monte-neo verify` command (CI exit codes)
@@ -207,3 +207,7 @@ A simplified guide to the Monte-Neo file structure.
 - scripts/experiments/ - One-off Metal / MLX experiments, not maintained
 - scripts/make_demo_gif.py - Renders docs/assets/demo-verify.gif from real verify output
 - docs/project/PACKAGING.md - PyPI / TestPyPI free packaging checklist
+- docs/project/SECURITY_AUDIT_RU.md - Security audit of the verifier (findings, fixes, open risks)
+- SECURITY.md - Security policy and threat model
+- .github/workflows/security.yml - Bandit and pip-audit on every push, PR and weekly
+- .github/workflows/scorecard.yml - OpenSSF Scorecard (weekly)

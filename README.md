@@ -66,7 +66,7 @@ the truth: on a random walk, the strategy has no edge after costs.
 
 ```console
 $ monte-neo verify --ohlcv prices.csv --strategy agent_strategy.py --n-trials 40
-REJECT  certificate c957aaaba74022db
+REJECT  certificate 41370df6a05eefd9
   check                    category    status  summary
   data_integrity           integrity   pass    OHLCV is clean
   lookahead_truncation     lookahead   fail    truncation probe: LEAK DETECTED
@@ -198,7 +198,7 @@ MCP tools: `verify_strategy`, `verify_grid`, `probe_lookahead`, `cost_stress`,
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.36.1
+- uses: NeoZorK/Monte-Neo@v0.37.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py

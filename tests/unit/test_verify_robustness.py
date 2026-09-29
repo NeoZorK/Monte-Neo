@@ -120,14 +120,16 @@ def test_engines_compile_without_a_writable_cache(monkeypatch) -> None:
     """No writable cache location (read-only container): compile in memory instead of failing."""
     import monte_neo.backtest.jit as jit
 
-    real = jit.njit
+    real = jit.numba.njit
+    calls = []
 
     def no_cache(*args, **kwargs):
+        calls.append(kwargs.get("cache"))
         if kwargs.get("cache"):
             raise RuntimeError("cannot cache function: no locator available")
         return real(*args, **kwargs)
 
-    monkeypatch.setattr(jit, "njit", no_cache)
+    monkeypatch.setattr(jit.numba, "njit", no_cache)
 
     def add_one(x):
         return x + 1
@@ -135,3 +137,73 @@ def test_engines_compile_without_a_writable_cache(monkeypatch) -> None:
     compiled = jit.njit_cached(add_one)
     assert compiled(1) == 2
     assert compiled.py_func is add_one
+    assert calls[:2] == [True, False]
+
+    def other(x):
+        return x
+
+    with pytest.raises(RuntimeError):  # only cache errors are absorbed
+        monkeypatch.setattr(jit.numba, "njit", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")))
+        jit.njit(parallel=True)(other)
+
+
+_NO_NUMBA_SCRIPT = """
+import sys
+{block}
+import warnings
+warnings.simplefilter("ignore")
+import numpy as np
+from monte_neo.backtest import synthetic_ohlcv
+from monte_neo.backtest.jit import HAS_NUMBA
+from monte_neo.verify import verify_strategy
+df = synthetic_ohlcv(1500, seed=3)
+sig = np.sign(np.sin(np.arange(len(df)) / 9.0)).astype(np.int64)
+a = verify_strategy(df, signals=sig, n_trials=3)
+b = verify_strategy(df, signals=0.5 * sig)
+print(HAS_NUMBA, a["certificate_id"], b["certificate_id"], a["metrics"]["total_return"], b["metrics"]["total_return"])
+"""
+
+
+def test_verifier_without_numba_gives_identical_results() -> None:
+    """The plain-Python engines produce the same certificates bit for bit (no Numba installed)."""
+    import subprocess
+    import sys
+
+    def run(block: str) -> list[str]:
+        script = _NO_NUMBA_SCRIPT.format(block=block)
+        out = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, check=True)
+        return out.stdout.split()
+
+    with_numba = run("")
+    without = run('sys.modules["numba"] = None  # makes "import numba" fail')
+    assert with_numba[0] == "True" and without[0] == "False"
+    assert with_numba[1:] == without[1:]
+
+
+def test_slow_hint_only_without_numba_on_large_runs(monkeypatch) -> None:
+    import warnings
+
+    import monte_neo.backtest.jit as jit
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        monkeypatch.setattr(jit, "HAS_NUMBA", True)
+        jit.warn_if_slow(10**6)  # with Numba: silent
+        monkeypatch.setattr(jit, "HAS_NUMBA", False)
+        jit.warn_if_slow(jit.SLOW_BARS - 1)  # small: silent
+    with pytest.warns(RuntimeWarning, match=r"monte-neo\[fast\]"):
+        jit.warn_if_slow(jit.SLOW_BARS)
+
+
+def test_jit_helpers_without_numba(monkeypatch) -> None:
+    """Without Numba the decorators return the plain function and ``prange`` is ``range``."""
+    import monte_neo.backtest.jit as jit
+
+    monkeypatch.setattr(jit, "HAS_NUMBA", False)
+
+    def f(x):
+        return x
+
+    assert jit.njit(f) is f
+    assert jit.njit(cache=True, parallel=True)(f) is f
+    assert jit.njit_cached(f) is f
