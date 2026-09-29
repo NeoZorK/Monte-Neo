@@ -30,6 +30,7 @@ from monte_neo.verify.ingest import (
 from monte_neo.verify.io_guard import IOWatch
 from monte_neo.verify.limits import read_source
 from monte_neo.verify.market import SingleMarket, UniverseMarket, market_for
+from monte_neo.verify.pbo import pbo_cscv, pbo_row
 from monte_neo.verify.stats import bar_returns, sharpe_per_bar
 from monte_neo.verify.verdict import _default_model, _runner_for, verify_strategy
 
@@ -211,6 +212,7 @@ def _search_and_verify(
     best = combos[int(order[0])]
     wf = walk_forward(returns, folds=folds)
     peak = plateau(grid, combos, sharpes, int(order[0]))
+    overfit = pbo_cscv(returns)
     section = {
         "grid": {
             "spec": {k: list(v) for k, v in grid.items()},
@@ -221,6 +223,7 @@ def _search_and_verify(
             "combo_sharpes": [round(float(s), 5) for s in sharpes],  # in expand_grid order, for the report's heat map
             "walk_forward": wf,
             "plateau": peak,
+            "pbo": overfit,
         }
     }
     return verify_strategy(
@@ -230,7 +233,7 @@ def _search_and_verify(
         model=model,
         n_trials=len(combos),
         trial_sharpes=sharpes if len(combos) >= 2 else None,
-        extra_checks=[walk_forward_row(wf, float(sharpes[order[0]])), plateau_row(peak)],
+        extra_checks=[walk_forward_row(wf, float(sharpes[order[0]])), plateau_row(peak), pbo_row(overfit)],
         extra=section,
         io_watch=io_watch,
         positions=mode,

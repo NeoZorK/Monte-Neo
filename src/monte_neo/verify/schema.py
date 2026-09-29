@@ -11,7 +11,7 @@ VERDICT_SCHEMA_ID = "strategy-verdict/1"
 
 VERDICTS = ("PASS", "PASS_WITH_WARNINGS", "NEEDS_MORE_EVIDENCE", "REJECT")
 STATUSES = ("pass", "warn", "fail", "skip", "info")
-CATEGORIES = ("integrity", "lookahead", "economics", "statistics")
+CATEGORIES = ("integrity", "lookahead", "economics", "statistics", "claim")
 # A fail in these categories means the backtest itself is not trustworthy.
 HARD_CATEGORIES = ("integrity", "lookahead", "economics")
 

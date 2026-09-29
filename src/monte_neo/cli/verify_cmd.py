@@ -40,6 +40,9 @@ def build_parser() -> argparse.ArgumentParser:
         "--positions", choices=["auto", "sign", "weight"], default="auto",
         help="Read signals as signs (+1/0/-1), as weights (fraction of equity in [-1, 1]) or auto (default: weights when all values are in [-1, 1] and some are fractional)",
     )
+    p.add_argument(
+        "--claim", help="What was claimed, as a JSON file or text, e.g. '{\"sharpe\": 2.1, \"total_return\": 0.85}': an overclaim fails the check",
+    )
     p.add_argument("--side-mode", choices=["long_flat", "long_short"], default=None, help="Default: long_short if signals contain shorts")
     p.add_argument("--warmup-bars", type=int, default=None, help="Bars ignored before trading (default min(60, n/10))")
     p.add_argument("--periods-per-year", type=float, default=None, help="Bars per year for annualization (default: inferred)")
@@ -222,6 +225,7 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
             "jobs": args.jobs,
             "timeout": args.timeout,
             "isolate": args.isolate,
+            "claim": args.claim,
         }
         if args.grid:
             report = verify_grid(df, _load_grid(args.grid), strategy=args.strategy, folds=args.folds, **common)

@@ -1,4 +1,4 @@
-# Monte-Neo v0.38.0
+# Monte-Neo v0.39.0
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -34,10 +34,10 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/project-structure.md - Deep dive into physical directory layout
 - docs/project/features.md - Detailed overview of framework features
 - docs/project/dynamic_indicators.md - Explanation of dynamic indicator generation
-- docs/project/ROADMAP.md - Development roadmap and milestones (v0.38.0)
+- docs/project/ROADMAP.md - Development roadmap and milestones (v0.39.0)
 - docs/project/PRODUCT_STRATEGY_RU.md - Product strategy: agent-native strategy verifier niche, moat, roadmap (RU, internal)
 - docs/project/CLEANUP_CANDIDATES_RU.md - Cleanup candidate list with evidence, awaiting owner approval (RU, internal)
-- docs/project/CHANGELOG.md - Release changelog (current: v0.38.0)
+- docs/project/CHANGELOG.md - Release changelog (current: v0.39.0)
 - docs/project/backtest_engine.md - Fee-aware research bar engine
 - docs/project/oms_engine.md - Paper OMS (bar + tick/L2) + venue adapters
 - docs/assets/monteneo-logo.png - Project logo (original, with the old tagline)
@@ -91,7 +91,7 @@ A simplified guide to the Monte-Neo file structure.
 - docker/verify/Dockerfile - Verifier image for untrusted strategy code (engines precompiled, runs as nobody)
 
 ### Source Code (src/monte_neo/)
-- src/monte_neo/_version.py - Central version management (v0.38.0)
+- src/monte_neo/_version.py - Central version management (v0.39.0)
 - src/monte_neo/verify/ - Strategy verifier (ingest, single and universe markets, data quality, look-ahead probes, outside-data watch, strategy workers (jobs, timeout, isolation), lint, benchmark and breakdown, HTML report, costs, stats, checks, verdict, grid + walk-forward, certificate recheck)
 - src/monte_neo/mcp/ - MCP server (monte-neo-mcp) + agent-facing tool functions
 - src/monte_neo/cli/verify_cmd.py - `monte-neo verify` command (CI exit codes)
@@ -215,3 +215,7 @@ A simplified guide to the Monte-Neo file structure.
 - scripts/make_report_gallery.py - Regenerate the example reports
 - src/monte_neo/verify/report_charts.py - SVG charts of the HTML report
 - src/monte_neo/verify/report_data.py - Data behind the report's charts (monthly returns, histogram, rolling Sharpe, cost curve, trade statistics)
+- src/monte_neo/verify/confidence.py - Bootstrap confidence intervals and the Minimum Track Record Length
+- src/monte_neo/verify/pbo.py - Probability of Backtest Overfitting (CSCV) for parameter searches
+- src/monte_neo/verify/claim.py - Claimed numbers against verified ones (--claim)
+- src/monte_neo/verify/microstructure.py - Spread estimate from high and low, capacity from volume

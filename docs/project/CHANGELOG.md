@@ -3,6 +3,29 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.39.0] — 2026-09-29
+
+### Added
+- **Claim check (`--claim`).** Report the numbers you are about to claim (`sharpe`, `total_return`, `max_drawdown`,
+  `n_trades`, `win_rate`, `profit_factor`) and the verifier compares them with the verified ones. A claim better
+  than the verified result by more than a tolerance fails the new `claim_consistency` check (category `claim`,
+  verdict `NEEDS_MORE_EVIDENCE`). CLI `--claim`, MCP `claim` on `verify_strategy` and `verify_grid`, Action input
+  `claim`, Python `claim=`; the claim is recorded in the certificate so `--recheck` compares the same one.
+- **Confidence.** `sharpe_confidence`: 95% interval of the Sharpe and of the total return (circular block
+  bootstrap, fixed seed) and the share of resamples with a positive Sharpe; `track_record`: the Minimum Track
+  Record Length. Also in `metrics` (`sharpe_ci95`, `return_ci95`, `min_track_record_bars`). Context only.
+- **PBO for parameter searches.** `verify_grid` computes the probability of backtest overfitting by CSCV over
+  12,870 train/test splits; the new `pbo` check warns at 0.5 or more. The report shows the rank distribution.
+- **Costs and capacity.** `spread_estimate`: a rough Corwin-Schultz spread from high and low next to the modeled
+  slippage (flags an optimistic model); `capacity`: the capital at which 90% of fills stay within 1%, 5% and 10% of
+  the bar's traded value (single instrument with a `volume` column). Context only; both show in the report cards
+  and the cost-sensitivity chart.
+- Trap Suite: an overclaim test; the false-positive corpus of honest strategies still raises no alarms.
+
+### Notes
+- Existing certificates and `certificate_id` values are unchanged when no `--claim` is given: the new rows are
+  `info` (never change the verdict) except `pbo`, which only appears for parameter searches.
+
 ## [v0.38.0] — 2026-09-29
 
 ### Added

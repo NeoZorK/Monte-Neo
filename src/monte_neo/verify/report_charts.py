@@ -220,7 +220,25 @@ def cost_chart(block: dict[str, Any]) -> str:
     if modeled is not None and xs[0] <= modeled <= xs[-1]:
         x = sx(modeled)
         body += f'<line x1="{x:.1f}" x2="{x:.1f}" y1="12" y2="{height - pad}" stroke="var(--warn)" stroke-width="2"/><text x="{x + 4:.1f}" y="24">modeled {modeled:g} bps</text>'
+    half = _f(block.get("estimated_half_spread_bps"))
+    if half is not None and xs[0] <= half <= xs[-1]:
+        x = sx(half)
+        body += f'<line x1="{x:.1f}" x2="{x:.1f}" y1="12" y2="{height - pad}" stroke="var(--note)" stroke-width="2" stroke-dasharray="5 4"/>'
+        body += f'<text x="{x + 4:.1f}" y="{height - pad - 8}">half-spread from high-low {half:g} bps</text>'
     return _svg(body, "Net return against trading costs", height, w)
+
+
+def pbo_chart(block: dict[str, Any]) -> str:
+    """Where the winner of the search ranks out of sample: logits below zero mean below the median."""
+    block = _dict(block)
+    hist = _dict(block.get("logit_hist"))
+    counts = [int(c) for c in _floats(hist.get("counts"))]
+    limit = _f(hist.get("limit"))
+    pbo = _f(block.get("pbo"))
+    if len(counts) < 3 or limit is None or limit <= 0 or pbo is None:
+        return ""
+    edges = [-limit + 2 * limit * i / len(counts) for i in range(len(counts) + 1)]
+    return _bars(counts, edges, [(0.0, "--bad" if pbo >= 0.5 else "--good", f"PBO {pbo:.2f}")], "Out-of-sample rank of the search winner", "{:+.1f}")
 
 
 def grid_heatmap(grid: dict[str, Any]) -> str:
@@ -258,4 +276,4 @@ def grid_heatmap(grid: dict[str, Any]) -> str:
     return f'<p class="muted">{title}</p>{svg}'
 
 
-__all__ = ["cost_chart", "equity_chart", "grid_heatmap", "monthly_heatmap", "returns_histogram_chart", "rolling_sharpe_chart", "timing_chart"]
+__all__ = ["cost_chart", "equity_chart", "grid_heatmap", "pbo_chart", "monthly_heatmap", "returns_histogram_chart", "rolling_sharpe_chart", "timing_chart"]

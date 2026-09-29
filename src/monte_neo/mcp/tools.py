@@ -17,7 +17,9 @@ SERVER_INSTRUCTIONS = (
     "the positions file or the strategy .py file (a signal(df) function). Pass n_trials = how many "
     "variants you tried, or call verify_grid with your parameter grid so the verifier counts them. "
     "Treat REJECT as a bug in the backtest, fix what next_actions says and re-verify. "
-    "Report the verdict and certificate_id to the user instead of your own backtest numbers."
+    "Report the verdict and certificate_id to the user instead of your own backtest numbers. "
+    "If you already have numbers you plan to report, pass them as claim (sharpe, total_return, max_drawdown, "
+    "n_trades): a claim better than the verified result fails the claim_consistency check."
 )
 
 
@@ -76,6 +78,7 @@ def verify_strategy(
     timeout: float = 300.0,
     jobs: int = 1,
     isolate: bool = False,
+    claim: dict[str, Any] | str | None = None,
     compact: bool = True,
 ) -> dict[str, Any]:
     """Verify a strategy backtest and return a strategy-verdict/1 certificate.
@@ -95,6 +98,8 @@ def verify_strategy(
         timeout: Seconds allowed per signal() call; the strategy runs in a worker process.
         jobs: Worker processes for the probe calls (raise for slow strategies).
         isolate: Block network, subprocesses and file writes for the strategy.
+        claim: What was claimed, e.g. {"sharpe": 2.1, "total_return": 0.85, "max_drawdown": 0.12,
+            "n_trades": 300} (or a JSON file path): a claim better than the verified result fails.
         compact: Drop details of passing checks to keep the response short.
     """
     from monte_neo.verify import verify_strategy as _verify
@@ -104,7 +109,7 @@ def verify_strategy(
     df, model = _model(ohlcv_path, commission_bps, slippage_bps, side_mode, warmup_bars, signals_path)
     runs = {"timeout": timeout, "jobs": jobs, "isolate": isolate} if strategy_path else {}
     report = _verify(
-        df, signals=signals_path, strategy=strategy_path, model=model, n_trials=n_trials, positions=positions, **runs
+        df, signals=signals_path, strategy=strategy_path, model=model, n_trials=n_trials, positions=positions, claim=claim, **runs
     )
     return _compact(report) if compact else report
 
@@ -121,6 +126,7 @@ def verify_grid(
     timeout: float = 300.0,
     jobs: int = 1,
     isolate: bool = False,
+    claim: dict[str, Any] | str | None = None,
     compact: bool = True,
 ) -> dict[str, Any]:
     """Run the parameter search inside the verifier and verify the best combo.
@@ -141,6 +147,7 @@ def verify_grid(
         timeout: Seconds allowed per signal() call; the strategy runs in worker processes.
         jobs: Worker processes (the grid's combos run in parallel).
         isolate: Block network, subprocesses and file writes for the strategy.
+        claim: What was claimed (see verify_strategy); compared with the verified result.
         compact: Drop details of passing checks to keep the response short.
     """
     from monte_neo.verify import verify_grid as _verify_grid
@@ -148,7 +155,7 @@ def verify_grid(
     df, model = _model(ohlcv_path, commission_bps, slippage_bps, side_mode, None, None)
     report = _verify_grid(
         df, grid, strategy=strategy_path, model=model, folds=folds, positions=positions,
-        timeout=timeout, jobs=jobs, isolate=isolate,
+        timeout=timeout, jobs=jobs, isolate=isolate, claim=claim,
     )
     return _compact(report) if compact else report
 

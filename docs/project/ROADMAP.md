@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.38.0)
+# Monte-Neo Roadmap (v0.39.0)
 
 Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier for agent-built strategies).
 
@@ -109,7 +109,12 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 - [x] HTML report: verdict reason, category cards, log equity + drawdown, rolling Sharpe, monthly heat map, return and timing histograms, cost sensitivity, trade statistics, leak evidence, grid heat map, print stylesheet
 - [x] Gallery of example reports; `charts` section in the certificate (not part of the id); docs build checked in CI
 
-## Next (v0.39+)
+## v0.39.0 — professional statistics
+- [x] `--claim`: overclaim detection (CLI, MCP, Action, recheck)
+- [x] Bootstrap confidence intervals, Minimum Track Record Length, PBO (CSCV) for parameter searches
+- [x] Spread estimate from high and low, capacity from volume
+
+## Next (v0.40+)
 - [ ] First public bench run (owner runs it; tooling ready in v0.32.0): Claude Code / Codex / Gemini CLI / Cursor → published leaderboard
 - [~] Publish to MCP catalogues: official registry (done), glama / smithery / mcp.so / mcpmarket (owner submits; texts in docs/marketing/launch-kit.md)
 - [x] Signed certificates (v0.25.0), signing in the GitHub Action (v0.27.0), public verification page (v0.29.0)
