@@ -54,6 +54,11 @@ def test_cli_schema_and_usage() -> None:
     assert code == 3 and "needs" in text
 
 
+def test_cli_precompile() -> None:
+    code, text = _run(["--precompile"])
+    assert code == 0 and "engines compiled and cached" in text
+
+
 def test_cli_strategy_reject_writes_certificate(files) -> None:
     out = f"{files['root']}/cert.json"
     code, text = _run(["--ohlcv", files["ohlcv"], "--strategy", files["strategy"], "--out", out])

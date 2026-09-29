@@ -17,6 +17,10 @@ Version source of truth: `src/monte_neo/_version.py`.
   parallel worker processes; `timeout` (CLI `--timeout`, default 300 s in MCP, 600 s in the Action) ends a
   `signal()` call that hangs with a clear error; `isolate` (CLI `--isolate`) blocks network, subprocesses
   and file writes outside the temp dir and removes secrets from the environment of the workers.
+- **`monte-neo verify --precompile`** compiles and caches the engines (about 4 s once): the first check in a new
+  environment takes 1.6 s instead of 6 s. For Docker images and CI caches.
+- **Docs: verifying untrusted code.** What `--isolate` does and does not protect against, and a Docker recipe
+  (no network, read-only file system, resource limits) for marketplaces and prop firms.
 
 ### Changed
 - **Lighter install: 488 MB -> 327 MB.** The base install is the verifier, the CLI (`verify`, `bench`) and the
