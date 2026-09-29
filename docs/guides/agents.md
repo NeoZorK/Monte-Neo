@@ -11,7 +11,7 @@ Requirements: [uv](https://docs.astral.sh/uv/) (for `uvx`) and Python 3.11+.
 | Tool | Purpose |
 |------|---------|
 | `verify_strategy` | Full verification, returns a `strategy-verdict/1` certificate |
-| `verify_grid` | Runs the parameter search inside the verifier (counts `n_trials`) and adds a walk-forward check |
+| `verify_grid` | Runs the parameter search inside the verifier (counts `n_trials`) and adds walk-forward, parameter-plateau and PBO checks |
 | `probe_lookahead` | Look-ahead probes only (lint, outside data, truncation, perturbation, determinism); works on universes too |
 | `cost_stress` | Break-even cost and returns under 0, 1 and 2 bars of execution delay |
 | `recheck_certificate` | Reproduces a certificate from its original data and strategy or signals |
@@ -42,7 +42,7 @@ reporting results. It fires once per file per session and never blocks an edit.
 MCP server only:
 
 ```bash
-claude mcp add monte-neo -- uvx --from "monte-neo[mcp]>=0.38.0" monte-neo-mcp
+claude mcp add monte-neo -- uvx --from "monte-neo[mcp]>=0.39.0" monte-neo-mcp
 ```
 
 ## Codex (OpenAI)
@@ -69,7 +69,7 @@ Use this stdio command:
 
 ```bash
 uvx monte-neo mcp          # v0.20.0+: the MCP SDK is a default dependency
-# older pin: uvx --from "monte-neo[mcp]>=0.38.0" monte-neo-mcp
+# older pin: uvx --from "monte-neo[mcp]>=0.39.0" monte-neo-mcp
 ```
 
 Monte-Neo is published to the official MCP Registry as `io.github.NeoZorK/monte-neo` (`server.json`),
@@ -80,7 +80,7 @@ For HTTP clients, add `--transport streamable-http`.
 ## GitHub Actions
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.38.0
+- uses: NeoZorK/Monte-Neo@v0.39.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py
@@ -94,6 +94,8 @@ The job fails on `REJECT`. To also fail on `NEEDS_MORE_EVIDENCE`, set
 Optional inputs:
 
 - `grid: '{"fast": [10, 20], "slow": [80, 120]}'` runs `verify_grid` instead of a single verification.
+- `claim: claim.json` (a file or JSON text such as `'{"sharpe": 2.1, "total_return": 0.85}'`) checks the numbers your
+  report claims against the verified ones; an overclaim fails the job's verdict to `NEEDS_MORE_EVIDENCE`.
 - `comment: "true"` posts the verdict as a PR comment and updates the same comment on later runs.
   The job needs the `pull-requests: write` permission.
 - `signing-key: ${{ secrets.MONTE_NEO_SIGNING_KEY }}` signs the certificate with Ed25519. The `key-id`

@@ -188,3 +188,14 @@ def test_grid_on_planted_edge_passes(planted) -> None:
     assert report["grid"]["best_params"] == {"lookback": 1}
     assert _statuses(report)["walk_forward_oos"] == "pass"
     assert report["verdict"] in {"PASS", "PASS_WITH_WARNINGS"}
+
+
+def test_overclaimed_numbers_are_caught(planted) -> None:
+    """Honest code, honest data, inflated report: the verified numbers do not back the claim."""
+    model = model_from_costs(commission_bps=1.0, slippage_bps=1.0, n_bars=len(planted))
+    plain = verify_strategy(planted, strategy=STRATEGY_DIR / "momentum.py", model=model)
+    truth = {"sharpe": plain["metrics"]["sharpe_annualized"], "total_return": plain["metrics"]["total_return"], "n_trades": plain["metrics"]["n_closed_trades"]}
+    honest = verify_strategy(planted, strategy=STRATEGY_DIR / "momentum.py", model=model, claim=truth)
+    assert _statuses(honest)["claim_consistency"] == "pass" and honest["verdict"] == plain["verdict"]
+    inflated = verify_strategy(planted, strategy=STRATEGY_DIR / "momentum.py", model=model, claim={**truth, "sharpe": 2 * truth["sharpe"] + 1, "total_return": 3 * truth["total_return"]})
+    assert _statuses(inflated)["claim_consistency"] == "fail" and inflated["verdict"] == "NEEDS_MORE_EVIDENCE"

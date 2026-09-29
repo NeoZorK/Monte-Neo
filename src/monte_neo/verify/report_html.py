@@ -72,7 +72,7 @@ def _stat(label: str, value: str) -> str:
     return f'<div class="stat"><span class="muted">{_e(label)}</span><b>{_e(value)}</b></div>'
 
 
-_CATEGORIES = ("integrity", "lookahead", "economics", "statistics")
+_CATEGORIES = ("integrity", "lookahead", "economics", "statistics", "claim")
 _TITLES = {"REJECT": "Rejected", "NEEDS_MORE_EVIDENCE": "Needs more evidence", "PASS_WITH_WARNINGS": "Passed with warnings", "PASS": "Passed"}
 
 
@@ -166,6 +166,38 @@ def _trade_stats(block: Any) -> str:
     return f"<h2>Trades</h2><div class='card grid'>{''.join(stats)}</div>"
 
 
+def _range(pair: Any, pct: bool = False) -> str:
+    if not isinstance(pair, list) or len(pair) != 2 or not all(isinstance(v, int | float) and math.isfinite(v) for v in pair):
+        return "—"
+    return f"{pair[0]:+.0%} … {pair[1]:+.0%}" if pct else f"{pair[0]:+.2f} … {pair[1]:+.2f}"
+
+
+def _number(value: Any) -> bool:
+    return isinstance(value, int | float) and not isinstance(value, bool) and math.isfinite(value)
+
+
+def _money(value: float) -> str:
+    for unit, size in (("B", 1e9), ("M", 1e6), ("K", 1e3)):
+        if value >= size:
+            return f"{value / size:.3g}{unit}"
+    return f"{value:.3g}"
+
+
+def _confidence_stats(m: dict[str, Any]) -> list[str]:
+    """Cards for the bootstrap interval, the track record, the spread estimate and the capacity, when the certificate has them."""
+    out = []
+    if m.get("sharpe_ci95"):
+        out.append(_stat("Sharpe 95% interval", _range(m.get("sharpe_ci95"))))
+        out.append(_stat("return 95% interval", _range(m.get("return_ci95"), pct=True)))
+    if _number(m.get("min_track_record_bars")) and m["min_track_record_bars"] > 0:
+        out.append(_stat("min. track record", f"{int(m['min_track_record_bars']):,} bars"))
+    if _number(m.get("estimated_spread_bps")):
+        out.append(_stat("spread from high-low", f"{_num(m['estimated_spread_bps'], 1)} bps"))
+    if _number(m.get("capacity_5pct")):
+        out.append(_stat("capacity at 5% of volume", _money(m["capacity_5pct"])))
+    return out
+
+
 def _figure(title: str, svg: str, note: str = "") -> str:
     return f"<div class='card'><b>{_e(title)}</b>{svg}" + (f"<p class='muted'>{_e(note)}</p>" if note else "") + "</div>" if svg else ""
 
@@ -246,7 +278,14 @@ def _grid_section(grid: dict[str, Any] | None) -> str:
         f"<p>Walk-forward out-of-sample Sharpe per bar: {_num(wf.get('oos_sharpe'), 4)}; "
         f"parameter stability {_num(wf.get('param_stability'))}; "
         f"neighbouring parameters keep {f'{ratio:.0%}' if isinstance(ratio, int | float) else '—'} of the best Sharpe.</p>"
-        f"{charts.grid_heatmap(grid)}</div>"
+        f"{charts.grid_heatmap(grid)}"
+        + (
+            "<p class='muted'>Where the winner of the search ranks on unseen data, over every split of the sample in two halves "
+            "(left of the line: below the median).</p>" + charts.pbo_chart(grid.get("pbo"))
+            if charts.pbo_chart(grid.get("pbo"))
+            else ""
+        )
+        + "</div>"
     )
 
 
@@ -269,6 +308,7 @@ def render_html(report: dict[str, Any]) -> str:
         _stat("buy & hold return", _pct(bench.get("total_return", m.get("benchmark_total_return")))),
         _stat("buy & hold Sharpe", _num(bench.get("sharpe_annualized", m.get("benchmark_sharpe_annualized")))),
         _stat("break-even cost", f"{_num(m.get('breakeven_cost_bps'), 1)} bps"),
+        *_confidence_stats(m),
         _stat("positions", str(m.get("positions", "—"))),
     ]
     if universe:

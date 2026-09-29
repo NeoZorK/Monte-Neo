@@ -18,6 +18,8 @@ from monte_neo.backtest.jit import warn_if_slow
 from monte_neo.backtest.model import ExecutionModel
 from monte_neo.verify import checks as rows
 from monte_neo.verify.breakdown import buy_and_hold, periods, regimes, series
+from monte_neo.verify.claim import claim_row, parse_claim
+from monte_neo.verify.confidence import bootstrap_ci, confidence_row, track_record, track_record_row
 from monte_neo.verify.costs import breakeven_cost_bps, delay_scan
 from monte_neo.verify.engine import is_weights, simulate
 from monte_neo.verify.executor import ProcessRunner, resolve_jobs, split_spec
@@ -33,8 +35,9 @@ from monte_neo.verify.io_guard import IOWatch
 from monte_neo.verify.limits import read_source
 from monte_neo.verify.lint import lint_source
 from monte_neo.verify.market import SingleMarket, UniverseMarket, market_for
+from monte_neo.verify.microstructure import capacity, capacity_row, spread_estimate, spread_row
 from monte_neo.verify.quality import data_quality, quality_row, spike_profit_share
-from monte_neo.verify.report_data import MAX_TRADES_FOR_STATS, build_charts
+from monte_neo.verify.report_data import MAX_TRADES_FOR_STATS, build_charts, trade_stats
 from monte_neo.verify.schema import DISCLAIMER, VERDICT_SCHEMA_ID, aggregate_verdict, to_jsonable
 from monte_neo.verify.stats import bar_returns, deflated_sharpe, infer_periods_per_year, sharpe_per_bar
 from monte_neo.verify.timing import timing_significance
@@ -94,6 +97,7 @@ def verify_strategy(
     jobs: int | str | None = 1,
     timeout: float | None = None,
     isolate: bool = False,
+    claim: dict[str, Any] | str | Path | None = None,
 ) -> dict[str, Any]:
     """Verify one strategy and return a ``strategy-verdict/1`` report.
 
@@ -111,6 +115,9 @@ def verify_strategy(
     ``jobs`` (a number or ``"auto"``), ``timeout`` (seconds per ``signal()`` call) and
     ``isolate`` (no network, subprocesses or file writes) run a strategy file in worker
     processes; see :mod:`monte_neo.verify.executor`.
+    ``claim`` (a dict, JSON text or a JSON file: ``sharpe``, ``total_return``, ``max_drawdown``,
+    ``n_trades``, ``win_rate``, ``profit_factor``) is compared with the verified numbers; an
+    overclaim fails the ``claim_consistency`` check.
     """
     if n_trials is not None and int(n_trials) < 1:
         raise ValueError(f"n_trials must be >= 1 (the chosen variant counts), got {n_trials}")
@@ -132,6 +139,8 @@ def verify_strategy(
         "periods_per_year": float(periods_per_year) if periods_per_year else None,
         "positions": positions,
     }
+    if claim is not None:
+        settings["claim"] = parse_claim(claim)  # part of the certificate: a recheck compares the same claim
     if io_watch is None:
         io_watch = IOWatch(tuple(p for p in (df.attrs.get("source_path"),) if p))
     runner = _runner_for(strategy, market, df, jobs, timeout, isolate)
@@ -219,12 +228,18 @@ def _checks_and_report(
     trials = np.asarray(trial_sharpes, dtype=np.float64) if trial_sharpes is not None else None
     dsr = deflated_sharpe(rets, n_trials=int(n_trials or 1), trial_sharpes=trials, periods_per_year=ppy)
     holdout = _holdout(rets, holdout_fraction)
+    interval = bootstrap_ci(rets, ppy)
+    spread = spread_estimate(ohlc, model)
+    room = capacity(ohlc, market.volume, traded, model) if market.kind == "single" else {}
+    history = track_record(dsr, ppy)
     breakeven = breakeven_cost_bps(ohlc, sig, model)
     delay = delay_scan(ohlc, sig, model)
     timing = timing_significance(ohlc, sig, model) if run["total_return"] > 0.0 else None
     accuracy = market.accuracy(traded)
     total_return = float(run["total_return"])
     n_closed = int(run["n_closed_trades"])
+    journal = _trade_journal(ohlc, sig, model, n_closed)
+    journal_stats = trade_stats(journal) if journal else {}
     quality = data_quality(ohlc, timestamps, market.volume)
     profit_share = spike_profit_share(run["equity"], quality["spike_mask"], traded)
     bench = buy_and_hold(ohlc, model, market.benchmark_positions(), ppy)
@@ -245,7 +260,12 @@ def _checks_and_report(
         rows.timing_row(timing),
         *rows.statistics_rows(dsr, n_closed, int(min_trades), trials_declared=n_trials is not None, holdout=holdout),
         rows.period_row(by_period, total_return),
+        confidence_row(interval),
+        track_record_row(history),
+        *([claim_row(settings["claim"], _verified(dsr, run, n_closed, journal_stats))] if "claim" in settings else []),
         rows.benchmark_row(total_return, dsr["sharpe_annualized"], bench),
+        spread_row(spread),
+        *([capacity_row(room)] if market.kind == "single" and market.volume is not None else []),
         *(extra_checks or []),
     ]
     active = np.abs(traded) if traded.ndim == 1 else np.abs(traded).sum(axis=1)
@@ -264,6 +284,11 @@ def _checks_and_report(
         "breakeven_cost_bps": float(breakeven["breakeven_bps"]),
         "hit_rate": accuracy.get("hit_rate"),
         "timing_p_value": timing["p_value"] if timing else None,
+        "sharpe_ci95": interval.get("sharpe_annualized"),
+        "return_ci95": interval.get("total_return"),
+        "min_track_record_bars": history["need_bars"],
+        "estimated_spread_bps": spread.get("spread_bps"),
+        "capacity_5pct": room["capital"][1] if room else None,
         "benchmark_total_return": bench["total_return"],
         "benchmark_sharpe_annualized": bench["sharpe_annualized"],
         **market.describe(traded),
@@ -277,7 +302,7 @@ def _checks_and_report(
         "series": series(run["equity"], bench["equity"], timestamps, model.warmup_bars),
         "charts": build_charts(
             run=run, ohlc=ohlc, positions=sig, model=model, timestamps=timestamps, periods_per_year=ppy,
-            timing=timing, trades=_trade_journal(ohlc, sig, model, n_closed),
+            timing=timing, trades=journal, spread=spread,
         ),
     }
     return _report(checks, metrics, market, full, src, model, n_trials, settings, extra, sections)
@@ -288,6 +313,18 @@ def _trade_journal(ohlc: dict[str, np.ndarray], sig: np.ndarray, model: Executio
     if is_weights(sig) or n_closed == 0 or n_closed > MAX_TRADES_FOR_STATS:
         return None
     return list(run_bar_backtest(ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"], sig, model=model)["trades"])
+
+
+def _verified(dsr: dict[str, Any], run: dict[str, Any], n_closed: int, stats: dict[str, Any]) -> dict[str, float | None]:
+    """The verified value of every metric a claim may name (win rate and profit factor need a trade journal)."""
+    return {
+        "sharpe": float(dsr["sharpe_annualized"]),
+        "total_return": float(run["total_return"]),
+        "max_drawdown": float(run["max_drawdown"]),
+        "n_trades": float(n_closed),
+        "win_rate": stats.get("win_rate"),
+        "profit_factor": stats.get("profit_factor"),
+    }
 
 
 def _outside_data(io_watch: IOWatch, fn: Any) -> tuple[list[str], list[str]]:
