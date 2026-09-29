@@ -231,6 +231,23 @@ def cost_stress(
     return to_jsonable({"breakeven": breakeven_cost_bps(market.ohlc, sig, model), "delay": delay_scan(market.ohlc, sig, model)})
 
 
+def render_report(certificate_path: str, html_path: str) -> dict[str, Any]:
+    """Write a certificate as a self-contained HTML report for people (equity chart, checks, periods).
+
+    Args:
+        certificate_path: JSON certificate written by verify (--out) or saved from verify_strategy.
+        html_path: Where to write the .html file.
+    """
+    from monte_neo.verify.recheck import load_certificate
+    from monte_neo.verify.report_html import write_html
+
+    try:
+        path = write_html(load_certificate(certificate_path), html_path)
+    except Exception as exc:  # unreadable or not a certificate: report, do not crash the server
+        return {"error": str(exc)}
+    return {"html_path": str(path), "bytes": path.stat().st_size}
+
+
 def verdict_schema() -> dict[str, Any]:
     """JSON schema of the strategy-verdict/1 certificate."""
     from monte_neo.verify import VERDICT_JSON_SCHEMA
@@ -272,6 +289,7 @@ TOOLS: tuple[Callable[..., dict[str, Any]], ...] = (
     check_signature,
     probe_lookahead,
     cost_stress,
+    render_report,
     verdict_schema,
     verifier_manifest,
 )
@@ -283,6 +301,7 @@ __all__ = [
     "check_signature",
     "cost_stress",
     "probe_lookahead",
+    "render_report",
     "verdict_schema",
     "verifier_manifest",
     "verify_grid",

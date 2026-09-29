@@ -2,9 +2,11 @@
 
 Before reporting any trading strategy, signal or backtest result (returns, Sharpe, win rate):
 
-1. Save the OHLCV data as CSV/Parquet (`open, high, low, close[, timestamp]`).
-2. Put the strategy in a Python file with `signal(df) -> positions` (+1 long, 0 flat, -1 short),
-   computed only from `df` (no file or network reads).
+1. Save the OHLCV data as CSV/Parquet (`open, high, low, close[, timestamp]`). For several symbols,
+   use one long table with `timestamp` and `symbol` columns.
+2. Put the strategy in a Python file with `signal(df) -> positions` (+1 long, 0 flat, -1 short,
+   or a weight in [-1, 1] such as 0.5), one value per row of `df`, computed only from `df`
+   (no file or network reads).
 3. Call the `verify_strategy` tool of the `monte-neo` MCP server (or run
    `monte-neo verify --ohlcv data.csv --strategy strategy.py --n-trials N --format json`)
    with `n_trials` = number of variants you tried and realistic costs.

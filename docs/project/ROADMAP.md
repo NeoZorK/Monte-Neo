@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.34.0)
+# Monte-Neo Roadmap (v0.35.0)
 
 Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier for agent-built strategies).
 
@@ -81,9 +81,14 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 - [x] Full audit of the verifier: shorts traded by default in the Python API, certificate records its thresholds, stronger truncation probe, fewer false alarms (lint windows, hit-rate significance)
 - [x] Monte Carlo timing test (circular shifts) and grid parameter plateau; 23 honest controls
 
-## Next (v0.35+)
+## v0.35.0 — weights, universes, context, HTML
+- [x] Fractional positions (weights) on a target-weight engine equal to the sign engine on unit signals
+- [x] Universes (symbol column): cross-sectional probes, survivorship check, equal-weight benchmark, 3 traps + 2 honest controls
+- [x] Buy-and-hold benchmark, results by period and market regime, period_consistency check
+- [x] Self-contained HTML report (CLI --html / --render, MCP render_report, Action output)
+
+## Next (v0.36+)
 - [ ] First public bench run (owner runs it; tooling ready in v0.32.0): Claude Code / Codex / Gemini CLI / Cursor → published leaderboard
-- [ ] Trap Suite beyond 50: multi-asset input (universe) for survivorship and cross-asset join traps
 - [~] Publish to MCP catalogues: official registry (done), glama / smithery / mcp.so / mcpmarket (owner submits; texts in docs/marketing/launch-kit.md)
 - [x] Signed certificates (v0.25.0), signing in the GitHub Action (v0.27.0), public verification page (v0.29.0)
 

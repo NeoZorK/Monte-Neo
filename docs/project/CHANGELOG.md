@@ -3,6 +3,44 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.35.0] — 2026-09-29
+
+### Added
+- **Fractional positions (weights).** A signal can now be a fraction of equity in `[-1, 1]` (`0.5` = long
+  half the equity). `positions="auto"` (API, CLI `--positions`, MCP, Action) reads weights when every value is
+  in `[-1, 1]` and one is fractional, else signs; `sign` and `weight` force the reading. Weights run on a new
+  target-weight engine (`monte_neo.backtest.weight_engine`): only changes trade, costs are charged on the traded
+  notional, a change of side closes first. On `+1 / 0 / -1` it gives the same equity as the sign engine bit for
+  bit (400 random scenarios, and in CI). Sign strategies keep their exact numbers and certificate ids.
+- **Universes.** A table with a `symbol` column (`ticker` / `asset` / `instrument`) and a `timestamp` column
+  is verified as a portfolio: `signal(df)` returns a weight per (timestamp, symbol) row, gross exposure is capped
+  at 1 per timestamp, symbols may list late or stop trading (open positions close at the last price). The
+  truncation and perturbation probes cut and rewrite every symbol's future at once, so leaks through another
+  symbol are caught. New `survivorship` check warns when no symbol stops trading (a survivors-only universe).
+  Signals tables are matched by (timestamp, symbol). Row order in the input does not change the certificate.
+  Grid search, re-check, the MCP tools and the Action all work on universes.
+- **Trap Suite:** `xs_next_return_rank`, `xs_market_future_join`, `xs_symbol_history_rank` (54 traps) and the
+  honest controls `xs_momentum_rank`, `xs_equal_weight` (25), plus a survivors-only universe test.
+- **Buy-and-hold benchmark** on the same data and costs (equal weight for a universe): a `benchmark` info row,
+  `metrics.benchmark_total_return` / `benchmark_sharpe_annualized` and a `benchmark` section.
+- **Breakdown:** results per year, quarter or month (or four segments) and per market regime (rising / falling,
+  calm / volatile, set by the trailing market return and volatility). New `period_consistency` check warns when
+  removing the best period leaves no profit.
+- **HTML report:** `--html report.html` (and `--render CERT --html report.html` for an existing certificate)
+  writes one self-contained page: equity against buy-and-hold with drawdown, checks, what to fix, periods,
+  regimes, grid, reproduction hashes, signature status and a link to the verification page. No scripts, nothing
+  loaded from the network, every certificate string escaped. MCP tool `render_report`; the Action writes it,
+  uploads it with the certificate and exposes it as the `html-report` output.
+- The certificate `series` (up to 400 equity points) feeds the charts; compact MCP responses drop it.
+
+### Fixed
+- `recheck` never reproduced a certificate that stopped at the data check (no signal hash was recorded).
+- The lint called a rank or an aggregate grouped by the exact timestamp (`groupby(df["timestamp"]).rank()`, a
+  cross-section of a universe) a whole-sample statistic. Grouping by a derived date is still flagged.
+- `probe_lookahead` and `cost_stress` (MCP) built single-instrument arrays from any table; they now use the
+  same market logic as `verify_strategy`.
+- Default warm-up for a universe counts timestamps, not rows.
+
 ## [v0.34.0] — 2026-09-29
 
 A full audit of the verifier. Each fix below has a regression test.
@@ -79,7 +117,7 @@ A full audit of the verifier. Each fix below has a regression test.
 
 ### Changed
 - Honesty Bench v1 prompt states that `signal()` must compute positions from `df` only.
-- Agent integrations say the same and require `monte-neo[mcp]>=0.34.0`.
+- Agent integrations say the same and require `monte-neo[mcp]>=0.35.0`.
 
 ## [v0.32.1] — 2026-09-28
 
