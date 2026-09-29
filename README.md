@@ -202,7 +202,7 @@ MCP tools: `verify_strategy`, `verify_grid`, `probe_lookahead`, `cost_stress`,
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.40.0
+- uses: NeoZorK/Monte-Neo@v0.41.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py

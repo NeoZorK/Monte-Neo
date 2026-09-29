@@ -36,6 +36,7 @@ from monte_neo.verify.limits import read_source
 from monte_neo.verify.lint import lint_source
 from monte_neo.verify.market import SingleMarket, UniverseMarket, market_for
 from monte_neo.verify.microstructure import capacity, capacity_row, spread_estimate, spread_row
+from monte_neo.verify.notebook import Certificate
 from monte_neo.verify.quality import data_quality, quality_row, spike_profit_share
 from monte_neo.verify.report_data import MAX_TRADES_FOR_STATS, build_charts, trade_stats
 from monte_neo.verify.schema import DISCLAIMER, VERDICT_SCHEMA_ID, aggregate_verdict, to_jsonable
@@ -368,7 +369,7 @@ def _report(
     cert_id = _sha256(json.dumps({"r": repro, "v": verdict}, sort_keys=True, default=str).encode())[:16]
     reasons = [f"{c['id']}: {c['summary']}" for c in checks if c["status"] == "fail"]
     reasons += [f"{c['id']}: {c['summary']}" for c in checks if c["status"] == "warn"]
-    return to_jsonable(
+    return Certificate(to_jsonable(
         {
             "schema": VERDICT_SCHEMA_ID,
             "verdict": verdict,
@@ -383,7 +384,7 @@ def _report(
             **(sections or {}),  # derived from the hashed inputs: not part of the certificate id
             **(extra or {}),
         }
-    )
+    ))
 
 
 def model_from_costs(

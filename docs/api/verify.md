@@ -39,6 +39,8 @@ monte-neo verify --render verdict.json --html report.html                       
 monte-neo verify --schema          # print the JSON schema
 monte-neo verify --ohlcv btc_1h.csv --strategy heavy_ml.py --jobs auto --timeout 120   # parallel probes, time limit
 monte-neo verify --ohlcv btc_1h.csv --strategy their_code.py --isolate                 # no network, writes or secrets
+monte-neo verify --ohlcv btc_1h.csv --strategy my_strategy.py --badge badge.json     # shields.io endpoint file
+monte-neo verify --lint strategy.py other.py   # static lint only (pre-commit); exit 1 on a fail-level finding
 monte-neo verify --precompile      # compile and cache the engines once (Docker images, CI caches)
 ```
 
@@ -48,6 +50,8 @@ monte-neo verify --precompile      # compile and cache the engines once (Docker 
   The MCP server uses 300 s by default, the GitHub Action 600 s.
 - `--isolate`: the strategy runs in worker processes without network, subprocesses, file writes
   outside the temp dir and secrets in the environment (see the security note).
+- `--badge PATH`: also write a shields.io endpoint JSON with the verdict and certificate id.
+- `--lint FILE...`: run only the static look-ahead lint on the files and exit (0, or 1 on a fail-level finding).
 - `--precompile`: the first run in a new environment compiles the engines (about 4-5 s, then cached).
 
 | Exit code | Meaning |
@@ -348,6 +352,11 @@ check_signature(signed, public_key="ed25519:...")["key_matches"]
 - Anyone can also check a certificate in the browser on the [verification page](../verify.md);
   nothing is uploaded.
 - The private key file is created with owner-only permissions. In CI, keep it in a secret.
+
+## Other frameworks and notebooks
+
+Adapters for vectorbt, Freqtrade, Lean, Zipline and plain fills, the Jupyter display, the pandas accessor, the pre-commit hook and the
+Docker image are described in [Frameworks and notebooks](../guides/frameworks.md).
 
 ## Bring your own signals: `export_signals`
 

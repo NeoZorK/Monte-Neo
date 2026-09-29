@@ -60,6 +60,7 @@ certificate that can be signed.
 ## Learn more
 
 - [Verifier API](api/verify.md): checks, verdicts, certificates, re-checks and signatures
+- [Frameworks and notebooks](guides/frameworks.md): vectorbt, Freqtrade, Lean, Zipline, Jupyter, pre-commit, badge, Docker
 - [Trap Suite](guides/trap-suite.md): 80 strategies that lie and 35 honest controls, and how to add yours
 - [Honesty Bench](guides/honesty-bench.md): score how honestly agents report backtests
 - [Verify a certificate](verify.md): check a signed certificate in your browser

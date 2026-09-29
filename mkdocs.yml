@@ -77,6 +77,7 @@ nav:
       - Use from agents: guides/agents.md
       - Honesty Bench: guides/honesty-bench.md
       - Trap Suite: guides/trap-suite.md
+      - Frameworks and notebooks: guides/frameworks.md
       - Example reports: gallery.md
       - Verify a certificate: verify.md
       - FAQ: guides/FAQ.md

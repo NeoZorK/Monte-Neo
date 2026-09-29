@@ -1,0 +1,14 @@
+# Hooks for https://pre-commit.com. Add to your .pre-commit-config.yaml:
+#
+#   repos:
+#     - repo: https://github.com/NeoZorK/Monte-Neo
+#       rev: v0.41.0
+#       hooks:
+#         - id: monte-neo-lint
+- id: monte-neo-lint
+  name: Monte-Neo look-ahead lint
+  description: Static look-ahead lint of strategy files (fails on shift(-1), centred windows, whole-sample fits, ...).
+  entry: monte-neo verify --lint
+  language: python
+  types: [python]
+  additional_dependencies: []

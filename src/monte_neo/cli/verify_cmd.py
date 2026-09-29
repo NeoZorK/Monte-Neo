@@ -58,6 +58,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--min-trades", type=int, default=30, help="Minimum closed trades for statistics (default 30)")
     p.add_argument("--out", help="Write the strategy-verdict/1 JSON certificate to this path")
     p.add_argument("--html", help="Also write a self-contained HTML report (charts, checks, periods) to this path")
+    p.add_argument("--badge", metavar="PATH", help="Also write a shields.io endpoint JSON (verdict + certificate id) for a README badge")
+    p.add_argument("--lint", nargs="+", metavar="FILE", help="Only run the static look-ahead lint on these strategy files and exit (for pre-commit)")
     p.add_argument("--render", metavar="CERT", help="Render an existing certificate JSON as HTML (needs --html) and exit")
     p.add_argument("--recheck", help="Reproduce this certificate JSON from --ohlcv and --signals / --strategy")
     p.add_argument("--sign", metavar="KEY", help="Sign the certificate with this Ed25519 private key (PEM); needs monte-neo[sign]")
@@ -141,6 +143,24 @@ def _run_signing(args: argparse.Namespace, console: Console) -> int:
     return 0 if signature_ok(result) else 5
 
 
+def _run_lint(paths: list[str], console: Console) -> int:
+    """Lint strategy files; exit 1 when any file has a fail-severity finding, 3 when a file cannot be read."""
+    from monte_neo.verify.lint import lint_source
+
+    code = 0
+    for name in paths:
+        try:
+            result = lint_source(Path(name).read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError) as exc:
+            console.print(f"[red]{name}: cannot read: {exc}[/]", markup=True, highlight=False)
+            return 3
+        for f in result["findings"]:
+            console.print(f"{name}:{f['line']}: {f['severity']} {f['rule']}: {f['message']}", markup=False, highlight=False)
+        if result["status"] == "fail":
+            code = 1
+    return code
+
+
 def precompile() -> float:
     """Run both engines once on tiny data so numba writes its cache; returns the seconds taken."""
     import time
@@ -179,6 +199,8 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
         return 0
     if args.keygen or args.check_signature:
         return _run_signing(args, console)
+    if args.lint:
+        return _run_lint(args.lint, console)
     if args.render:
         from monte_neo.verify.recheck import load_certificate
         from monte_neo.verify.report_html import write_html
@@ -248,6 +270,10 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
         from monte_neo.verify.report_html import write_html
 
         write_html(report, args.html)
+    if args.badge:
+        from monte_neo.verify.badge import badge_payload
+
+        Path(args.badge).write_text(json.dumps(badge_payload(report), indent=2), encoding="utf-8")
     if args.format == "json":
         console.print_json(data=report)
     else:
