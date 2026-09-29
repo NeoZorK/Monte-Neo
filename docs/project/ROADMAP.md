@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.39.0)
+# Monte-Neo Roadmap (v0.40.0)
 
 Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier for agent-built strategies).
 
@@ -114,7 +114,11 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 - [x] Bootstrap confidence intervals, Minimum Track Record Length, PBO (CSCV) for parameter searches
 - [x] Spread estimate from high and low, capacity from volume
 
-## Next (v0.40+)
+## v0.40.0 — Trap Suite 80
+- [x] 80 traps and 35 honest controls: ML pipelines, calendar joins, universes, damaged data
+- [x] Lint rules `shuffled_split` and `kfold_split` (23 rules)
+
+## Next (v0.41+)
 - [ ] First public bench run (owner runs it; tooling ready in v0.32.0): Claude Code / Codex / Gemini CLI / Cursor → published leaderboard
 - [~] Publish to MCP catalogues: official registry (done), glama / smithery / mcp.so / mcpmarket (owner submits; texts in docs/marketing/launch-kit.md)
 - [x] Signed certificates (v0.25.0), signing in the GitHub Action (v0.27.0), public verification page (v0.29.0)

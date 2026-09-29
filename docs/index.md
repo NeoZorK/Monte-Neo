@@ -43,7 +43,7 @@ certificate that can be signed.
 
 | Family | Checks |
 |--------|--------|
-| **Look-ahead** | Truncation and future-perturbation probes, outside-data watch, static AST lint (21 rules), implausible hit rate |
+| **Look-ahead** | Truncation and future-perturbation probes, outside-data watch, static AST lint (23 rules), implausible hit rate |
 | **Economics** | Net return after costs, break-even cost in bps, one- and two-bar execution delay |
 | **Statistics** | Probabilistic and Deflated Sharpe priced by `n_trials`, Monte Carlo timing test, sample size, holdout; walk-forward and parameter plateau for grids |
 | **Integrity** | Broken OHLCV (NaN, bad prices, bars out of time order), non-deterministic signals |
@@ -60,7 +60,7 @@ certificate that can be signed.
 ## Learn more
 
 - [Verifier API](api/verify.md): checks, verdicts, certificates, re-checks and signatures
-- [Trap Suite](guides/trap-suite.md): 55 strategies that lie and 25 honest controls, and how to add yours
+- [Trap Suite](guides/trap-suite.md): 80 strategies that lie and 35 honest controls, and how to add yours
 - [Honesty Bench](guides/honesty-bench.md): score how honestly agents report backtests
 - [Verify a certificate](verify.md): check a signed certificate in your browser
 - [Six ways your agent's backtest lies](marketing/article-six-ways.md): the traps, with numbers

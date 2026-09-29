@@ -2,7 +2,7 @@
   "mcpServers": {
     "monte-neo": {
       "command": "uvx",
-      "args": ["--from", "monte-neo[mcp]>=0.39.0", "monte-neo-mcp"]
+      "args": ["--from", "monte-neo[mcp]>=0.40.0", "monte-neo-mcp"]
     }
   }
 }
