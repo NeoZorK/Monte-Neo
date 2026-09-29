@@ -1,12 +1,12 @@
 {
   "name": "monte-neo",
-  "version": "0.36.0",
+  "version": "0.36.1",
   "description": "Independent verifier for trading-strategy backtests (look-ahead, costs, Deflated Sharpe).",
   "contextFileName": "GEMINI.md",
   "mcpServers": {
     "monte-neo": {
       "command": "uvx",
-      "args": ["--from", "monte-neo[mcp]>=0.36.0", "monte-neo-mcp"]
+      "args": ["--from", "monte-neo[mcp]>=0.36.1", "monte-neo-mcp"]
     }
   }
 }

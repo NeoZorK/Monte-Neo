@@ -12,7 +12,7 @@ from typing import Any
 
 import numpy as np
 
-from monte_neo.backtest.bar_engine import run_bar_backtest
+from monte_neo.backtest.bar_engine import run_bar_equity
 from monte_neo.backtest.model import ExecutionModel
 from monte_neo.backtest.weight_engine import run_weight_backtest
 
@@ -27,7 +27,7 @@ def simulate(ohlc: dict[str, np.ndarray], positions: np.ndarray, model: Executio
     """Backtest ``positions`` on ``ohlc``; returns equity, total_return, max_drawdown, n_trades, n_closed_trades."""
     if is_weights(positions):
         return run_weight_backtest(ohlc["open"], ohlc["close"], np.asarray(positions, dtype=np.float64), model=model)
-    return run_bar_backtest(ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"], positions, model=model)
+    return run_bar_equity(ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"], positions, model=model)
 
 
 def total_return(ohlc: dict[str, np.ndarray], positions: np.ndarray, model: ExecutionModel) -> float:

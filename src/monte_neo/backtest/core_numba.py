@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import numpy as np
-from numba import njit
+
+from monte_neo.backtest.jit import njit_cached
 
 REASON_SIGNAL = 1
 REASON_SL = 2
@@ -12,7 +13,7 @@ REASON_FLATTEN = 4
 REASON_TRAIL = 5
 
 
-@njit(cache=True)
+@njit_cached
 def _stop_hit(  # pragma: no cover  # njit body; covered via public API / subprocess
     position: int,
     high: float,
@@ -59,7 +60,7 @@ def _stop_hit(  # pragma: no cover  # njit body; covered via public API / subpro
     return 0, 0.0, stop, peak
 
 
-@njit(cache=True)
+@njit_cached
 def run_core_full(  # pragma: no cover  # njit body; covered via public API / subprocess
     open_: np.ndarray,
     high: np.ndarray,
@@ -248,7 +249,7 @@ def run_core_full(  # pragma: no cover  # njit body; covered via public API / su
     )
 
 
-@njit(cache=True)
+@njit_cached
 def run_terminal_return(  # pragma: no cover  # njit body; covered via public API / subprocess
     open_: np.ndarray,
     high: np.ndarray,

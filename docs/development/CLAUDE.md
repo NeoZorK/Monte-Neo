@@ -48,8 +48,7 @@ docker-compose -f docker/docker-compose.yml exec monte-neo bash
 
 ## Versioning Strategy
 Primary version source: `src/monte_neo/_version.py`. Feature releases raise the minor version,
-bug-fix and security releases the patch version. Release cadence (at most 2 feature releases a day;
-fixes any time): see `docs/development/rules.md`.
+bug-fix and security releases the patch version. Releases can be published at any time (no per-day limit); each needs the owner's approval: see `docs/development/rules.md`.
 
 ## Coding Style
 - Imports: standard, third-party, local. `from __future__ import annotations` required.

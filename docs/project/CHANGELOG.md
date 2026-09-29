@@ -3,6 +3,23 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.36.1] — 2026-09-29
+
+### Fixed
+- **Slow checks of high-turnover strategies.** Every backtest built a Python journal of all trades that the verifier
+  never read: a strategy with 100 000 trades on 200 000 bars took 9.8 s, now 0.5 s (same numbers bit for bit; the
+  verifier uses a journal-free path of the same engine).
+- **Crash in read-only environments.** With no writable directory for Numba's cache (a read-only container, a user
+  without a home directory) importing the engines failed with "cannot cache function". They now compile in memory.
+
+### Changed
+- Release cadence: the limit of 2 feature releases a day is removed; releases can be published at any time
+  (each still needs the owner's approval).
+
+### Added
+- **Docker image for untrusted code:** `docker/verify/Dockerfile` (engines compiled at build time, runs as
+  `nobody`), tested with the documented no-network, read-only run.
+
 ## [v0.36.0] — 2026-09-29
 
 ### Added

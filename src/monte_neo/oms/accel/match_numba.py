@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import numpy as np
-from numba import njit, prange
+from numba import prange
+
+from monte_neo.backtest.jit import njit_cached
 
 
-@njit(cache=True)
+@njit_cached
 def batch_terminal_long_flat(
     open_: np.ndarray,
     close: np.ndarray,

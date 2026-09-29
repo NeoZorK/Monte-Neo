@@ -12,7 +12,7 @@ from monte_neo.backtest.model import ExecutionModel
 from monte_neo.backtest.strategy import StrategySpec, build_signal
 from monte_neo.backtest.trades import pack_trades
 
-__all__ = ["run_bar_backtest", "run_strategy_backtest"]
+__all__ = ["run_bar_backtest", "run_bar_equity", "run_strategy_backtest"]
 
 
 def _session_ok(n: int, session_mask: np.ndarray | None) -> tuple[np.ndarray, bool]:
@@ -24,17 +24,16 @@ def _session_ok(n: int, session_mask: np.ndarray | None) -> tuple[np.ndarray, bo
     return mask, True
 
 
-def run_bar_backtest(
+def _run_core(
     open_: np.ndarray,
     high: np.ndarray,
     low: np.ndarray,
     close: np.ndarray,
     signal: np.ndarray,
-    model: ExecutionModel | None = None,
-    session_mask: np.ndarray | None = None,
-) -> dict[str, Any]:
-    """Run one bar backtest under a frozen :class:`ExecutionModel`."""
-    model = model or ExecutionModel()
+    model: ExecutionModel,
+    session_mask: np.ndarray | None,
+) -> tuple[tuple[Any, ...], bool]:
+    """Validate inputs and run the Numba core; returns (core outputs, session mask used)."""
     o = np.asarray(open_, dtype=np.float64)
     h = np.asarray(high, dtype=np.float64)
     l = np.asarray(low, dtype=np.float64)
@@ -45,22 +44,7 @@ def run_bar_backtest(
     if o.ndim != 1 or o.size < model.warmup_bars + 2:
         raise ValueError("need 1-D series with enough bars for warmup + fill")
     sess, sess_used = _session_ok(o.size, session_mask)
-
-    (
-        equity,
-        total_return,
-        max_dd,
-        fill_events,
-        final_cash,
-        n_closed,
-        te_i,
-        tx_i,
-        te_px,
-        tx_px,
-        t_qty,
-        t_fees,
-        t_reason,
-    ) = run_core_full(
+    out = run_core_full(
         o,
         h,
         l,
@@ -81,6 +65,36 @@ def run_bar_backtest(
         float(model.leverage),
         float(model.funding_bps_per_bar),
     )
+    return out, sess_used
+
+
+def run_bar_backtest(
+    open_: np.ndarray,
+    high: np.ndarray,
+    low: np.ndarray,
+    close: np.ndarray,
+    signal: np.ndarray,
+    model: ExecutionModel | None = None,
+    session_mask: np.ndarray | None = None,
+) -> dict[str, Any]:
+    """Run one bar backtest under a frozen :class:`ExecutionModel`."""
+    model = model or ExecutionModel()
+    out, sess_used = _run_core(open_, high, low, close, signal, model, session_mask)
+    (
+        equity,
+        total_return,
+        max_dd,
+        fill_events,
+        final_cash,
+        n_closed,
+        te_i,
+        tx_i,
+        te_px,
+        tx_px,
+        t_qty,
+        t_fees,
+        t_reason,
+    ) = out
     trades = pack_trades(
         n_closed, te_i, tx_i, te_px, tx_px, t_qty, t_fees, t_reason
     )
@@ -100,6 +114,32 @@ def run_bar_backtest(
         "equity": equity,
         "trades": trades,
         "metrics": metrics,
+    }
+
+
+def run_bar_equity(
+    open_: np.ndarray,
+    high: np.ndarray,
+    low: np.ndarray,
+    close: np.ndarray,
+    signal: np.ndarray,
+    model: ExecutionModel | None = None,
+) -> dict[str, Any]:
+    """The same backtest without the trade journal: equity, return, drawdown and trade counts.
+
+    Building the journal costs Python time per trade, which dominates for high-turnover
+    signals; the verifier needs only these numbers.
+    """
+    model = model or ExecutionModel()
+    out, _ = _run_core(open_, high, low, close, signal, model, None)
+    equity, total_return, max_dd, fill_events, final_cash, n_closed = out[:6]
+    return {
+        "total_return": float(total_return),
+        "max_drawdown": float(max_dd),
+        "n_trades": int(fill_events),
+        "n_closed_trades": int(n_closed),
+        "final_cash": float(final_cash),
+        "equity": equity,
     }
 
 
