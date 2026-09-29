@@ -43,6 +43,15 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--side-mode", choices=["long_flat", "long_short"], default=None, help="Default: long_short if signals contain shorts")
     p.add_argument("--warmup-bars", type=int, default=None, help="Bars ignored before trading (default min(60, n/10))")
     p.add_argument("--periods-per-year", type=float, default=None, help="Bars per year for annualization (default: inferred)")
+    p.add_argument(
+        "--jobs", default="1",
+        help="Worker processes for the strategy's probe calls: a number or 'auto' (default 1: run in this process)",
+    )
+    p.add_argument("--timeout", type=float, default=None, help="Seconds allowed per signal() call (runs the strategy in a worker)")
+    p.add_argument(
+        "--isolate", action="store_true",
+        help="Run the strategy in a worker without network, subprocesses, file writes or secrets in the environment",
+    )
     p.add_argument("--min-trades", type=int, default=30, help="Minimum closed trades for statistics (default 30)")
     p.add_argument("--out", help="Write the strategy-verdict/1 JSON certificate to this path")
     p.add_argument("--html", help="Also write a self-contained HTML report (charts, checks, periods) to this path")
@@ -160,7 +169,10 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
         return 3
     if args.recheck:
         try:
-            result = recheck_certificate(args.recheck, args.ohlcv, signals=args.signals, strategy=args.strategy)
+            result = recheck_certificate(
+                args.recheck, args.ohlcv, signals=args.signals, strategy=args.strategy,
+                jobs=args.jobs, timeout=args.timeout, isolate=args.isolate,
+            )
         except Exception as exc:
             console.print(f"[red]recheck failed: {exc}[/]")
             return 3
@@ -181,6 +193,9 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
         common = {
             "model": model, "periods_per_year": args.periods_per_year, "min_trades": args.min_trades,
             "positions": args.positions,
+            "jobs": args.jobs,
+            "timeout": args.timeout,
+            "isolate": args.isolate,
         }
         if args.grid:
             report = verify_grid(df, _load_grid(args.grid), strategy=args.strategy, folds=args.folds, **common)

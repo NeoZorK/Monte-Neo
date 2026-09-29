@@ -21,8 +21,6 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from monte_neo.backtest.export_signals import normalize_positions
-
 OHLC_COLS = ("open", "high", "low", "close")
 SignalFn = Callable[[pd.DataFrame], Any]
 
@@ -107,6 +105,8 @@ def to_positions(values: np.ndarray, positions: str) -> np.ndarray:
         return np.clip(np.nan_to_num(values, nan=0.0, posinf=1.0, neginf=-1.0), -1.0, 1.0)
     if positions != "sign":
         raise ValueError(f"positions must be 'sign' or 'weight' here, got {positions!r}")
+    from monte_neo.backtest.export_signals import normalize_positions  # keeps this module light for workers
+
     return normalize_positions(values)
 
 

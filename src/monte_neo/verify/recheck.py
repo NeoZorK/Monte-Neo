@@ -19,11 +19,12 @@ import pandas as pd
 
 from monte_neo._version import __version__
 from monte_neo.backtest.model import ExecutionModel
+from monte_neo.verify.executor import ProcessRunner
 from monte_neo.verify.grid import verify_grid
 from monte_neo.verify.ingest import load_ohlcv, load_signal_fn, to_positions
 from monte_neo.verify.market import market_for
 from monte_neo.verify.schema import VERDICT_SCHEMA_ID
-from monte_neo.verify.verdict import verify_strategy
+from monte_neo.verify.verdict import _runner_for, verify_strategy
 
 RECHECK_SCHEMA_ID = "strategy-recheck/1"
 
@@ -46,10 +47,15 @@ def recheck_certificate(
     *,
     signals: Any = None,
     strategy: str | Path | None = None,
+    jobs: int | str | None = 1,
+    timeout: float | None = None,
+    isolate: bool = False,
 ) -> dict[str, Any]:
     """Reproduce a certificate; ``reproduced`` is True only if everything matches.
 
     Grid certificates are reproduced by re-running the recorded grid search.
+    ``jobs`` / ``timeout`` / ``isolate`` run the strategy file in worker processes,
+    as in :func:`~monte_neo.verify.verify_strategy`.
     """
     cert = load_certificate(certificate)
     repro = cert["reproducibility"]
@@ -61,10 +67,35 @@ def recheck_certificate(
     mode = settings.get("positions") or "sign"  # before v0.35.0 every signal was read as signs
     if mode == "auto":  # the data check stopped the run before the signal was read
         mode = "sign"
-    fn = source = None
-    if strategy is not None:
+    runner = _runner_for(strategy, market, df, jobs, timeout, isolate)
+    try:
+        return _recheck(cert, repro, df, market, data_bytes, grid, settings, mode, strategy, signals, runner)
+    finally:
+        if runner is not None:
+            runner.close()
+
+
+def _recheck(
+    cert: dict[str, Any],
+    repro: dict[str, Any],
+    df: pd.DataFrame,
+    market: Any,
+    data_bytes: bytes,
+    grid: dict[str, Any] | None,
+    settings: dict[str, Any],
+    mode: str,
+    strategy: str | Path | None,
+    signals: Any,
+    runner: ProcessRunner | None,
+) -> dict[str, Any]:
+    fn: Any = None
+    source = None
+    best = (grid or {}).get("best_params") or {}
+    if runner is not None:
+        fn, source = runner, runner.path.read_text(encoding="utf-8")
+        sig = to_positions(market.read_values(runner.with_params(best), None), mode)
+    elif strategy is not None:
         fn, source = load_signal_fn(strategy)
-        best = (grid or {}).get("best_params") or {}
         sig = to_positions(market.read_values(partial(fn, **best), None), mode)
     elif signals is not None:
         sig = to_positions(market.read_values(None, signals), mode)

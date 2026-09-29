@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 from monte_neo.backtest.model import ExecutionModel
+from monte_neo.verify.stats import timestamp_series
 
 # Fix-it hints an agent can act on, keyed by check id.
 NEXT_ACTIONS: dict[str, str] = {
@@ -46,7 +47,7 @@ def _time_order(timestamps: Any) -> tuple[int, int]:
     """Count backward steps and repeated stamps; unparseable stamps are ignored."""
     if timestamps is None:
         return 0, 0
-    values = pd.Series(np.asarray(timestamps))
+    values = timestamp_series(timestamps)
     if pd.api.types.is_numeric_dtype(values):
         ts = pd.to_numeric(values, errors="coerce").dropna().to_numpy(dtype=np.float64)
     else:

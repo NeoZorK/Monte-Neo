@@ -20,6 +20,7 @@ import pandas as pd
 from monte_neo.backtest.model import ExecutionModel
 from monte_neo.verify.checks import check
 from monte_neo.verify.engine import simulate
+from monte_neo.verify.executor import FULL, ProcessRunner, resolve_jobs
 from monte_neo.verify.ingest import (
     SignalFn,
     load_ohlcv,
@@ -29,7 +30,7 @@ from monte_neo.verify.ingest import (
 from monte_neo.verify.io_guard import IOWatch
 from monte_neo.verify.market import SingleMarket, UniverseMarket, market_for
 from monte_neo.verify.stats import bar_returns, sharpe_per_bar
-from monte_neo.verify.verdict import _default_model, verify_strategy
+from monte_neo.verify.verdict import _default_model, _runner_for, verify_strategy
 
 MAX_COMBOS = 512
 TOP_K = 5
@@ -55,12 +56,19 @@ def _trial_returns(
     fn: SignalFn, market: SingleMarket | UniverseMarket, combos: list[dict[str, Any]], model: ExecutionModel, positions: str
 ) -> tuple[np.ndarray, str]:
     """Per-bar returns of every combo, read with one positions mode for the whole grid."""
-    values = []
-    for params in combos:
-        try:
-            values.append(market.read_values(partial(fn, **params), None))
-        except ValueError as exc:
-            raise ValueError(f"{exc} for {params}") from exc
+    if isinstance(fn, ProcessRunner):
+        # All combos at once, spread over the worker processes.
+        values = fn.run([FULL] * len(combos), params=combos)
+        for params, v in zip(combos, values, strict=True):
+            if v.size != len(market.frame):
+                raise ValueError(f"signal length {v.size} != row count {len(market.frame)} for {params}")
+    else:
+        values = []
+        for params in combos:
+            try:
+                values.append(market.read_values(partial(fn, **params), None))
+            except ValueError as exc:
+                raise ValueError(f"{exc} for {params}") from exc
     mode = resolve_positions(np.concatenate(values), positions)
     rows = [
         bar_returns(simulate(market.ohlc, market.positions(v, mode, model)[0], model)["equity"], start=model.warmup_bars)
@@ -158,14 +166,40 @@ def verify_grid(
     if int(folds) < 1:
         raise ValueError(f"folds must be >= 1, got {folds}")
     df = load_ohlcv(ohlcv)
+    market = market_for(df)
     io_watch = IOWatch(tuple(p for p in (df.attrs.get("source_path"),) if p))
-    with io_watch:
-        if strategy is not None:
-            signal_fn, text = load_signal_fn(strategy)
-            source = source if source is not None else text
+    jobs, timeout, isolate = (verify_kwargs.pop(k, d) for k, d in (("jobs", 1), ("timeout", None), ("isolate", False)))
+    runner = _runner_for(strategy, market, df, jobs, timeout, isolate)
+    if runner is not None:
+        signal_fn = runner  # workers import the strategy; this process only reads its source
+        source = source if source is not None else runner.path.read_text(encoding="utf-8")
+    else:
+        if timeout is not None or isolate or resolve_jobs(jobs) > 1:
+            raise ValueError("jobs, timeout and isolate need strategy code in a file (strategy='file.py')")
+        with io_watch:
+            if strategy is not None:
+                signal_fn, text = load_signal_fn(strategy)
+                source = source if source is not None else text
     if signal_fn is None:
         raise ValueError("verify_grid needs strategy= or signal_fn=")
-    market = market_for(df)
+    try:
+        return _search_and_verify(df, market, grid, signal_fn, source, model, folds, io_watch, verify_kwargs)
+    finally:
+        if runner is not None:
+            runner.close()
+
+
+def _search_and_verify(
+    df: pd.DataFrame,
+    market: SingleMarket | UniverseMarket,
+    grid: dict[str, list[Any]],
+    signal_fn: Any,
+    source: str | None,
+    model: ExecutionModel | None,
+    folds: int,
+    io_watch: IOWatch,
+    verify_kwargs: dict[str, Any],
+) -> dict[str, Any]:
     model = model or _default_model(market.n_bars)
     combos = expand_grid(grid)
     positions = verify_kwargs.pop("positions", "auto")
@@ -189,7 +223,7 @@ def verify_grid(
     }
     return verify_strategy(
         df,
-        signal_fn=partial(signal_fn, **best),
+        signal_fn=signal_fn.with_params(best) if isinstance(signal_fn, ProcessRunner) else partial(signal_fn, **best),
         source=source,
         model=model,
         n_trials=len(combos),

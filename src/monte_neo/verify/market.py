@@ -24,11 +24,11 @@ import pandas as pd
 from monte_neo.backtest.model import ExecutionModel
 from monte_neo.backtest.weight_engine import normalize_weights
 from monte_neo.verify import checks as rows
+from monte_neo.verify.executor import FULL, Head, evaluate
 from monte_neo.verify.ingest import (
     OHLC_COLS,
     SignalFn,
     _read_table,
-    call_signal_fn,
     load_signal_values,
     signal_values,
     to_positions,
@@ -41,13 +41,14 @@ from monte_neo.verify.lookahead import (
     probe_determinism,
     probe_perturbation,
     probe_truncation,
+    run_positions,
 )
 
 SYMBOL_ALIASES = ("symbol", "ticker", "asset", "instrument")
 
 
 def _values_from(fn: SignalFn | None, signals: Any, frame: pd.DataFrame) -> np.ndarray:
-    return signal_values(fn(frame.copy())) if fn is not None else load_signal_values(signals)
+    return evaluate(fn, frame, [FULL])[0] if fn is not None else load_signal_values(signals)
 
 
 class SingleMarket:
@@ -120,15 +121,16 @@ class UniverseMarket:
         missing = df["symbol"].isna()
         if missing.any():
             raise ValueError(f"{int(missing.sum())} rows have no symbol")
-        symbols = df["symbol"].astype(str).to_numpy()
+        # Integer codes (hash-based, names sorted) instead of sorting 10^5-10^6 strings.
+        codes, names = pd.factorize(df["symbol"].astype(str), sort=True)
         stamps = parsed.to_numpy(dtype="datetime64[ns]").astype(np.int64)
-        order = np.lexsort((symbols, stamps))
+        order = np.lexsort((codes, stamps))
         frame = df.iloc[order].reset_index(drop=True)
         frame.attrs = dict(df.attrs)
         self.frame = frame
         self._stamps = stamps[order]
         times, self.t_idx = np.unique(self._stamps, return_inverse=True)
-        names, self.s_idx = np.unique(symbols[order], return_inverse=True)
+        self.s_idx = codes[order].astype(np.int64)
         self.symbols = [str(s) for s in names]
         self.timestamps = pd.DatetimeIndex(times.astype("datetime64[ns]")).tz_localize("UTC")
         self.n_bars = len(times)
@@ -224,10 +226,9 @@ class UniverseMarket:
     def _truncation(self, fn: SignalFn, full: np.ndarray, mode: str, n_checks: int) -> dict[str, Any]:
         """Cut the table after timestamp t (all symbols at once); earlier weights must not change."""
         points = self._checkpoints(full, n_checks)
+        heads = run_positions(fn, self.frame, [Head(self._rows_until(int(t))) for t in points], mode)
         found = []
-        for t in points:
-            k = self._rows_until(int(t))
-            head = call_signal_fn(fn, self.frame.iloc[:k].reset_index(drop=True), mode)
+        for t, head in zip(points, heads, strict=True):
             m = self._mismatch(int(t), head, full)
             if m:
                 found.append(m)
@@ -254,9 +255,9 @@ class UniverseMarket:
 
     def _perturbation(self, fn: SignalFn, full: np.ndarray, mode: str, n_checks: int) -> dict[str, Any]:
         points = _checkpoints(self.n_bars, n_checks, None)
+        alts = run_positions(fn, self.frame, [self._mirrored(int(t)) for t in points], mode)
         found = []
-        for t in points:
-            alt = call_signal_fn(fn, self._mirrored(int(t)), mode)
+        for t, alt in zip(points, alts, strict=True):
             k = self._rows_until(int(t))
             m = self._mismatch(int(t), alt[:k], full)
             if m:
@@ -290,8 +291,8 @@ class UniverseMarket:
 
     def data_bytes(self) -> bytes:
         prices = np.ascontiguousarray(self.frame[list(OHLC_COLS)].to_numpy(dtype=np.float64)).tobytes()
-        keys = "\n".join(self.frame["symbol"].astype(str)).encode("utf-8")
-        return prices + keys + np.ascontiguousarray(self._stamps).tobytes()
+        names = "\n".join(self.symbols).encode("utf-8")
+        return prices + names + np.ascontiguousarray(self.s_idx).tobytes() + np.ascontiguousarray(self._stamps).tobytes()
 
     def describe(self, traded: np.ndarray) -> dict[str, Any]:
         return {

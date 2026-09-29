@@ -29,6 +29,18 @@ inputs:
     description: Slippage per side (bps)
     required: false
     default: "5"
+  timeout:
+    description: "Seconds allowed per signal() call; the strategy runs in a worker process (empty: no limit)"
+    required: false
+    default: "600"
+  jobs:
+    description: "Worker processes for the strategy's probe calls: a number or 'auto'"
+    required: false
+    default: "1"
+  isolate:
+    description: "Run the strategy without network, subprocesses or file writes: 'true' or 'false'"
+    required: false
+    default: "false"
   positions:
     description: "Read signals as sign (+1/0/-1), weight (fraction of equity in [-1, 1]) or auto (default)"
     required: false
@@ -106,6 +118,9 @@ runs:
         MN_FAIL_ON: ${{ inputs.fail-on }}
         MN_GRID: ${{ inputs.grid }}
         MN_POSITIONS: ${{ inputs.positions }}
+        MN_TIMEOUT: ${{ inputs.timeout }}
+        MN_JOBS: ${{ inputs.jobs }}
+        MN_ISOLATE: ${{ inputs.isolate }}
         MN_COMMENT: ${{ inputs.comment }}
         MN_PR: ${{ github.event.pull_request.number }}
         MN_SIGNING_KEY: ${{ inputs.signing-key }}
@@ -121,6 +136,11 @@ runs:
         extra=()
         if [ -n "$MN_TRIALS" ]; then extra=(--n-trials "$MN_TRIALS"); fi
         if [ -n "$MN_GRID" ]; then extra=(--grid "$MN_GRID"); fi
+        if [ -n "$MN_STRATEGY" ]; then
+          extra+=(--jobs "$MN_JOBS")
+          if [ -n "$MN_TIMEOUT" ]; then extra+=(--timeout "$MN_TIMEOUT"); fi
+          if [ "$MN_ISOLATE" = "true" ]; then extra+=(--isolate); fi
+        fi
         cert="$RUNNER_TEMP/strategy-verdict.json"
         html="$RUNNER_TEMP/strategy-verdict.html"
         report="$RUNNER_TEMP/strategy-verdict.md"
