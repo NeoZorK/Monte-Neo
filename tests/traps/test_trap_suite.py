@@ -104,6 +104,44 @@ TRAPS = [
     ("spike_fade", "bad_ticks", {"REJECT"}, {"data_quality": "fail", "lookahead_truncation": "pass", "lookahead_static_lint": "pass"}),
     # A strong real edge: a high hit rate alone must not be called look-ahead.
     ("expanding_quantile_breakout", "planted", {"NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"implausible_accuracy": "pass"}),
+    # ML and pipeline leaks: fitting on the whole sample, random splits, unshifted joins, sizing and start-date picks.
+    ("append_nan_shift", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail"}),
+    ("best_start_date", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail"}),
+    ("hyperparam_fit_full", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail"}),
+    ("kfold_no_gap", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail"}),
+    ("feature_select_future_corr", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail"}),
+    ("shuffled_split_fit", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail"}),
+    ("size_by_full_drawdown", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail"}),
+    ("daily_close_transform", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "warn"}),
+    ("day_vwap_total", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "warn"}),
+    ("merge_asof_daily_no_shift", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "warn"}),
+    ("minmax_full_scale", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "warn"}),
+    ("resample_left_closed_right", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "warn"}),
+    ("vol_target_full", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "warn"}),
+    ("winsorize_full", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "warn"}),
+    ("loop_next_compare", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "warn"}),
+    ("knn_random_neighbors", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "warn"}),
+    ("pca_full_sample", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "warn"}),
+    ("kmeans_regime_full", "random_walk", {"REJECT"}, {"lookahead_static_lint": "warn"}),
+    ("xs_future_vol_rank", "universe", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "fail"}),
+    ("xs_pick_winners", "universe", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "fail"}),
+    ("xs_todays_members", "universe", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "warn"}),
+    ("xs_weights_total_norm", "universe", {"REJECT"}, {"lookahead_truncation": "fail"}),
+    # Honest controls for the same techniques: nothing may be flagged as look-ahead.
+    ("daily_close_shifted", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
+    ("day_vwap_running", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
+    ("expanding_fit_gap", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
+    ("expanding_winsorize", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
+    ("merge_asof_daily_shifted", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
+    ("resample_closed_left_shifted", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
+    ("vol_target_expanding", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
+    ("walk_forward_lstsq_gap", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
+    ("xs_cross_section_norm", "universe", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
+    ("xs_point_in_time_members", "universe", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
+    # Honest code on damaged data: the data_quality check must speak up.
+    ("dip_buyer", "unadjusted_split", {"REJECT"}, {"data_quality": "warn", "lookahead_static_lint": "pass"}),
+    ("fade_last_move", "frozen_feed", {"REJECT"}, {"data_quality": "warn", "lookahead_static_lint": "pass"}),
+    ("trend_bars", "feed_outages", {"REJECT"}, {"data_quality": "warn", "lookahead_static_lint": "pass"}),
 ]
 HONEST = {"high_turnover", "sma_cross", "momentum", "expanding_zscore", "resample_shifted", "expanding_rank", "cummax_drawdown",
           "ewm_cross", "convolve_causal", "rolling_quantile_band",
@@ -111,7 +149,8 @@ HONEST = {"high_turnover", "sma_cross", "momentum", "expanding_zscore", "resampl
           "cut_fixed_bins", "hour_running_high", "rolling_min_periods",
           "rolling_apply_span", "hour_open_ref", "expanding_max_breakout",
           "loop_window_breakout", "rolling_polyfit_slope", "loop_slice_crossover", "rsi_loop",
-          "expanding_quantile_breakout", "xs_momentum_rank", "xs_equal_weight", "spike_fade"}
+          "expanding_quantile_breakout", "xs_momentum_rank", "xs_equal_weight", "spike_fade",
+          "daily_close_shifted", "day_vwap_running", "expanding_fit_gap", "expanding_winsorize", "merge_asof_daily_shifted", "resample_closed_left_shifted", "vol_target_expanding", "walk_forward_lstsq_gap", "xs_cross_section_norm", "xs_point_in_time_members", "dip_buyer", "fade_last_move", "trend_bars"}
 # Parameterized strategies exercised through verify_grid (not in TRAPS).
 GRID_STRATEGIES = {"sma_params", "momentum_params"}
 

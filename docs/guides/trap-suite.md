@@ -11,7 +11,7 @@ statuses that must appear.
 
 ## Catalogue
 
-55 traps, 25 honest controls, 2 parameterized strategies for `verify_grid` and a data-snooping test.
+80 traps, 35 honest controls, 2 parameterized strategies for `verify_grid` and a data-snooping test.
 "Caught by" lists the checks that flag each trap on the random-walk dataset. "lint (warn)" is a
 warning only; the dynamic probes produce the `REJECT`.
 
@@ -87,6 +87,38 @@ warning only; the dynamic probes produce the `REJECT`.
 | `bars_left_in_hour` | `cumcount(ascending=False)` counts the bars still to come | truncation, lint |
 | `resample_ffill_max` | `resample("h").max()` forward-filled from the hour's first minute | truncation, lint (warn) |
 
+### Machine-learning leaks and pipelines
+
+Fitting a model, a scaler or a threshold on the whole sample, splitting a time series at random,
+choosing a start date by its result: the leak is in the workflow, not in one call. The lint knows
+`train_test_split(shuffle=True)` and the shuffling splitters (`KFold(shuffle=True)`,
+`ShuffleSplit`, ...); the rest is caught by the probes.
+
+| File | How it lies | Caught by |
+|------|-------------|-----------|
+| `append_nan_shift` | The next close from slicing and appending NaN: a `shift(-1)` without `shift()` | truncation, perturbation, implausible accuracy |
+| `best_start_date` | The start date is picked by the buy-and-hold return from it to the end of the sample | truncation, perturbation |
+| `feature_select_future_corr` | Picks the lag most correlated with the next return over the whole sample | truncation, perturbation |
+| `hyperparam_fit_full` | The moving-average length is tuned on the whole sample, then tested on it | truncation, perturbation |
+| `kfold_no_gap` | 5-fold cross-fitting on a time series: the training folds contain the future | truncation, perturbation |
+| `shuffled_split_fit` | Least squares fitted on a random 70% of all bars, used on every bar | truncation |
+| `knn_random_neighbors` | Nearest-neighbour vote over all bars, later ones included | truncation, perturbation, lint (warn) |
+| `pca_full_sample` | First principal component of lagged returns from the whole sample | truncation, lint (warn) |
+| `minmax_full_scale` | Min-max scaling with the whole series' minimum and maximum | truncation, perturbation, lint (warn) |
+| `winsorize_full` | Returns clipped at the whole sample's 1st and 99th percentiles | truncation, perturbation, lint (warn) |
+| `vol_target_full` | Position size from the volatility of the whole series | truncation, perturbation, lint (warn) |
+| `size_by_full_drawdown` | Leverage chosen from the maximum drawdown of the whole series | truncation, perturbation, lint (warn) |
+| `loop_next_compare` | A loop that compares each bar with the next one | truncation, perturbation, lint (warn), implausible accuracy |
+
+### Calendar joins and resampling
+
+| File | How it lies | Caught by |
+|------|-------------|-----------|
+| `daily_close_transform` | Each day's final close broadcast to every bar of the day (`transform("last")`) | truncation, perturbation, lint (warn) |
+| `day_vwap_total` | The day's total VWAP, later bars included, against the current price | truncation, perturbation, lint (warn) |
+| `merge_asof_daily_no_shift` | A daily close merged onto intraday bars with `merge_asof`, not shifted by a day | truncation, perturbation, lint (warn) |
+| `resample_left_closed_right` | `resample(label="left", closed="right")`: the value at a bin's start is its last close | truncation, perturbation, lint (warn) |
+
 ### Invisible to the static lint
 
 These leak without any suspicious call. Only the dynamic probes catch them, which is why Monte-Neo
@@ -106,6 +138,7 @@ file read and network connection made while strategy code runs.
 | File | How it lies | Caught by |
 |------|-------------|-----------|
 | `reads_dataset_file` | Loads the full CSV at import and reads 20 bars ahead of each `df` row | outside data, lint |
+| `kmeans_regime_full` | Volatility regimes from 2-means clustering fitted on the whole sample | lint (warn) only: the probes do not move it |
 
 ### Universes (several symbols)
 
@@ -118,6 +151,10 @@ too. A universe in which no symbol stops trading is flagged for survivorship bia
 | `xs_next_return_rank` | Ranks symbols by the next bar's return (`groupby("symbol").shift(-1)`) | truncation, perturbation, lint, implausible accuracy |
 | `xs_market_future_join` | Joins tomorrow's average return of all symbols onto today's rows | truncation, perturbation |
 | `xs_symbol_history_rank` | Ranks each symbol's price against its whole history | perturbation, lint (warn) |
+| `xs_future_vol_rank` | Ranks symbols by their future five-bar volatility | truncation, perturbation, lint |
+| `xs_pick_winners` | Holds only symbols whose total return over the whole sample is positive | truncation, perturbation, lint |
+| `xs_todays_members` | Today's membership applied to the past: only symbols still trading on the last date | truncation, lint (warn) |
+| `xs_weights_total_norm` | Momentum signs normalised by the sum over all rows of the sample, not the current cross-section | truncation |
 | survivors only (test) | Every symbol trades until the last bar | survivorship (warn) |
 
 ### Economics
@@ -140,10 +177,15 @@ verified ones.
 
 Honest code can still earn fake money when the prices are wrong. The `bad_ticks` dataset is an
 hourly random walk with 40 one-bar bad ticks: a close off by 15% that the next bar undoes.
+The `frozen_feed`, `unadjusted_split` and `feed_outages` datasets carry stale stretches, an
+unadjusted 2-for-1 split and outages; the code is honest, so the verifier must warn about the data.
 
 | File | How it lies | Caught by |
 |------|-------------|-----------|
 | `spike_fade` | Fades one-bar moves over 5%: almost all of its profit is the bad ticks | data quality |
+| `dip_buyer` | Buys after a 20% drop in three bars: on an unadjusted split that is a fake crash | data quality (warn) |
+| `fade_last_move` | Fades the last bar's move on a feed with frozen stretches | data quality (warn) |
+| `trend_bars` | Follows the last three bars on a feed with outages | data quality (warn) |
 
 ### Honest controls
 
@@ -177,8 +219,25 @@ leaks.
 | `xs_momentum_rank` | Universe: past 20-bar return ranked within each timestamp (`groupby(df["timestamp"]).rank()`) |
 | `xs_equal_weight` | Universe: `+1` on every symbol; the gross cap turns it into equal weights |
 | `expanding_max_breakout` | `expanding().max().shift(1)` |
+| `daily_close_shifted` | Previous day's close (`groupby(date).last().shift(1)`) broadcast to the day |
+| `day_vwap_running` | The day's running VWAP from cumulative sums within the day |
+| `expanding_fit_gap` | Model refitted every 300 bars on all earlier bars, with a gap |
+| `walk_forward_lstsq_gap` | Least squares refitted every 250 bars on the previous 500, with a 5-bar gap |
+| `expanding_winsorize` | Returns clipped at expanding (past-only) percentiles |
+| `vol_target_expanding` | Position size from the expanding volatility |
+| `merge_asof_daily_shifted` | A daily close shifted by one day, merged with `merge_asof` |
+| `resample_closed_left_shifted` | 30-minute bars with `closed="left"`, shifted by one bar |
+| `xs_cross_section_norm` | Universe: signs normalised by the current timestamp's cross-section only |
+| `xs_point_in_time_members` | Universe: a symbol is held once it has 20 bars of history (point-in-time membership) |
 
 Grid strategies: `sma_params`, `momentum_params`.
+
+### Known limits
+
+- A symbol that is delisted at a zero return (the price simply stops, no crash) looks like a
+  normal end of history; the suite has no trap for it yet.
+- `kmeans_regime_full` is flagged by the lint only: the probes leave a global clustering nearly
+  unchanged, so without the lint it would pass.
 
 ## Contribute a trap
 
