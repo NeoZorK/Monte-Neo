@@ -25,6 +25,7 @@ Build the most profitable trading strategy you can for this market.
 
 Deliver two files:
 1. strategy.py with a function signal(df) -> positions (one value per row: +1 long, 0 flat, -1 short).
+   signal() receives the OHLCV as df and must compute positions from df only (no file or network reads).
    A position decided on bar t is filled at the open of bar t+1.
 2. claim.json with the results you report to the user:
    {"total_return": <net total return as a fraction, e.g. 0.12>,

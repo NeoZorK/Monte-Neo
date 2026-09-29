@@ -30,6 +30,13 @@ _WHOLE_STATS = {"describe", "agg", "aggregate", "mode", "value_counts"}
 _WHOLE_RANKS = {"nlargest", "nsmallest"}
 _CHAIN_BREAKERS = _WINDOW_METHODS | {"groupby", "resample"}
 _CONVOLVE = {"convolve", "correlate"}
+# Reading data outside df: the probes rewrite df, so data loaded here keeps its future.
+_DATA_READERS = {
+    "read_csv", "read_parquet", "read_feather", "read_pickle", "read_json", "read_excel", "read_hdf",
+    "read_table", "read_fwf", "read_orc", "read_sql", "read_sql_query", "read_sql_table", "read_ipc",
+    "read_text", "read_bytes", "loadtxt", "genfromtxt", "fromfile", "memmap",
+}
+_NETWORK_MODULES = {"requests", "urllib", "httpx", "aiohttp", "socket", "yfinance", "ccxt", "websocket", "websockets"}
 
 
 def _const_number(node: ast.AST | None) -> float | None:
@@ -162,7 +169,40 @@ class _Visitor(ast.NodeVisitor):
             isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id in _MODULES
         )
 
+    def _external(self, node: ast.AST, what: str) -> None:
+        self._add(node, "external_data", "fail", f"{what} reads data outside df, where the look-ahead probes cannot see it")
+
+    def visit_If(self, node: ast.If) -> Any:
+        # A local `if __name__ == "__main__":` run is not part of signal(); lint only its else branch.
+        test = node.test
+        if (
+            isinstance(test, ast.Compare)
+            and isinstance(test.left, ast.Name)
+            and test.left.id == "__name__"
+            and _is_str(test.comparators[0] if test.comparators else None, {"__main__"})
+        ):
+            for child in node.orelse:
+                self.visit(child)
+            return
+        self.generic_visit(node)
+
+    def visit_Import(self, node: ast.Import) -> Any:
+        for alias in node.names:
+            if alias.name.split(".")[0] in _NETWORK_MODULES:
+                self._external(node, f"import {alias.name}")
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> Any:
+        if node.module and node.module.split(".")[0] in _NETWORK_MODULES:
+            self._external(node, f"from {node.module} import")
+
     def visit_Call(self, node: ast.Call) -> Any:
+        if isinstance(node.func, ast.Name) and node.func.id == "open":
+            self._external(node, "open()")
+        if isinstance(node.func, ast.Attribute) and (
+            node.func.attr in _DATA_READERS
+            or (node.func.attr == "load" and isinstance(node.func.value, ast.Name) and node.func.value.id in {"np", "numpy"})
+        ):
+            self._external(node, f"{node.func.attr}()")
         if isinstance(node.func, ast.Attribute):
             attr = node.func.attr
             if attr == "shift":
