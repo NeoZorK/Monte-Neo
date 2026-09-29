@@ -3,6 +3,33 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.36.0] — 2026-09-29
+
+### Added
+- **Data quality check (`data_quality`).** Data can be well formed and still wrong. The new check looks for
+  one-bar price spikes that the next bar undoes (bad ticks), runs of frozen prices, split-like jumps
+  (unadjusted splits), gaps in time beyond the usual nights and weekends, and bars without volume. Findings
+  warn; the check fails when more than half of the profit comes from spikes in instruments the strategy held.
+  Works on one instrument and on universes (reads a `volume` column when present).
+- **Trap Suite: bad data.** New `bad_ticks` dataset and `spike_fade` trap: honest code whose profit is bad
+  ticks must be rejected (55 traps, 25 honest controls).
+- **Strategy workers.** `jobs` (CLI `--jobs`, MCP, Action) runs the look-ahead probes of a strategy file in
+  parallel worker processes; `timeout` (CLI `--timeout`, default 300 s in MCP, 600 s in the Action) ends a
+  `signal()` call that hangs with a clear error; `isolate` (CLI `--isolate`) blocks network, subprocesses
+  and file writes outside the temp dir and removes secrets from the environment of the workers.
+- **`monte-neo verify --precompile`** compiles and caches the engines (about 4 s once): the first check in a new
+  environment takes 1.6 s instead of 6 s. For Docker images and CI caches.
+- **Docs: verifying untrusted code.** What `--isolate` does and does not protect against, and a Docker recipe
+  (no network, read-only file system, resource limits) for marketplaces and prop firms.
+
+### Changed
+- **Lighter install: 488 MB -> 327 MB.** The base install is the verifier, the CLI (`verify`, `bench`) and the
+  MCP server. Research packages moved to extras: `parquet` (pyarrow, for `.parquet` tables) and `research`
+  (the interactive `monte-neo` menu). Both print the extra to install when it is missing; the GitHub Action
+  installs `parquet` by itself for `.parquet` inputs.
+- Tests that need MLX / Metal are skipped on machines without MLX (Linux) instead of failing; they still
+  run on the macOS CI job.
+
 ## [v0.35.1] — 2026-09-29
 
 ### Fixed

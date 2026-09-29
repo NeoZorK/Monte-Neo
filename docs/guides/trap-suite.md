@@ -11,7 +11,7 @@ statuses that must appear.
 
 ## Catalogue
 
-54 traps, 25 honest controls, 2 parameterized strategies for `verify_grid` and a data-snooping test.
+55 traps, 25 honest controls, 2 parameterized strategies for `verify_grid` and a data-snooping test.
 "Caught by" lists the checks that flag each trap on the random-walk dataset. "lint (warn)" is a
 warning only; the dynamic probes produce the `REJECT`.
 
@@ -126,6 +126,15 @@ too. A universe in which no symbol stops trading is flagged for survivorship bia
 |------|-------------|-----------|
 | `high_turnover` | Honest code, but the edge cannot pay its costs | net profitability |
 | data snooping (test) | Best of 200 random strategies with `n_trials` hidden | deflated Sharpe once `n_trials` is declared |
+
+### Bad data
+
+Honest code can still earn fake money when the prices are wrong. The `bad_ticks` dataset is an
+hourly random walk with 40 one-bar bad ticks: a close off by 15% that the next bar undoes.
+
+| File | How it lies | Caught by |
+|------|-------------|-----------|
+| `spike_fade` | Fades one-bar moves over 5%: almost all of its profit is the bad ticks | data quality |
 
 ### Honest controls
 

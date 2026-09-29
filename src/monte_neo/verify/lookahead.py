@@ -15,7 +15,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from monte_neo.verify.ingest import OHLC_COLS, SignalFn, call_signal_fn
+from monte_neo.verify.executor import FULL, Head, evaluate
+from monte_neo.verify.ingest import OHLC_COLS, SignalFn, to_positions
 
 MAX_REPORTED = 5
 
@@ -34,12 +35,27 @@ def _status(mismatches: list[dict[str, Any]], checked: int) -> str:
     return "fail" if mismatches else "pass"
 
 
+def run_positions(fn: SignalFn, df: pd.DataFrame, tasks: list[Any], positions: str) -> list[np.ndarray]:
+    """Positions of ``fn`` on each task (the full table, a prefix or a rewritten table).
+
+    ``fn`` may be a :class:`~monte_neo.verify.executor.ProcessRunner`: the batch then
+    runs in parallel worker processes.
+    """
+    out = []
+    for task, values in zip(tasks, evaluate(fn, df, tasks), strict=True):
+        n = len(df) if isinstance(task, Head) and task.rows < 0 else task.rows if isinstance(task, Head) else len(task)
+        if values.size != n:
+            raise ValueError(f"signal length {values.size} != bar count {n}")
+        out.append(to_positions(values, positions))
+    return out
+
+
 def probe_determinism(
     fn: SignalFn, df: pd.DataFrame, full: np.ndarray | None = None, *, positions: str = "sign"
 ) -> dict[str, Any]:
     """Two runs on identical input must give identical signals."""
-    first = call_signal_fn(fn, df, positions) if full is None else full
-    second = call_signal_fn(fn, df, positions)
+    runs = run_positions(fn, df, [FULL] if full is not None else [FULL, FULL], positions)
+    first, second = (full, runs[0]) if full is not None else (runs[0], runs[1])
     diff = np.flatnonzero(first != second)
     return {
         "status": "fail" if diff.size else "pass",
@@ -74,12 +90,12 @@ def probe_truncation(
     evenly and also placed on bars where the position changes, so sparse signals
     (a few entries) are tested where they act.
     """
-    sig = call_signal_fn(fn, df, positions) if full is None else full
+    sig = run_positions(fn, df, [FULL], positions)[0] if full is None else full
     even = _checkpoints(len(df), n_checks, start)
     points = np.union1d(even, _decision_points(sig, len(df), n_checks, start))
+    heads = run_positions(fn, df, [Head(int(t) + 1) for t in points], positions)
     mismatches: list[dict[str, Any]] = []
-    for t in points:
-        head = call_signal_fn(fn, df.iloc[: int(t) + 1].reset_index(drop=True), positions)
+    for t, head in zip(points, heads, strict=True):
         diff = np.flatnonzero(head != sig[: int(t) + 1])
         if diff.size:
             bar = int(diff[0])
@@ -120,11 +136,11 @@ def probe_perturbation(
     positions: str = "sign",
 ) -> dict[str, Any]:
     """Rewrite the future after ``t``; the past signals must stay identical."""
-    sig = call_signal_fn(fn, df, positions) if full is None else full
+    sig = run_positions(fn, df, [FULL], positions)[0] if full is None else full
     points = _checkpoints(len(df), n_checks, start)
+    alts = run_positions(fn, df, [mirror_future(df, int(t)) for t in points], positions)
     mismatches: list[dict[str, Any]] = []
-    for t in points:
-        alt = call_signal_fn(fn, mirror_future(df, int(t)), positions)
+    for t, alt in zip(points, alts, strict=True):
         diff = np.flatnonzero(alt[: int(t) + 1] != sig[: int(t) + 1])
         if diff.size:
             mismatches.append({"checkpoint": int(t), "first_changed_bar": int(diff[0]), "changed_bars": int(diff.size)})

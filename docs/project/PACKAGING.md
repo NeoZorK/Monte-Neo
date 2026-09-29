@@ -125,7 +125,9 @@ Create a GitHub Environment named `pypi` (optional protection rules). After the 
 
 | Extra | Contents |
 |-------|----------|
-| *(default)* | Research-core: numpy, pandas, pyarrow, numba, rich, CLI |
+| *(default)* | Verifier core: numpy, pandas, numba, rich, mcp (CLI `verify` / `bench`, MCP server) |
+| `parquet` | pyarrow (read `.parquet` tables) |
+| `research` | pyarrow, questionary, prompt-toolkit, pyyaml, python-dotenv, pybind11 (interactive research CLI) |
 | `apple` | MLX + PyObjC Metal/Cocoa (**darwin only** markers) |
 | `plot` | matplotlib / seaborn / mplfinance / plotext / pillow |
 | `data` | binance-connector (downloader / websocket) |

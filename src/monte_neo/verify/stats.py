@@ -114,6 +114,19 @@ def deflated_sharpe(
     }
 
 
+def timestamp_series(timestamps: Any) -> pd.Series:
+    """Timestamps as a Series without boxing them into Python objects.
+
+    ``np.asarray`` on tz-aware datetimes builds an object array of Timestamps, and
+    parsing that is ~60x slower than parsing the datetime column itself.
+    """
+    if isinstance(timestamps, pd.Series):
+        return timestamps.reset_index(drop=True)
+    if isinstance(timestamps, pd.Index):
+        return pd.Series(timestamps)
+    return pd.Series(np.asarray(timestamps))
+
+
 def infer_periods_per_year(timestamps: Any, default: float = 252.0) -> float:
     """Bars per year from timestamps; ``default`` if unknown.
 
@@ -125,7 +138,7 @@ def infer_periods_per_year(timestamps: Any, default: float = 252.0) -> float:
         return default
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        parsed = pd.to_datetime(pd.Series(np.asarray(timestamps)), utc=True, errors="coerce").dropna()
+        parsed = pd.to_datetime(timestamp_series(timestamps), utc=True, errors="coerce").dropna()
     if len(parsed) < 3:
         return default
     ts = parsed.to_numpy(dtype="datetime64[ns]").astype(np.int64)
@@ -145,4 +158,5 @@ __all__ = [
     "infer_periods_per_year",
     "probabilistic_sharpe",
     "sharpe_per_bar",
+    "timestamp_series",
 ]

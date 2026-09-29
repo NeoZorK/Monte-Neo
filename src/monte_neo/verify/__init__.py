@@ -5,52 +5,56 @@ Entry point: :func:`verify_strategy` → ``strategy-verdict/1`` report.
 
 from __future__ import annotations
 
-from monte_neo.verify.costs import breakeven_cost_bps, delay_scan, delay_signals
-from monte_neo.verify.engine import simulate
-from monte_neo.verify.grid import expand_grid, verify_grid, walk_forward
-from monte_neo.verify.ingest import (
-    POSITION_MODES,
-    call_signal_fn,
-    load_ohlcv,
-    load_signal_fn,
-    load_signal_values,
-    load_signals,
-    normalize_signals,
-    resolve_positions,
-    signal_values,
-    to_positions,
-)
-from monte_neo.verify.lint import lint_source
-from monte_neo.verify.lookahead import (
-    implausible_accuracy,
-    mirror_future,
-    probe_determinism,
-    probe_perturbation,
-    probe_truncation,
-)
-from monte_neo.verify.recheck import RECHECK_SCHEMA_ID, load_certificate, recheck_certificate
-from monte_neo.verify.schema import (
-    VERDICT_JSON_SCHEMA,
-    VERDICT_SCHEMA_ID,
-    VERDICTS,
-    aggregate_verdict,
-    to_jsonable,
-)
-from monte_neo.verify.signing import (
-    SIGNATURE_CHECK_SCHEMA_ID,
-    check_signature,
-    generate_keypair,
-    sign_certificate,
-)
-from monte_neo.verify.stats import (
-    bar_returns,
-    deflated_sharpe,
-    expected_max_sharpe,
-    infer_periods_per_year,
-    probabilistic_sharpe,
-    sharpe_per_bar,
-)
-from monte_neo.verify.verdict import model_from_costs, verify_strategy
+from importlib import import_module
+from typing import Any
+
+# Public names load on first access, so importing one submodule (for example in a
+# strategy worker process) does not pull in the backtest engine and numba.
+_LAZY = {
+    "POSITION_MODES": "monte_neo.verify.ingest",
+    "RECHECK_SCHEMA_ID": "monte_neo.verify.recheck",
+    "SIGNATURE_CHECK_SCHEMA_ID": "monte_neo.verify.signing",
+    "VERDICTS": "monte_neo.verify.schema",
+    "VERDICT_JSON_SCHEMA": "monte_neo.verify.schema",
+    "VERDICT_SCHEMA_ID": "monte_neo.verify.schema",
+    "aggregate_verdict": "monte_neo.verify.schema",
+    "bar_returns": "monte_neo.verify.stats",
+    "breakeven_cost_bps": "monte_neo.verify.costs",
+    "call_signal_fn": "monte_neo.verify.ingest",
+    "check_signature": "monte_neo.verify.signing",
+    "deflated_sharpe": "monte_neo.verify.stats",
+    "delay_scan": "monte_neo.verify.costs",
+    "delay_signals": "monte_neo.verify.costs",
+    "expand_grid": "monte_neo.verify.grid",
+    "expected_max_sharpe": "monte_neo.verify.stats",
+    "generate_keypair": "monte_neo.verify.signing",
+    "implausible_accuracy": "monte_neo.verify.lookahead",
+    "infer_periods_per_year": "monte_neo.verify.stats",
+    "lint_source": "monte_neo.verify.lint",
+    "load_certificate": "monte_neo.verify.recheck",
+    "load_ohlcv": "monte_neo.verify.ingest",
+    "load_signal_fn": "monte_neo.verify.ingest",
+    "load_signal_values": "monte_neo.verify.ingest",
+    "load_signals": "monte_neo.verify.ingest",
+    "mirror_future": "monte_neo.verify.lookahead",
+    "model_from_costs": "monte_neo.verify.verdict",
+    "normalize_signals": "monte_neo.verify.ingest",
+    "probabilistic_sharpe": "monte_neo.verify.stats",
+    "probe_determinism": "monte_neo.verify.lookahead",
+    "probe_perturbation": "monte_neo.verify.lookahead",
+    "probe_truncation": "monte_neo.verify.lookahead",
+    "recheck_certificate": "monte_neo.verify.recheck",
+    "resolve_positions": "monte_neo.verify.ingest",
+    "sharpe_per_bar": "monte_neo.verify.stats",
+    "sign_certificate": "monte_neo.verify.signing",
+    "signal_values": "monte_neo.verify.ingest",
+    "simulate": "monte_neo.verify.engine",
+    "to_jsonable": "monte_neo.verify.schema",
+    "to_positions": "monte_neo.verify.ingest",
+    "verify_grid": "monte_neo.verify.grid",
+    "verify_strategy": "monte_neo.verify.verdict",
+    "walk_forward": "monte_neo.verify.grid",
+}
 
 __all__ = [
     "POSITION_MODES",
@@ -97,3 +101,16 @@ __all__ = [
     "verify_strategy",
     "walk_forward",
 ]
+
+
+def __getattr__(name: str) -> Any:
+    module = _LAZY.get(name)
+    if module is None:
+        raise AttributeError(f"module 'monte_neo.verify' has no attribute {name!r}")
+    value = getattr(import_module(module), name)
+    globals()[name] = value  # later lookups skip __getattr__
+    return value
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(__all__))

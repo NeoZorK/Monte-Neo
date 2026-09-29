@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.35.1)
+# Monte-Neo Roadmap (v0.36.0)
 
 Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier for agent-built strategies).
 
@@ -89,6 +89,12 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 
 ## v0.35.1 — audit fixes
 - [x] Broken OHLC bars, MCP error reasons, clear input errors, fast CLI start
+
+## v0.36.0 — data quality, strategy workers, slim install
+- [x] data_quality check: one-bar spikes (bad ticks), frozen prices, split jumps, gaps in time, zero volume; bad-tick trap
+- [x] Strategy workers: parallel probes (--jobs), time limit per signal() call (--timeout), isolation (--isolate)
+- [x] Slim base install (488 MB -> 327 MB): research packages in extras `parquet` and `research`
+- [x] verify --precompile; docs for verifying untrusted code in Docker
 
 ## Next (v0.36+)
 - [ ] First public bench run (owner runs it; tooling ready in v0.32.0): Claude Code / Codex / Gemini CLI / Cursor → published leaderboard

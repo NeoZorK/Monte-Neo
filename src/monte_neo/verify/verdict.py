@@ -18,6 +18,7 @@ from monte_neo.verify import checks as rows
 from monte_neo.verify.breakdown import buy_and_hold, periods, regimes, series
 from monte_neo.verify.costs import breakeven_cost_bps, delay_scan
 from monte_neo.verify.engine import simulate
+from monte_neo.verify.executor import ProcessRunner, resolve_jobs, split_spec
 from monte_neo.verify.ingest import (
     POSITION_MODES,
     SignalFn,
@@ -29,6 +30,7 @@ from monte_neo.verify.ingest import (
 from monte_neo.verify.io_guard import IOWatch
 from monte_neo.verify.lint import lint_source
 from monte_neo.verify.market import SingleMarket, UniverseMarket, market_for
+from monte_neo.verify.quality import data_quality, quality_row, spike_profit_share
 from monte_neo.verify.schema import DISCLAIMER, VERDICT_SCHEMA_ID, aggregate_verdict, to_jsonable
 from monte_neo.verify.stats import bar_returns, deflated_sharpe, infer_periods_per_year, sharpe_per_bar
 from monte_neo.verify.timing import timing_significance
@@ -85,6 +87,9 @@ def verify_strategy(
     extra_checks: list[dict[str, Any]] | None = None,
     extra: dict[str, Any] | None = None,
     io_watch: IOWatch | None = None,
+    jobs: int | str | None = 1,
+    timeout: float | None = None,
+    isolate: bool = False,
 ) -> dict[str, Any]:
     """Verify one strategy and return a ``strategy-verdict/1`` report.
 
@@ -99,6 +104,9 @@ def verify_strategy(
     rows and report sections that take part in the verdict and certificate.
     ``io_watch`` lets a wrapper pass the watch that already covered the strategy
     import (grid search), so data read at import still counts.
+    ``jobs`` (a number or ``"auto"``), ``timeout`` (seconds per ``signal()`` call) and
+    ``isolate`` (no network, subprocesses or file writes) run a strategy file in worker
+    processes; see :mod:`monte_neo.verify.executor`.
     """
     if n_trials is not None and int(n_trials) < 1:
         raise ValueError(f"n_trials must be >= 1 (the chosen variant counts), got {n_trials}")
@@ -122,8 +130,59 @@ def verify_strategy(
     }
     if io_watch is None:
         io_watch = IOWatch(tuple(p for p in (df.attrs.get("source_path"),) if p))
-    with io_watch:
-        fn, src = _resolve_strategy(strategy, signal_fn, source)
+    runner = _runner_for(strategy, market, df, jobs, timeout, isolate)
+    if runner is not None:
+        # Workers load the strategy; this process only reads its source for the lint.
+        fn, src = runner, source if source is not None else runner.path.read_text(encoding="utf-8")
+    else:
+        if (timeout is not None or isolate or resolve_jobs(jobs) > 1) and not isinstance(signal_fn, ProcessRunner):
+            raise ValueError("jobs, timeout and isolate need strategy code in a file (strategy='file.py')")
+        with io_watch:
+            fn, src = _resolve_strategy(strategy, signal_fn, source)
+    try:
+        return _checks_and_report(
+            df, market, fn, src, signals, settings, io_watch, model, n_trials, trial_sharpes,
+            periods_per_year, holdout_fraction, min_trades, probe_checks, positions, extra_checks, extra,
+        )
+    finally:
+        if runner is not None:
+            runner.close()
+
+
+def _runner_for(
+    strategy: str | Path | None, market: Any, df: pd.DataFrame, jobs: int | str | None, timeout: float | None, isolate: bool
+) -> ProcessRunner | None:
+    """Worker processes for a strategy file when parallel, time-limited or isolated runs are asked for."""
+    n_jobs = resolve_jobs(jobs)
+    if strategy is None or (n_jobs == 1 and timeout is None and not isolate):
+        return None
+    path, func = split_spec(strategy)
+    if not path.is_file():
+        raise FileNotFoundError(f"strategy file not found: {path}")
+    data_paths = tuple(p for p in (df.attrs.get("source_path"),) if p)
+    return ProcessRunner(path, func, market.frame, jobs=n_jobs, timeout=timeout, isolate=isolate, data_paths=data_paths)
+
+
+def _checks_and_report(
+    df: pd.DataFrame,
+    market: SingleMarket | UniverseMarket,
+    fn: Any,
+    src: str | None,
+    signals: Any,
+    settings: dict[str, Any],
+    io_watch: IOWatch,
+    model: ExecutionModel | None,
+    n_trials: int | None,
+    trial_sharpes: Any,
+    periods_per_year: float | None,
+    holdout_fraction: float,
+    min_trades: int,
+    probe_checks: int,
+    positions: str,
+    extra_checks: list[dict[str, Any]] | None,
+    extra: dict[str, Any] | None,
+) -> dict[str, Any]:
+    n = market.n_bars
     if fn is None and signals is None:
         raise ValueError("provide signals or strategy code (strategy= / signal_fn=)")
     model = model or _default_model(n)
@@ -161,6 +220,8 @@ def verify_strategy(
     accuracy = market.accuracy(traded)
     total_return = float(run["total_return"])
     n_closed = int(run["n_closed_trades"])
+    quality = data_quality(ohlc, timestamps, market.volume)
+    profit_share = spike_profit_share(run["equity"], quality["spike_mask"], traded)
     bench = buy_and_hold(ohlc, model, market.benchmark_positions(), ppy)
     by_period = periods(run["equity"], bench["equity"], traded, timestamps, model.warmup_bars, ppy)
     by_regime = regimes(run["equity"], market.market_close(), model.warmup_bars, ppy)
@@ -168,10 +229,11 @@ def verify_strategy(
     checks = [
         integrity,
         *market.universe_checks(),
+        quality_row(quality, profit_share, market.symbols),
         rows.probe_row("determinism", determinism, "determinism"),
         rows.probe_row("lookahead_truncation", truncation, "truncation probe"),
         rows.probe_row("lookahead_perturbation", perturbation, "future-perturbation probe"),
-        rows.external_data_row(*((io_watch.files, io_watch.connections) if fn is not None else (None, None))),
+        rows.external_data_row(*(_outside_data(io_watch, fn) if fn is not None else (None, None))),
         rows.lint_row(lint),
         rows.accuracy_row(accuracy),
         *rows.economics_rows(model, total_return, breakeven, delay),
@@ -210,6 +272,16 @@ def verify_strategy(
         "series": series(run["equity"], bench["equity"], timestamps, model.warmup_bars),
     }
     return _report(checks, metrics, market, full, src, model, n_trials, settings, extra, sections)
+
+
+def _outside_data(io_watch: IOWatch, fn: Any) -> tuple[list[str], list[str]]:
+    """Data read by the strategy here and, for a runner, in its worker processes."""
+    files, conns = list(io_watch.files), list(io_watch.connections)
+    if isinstance(fn, ProcessRunner):
+        root = fn._owner or fn
+        files += [f for f in root.files if f not in files]
+        conns += [c for c in root.connections if c not in conns]
+    return files, conns
 
 
 def _report(

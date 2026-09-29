@@ -88,6 +88,12 @@ def _weight_core(  # pragma: no cover  # njit body; covered through run_weight_b
 
         if i < warmup or i + 1 >= n:
             continue
+        # Value of all open positions, kept up to date as orders fill below, so sizing an
+        # order costs O(1) instead of a loop over every instrument (O(instruments^2) per bar).
+        hold = 0.0
+        for s in range(m):
+            if qty[s] != 0.0:
+                hold += qty[s] * last_px[s]
         for s in range(m):
             target = weights[i, s]
             if target == applied[s]:
@@ -102,14 +108,13 @@ def _weight_core(  # pragma: no cover  # njit body; covered through run_weight_b
                 proceeds = qty[s] * px
                 cash += proceeds - abs(proceeds) * fee_rate
                 traded_notional += abs(proceeds)
+                hold -= qty[s] * last_px[s]
                 qty[s] = 0.0
                 fills += 1
                 closed += 1
             if target != 0.0:
-                base = cash + qty[s] * fill
-                for k in range(m):
-                    if k != s and qty[k] != 0.0:
-                        base += qty[k] * last_px[k]
+                held = qty[s] * last_px[s] if qty[s] != 0.0 else 0.0
+                base = cash + (hold - held) + qty[s] * fill
                 if base <= 0.0:
                     continue  # nothing left to invest; retried like the discrete engine
                 direction = 1.0 if target * base / fill > qty[s] else -1.0
@@ -119,12 +124,13 @@ def _weight_core(  # pragma: no cover  # njit body; covered through run_weight_b
                 if dq != 0.0:
                     cash -= dq * px + abs(dq * px) * fee_rate
                     traded_notional += abs(dq * px)
-                    qty[s] = desired
-                    fills += 1
                     if np.isnan(last_px[s]):
                         # First trade of a newly listed instrument: its fill is the only price known,
                         # and the next orders in this loop value the position with it.
                         last_px[s] = fill
+                    hold += (desired - qty[s]) * last_px[s]
+                    qty[s] = desired
+                    fills += 1
             applied[s] = target
 
     for s in range(m):
