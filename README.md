@@ -240,6 +240,8 @@ browser with one click; nothing is uploaded.
 ```bash
 pip install monte-neo              # verifier, CLI and MCP server
 pip install "monte-neo[sign]"      # + Ed25519 certificate signing
+pip install "monte-neo[parquet]"   # + read .parquet tables
+pip install "monte-neo[research]"  # + interactive research CLI
 pip install "monte-neo[plot]"      # + charts
 pip install "monte-neo[apple]"     # + Metal / MLX research engine (Apple Silicon)
 pip install "monte-neo[full]"      # everything

@@ -1,7 +1,7 @@
 """``monte-neo`` entry point: dispatch before importing anything heavy.
 
 ``verify``, ``bench`` and ``mcp`` load only what they need; ``--version`` loads
-nothing. Everything else opens the interactive research CLI.
+nothing. Everything else opens the interactive research CLI (extra ``research``).
 """
 
 from __future__ import annotations
@@ -29,8 +29,16 @@ def main() -> int:
         from monte_neo.mcp.server import main as mcp_main
 
         return mcp_main(sys.argv[2:])
-    from monte_neo.cli.app import main as app_main
-
+    try:
+        from monte_neo.cli.app import main as app_main
+    except ImportError as exc:
+        print(
+            f"The interactive research CLI needs extra packages ({exc.name or exc}): "
+            "pip install 'monte-neo[research]'.\n"
+            "Commands in the base install: monte-neo verify | bench | mcp | --version",
+            file=sys.stderr,
+        )
+        return 2
     return app_main()
 
 

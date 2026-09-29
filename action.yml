@@ -99,9 +99,14 @@ runs:
       env:
         MN_SIGN: ${{ inputs.signing-key != '' }}
         MN_PATH: ${{ github.action_path }}
+        MN_OHLCV: ${{ inputs.ohlcv }}
+        MN_SIGNALS: ${{ inputs.signals }}
       run: |
-        if [ "$MN_SIGN" = "true" ]; then
-          python -m pip install --quiet "$MN_PATH[sign]"
+        extras=()
+        if [ "$MN_SIGN" = "true" ]; then extras+=(sign); fi
+        case "$MN_OHLCV $MN_SIGNALS" in *.parquet*) extras+=(parquet) ;; esac
+        if [ ${#extras[@]} -gt 0 ]; then
+          python -m pip install --quiet "$MN_PATH[$(IFS=,; echo "${extras[*]}")]"
         else
           python -m pip install --quiet "$MN_PATH"
         fi

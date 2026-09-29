@@ -3,7 +3,9 @@
 ## From PyPI (recommended)
 
 ```bash
-pip install monte-neo                 # research-core (slim)
+pip install monte-neo                 # verifier, CLI (verify, bench) and MCP server (about 330 MB)
+pip install "monte-neo[parquet]"      # + read .parquet tables
+pip install "monte-neo[research]"     # + interactive research CLI (`monte-neo` without a command)
 pip install "monte-neo[apple]"        # Metal / MLX (Apple Silicon macOS)
 ```
 
@@ -35,6 +37,9 @@ monte-neo --version
 
 | Extra | When |
 |-------|------|
+| `parquet` | Read `.parquet` tables (pyarrow, about 150 MB); CSV works without it |
+| `research` | Interactive research CLI, data storage and native build (pyarrow, questionary, prompt-toolkit, pyyaml, python-dotenv, pybind11) |
+| `sign` | Ed25519 certificate signing |
 | `apple` | Metal / MLX on **macOS** (`sys_platform == 'darwin'`) |
 | `plot` | Charts / visualization helpers |
 | `data` | Binance downloader / websocket |
@@ -49,7 +54,7 @@ pip install "monte-neo[data]"
 pip install "monte-neo[full]"
 ```
 
-Missing plot/data imports raise a clear “install monte-neo[…]” error.
+Missing optional packages raise a clear “install monte-neo[…]” error (plot, data, parquet, research CLI).
 
 ## From source (developers)
 

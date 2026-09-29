@@ -24,6 +24,38 @@ def pytest_ignore_collect(collection_path: Path, config: pytest.Config) -> bool 
     return True if _TOP_LEVEL_MLX.search(text) else None
 
 
+# Research-engine tests that need MLX or the Metal GPU at run time. They run on the macOS CI job;
+# on machines without MLX (Linux) they are skipped instead of failing.
+APPLE_ONLY = {
+    "tests/unit/legacy_coverage/test_coverage_boost5.py::test_signal_factory_fallbacks",
+    "tests/unit/test_coverage_rest.py::test_tensor_ops",
+    "tests/unit/test_gpu_engine_parallel.py::test_backtest_batch_parallel_for_dynamic",
+    "tests/unit/test_gpu_lazy.py::test_backtest_lazy_scenarios_no_sl_tp",
+    "tests/unit/test_gpu_scenarios.py::test_run_scenarios_backtest_no_sl_tp",
+    "tests/unit/test_mc_engine.py::test_run_gpu_full_simulation",
+    "tests/unit/test_mc_engine.py::test_run_lazy_block_bootstrap",
+    "tests/unit/test_mlx_engine.py::test_backtest_batch_parallel",
+    "tests/unit/test_mlx_engine.py::test_backtest_batch_sequential",
+    "tests/unit/test_monte_carlo.py::test_mc_run",
+    "tests/unit/test_monte_carlo.py::test_mc_run_sequential",
+    "tests/unit/test_monte_carlo_engine.py::TestMonteCarloEngine::test_meets_targets_mdd_consecutive_losses",
+    "tests/unit/test_monte_carlo_engine.py::TestMonteCarloEngine::test_run_block_bootstrap_lazy",
+    "tests/unit/test_monte_carlo_engine.py::TestMonteCarloEngine::test_run_existing_scenarios",
+    "tests/unit/test_monte_carlo_engine.py::TestMonteCarloEngine::test_run_progress_callbacks",
+    "tests/unit/test_monte_carlo_engine.py::TestMonteCarloEngine::test_run_pure_gpu_mlx",
+}
+
+
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    """Skip the Apple-only research tests where MLX is not installed."""
+    if HAS_MLX:
+        return
+    skip = pytest.mark.skip(reason="needs MLX / Metal (Apple Silicon)")
+    for item in items:
+        if item.nodeid.split("[")[0] in APPLE_ONLY:
+            item.add_marker(skip)
+
+
 @pytest.fixture
 def sample_ohlcv():
     """Create sample OHLCV data."""

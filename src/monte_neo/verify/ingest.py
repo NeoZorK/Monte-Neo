@@ -28,7 +28,10 @@ SignalFn = Callable[[pd.DataFrame], Any]
 def _read_table(path: Path) -> pd.DataFrame:
     suffix = path.suffix.lower()
     if suffix == ".parquet":
-        return pd.read_parquet(path)
+        try:
+            return pd.read_parquet(path)
+        except ImportError as exc:
+            raise ImportError("reading .parquet needs pyarrow: pip install 'monte-neo[parquet]' (or use .csv)") from exc
     if suffix in (".csv", ".txt"):
         return pd.read_csv(path)
     raise ValueError(f"unsupported table format: {path.suffix} (use .csv or .parquet)")

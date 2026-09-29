@@ -18,6 +18,14 @@ Version source of truth: `src/monte_neo/_version.py`.
   `signal()` call that hangs with a clear error; `isolate` (CLI `--isolate`) blocks network, subprocesses
   and file writes outside the temp dir and removes secrets from the environment of the workers.
 
+### Changed
+- **Lighter install: 488 MB -> 327 MB.** The base install is the verifier, the CLI (`verify`, `bench`) and the
+  MCP server. Research packages moved to extras: `parquet` (pyarrow, for `.parquet` tables) and `research`
+  (the interactive `monte-neo` menu). Both print the extra to install when it is missing; the GitHub Action
+  installs `parquet` by itself for `.parquet` inputs.
+- Tests that need MLX / Metal are skipped on machines without MLX (Linux) instead of failing; they still
+  run on the macOS CI job.
+
 ## [v0.35.1] — 2026-09-29
 
 ### Fixed
