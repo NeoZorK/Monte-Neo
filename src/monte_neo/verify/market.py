@@ -62,6 +62,8 @@ class SingleMarket:
         self.n_bars = len(df)
         self.ohlc = {k: df[k].to_numpy(dtype=np.float64) for k in OHLC_COLS}
         self.timestamps = df.get("timestamp")
+        self.volume = df["volume"].to_numpy() if "volume" in df.columns else None
+        self.symbols: list[str] | None = None
 
     def integrity(self) -> dict[str, Any]:
         return rows.data_integrity(self.ohlc, self.timestamps)
@@ -143,6 +145,7 @@ class UniverseMarket:
             self.ohlc[k] = m
         keys = self.t_idx.astype(np.int64) * len(self.symbols) + self.s_idx
         self.duplicates = int(keys.size - np.unique(keys).size)
+        self.volume = frame["volume"].to_numpy() if "volume" in frame.columns else None
         # Rows of each symbol in time order (the table is sorted by time, so a stable sort keeps it).
         self._by_symbol = np.argsort(self.s_idx, kind="stable")
         self._symbol_bounds = np.searchsorted(self.s_idx[self._by_symbol], np.arange(len(self.symbols) + 1))

@@ -48,3 +48,22 @@ def universe_ohlcv(n: int = 700, symbols: int = 6, seed: int = 11, delist: bool 
             )
         )
     return pd.concat(frames, ignore_index=True)
+
+
+def bad_tick_ohlcv(n: int = 3000, spikes: int = 40, size: float = 0.15, seed: int = 3) -> pd.DataFrame:
+    """Hourly random walk with one-bar bad ticks: a close off by ``size`` that the next bar undoes."""
+    rng = np.random.default_rng(seed)
+    close = 100.0 * np.exp(np.cumsum(rng.normal(0.0, 0.004, n)))
+    at = rng.choice(np.arange(50, n - 2), size=spikes, replace=False)
+    close[at] *= 1.0 + size * rng.choice([-1.0, 1.0], size=spikes)
+    open_ = np.roll(close, 1)
+    open_[0] = close[0]
+    return pd.DataFrame(
+        {
+            "timestamp": pd.date_range("2021-01-01", periods=n, freq="h", tz="UTC"),
+            "open": open_,
+            "high": np.maximum(open_, close) * 1.0005,
+            "low": np.minimum(open_, close) * 0.9995,
+            "close": close,
+        }
+    )

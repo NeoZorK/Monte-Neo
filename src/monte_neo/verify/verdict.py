@@ -30,6 +30,7 @@ from monte_neo.verify.ingest import (
 from monte_neo.verify.io_guard import IOWatch
 from monte_neo.verify.lint import lint_source
 from monte_neo.verify.market import SingleMarket, UniverseMarket, market_for
+from monte_neo.verify.quality import data_quality, quality_row, spike_profit_share
 from monte_neo.verify.schema import DISCLAIMER, VERDICT_SCHEMA_ID, aggregate_verdict, to_jsonable
 from monte_neo.verify.stats import bar_returns, deflated_sharpe, infer_periods_per_year, sharpe_per_bar
 from monte_neo.verify.timing import timing_significance
@@ -219,6 +220,8 @@ def _checks_and_report(
     accuracy = market.accuracy(traded)
     total_return = float(run["total_return"])
     n_closed = int(run["n_closed_trades"])
+    quality = data_quality(ohlc, timestamps, market.volume)
+    profit_share = spike_profit_share(run["equity"], quality["spike_mask"], traded)
     bench = buy_and_hold(ohlc, model, market.benchmark_positions(), ppy)
     by_period = periods(run["equity"], bench["equity"], traded, timestamps, model.warmup_bars, ppy)
     by_regime = regimes(run["equity"], market.market_close(), model.warmup_bars, ppy)
@@ -226,6 +229,7 @@ def _checks_and_report(
     checks = [
         integrity,
         *market.universe_checks(),
+        quality_row(quality, profit_share, market.symbols),
         rows.probe_row("determinism", determinism, "determinism"),
         rows.probe_row("lookahead_truncation", truncation, "truncation probe"),
         rows.probe_row("lookahead_perturbation", perturbation, "future-perturbation probe"),

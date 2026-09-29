@@ -3,6 +3,21 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [Unreleased]
+
+### Added
+- **Data quality check (`data_quality`).** Data can be well formed and still wrong. The new check looks for
+  one-bar price spikes that the next bar undoes (bad ticks), runs of frozen prices, split-like jumps
+  (unadjusted splits), gaps in time beyond the usual nights and weekends, and bars without volume. Findings
+  warn; the check fails when more than half of the profit comes from spikes in instruments the strategy held.
+  Works on one instrument and on universes (reads a `volume` column when present).
+- **Trap Suite: bad data.** New `bad_ticks` dataset and `spike_fade` trap: honest code whose profit is bad
+  ticks must be rejected (55 traps, 25 honest controls).
+- **Strategy workers.** `jobs` (CLI `--jobs`, MCP, Action) runs the look-ahead probes of a strategy file in
+  parallel worker processes; `timeout` (CLI `--timeout`, default 300 s in MCP, 600 s in the Action) ends a
+  `signal()` call that hangs with a clear error; `isolate` (CLI `--isolate`) blocks network, subprocesses
+  and file writes outside the temp dir and removes secrets from the environment of the workers.
+
 ## [v0.35.1] — 2026-09-29
 
 ### Fixed

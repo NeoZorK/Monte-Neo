@@ -76,7 +76,7 @@ A simplified guide to the Monte-Neo file structure.
 - docs/guides/agents.md - Use the verifier from Claude Code / Codex / Gemini / Cursor / GitHub Actions
 - docs/guides/honesty-bench.md - Agent Backtest Honesty Bench: layout, metrics, fair-play rules
 - docs/verify.md - Browser page that checks a certificate's Ed25519 signature (docs/assets/verify-certificate.js)
-- docs/guides/trap-suite.md - Trap Suite catalogue (54 traps, 25 honest controls) and how to contribute a trap
+- docs/guides/trap-suite.md - Trap Suite catalogue (55 traps, 25 honest controls) and how to contribute a trap
 - src/monte_neo/bench/ - Honesty Bench (verify agent submissions, compare claims, leaderboard; v1 tasks + answer key)
 - src/monte_neo/cli/bench_cmd.py - `monte-neo bench` command
 - scripts/make_example_bench.py - Builds an example bench from the Trap Suite
@@ -92,7 +92,7 @@ A simplified guide to the Monte-Neo file structure.
 
 ### Source Code (src/monte_neo/)
 - src/monte_neo/_version.py - Central version management (v0.35.1)
-- src/monte_neo/verify/ - Strategy verifier (ingest, single and universe markets, look-ahead probes, outside-data watch, lint, benchmark and breakdown, HTML report, costs, stats, checks, verdict, grid + walk-forward, certificate recheck)
+- src/monte_neo/verify/ - Strategy verifier (ingest, single and universe markets, data quality, look-ahead probes, outside-data watch, strategy workers (jobs, timeout, isolation), lint, benchmark and breakdown, HTML report, costs, stats, checks, verdict, grid + walk-forward, certificate recheck)
 - src/monte_neo/mcp/ - MCP server (monte-neo-mcp) + agent-facing tool functions
 - src/monte_neo/cli/verify_cmd.py - `monte-neo verify` command (CI exit codes)
 - src/monte_neo/backtest/export_signals.py - Bring-your-own-signals export

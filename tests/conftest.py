@@ -1,8 +1,27 @@
 """Pytest configuration."""
 
+import importlib.util
+import re
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
+
+# MLX exists only on Apple Silicon: without it, modules that import it at the top are not collected.
+HAS_MLX = importlib.util.find_spec("mlx") is not None
+_TOP_LEVEL_MLX = re.compile(r"^(import mlx|from mlx)\b", re.MULTILINE)
+
+
+def pytest_ignore_collect(collection_path: Path, config: pytest.Config) -> bool | None:
+    """Skip test modules that need MLX on machines without it."""
+    if HAS_MLX or collection_path.suffix != ".py" or not collection_path.name.startswith("test_"):
+        return None
+    try:
+        text = collection_path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    return True if _TOP_LEVEL_MLX.search(text) else None
 
 
 @pytest.fixture

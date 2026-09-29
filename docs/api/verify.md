@@ -62,6 +62,7 @@ monte-neo verify --schema          # print the JSON schema
 | id | category | fails / warns when |
 |----|----------|--------------------|
 | `data_integrity` | integrity | NaN, non-positive prices, `high < low`, open or close outside high-low by more than 0.1% (smaller gaps are counted as vendor rounding), timestamps out of order (newest-first data) or duplicated, repeated (timestamp, symbol) rows in a universe (fail, stops the run early) |
+| `data_quality` | integrity | well-formed but suspicious prices: one-bar spikes (a move over max(20 x robust scale, 5%) that the next bar takes back by 75%), frozen prices (runs of 5+ flat bars over 2% of the data), split-like jumps (open / previous close near 2, 3, 4, 5, 10, 20 or the inverse), gaps in time (beyond the usual nights and weekends), more than 5% of bars without volume (warn); fail when more than half of the profit comes from spikes in instruments the strategy held |
 | `survivorship` | integrity | universe only: every symbol trades until the last bar, so delisted names are probably missing (warn) |
 | `determinism` | integrity | two runs of `signal(df)` on the same data disagree |
 | `lookahead_truncation` | lookahead | `signal(df[:t+1]) != signal(df)[:t+1]` at any checkpoint (the whole prefix is compared; checkpoints are spread evenly and also placed where the position changes) |

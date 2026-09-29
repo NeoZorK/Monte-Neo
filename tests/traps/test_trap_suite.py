@@ -100,6 +100,8 @@ TRAPS = [
     ("xs_symbol_history_rank", "universe", {"REJECT"}, {"lookahead_perturbation": "fail", "lookahead_static_lint": "warn"}),
     ("xs_momentum_rank", "universe", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
     ("xs_equal_weight", "universe", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
+    # Honest code on bad data: the profit is bad ticks that the next bar undoes.
+    ("spike_fade", "bad_ticks", {"REJECT"}, {"data_quality": "fail", "lookahead_truncation": "pass", "lookahead_static_lint": "pass"}),
     # A strong real edge: a high hit rate alone must not be called look-ahead.
     ("expanding_quantile_breakout", "planted", {"NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"implausible_accuracy": "pass"}),
 ]
@@ -109,7 +111,7 @@ HONEST = {"high_turnover", "sma_cross", "momentum", "expanding_zscore", "resampl
           "cut_fixed_bins", "hour_running_high", "rolling_min_periods",
           "rolling_apply_span", "hour_open_ref", "expanding_max_breakout",
           "loop_window_breakout", "rolling_polyfit_slope", "loop_slice_crossover", "rsi_loop",
-          "expanding_quantile_breakout", "xs_momentum_rank", "xs_equal_weight"}
+          "expanding_quantile_breakout", "xs_momentum_rank", "xs_equal_weight", "spike_fade"}
 # Parameterized strategies exercised through verify_grid (not in TRAPS).
 GRID_STRATEGIES = {"sma_params", "momentum_params"}
 

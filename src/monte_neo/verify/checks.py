@@ -14,6 +14,7 @@ from monte_neo.verify.stats import timestamp_series
 # Fix-it hints an agent can act on, keyed by check id.
 NEXT_ACTIONS: dict[str, str] = {
     "data_integrity": "Clean the OHLCV: sort bars oldest-first, drop duplicate timestamps, NaN rows, non-positive prices and broken bars (high < low, open or close outside high-low).",
+    "data_quality": "Check the flagged bars against another source: one-bar spikes, frozen prices, unadjusted splits and gaps are data errors that create fake profits.",
     "determinism": "Make the signal deterministic: seed every RNG and avoid wall-clock or I/O inside signal().",
     "lookahead_truncation": "The signal at bar t changes when later bars are removed: compute features only from rows <= t (no shift(-k), centered windows, bfill or full-sample stats).",
     "lookahead_perturbation": "Past signals change when the future is rewritten: remove whole-series statistics (mean/std/min/max over all rows) and future-dependent fills.",
