@@ -1,6 +1,5 @@
 import os
 
-import numpy as np
 import pytest
 
 from monte_neo.utils.cache import (
@@ -26,11 +25,12 @@ def test_save_load_json():
     loaded = load_cache("test.json")
     assert loaded == data
 
-def test_save_load_pickle():
-    data = np.array([1, 2, 3])
-    assert save_cache("test.pkl", data, use_pickle=True) is True
-    loaded = load_cache("test.pkl", use_pickle=True)
-    assert np.array_equal(loaded, data)
+def test_pickle_caches_are_refused():
+    """A pickle file runs code when it is loaded, so the cache never reads or writes one."""
+    with pytest.raises(ValueError, match="pickle"):
+        save_cache("test.pkl", [1, 2, 3], use_pickle=True)
+    with pytest.raises(ValueError, match="pickle"):
+        load_cache("test.pkl", use_pickle=True)
 
 def test_get_data_hash():
     d1 = "some data"

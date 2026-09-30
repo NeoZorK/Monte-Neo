@@ -74,7 +74,7 @@ class ProductionExporter:
             f.write("  echo 'Compilation failed!'\n")
             f.write("  exit 1\n")
             f.write("fi\n")
-        os.chmod(compile_sh, 0o755)
+        os.chmod(compile_sh, 0o700)  # runnable by the owner only
 
         # Export Metal shader for GPU execution
         self._export_metal(indicator, target_dir)

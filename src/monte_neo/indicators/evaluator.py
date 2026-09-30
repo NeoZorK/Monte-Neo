@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import ast
+import builtins
 from collections.abc import Callable
 from typing import Any
 
@@ -31,6 +33,28 @@ def sma(data, period=20):
         close = data['close'] if hasattr(data, 'close') else data
     return close.rolling(window=period).mean()
 
+_SAFE_BUILTIN_NAMES = (
+    "abs", "all", "any", "bool", "dict", "enumerate", "float", "int", "isinstance", "len", "list", "max", "min",
+    "pow", "range", "round", "slice", "sorted", "sum", "tuple", "zip",
+)
+_SAFE_BUILTINS = {name: getattr(builtins, name) for name in _SAFE_BUILTIN_NAMES}
+
+
+def _check_expression(source_code: str) -> None:
+    """Refuse an indicator expression that reaches for the interpreter's internals.
+
+    The source is one expression over ``data``, ``np``, ``pd``, ``rsi`` and ``sma``. Names or
+    attributes that start with an underscore (``__class__``, ``__import__``, ``_np`` aside) are
+    how such expressions escape a restricted namespace, so they are not allowed.
+    """
+    tree = ast.parse(source_code, mode="eval")
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute) and node.attr.startswith("_"):
+            raise ValueError(f"attribute {node.attr!r} is not allowed in an indicator expression")
+        if isinstance(node, ast.Name) and node.id.startswith("__"):
+            raise ValueError(f"name {node.id!r} is not allowed in an indicator expression")
+
+
 def compile_source(source_code: str) -> Callable[..., Any]:
     """Compile source code into a function."""
     try:
@@ -41,15 +65,17 @@ def compile_source(source_code: str) -> Callable[..., Any]:
             "_pd": pd,
             "rsi": rsi,
             "sma": sma,
-            "__builtins__": __builtins__,
+            "__builtins__": _SAFE_BUILTINS,
         }
+        _check_expression(source_code)
 
         func_code = (
             f"def _dynamic_calc(data, np, pd):\n    return {source_code}"
         )
 
         local_scope: dict[str, Any] = {}
-        exec(func_code, exec_globals, local_scope)
+        # A validated expression in a restricted namespace (see _check_expression and _SAFE_BUILTINS).
+        exec(func_code, exec_globals, local_scope)  # nosec B102
         return local_scope["_dynamic_calc"]
     except Exception as e:
         logger.debug(f"Failed to compile dynamic indicator: {e}")
@@ -59,7 +85,7 @@ def compile_source(source_code: str) -> Callable[..., Any]:
             f"def _dynamic_calc(data, np, pd):\n    return {safe_source}"
         )
         safe_scope: dict[str, Any] = {}
-        exec(func_code, exec_globals, safe_scope)
+        exec(func_code, exec_globals, safe_scope)  # nosec B102
         return safe_scope["_dynamic_calc"]
 
 def evaluate_fast_signals(compiled_code: Callable, data: pd.DataFrame | np.ndarray) -> np.ndarray:
