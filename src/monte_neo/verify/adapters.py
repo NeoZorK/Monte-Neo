@@ -63,23 +63,37 @@ def _prices_with_ohlc(close: pd.Series, **parts: Any) -> pd.DataFrame:
     return load_ohlcv(frame[["timestamp", "open", "high", "low", "close"]])
 
 
-def positions_from_fills(ohlcv: pd.DataFrame, fills: pd.DataFrame | list[dict[str, Any]]) -> np.ndarray:
+FILL_AT = ("open", "close")
+
+
+def positions_from_fills(
+    ohlcv: pd.DataFrame, fills: pd.DataFrame | list[dict[str, Any]], *, fill_at: str = "open"
+) -> np.ndarray:
     """Direction held after each bar from signed fill quantities (buys positive, sells negative).
 
     ``fills`` has ``timestamp`` and ``quantity``. The position is the running sum of the quantities
     filled up to and including each bar; its sign is returned (+1 long, 0 flat, -1 short).
+
+    ``fill_at`` says where in its bar a fill with timestamp ``t`` happened. ``"open"`` (Backtrader,
+    backtesting.py, Freqtrade): the order was decided at the close of the previous bar, so the
+    position appears one bar earlier. ``"close"`` (Nautilus on bar data, bt, Zipline on daily bars):
+    the fill happened at the close of bar ``t``, so the position appears at ``t``. Reading a close
+    fill as an open fill would give the strategy one bar of foresight.
     """
+    if fill_at not in FILL_AT:
+        raise ValueError(f"fill_at must be one of {FILL_AT}, got {fill_at!r}")
+    bars = _timestamps(ohlcv)
     table = pd.DataFrame(fills)
+    if table.empty:  # a strategy that never traded: flat all the way
+        return np.zeros(len(bars))
     missing = [c for c in FILL_COLUMNS if c not in table.columns]
     if missing:
         raise ValueError(f"fills need columns {list(FILL_COLUMNS)}, missing {missing}")
-    bars = _timestamps(ohlcv)
-    if table.empty:
-        return np.zeros(len(bars))
     when = _times(table["timestamp"]).to_numpy()
     qty = pd.to_numeric(table["quantity"], errors="raise").to_numpy(dtype=np.float64)
     # A fill stamped at a bar's open belongs to the decision at the previous close: index - 1.
-    where = np.maximum(np.searchsorted(bars.to_numpy(), when, side="left") - 1, 0)
+    where = np.searchsorted(bars.to_numpy(), when, side="left") - (1 if fill_at == "open" else 0)
+    where = np.clip(where, 0, len(bars) - 1)
     delta = np.zeros(len(bars))
     np.add.at(delta, where, qty)
     held = np.cumsum(delta)
@@ -197,6 +211,10 @@ def from_zipline(transactions: pd.DataFrame | list[dict[str, Any]], ohlcv: pd.Da
 
     ``perf.transactions`` from a zipline run is a column of lists of dicts; flatten it first with
     ``[t for day in perf.transactions for t in day]`` and pass the resulting list.
+
+    On daily bars Zipline stamps a transaction with the session's close time (for example 20:00 UTC).
+    The order was decided at the previous close and executed during that session, so the stamp is
+    reduced to its date and read as an open fill. Bars with a time of day (minute data) keep the stamp.
     """
     table = pd.DataFrame(transactions)
     if table.empty:
@@ -206,22 +224,126 @@ def from_zipline(transactions: pd.DataFrame | list[dict[str, Any]], ohlcv: pd.Da
             raise ValueError("Zipline transactions need 'dt' and 'amount'")
         fills = pd.DataFrame({"timestamp": table["dt"].to_numpy(), "quantity": table["amount"].to_numpy()})
     prices = load_ohlcv(ohlcv)
+    if not fills.empty and _is_daily(prices):
+        fills["timestamp"] = _times(fills["timestamp"]).normalize()
     return Adapted(prices, positions_from_fills(prices, fills), "sign")
 
 
-def from_fills(fills: pd.DataFrame | list[dict[str, Any]], ohlcv: pd.DataFrame | str) -> Adapted:
+def _is_daily(ohlcv: pd.DataFrame) -> bool:
+    """True when every bar is stamped at midnight (date-only bars)."""
+    return bool((_timestamps(ohlcv) == _timestamps(ohlcv).normalize()).all())
+
+
+def from_fills(
+    fills: pd.DataFrame | list[dict[str, Any]], ohlcv: pd.DataFrame | str, *, fill_at: str = "open"
+) -> Adapted:
     """Any framework: signed fills (``timestamp``, ``quantity``) → positions on ``ohlcv``.
 
-    The escape hatch for Backtrader (collect ``order.executed.dt`` and ``order.executed.size`` in
-    ``notify_order``), Nautilus (order-filled events) and hand-written engines.
+    The escape hatch for hand-written engines and frameworks without a dedicated adapter. Say where
+    in its bar a fill happens: ``fill_at="open"`` (the default) or ``"close"`` (see
+    :func:`positions_from_fills`).
     """
     prices = load_ohlcv(ohlcv)
-    return Adapted(prices, positions_from_fills(prices, fills), "sign")
+    return Adapted(prices, positions_from_fills(prices, fills, fill_at=fill_at), "sign")
+
+
+def from_backtrader(transactions: Any, ohlcv: pd.DataFrame | str) -> Adapted:
+    """A Backtrader run: the result of ``bt.analyzers.Transactions`` (``strat.analyzers.<name>.get_analysis()``).
+
+    Backtrader fills a market order at the open of the bar after the decision, so the fills are read as open fills.
+    A list of ``{"timestamp", "quantity"}`` fills (collected in ``notify_order``) works as well.
+    """
+    if isinstance(transactions, dict):
+        rows = [
+            {"timestamp": when, "quantity": float(item[0])}
+            for when, items in transactions.items()
+            for item in items
+        ]
+    else:
+        rows = transactions
+    prices = load_ohlcv(ohlcv)
+    return Adapted(prices, positions_from_fills(prices, rows, fill_at="open"), "sign")
+
+
+def from_backtesting_py(stats: Any, ohlcv: pd.DataFrame | str) -> Adapted:
+    """A backtesting.py run: the ``stats`` returned by ``Backtest.run()`` (uses ``stats["_trades"]``).
+
+    Run it with ``Backtest(..., finalize_trades=True)``: without it a trade still open at the last bar is
+    missing from ``_trades`` and the verified strategy would look flat at the end.
+    """
+    trades = stats["_trades"] if not isinstance(stats, pd.DataFrame) else stats
+    for col in ("Size", "EntryTime", "ExitTime"):
+        if col not in trades.columns:
+            raise ValueError(f"backtesting.py trades need a {col!r} column")
+    rows = [
+        {"timestamp": t, "quantity": float(q)}
+        for t, q in zip(trades["EntryTime"], trades["Size"], strict=True)
+    ] + [
+        {"timestamp": t, "quantity": -float(q)}
+        for t, q in zip(trades["ExitTime"], trades["Size"], strict=True)
+    ]
+    prices = load_ohlcv(ohlcv)
+    return Adapted(prices, positions_from_fills(prices, rows, fill_at="open"), "sign")
+
+
+def from_bt(result: Any, ohlcv: pd.DataFrame | str, security: str | None = None) -> Adapted:
+    """A bt run (pmorissette/bt): the target weights of one security, ``result.get_security_weights()``.
+
+    bt rebalances at the close of a bar, so the weight on date ``t`` is the position decided at ``t``.
+    Pass a weights ``DataFrame`` (dates x securities) instead of the result if you have one.
+    """
+    weights = result if isinstance(result, pd.DataFrame) else result.get_security_weights()
+    if security is None:
+        if weights.shape[1] != 1:
+            raise ValueError(f"the result holds {list(weights.columns)}: pass security=")
+        security = weights.columns[0]
+    if security not in weights.columns:
+        raise ValueError(f"security {security!r} is not in the weights ({list(weights.columns)})")
+    prices = load_ohlcv(ohlcv)
+    bars = _timestamps(prices)
+    series = pd.Series(weights[security].to_numpy(dtype=np.float64), index=_naive(pd.DatetimeIndex(pd.to_datetime(weights.index, utc=True))))
+    series = series[~series.index.duplicated(keep="last")].sort_index()
+    held = series.reindex(series.index.union(bars)).ffill().reindex(bars).fillna(0.0).to_numpy()
+    return Adapted(prices, np.clip(held, -1.0, 1.0), "weight")
+
+
+def from_nautilus(fills: Any, ohlcv: pd.DataFrame | str, instrument: str | None = None, *, fill_at: str = "close") -> Adapted:
+    """A Nautilus Trader run: the order fills report of the engine (or of ``engine.trader``).
+
+    Pass the ``BacktestEngine``, or the DataFrame from ``engine.trader.generate_order_fills_report()``.
+    On bar data Nautilus fills a market order at the bar it was decided on, so the default is
+    ``fill_at="close"``; use ``"open"`` if your fills are stamped at the next bar's open. With several
+    instruments name one with ``instrument`` (for example ``"AAA.XNAS"``).
+    """
+    report = fills.trader.generate_order_fills_report() if hasattr(fills, "trader") else pd.DataFrame(fills)
+    if report.empty:
+        rows: list[dict[str, Any]] = []
+    else:
+        for col in ("side", "filled_qty", "ts_last"):
+            if col not in report.columns:
+                raise ValueError(f"the Nautilus fills report needs a {col!r} column")
+        if "instrument_id" in report.columns:
+            names = sorted(report["instrument_id"].astype(str).unique())
+            if instrument is None and len(names) > 1:
+                raise ValueError(f"the report holds several instruments {names}: pass instrument=")
+            if instrument is not None:
+                report = report[report["instrument_id"].astype(str) == instrument]
+        sign = np.where(report["side"].astype(str).str.upper().str.contains("BUY"), 1.0, -1.0)
+        rows = [
+            {"timestamp": t, "quantity": float(q) * s}
+            for t, q, s in zip(report["ts_last"], pd.to_numeric(report["filled_qty"]), sign, strict=True)
+        ]
+    prices = load_ohlcv(ohlcv)
+    return Adapted(prices, positions_from_fills(prices, rows, fill_at=fill_at), "sign")
 
 
 __all__ = [
     "Adapted",
+    "from_backtesting_py",
+    "from_backtrader",
+    "from_bt",
     "from_fills",
+    "from_nautilus",
     "from_freqtrade",
     "from_lean",
     "from_vectorbt",
