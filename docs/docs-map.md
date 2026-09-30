@@ -20,8 +20,9 @@ A simplified guide to the Monte-Neo file structure.
 - glama.json - Glama MCP catalogue ownership claim
 - SECURITY.md - Vulnerability reporting (GitHub Security Advisories)
 - .github/workflows/pypi-smoke.yml - PyPI bare-install smoke (schedule / dispatch / release)
+- .github/workflows/docker.yml - Manual rebuild of the GHCR verifier image for a release (scripts/build_docker_image.sh)
 - .github/workflows/verify-action.yml - Self-test of action.yml (leaky strategy must be rejected)
-- .github/workflows/publish.yml - Tag-driven PyPI publish + GitHub Release from CHANGELOG
+- .github/workflows/publish.yml - Tag-driven PyPI publish + GitHub Release from CHANGELOG + GHCR image
 - .github/workflows/release.yml - Manual release: version check, tag as NeoZorK, start publish
 - scripts/verify_pypi_install.sh - Installs a release from PyPI into a clean venv and runs verify, recheck, signing, bench and MCP (run by publish.yml after each release and weekly)
 - CONTRIBUTING.md - Root pointer to contributing guide
