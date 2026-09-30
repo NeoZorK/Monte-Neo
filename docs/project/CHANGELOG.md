@@ -3,6 +3,13 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [Unreleased]
+
+### Fixed
+- The Docker image on GHCR is now built by the `docker` job of `publish.yml` (after the PyPI smoke test), through
+  `scripts/build_docker_image.sh`, which waits for the package index. `docker.yml` is a manual rebuild. In v0.41.0 the
+  separate `workflow_run` build never started and the first manual run hit the index delay.
+
 ## [v0.41.0] — 2026-09-29
 
 ### Added
