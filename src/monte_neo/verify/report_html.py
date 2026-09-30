@@ -289,6 +289,20 @@ def _grid_section(grid: dict[str, Any] | None) -> str:
     )
 
 
+def _carry(model: dict[str, Any]) -> str:
+    """Funding and borrow fees, when the cost model has them."""
+    parts = []
+    if _positive(model.get("funding_bps_per_bar")):
+        parts.append(f"{_num(model.get('funding_bps_per_bar'))} bps funding per bar")
+    if _positive(model.get("borrow_bps_per_bar")):
+        parts.append(f"{_num(model.get('borrow_bps_per_bar'))} bps borrow fee per bar on shorts")
+    return " + " + " + ".join(parts) if parts else ""
+
+
+def _positive(value: Any) -> bool:
+    return isinstance(value, int | float) and not isinstance(value, bool) and math.isfinite(value) and value > 0
+
+
 def render_html(report: dict[str, Any]) -> str:
     """The certificate as a standalone HTML page (no scripts, no network)."""
     verdict = str(report.get("verdict", ""))
@@ -347,14 +361,16 @@ def render_html(report: dict[str, Any]) -> str:
         + _regimes_table(breakdown)
         + _grid_section(report.get("grid"))
         + "<h2>Reproduce</h2><div class='card'>"
-        f"<p>Costs: {_num(model.get('commission_bps'))} bps commission + {_num(model.get('slippage_bps'))} bps slippage per side; "
+        f"<p>Costs: {_num(model.get('commission_bps'))} bps commission + {_num(model.get('slippage_bps'))} bps slippage per side"
+        f"{_carry(model)}; "
         f"fills at the next bar's {'open' if model.get('fill_policy') == 'next_bar_open' else 'close'}; "
         f"{_e(model.get('side_mode', ''))}; warm-up {_e(model.get('warmup_bars', ''))} bars; "
         f"n_trials {_e(repro.get('n_trials', ''))}; min_trades {_e(settings.get('min_trades', '—'))}.</p>"
-        f"<p class='mono'>data {_e(repro.get('data_sha256', ''))}<br>signals {_e(repro.get('signals_sha256', ''))}"
-        f"<br>source {_e(repro.get('source_sha256', ''))}</p>"
+        f"<p class='mono'>data {_e(repro.get('data_sha256') or '—')}<br>signals {_e(repro.get('signals_sha256') or '—')}"
+        f"<br>source {_e(repro.get('source_sha256') or '—')}</p>"
         "<p>Re-run with the same data and code: <span class='mono'>monte-neo verify --recheck CERT --ohlcv DATA "
-        "--strategy STRATEGY.py</span></p></div>"
+        + ("--strategy STRATEGY.py" if repro.get("source_sha256") else "--signals SIGNALS")
+        + "</span></p></div>"
         f"<p class='muted'>{_e(report.get('disclaimer', ''))}</p>"
         "</main></body></html>\n"
     )

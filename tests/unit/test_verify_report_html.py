@@ -91,3 +91,17 @@ def test_percent_formatting_handles_missing_values(report) -> None:
     page = render_html(broken)
     assert "nan%" not in page.lower() and "<b>nan" not in page.lower()
     assert "<b>—</b>" in page
+
+
+def test_signals_only_report_has_no_none_and_names_the_carry_fees() -> None:
+    import numpy as np
+
+    from monte_neo.backtest import synthetic_ohlcv
+    from monte_neo.verify import model_from_costs, verify_strategy
+    from monte_neo.verify.report_html import render_html
+
+    df = synthetic_ohlcv(600, seed=1)
+    model = model_from_costs(n_bars=600, borrow_bps_per_bar=1.5, funding_bps_per_bar=0.2)
+    page = render_html(verify_strategy(df, signals=-np.ones(600), model=model))
+    assert "None" not in page
+    assert "--signals SIGNALS" in page and "borrow fee per bar on shorts" in page and "funding per bar" in page

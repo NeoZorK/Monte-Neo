@@ -71,7 +71,9 @@ __all__ = [
     "VERDICTS",
     "VERDICT_JSON_SCHEMA",
     "VERDICT_SCHEMA_ID",
+    "Certificate",
     "aggregate_verdict",
+    "badge_payload",
     "bar_returns",
     "breakeven_cost_bps",
     "call_signal_fn",
@@ -81,6 +83,11 @@ __all__ = [
     "delay_signals",
     "expand_grid",
     "expected_max_sharpe",
+    "from_fills",
+    "from_freqtrade",
+    "from_lean",
+    "from_vectorbt",
+    "from_zipline",
     "generate_keypair",
     "implausible_accuracy",
     "infer_periods_per_year",
@@ -100,6 +107,7 @@ __all__ = [
     "recheck_certificate",
     "resolve_positions",
     "sharpe_per_bar",
+    "show",
     "sign_certificate",
     "signal_values",
     "simulate",
@@ -108,7 +116,6 @@ __all__ = [
     "verify_grid",
     "verify_strategy",
     "walk_forward",
-    "Certificate",
 ]
 
 

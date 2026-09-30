@@ -56,7 +56,7 @@ then `from_fills(strategy.fills, prices).verify()`.
 ## Jupyter
 
 `verify_strategy` and `verify_grid` return a `Certificate`: a normal `dict` that draws the HTML report when
-it is the last value of a notebook cell. The report sits in a sandboxed frame, so notebook and report styles do
+it is the last value of a notebook cell. Printed on its own it shows one summary line (`<Certificate REJECT aaa517d7cfc1ec16: 24 checks, 3 failed>`); the data is unchanged (`report["checks"]`, `dict(report)`, `json.dumps(report)`). The report sits in a sandboxed frame, so notebook and report styles do
 not mix. A certificate loaded from a JSON file is shown with `monte_neo.verify.show(cert)`.
 
 ```python
@@ -82,9 +82,16 @@ fits, shuffled splits, ...):
 ```yaml
 repos:
   - repo: https://github.com/NeoZorK/Monte-Neo
-    rev: v0.43.0
+    rev: v0.43.1
     hooks:
       - id: monte-neo-lint
+```
+
+By default the hook checks every Python file. A data-preparation script may legitimately use `shift(-1)` to build labels, so limit the hook to your strategy files:
+
+```yaml
+      - id: monte-neo-lint
+        files: ^strategies/
 ```
 
 The hook runs `monte-neo verify --lint FILE...`. It exits 1 when any file has a fail-level finding and prints

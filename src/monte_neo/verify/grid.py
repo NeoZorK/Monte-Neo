@@ -46,6 +46,9 @@ def expand_grid(grid: dict[str, list[Any]]) -> list[dict[str, Any]]:
     if not grid:
         raise ValueError("grid must name at least one parameter")
     names = sorted(grid)
+    for k in names:
+        if isinstance(grid[k], str | bytes) or not hasattr(grid[k], "__iter__"):
+            raise ValueError(f"grid values must be lists, for example {{\"{k}\": [10, 20]}}")
     values = [list(grid[k]) for k in names]
     if any(not v for v in values):
         raise ValueError("every grid parameter needs at least one value")
