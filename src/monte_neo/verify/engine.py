@@ -13,7 +13,7 @@ from typing import Any
 import numpy as np
 
 from monte_neo.backtest.bar_engine import run_bar_equity
-from monte_neo.backtest.model import ExecutionModel
+from monte_neo.backtest.model import ExecutionModel, require_no_symbol_costs
 from monte_neo.backtest.weight_engine import run_weight_backtest
 
 
@@ -29,6 +29,7 @@ def simulate(ohlc: dict[str, np.ndarray], positions: np.ndarray, model: Executio
         return run_weight_backtest(
             ohlc["open"], ohlc["close"], np.asarray(positions, dtype=np.float64), model=model, high=ohlc["high"], low=ohlc["low"]
         )
+    require_no_symbol_costs(model, "single-instrument")
     return run_bar_equity(ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"], positions, model=model)
 
 

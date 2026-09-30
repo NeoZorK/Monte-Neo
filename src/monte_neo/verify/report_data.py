@@ -86,10 +86,10 @@ def cost_curve(
 ) -> dict[str, Any]:
     """Net return when the per-side cost (commission, no slippage) is 0 ... 50 bps, and the modeled cost."""
     points = [
-        {"bps": lvl, "return": round(float(_total_return(ohlc, positions, replace(model, commission_bps=lvl, slippage_bps=0.0, impact_bps=0.0))), 5)}
+        {"bps": lvl, "return": round(float(_total_return(ohlc, positions, replace(model, commission_bps=lvl, slippage_bps=0.0, impact_bps=0.0, symbol_costs=()))), 5)}
         for lvl in levels
     ]
-    return {"modeled_bps": round(float(model.commission_bps + model.effective_slip_bps), 3), "points": points}
+    return {"modeled_bps": round(float(model.mean_side_cost_bps), 3), "points": points}
 
 
 def _streak(flags: np.ndarray) -> int:

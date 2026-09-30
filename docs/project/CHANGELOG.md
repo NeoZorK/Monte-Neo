@@ -3,6 +3,17 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.45.0] — 2026-09-30
+
+### Added
+- **Per-symbol costs for universes** (`--costs-file`, MCP `symbol_costs`, Action `costs-file`, Python `symbol_costs=`): a JSON
+  mapping gives each symbol its own commission and slippage in bps, with a `default` row; a symbol takes its own values, then
+  `default`, then the uniform costs. A name that is not in the data is an error. The resolved table is written into the
+  certificate's cost model (one row per symbol), so a recheck needs no other input; a run without per-symbol costs keeps its
+  certificate id. The target-weight engine charges each instrument its own costs; a table of equal rows equals the uniform model
+  bit for bit, and an independent reference covers different costs. The cost checks and the report use the average of the rows.
+  The engines that would ignore per-symbol costs (single instrument, batch, shared-cash) refuse them.
+
 ## [v0.44.0] — 2026-09-30
 
 ### Added
