@@ -178,3 +178,11 @@ def test_cli_lint_only_for_pre_commit(tmp_path) -> None:
     assert verify_main(["--lint", str(good), str(bad)]) == 1
     assert verify_main(["--lint", str(broken)]) == 0  # a syntax error is the compiler's job, not a look-ahead finding
     assert verify_main(["--lint", str(tmp_path / "missing.py")]) == 3
+
+
+def test_certificate_prints_a_short_summary_not_the_whole_dict(prices: pd.DataFrame) -> None:
+    report = verify_strategy(prices, signals=np.sign(np.sin(np.arange(len(prices)) / 20.0)))
+    text = repr(report)
+    assert text.startswith("<Certificate ") and report["certificate_id"] in text and len(text) < 120
+    assert dict(report)["verdict"] == report["verdict"] and "checks" in report
+    assert repr(Certificate()) == "<Certificate None None: 0 checks, 0 failed>"

@@ -3,6 +3,29 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.43.1] — 2026-09-30
+
+Quality release after a full check of the product as a customer (clean install from PyPI on Python 3.11, 3.12 and 3.13,
+every command, the MCP server on SDK 1.x and 2.x, the Action script, the Docker image, real vectorbt and Backtrader runs,
+an independent re-implementation of both engines and of the Sharpe statistics, 70+ edge inputs).
+
+### Fixed
+- **A strategy split over several files now works.** A helper module, a package or a parameter file next to the strategy
+  file failed with `No module named ...` in every mode. The strategy's folder is now on the import path (at the end, so it
+  can never shadow numpy or the standard library).
+- `monte-neo --help` (and `-h`, `help`) print the commands instead of failing without the research extra; an unknown
+  command says so.
+- A command-line usage error (`--n-trials abc`) exits with **3**, not 2: 2 means REJECT and must not appear for a typo.
+- `from monte_neo.verify import *` exposes every public name (`show`, `from_vectorbt`, ...); a test keeps `__all__` complete.
+- A headerless signals CSV keeps its first value (it used to lose it: "signal length 2999 != bar count 3000").
+- CSV files separated by `;`, tab or `|` are read.
+- The HTML report no longer prints `None` for a signals-only run, names the right recheck option, and mentions funding and
+  borrow fees when the model has them. The example gallery is regenerated with the current engine.
+- The static lint no longer warns on `model.fit(X[train], y[train])` (a fit on a chosen slice, as in walk-forward code);
+  a fit on a whole array still warns.
+- `Certificate` prints one summary line instead of a 50 KB dict; a grid whose values are not lists says so.
+- The pre-commit guide shows how to limit the hook to strategy files.
+
 ## [v0.43.0] — 2026-09-30
 
 ### Added

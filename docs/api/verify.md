@@ -44,6 +44,7 @@ monte-neo verify --lint strategy.py other.py   # static lint only (pre-commit); 
 monte-neo verify --precompile      # compile and cache the engines once (Docker images, CI caches)
 ```
 
+- A strategy file may import modules from its own folder (a helper file, a package) and read a parameter file next to it. Under `--isolate`, reads stay allowed and writes stay blocked. Do not read price data files from strategy code: the `external_data` check fails on that.
 - `--jobs N|auto`: run the look-ahead probes of a strategy file in N worker processes. Helps when
   one `signal()` call takes a noticeable time (ML models); a light strategy is faster with the default 1.
 - `--timeout SECONDS`: a `signal()` call that runs longer ends the run with an error instead of hanging.
@@ -60,7 +61,7 @@ monte-neo verify --precompile      # compile and cache the engines once (Docker 
 | 0 | `PASS` or `PASS_WITH_WARNINGS` |
 | 1 | `NEEDS_MORE_EVIDENCE` |
 | 2 | `REJECT` |
-| 3 | Usage or input error (not a verdict) |
+| 3 | Usage or input error, including an invalid command-line option (not a verdict) |
 | 4 | `--recheck`: the certificate was not reproduced |
 | 5 | `--check-signature`: the signature is invalid, or the certificate was signed by a key other than `--public-key` |
 
