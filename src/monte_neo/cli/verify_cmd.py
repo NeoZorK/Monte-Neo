@@ -45,6 +45,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--funding-bps-per-bar", type=float, default=0.0, help="Funding charged on every open position, bps of its value per bar (default 0)")
     p.add_argument("--borrow-bps-per-bar", type=float, default=0.0, help="Borrow fee charged on short positions only, bps of their value per bar (default 0)")
+    p.add_argument("--costs-file", metavar="PATH_OR_JSON", help='Per-symbol costs for a universe: a JSON file or text, {"AAA": {"commission_bps": 2, "slippage_bps": 1}, "default": {...}}')
     p.add_argument("--sl-pct", type=float, default=0.0, help="Stop-loss in percent of the entry price, tested inside each bar (default off)")
     p.add_argument("--tp-pct", type=float, default=0.0, help="Take-profit in percent of the entry price (default off)")
     p.add_argument("--trail-pct", type=float, default=0.0, help="Trailing stop in percent from the best price since entry (default off)")
@@ -258,6 +259,7 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
             "timeout": args.timeout,
             "isolate": args.isolate,
             "claim": args.claim,
+            "symbol_costs": args.costs_file,
         }
         if args.grid:
             report = verify_grid(df, _load_grid(args.grid), strategy=args.strategy, folds=args.folds, **common)

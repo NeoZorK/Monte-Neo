@@ -289,6 +289,21 @@ def _grid_section(grid: dict[str, Any] | None) -> str:
     )
 
 
+def _symbol_costs(model: dict[str, Any]) -> str:
+    """The cost sentence: one commission and slippage, or the range over the per-symbol rows."""
+    rows = [r for r in (model.get("symbol_costs") or []) if isinstance(r, list | tuple) and len(r) == 3]
+    if not rows:
+        return f"{_num(model.get('commission_bps'))} bps commission + {_num(model.get('slippage_bps'))} bps slippage per side"
+    commission = [float(r[1]) for r in rows if isinstance(r[1], int | float)]
+    slippage = [float(r[2]) for r in rows if isinstance(r[2], int | float)]
+    if not commission or not slippage:
+        return "costs by symbol"
+    return (
+        f"by symbol, {len(rows)} symbols: {_num(min(commission))}-{_num(max(commission))} bps commission + "
+        f"{_num(min(slippage))}-{_num(max(slippage))} bps slippage per side"
+    )
+
+
 def _carry(model: dict[str, Any]) -> str:
     """Funding and borrow fees, when the cost model has them."""
     parts = []
@@ -370,7 +385,7 @@ def render_html(report: dict[str, Any]) -> str:
         + _regimes_table(breakdown)
         + _grid_section(report.get("grid"))
         + "<h2>Reproduce</h2><div class='card'>"
-        f"<p>Costs: {_num(model.get('commission_bps'))} bps commission + {_num(model.get('slippage_bps'))} bps slippage per side"
+        f"<p>Costs: {_symbol_costs(model)}"
         f"{_carry(model)}{_stops(model)}; "
         f"fills at the next bar's {'open' if model.get('fill_policy') == 'next_bar_open' else 'close'}; "
         f"{_e(model.get('side_mode', ''))}; warm-up {_e(model.get('warmup_bars', ''))} bars; "

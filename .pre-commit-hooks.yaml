@@ -2,7 +2,7 @@
 #
 #   repos:
 #     - repo: https://github.com/NeoZorK/Monte-Neo
-#       rev: v0.44.0
+#       rev: v0.45.0
 #       hooks:
 #         - id: monte-neo-lint
 - id: monte-neo-lint

@@ -14,7 +14,7 @@ from monte_neo.backtest.metal_economics import (
     metal_economics_eligible,
     try_metal_batch_returns,
 )
-from monte_neo.backtest.model import ExecutionModel, require_no_borrow
+from monte_neo.backtest.model import ExecutionModel, require_no_borrow, require_no_symbol_costs
 
 
 @njit(cache=True, parallel=True)
@@ -84,6 +84,7 @@ def run_bar_backtest_batch(
     """
     model = model or ExecutionModel()
     require_no_borrow(model, "batch")
+    require_no_symbol_costs(model, "batch")
     o = np.asarray(open_, dtype=np.float64)
     h = np.asarray(high, dtype=np.float64)
     l = np.asarray(low, dtype=np.float64)

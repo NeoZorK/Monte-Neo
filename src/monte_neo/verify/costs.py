@@ -22,7 +22,7 @@ def breakeven_cost_bps(
     """Per-side cost (commission, slippage 0) at which total return reaches zero."""
 
     def at(bps: float) -> float:
-        return _total_return(ohlc, signals, replace(model, commission_bps=bps, slippage_bps=0.0, impact_bps=0.0))
+        return _total_return(ohlc, signals, replace(model, commission_bps=bps, slippage_bps=0.0, impact_bps=0.0, symbol_costs=()))
 
     gross = at(0.0)
     if gross <= 0.0:

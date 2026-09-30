@@ -35,8 +35,8 @@ def _weight_core(  # pragma: no cover  # njit body; covered through run_weight_b
     weights: np.ndarray,
     last_bar: np.ndarray,
     fill_open: bool,
-    commission_bps: float,
-    slip_bps: float,
+    fee_rates: np.ndarray,
+    slip_rates: np.ndarray,
     initial_cash: float,
     warmup: int,
     funding_bps: float,
@@ -58,8 +58,6 @@ def _weight_core(  # pragma: no cover  # njit body; covered through run_weight_b
     fills = 0
     closed = 0
     traded_notional = 0.0
-    fee_rate = commission_bps * 1e-4
-    slip_rate = slip_bps * 1e-4
     fund_rate = funding_bps * 1e-4
     borrow_rate = borrow_bps * 1e-4
     use_sl = sl_pct > 0.0
@@ -75,9 +73,9 @@ def _weight_core(  # pragma: no cover  # njit body; covered through run_weight_b
         for s in range(m):
             if qty[s] != 0.0 and i > last_bar[s]:
                 side = 1.0 if qty[s] > 0.0 else -1.0
-                px = last_px[s] * (1.0 - side * slip_rate)
+                px = last_px[s] * (1.0 - side * slip_rates[s])
                 proceeds = qty[s] * px
-                cash += proceeds - abs(proceeds) * fee_rate
+                cash += proceeds - abs(proceeds) * fee_rates[s]
                 traded_notional += abs(proceeds)
                 qty[s] = 0.0
                 applied[s] = 0.0
@@ -118,9 +116,9 @@ def _weight_core(  # pragma: no cover  # njit body; covered through run_weight_b
                         sl_lvl[s], tp_lvl[s], peak_lvl[s], trail_pct,
                     )
                     if hit != 0:
-                        px = exit_raw * (1.0 - float(pos) * slip_rate)
+                        px = exit_raw * (1.0 - float(pos) * slip_rates[s])
                         proceeds = qty[s] * px
-                        cash += proceeds - abs(proceeds) * fee_rate
+                        cash += proceeds - abs(proceeds) * fee_rates[s]
                         traded_notional += abs(proceeds)
                         qty[s] = 0.0
                         applied[s] = 0.0
@@ -152,9 +150,9 @@ def _weight_core(  # pragma: no cover  # njit body; covered through run_weight_b
             # Close leg: a flat target or a change of side closes the whole position first.
             if qty[s] != 0.0 and (target == 0.0 or (target > 0.0) != (qty[s] > 0.0)):
                 side = 1.0 if qty[s] > 0.0 else -1.0
-                px = fill * (1.0 - side * slip_rate)
+                px = fill * (1.0 - side * slip_rates[s])
                 proceeds = qty[s] * px
-                cash += proceeds - abs(proceeds) * fee_rate
+                cash += proceeds - abs(proceeds) * fee_rates[s]
                 traded_notional += abs(proceeds)
                 hold -= qty[s] * last_px[s]
                 qty[s] = 0.0
@@ -166,11 +164,11 @@ def _weight_core(  # pragma: no cover  # njit body; covered through run_weight_b
                 if base <= 0.0:
                     continue  # nothing left to invest; retried like the discrete engine
                 direction = 1.0 if target * base / fill > qty[s] else -1.0
-                px = fill * (1.0 + direction * slip_rate)
+                px = fill * (1.0 + direction * slip_rates[s])
                 desired = target * base / px
                 dq = desired - qty[s]
                 if dq != 0.0:
-                    cash -= dq * px + abs(dq * px) * fee_rate
+                    cash -= dq * px + abs(dq * px) * fee_rates[s]
                     traded_notional += abs(dq * px)
                     if np.isnan(last_px[s]):
                         # First trade of a newly listed instrument: its fill is the only price known,
@@ -195,9 +193,9 @@ def _weight_core(  # pragma: no cover  # njit body; covered through run_weight_b
     for s in range(m):
         if qty[s] != 0.0:
             side = 1.0 if qty[s] > 0.0 else -1.0
-            px = last_px[s] * (1.0 - side * slip_rate)
+            px = last_px[s] * (1.0 - side * slip_rates[s])
             proceeds = qty[s] * px
-            cash += proceeds - abs(proceeds) * fee_rate
+            cash += proceeds - abs(proceeds) * fee_rates[s]
             traded_notional += abs(proceeds)
             qty[s] = 0.0
             fills += 1
@@ -227,6 +225,20 @@ def normalize_weights(weights: Any, *, long_short: bool = True, gross_limit: flo
     return np.ascontiguousarray(w), int(np.count_nonzero(over))
 
 
+def _cost_rates(model: ExecutionModel, instruments: int) -> tuple[np.ndarray, np.ndarray]:
+    """Commission and slippage per side as fractions, one per instrument (bps -> fraction like the discrete engine)."""
+    if not model.symbol_costs:
+        return (
+            np.full(instruments, float(model.commission_bps) * 1e-4),
+            np.full(instruments, float(model.effective_slip_bps) * 1e-4),
+        )
+    if len(model.symbol_costs) != instruments:
+        raise ValueError(f"per-symbol costs name {len(model.symbol_costs)} symbols but the table has {instruments} instruments")
+    fee = np.array([c for _, c, _ in model.symbol_costs], dtype=np.float64) * 1e-4
+    slip = np.array([s + float(model.impact_bps) for _, _, s in model.symbol_costs], dtype=np.float64) * 1e-4
+    return fee, slip
+
+
 def run_weight_backtest(
     open_: np.ndarray,
     close: np.ndarray,
@@ -246,6 +258,8 @@ def run_weight_backtest(
     levels come from the price a position is opened at (from flat, or after a change of side),
     the stop is tested before the take-profit when a bar touches both, and the position leaves at
     the level with slippage against it. Adding to a position or trimming it keeps its levels.
+    Costs are the model's commission and slippage for every instrument, or the per-symbol rows of
+    ``model.symbol_costs`` (one per column, in column order; the model's impact is added to each).
     A stopped instrument is flat until the target asks for a position again, which it may do on
     the same bar (the target has not changed, so a held weight re-enters at the next open).
     """
@@ -277,9 +291,10 @@ def run_weight_backtest(
     valid = ~np.isnan(c)
     has_price = valid.any(axis=0)
     last_bar = np.where(has_price, n - 1 - np.argmax(valid[::-1], axis=0), -1).astype(np.int64)
+    fee_rates, slip_rates = _cost_rates(model, c.shape[1])
     equity, total_return, max_dd, fills, closed, traded = _weight_core(
         np.ascontiguousarray(o), np.ascontiguousarray(c), w, last_bar,
-        model.fill_policy == "next_bar_open", float(model.commission_bps), float(model.effective_slip_bps),
+        model.fill_policy == "next_bar_open", fee_rates, slip_rates,
         float(model.initial_cash), int(model.warmup_bars), float(model.funding_bps_per_bar), float(model.borrow_bps_per_bar),
         np.ascontiguousarray(hi if stops else c), np.ascontiguousarray(lo if stops else c),  # placeholders when unused
         float(model.sl_pct), float(model.tp_pct), float(model.trail_pct),

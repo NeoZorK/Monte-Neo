@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import asdict, dataclass
 from typing import Any, Literal
 
 FillPolicy = Literal["next_bar_open", "next_bar_close"]
 SideMode = Literal["long_flat", "long_short"]
+
+
+def require_no_symbol_costs(model: ExecutionModel, engine: str) -> None:
+    """Refuse a model with per-symbol costs in an engine that would silently use one cost for all."""
+    if model.symbol_costs:
+        raise ValueError(f"per-symbol costs are not supported by the {engine} engine")
 
 
 def require_no_borrow(model: ExecutionModel, engine: str) -> None:
@@ -23,6 +30,8 @@ class ExecutionModel:
     ``leverage`` scales entry notional; ``funding_bps_per_bar`` debits every holder and
     ``borrow_bps_per_bar`` debits holders of short positions only (the verifier's engines
     apply it; the batch, sweep and shared-cash engines refuse a model that sets it).
+    ``symbol_costs`` (rows of symbol, commission and slippage in bps, in the column order of a
+    universe) replace the uniform commission and slippage in the target-weight engine only.
     Session masks are passed at call time (block new entries only).
     """
 
@@ -42,8 +51,13 @@ class ExecutionModel:
     leverage: float = 1.0
     funding_bps_per_bar: float = 0.0
     borrow_bps_per_bar: float = 0.0
+    symbol_costs: tuple[tuple[str, float, float], ...] = ()
 
     def __post_init__(self) -> None:
+        rows = tuple((str(n), float(c), float(s)) for n, c, s in self.symbol_costs)  # lists from JSON become tuples
+        if any(not (math.isfinite(c) and math.isfinite(s)) or c < 0.0 or s < 0.0 for _, c, s in rows):
+            raise ValueError("per-symbol costs must be finite and non-negative")
+        object.__setattr__(self, "symbol_costs", rows)
         if self.size_fraction <= 0.0 or self.size_fraction > 1.0:
             raise ValueError("size_fraction must be in (0, 1]")
         if self.fill_fraction <= 0.0 or self.fill_fraction > 1.0:
@@ -67,11 +81,33 @@ class ExecutionModel:
         out = asdict(self)
         if not out["borrow_bps_per_bar"]:
             del out["borrow_bps_per_bar"]  # keeps the certificate id of models without a borrow fee unchanged
+        if out["symbol_costs"]:
+            out["symbol_costs"] = [list(row) for row in out["symbol_costs"]]
+        else:
+            del out["symbol_costs"]  # likewise for models with one cost for every symbol
         return out
 
     @property
     def effective_slip_bps(self) -> float:
         return float(self.slippage_bps + self.impact_bps)
+
+    @property
+    def mean_commission_bps(self) -> float:
+        """Commission per side: the model's, or the average over the per-symbol costs."""
+        if self.symbol_costs:
+            return float(sum(c for _, c, _ in self.symbol_costs) / len(self.symbol_costs))
+        return float(self.commission_bps)
+
+    @property
+    def mean_slip_bps(self) -> float:
+        """Slippage plus impact per side: the model's, or the average over the per-symbol costs."""
+        if self.symbol_costs:
+            return float(sum(s for _, _, s in self.symbol_costs) / len(self.symbol_costs) + self.impact_bps)
+        return self.effective_slip_bps
+
+    @property
+    def mean_side_cost_bps(self) -> float:
+        return self.mean_commission_bps + self.mean_slip_bps
 
     def work_checklist(self, *, session_mask_used: bool = False) -> dict[str, bool]:
         """Explicit work checklist for peer honesty."""

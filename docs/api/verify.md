@@ -52,6 +52,11 @@ monte-neo verify --precompile      # compile and cache the engines once (Docker 
 - `--isolate`: the strategy runs in worker processes without network, subprocesses, file writes
   outside the temp dir and secrets in the environment (see the security note).
 - `--funding-bps-per-bar X` / `--borrow-bps-per-bar X`: funding on every open position and a borrow fee on short positions only, in bps of the position's value per bar (300 bps a year on hourly bars is about 0.034). Both are part of the certificate's cost model; a model without them keeps its certificate id. MCP and the Action take the same two settings.
+- `--costs-file PATH_OR_JSON`: costs by symbol for a universe (a JSON file or JSON text). A symbol takes its own `commission_bps` / `slippage_bps`, then the `default` row, then the uniform costs; a name that is not in the data is an error. The resolved table (one row per symbol, in column order) is part of the certificate's cost model, so `--recheck` needs no other input, and a run without it keeps its certificate id. The cost checks and the report use the average of the rows; the cost curve and the break-even sweep use one cost for every symbol. Not available for a single instrument. MCP takes `symbol_costs`, the Action `costs-file`.
+
+  ```json
+  {"default": {"commission_bps": 5, "slippage_bps": 5}, "AAA": {"commission_bps": 2, "slippage_bps": 1}, "ZZZ": {"slippage_bps": 30}}
+  ```
 - `--sl-pct X` / `--tp-pct X` / `--trail-pct X`: stop-loss, take-profit and trailing stop in percent of the entry price, tested inside each bar with the bar's high and low (0 = off). They work for signs, weights and universes and behave the same in every case: the levels come from the price a position is opened at, the stop is tested before the take-profit when a bar touches both, the position leaves at the level with slippage against it, and a held target re-enters at the next open. Adding to or trimming a position keeps its levels. The buy-and-hold benchmark never uses them. The stops are part of the certificate's cost model. MCP and the Action take the same three settings.
 - `--badge PATH`: also write a shields.io endpoint JSON with the verdict and certificate id.
 - `--lint FILE...`: run only the static look-ahead lint on the files and exit (0, or 1 on a fail-level finding).
