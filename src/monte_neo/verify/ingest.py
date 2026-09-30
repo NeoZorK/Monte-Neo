@@ -37,7 +37,30 @@ def _read_table(path: Path) -> pd.DataFrame:
             return pd.read_parquet(path)
         except ImportError as exc:
             raise ImportError("reading .parquet needs pyarrow: pip install 'monte-neo[parquet]' (or use .csv)") from exc
-    return pd.read_csv(path)
+    table = pd.read_csv(path)
+    if table.shape[1] == 1:
+        # One column that holds the whole header: a semicolon, tab or pipe separated file (common exports).
+        head = str(table.columns[0])
+        for sep in (";", "\t", "|"):
+            if sep in head:
+                return pd.read_csv(path, sep=sep)
+    return table
+
+
+def _read_signal_table(path: Path) -> pd.DataFrame:
+    """A signals table; a CSV without a header row (its first line is a number) keeps its first value."""
+    table = _read_table(path)
+    if path.suffix.lower() != ".parquet" and len(table.columns) and all(_is_number(c) for c in table.columns):
+        return pd.read_csv(path, header=None)
+    return table
+
+
+def _is_number(text: Any) -> bool:
+    try:
+        float(str(text))
+    except ValueError:
+        return False
+    return True
 
 
 def load_ohlcv(source: pd.DataFrame | str | Path) -> pd.DataFrame:
@@ -128,7 +151,7 @@ def load_signal_values(source: Any) -> np.ndarray:
     """Raw signal values from an array-like or a ``.csv`` / ``.parquet`` / ``.npy`` file."""
     if isinstance(source, str | Path):
         path = Path(source)
-        data: Any = np.load(check_size(path, table_limit_bytes(), "table"), allow_pickle=False) if path.suffix.lower() == ".npy" else _read_table(path)
+        data: Any = np.load(check_size(path, table_limit_bytes(), "table"), allow_pickle=False) if path.suffix.lower() == ".npy" else _read_signal_table(path)
         return signal_values(data)
     return signal_values(source)
 
@@ -159,6 +182,12 @@ def load_signal_fn(spec: str | Path) -> tuple[SignalFn, str]:
         raise ImportError(f"cannot import {path}")
     module = importlib.util.module_from_spec(spec_obj)
     sys.modules[mod_name] = module
+    # Modules next to the strategy file (helpers, packages) must import, as when the file is run
+    # as a script. The directory goes to the END of the path: it can never shadow the standard
+    # library or an installed package such as numpy.
+    folder = str(path.resolve().parent)
+    if folder not in sys.path:
+        sys.path.append(folder)
     try:
         spec_obj.loader.exec_module(module)
     finally:

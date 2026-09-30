@@ -207,3 +207,59 @@ def test_jit_helpers_without_numba(monkeypatch) -> None:
     assert jit.njit(f) is f
     assert jit.njit(cache=True, parallel=True)(f) is f
     assert jit.njit_cached(f) is f
+
+
+@pytest.mark.parametrize("sep", [";", "\t", "|"])
+def test_other_csv_separators_are_read(tmp_path, sep) -> None:
+    from monte_neo.backtest import synthetic_ohlcv
+    from monte_neo.verify import load_ohlcv
+
+    df = synthetic_ohlcv(200, seed=1)
+    path = tmp_path / "prices.csv"
+    df.to_csv(path, index=False, sep=sep)
+    loaded = load_ohlcv(path)
+    assert list(loaded.columns[:4]) == ["timestamp", "open", "high", "low"] or {"open", "high", "low", "close"} <= set(loaded.columns)
+    assert len(loaded) == 200
+
+
+@pytest.mark.parametrize("flag", ["--help", "-h", "help"])
+def test_help_lists_the_base_commands(monkeypatch, capsys, flag) -> None:
+    monkeypatch.setattr(sys, "argv", ["monte-neo", flag])
+    assert entry.main() == 0
+    out = capsys.readouterr().out
+    assert "verify" in out and "bench" in out and "mcp" in out and "--version" in out
+
+
+def test_star_import_exposes_every_public_name() -> None:
+    import monte_neo.verify as pkg
+
+    namespace: dict = {}
+    exec("from monte_neo.verify import *", namespace)  # noqa: S102
+    assert set(pkg._LAZY) <= set(pkg.__all__)
+    assert set(pkg._LAZY) <= set(namespace)
+    for name in pkg.__all__:
+        assert hasattr(pkg, name), name
+
+
+def test_a_usage_error_exits_3_not_the_reject_code(capsys) -> None:
+    from monte_neo.cli.verify_cmd import main
+
+    assert main(["--n-trials", "not-a-number"]) == 3
+    assert main(["--no-such-option"]) == 3
+    assert main(["--help"]) == 0
+
+
+def test_headerless_signal_csv_keeps_its_first_value(tmp_path) -> None:
+    from monte_neo.verify import load_signal_values
+
+    values = np.array([1.0, 0.0, -1.0, 1.0])
+    for header, name in ((False, "plain.csv"), (["signal"], "named.csv")):
+        pd.Series(values).to_csv(tmp_path / name, index=False, header=header)
+        assert list(load_signal_values(tmp_path / name)) == list(values)
+
+
+def test_grid_values_must_be_lists() -> None:
+    from monte_neo.verify import expand_grid
+
+    with pytest.raises(ValueError, match="grid values must be lists"):
+        expand_grid({"fast": 10})

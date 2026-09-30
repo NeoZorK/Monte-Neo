@@ -287,7 +287,11 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     """Entry point for ``monte-neo verify`` and ``monte-neo-verify``."""
-    args = build_parser().parse_args(sys.argv[1:] if argv is None else argv)
+    try:
+        args = build_parser().parse_args(sys.argv[1:] if argv is None else argv)
+    except SystemExit as exc:
+        # argparse exits with 2 on a usage error, which the verifier reserves for REJECT: report it as 3.
+        return 3 if exc.code == 2 else int(exc.code or 0)
     return run(args)
 
 

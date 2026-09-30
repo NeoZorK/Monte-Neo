@@ -183,16 +183,21 @@ def _window_functions(tree: ast.AST) -> tuple[set[str], set[int]]:
     return names, lambdas
 
 
+def _fits_a_subset(call: ast.Call) -> bool:
+    """``fit(X[train], y[train])``: the model is trained on a chosen slice, as walk-forward code does.
+
+    Whether that slice ends before the bars the model predicts is for the probes to decide; the
+    lint only warns when the model is fitted on a whole named array.
+    """
+    return bool(call.args) and isinstance(call.args[0], ast.Subscript)
+
+
 def _is_true(node: ast.AST | None) -> bool:
     return isinstance(node, ast.Constant) and node.value is True
 
 
 def _is_false(node: ast.AST | None) -> bool:
     return isinstance(node, ast.Constant) and node.value is False
-
-
-def _is_true(node: ast.AST | None) -> bool:
-    return isinstance(node, ast.Constant) and node.value is True
 
 
 def _is_str(node: ast.AST | None, values: set[str]) -> bool:
@@ -361,7 +366,7 @@ class _Visitor(ast.NodeVisitor):
                 self._add(node, "full_sample_stat", "warn", f"{attr}() over the whole series includes future bars")
             elif attr in _FULL_RANKS:
                 self._add(node, "full_sample_rank", "warn", f"{attr} ranks bars against the whole sample, future included")
-            elif attr in _FIT_METHODS:
+            elif attr in _FIT_METHODS and not _fits_a_subset(node):
                 self._add(node, "full_sample_fit", "warn", "model fit on the whole series leaks future statistics unless done walk-forward")
             elif attr in _WINDOW_METHODS and _is_reversed(node.func.value):
                 self._add(node, "reversed_window", "fail", "window over a reversed series looks into the future")

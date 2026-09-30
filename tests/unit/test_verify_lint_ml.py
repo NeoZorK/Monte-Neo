@@ -45,3 +45,21 @@ def test_finding_reports_line_and_snippet() -> None:
     assert finding["line"] == 2 and "train_test_split" in finding["snippet"] and "training sees the future" in finding["message"]
     assert result["status"] == "warn"
     assert lint_source("def signal(df):\n    return KFold(3, shuffle=True)\n")["status"] == "fail"
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "m = LogisticRegression().fit(X[train], y[train])",
+        "m = model.fit(X[:t], y[:t])",
+        "model.fit(features.iloc[lo:hi], labels.iloc[lo:hi])",
+    ],
+)
+def test_a_fit_on_a_chosen_slice_is_not_warned(line: str) -> None:
+    assert lint_source(f"def signal(df):\n    {line}\n    return 0\n")["status"] == "pass"
+
+
+@pytest.mark.parametrize("line", ["m = LogisticRegression().fit(X, y)", "km = KMeans(2).fit(vol)", "scaler.fit(prices)"])
+def test_a_fit_on_a_whole_array_still_warns(line: str) -> None:
+    result = lint_source(f"def signal(df):\n    {line}\n    return 0\n")
+    assert result["status"] == "warn" and result["findings"][0]["rule"] == "full_sample_fit"
