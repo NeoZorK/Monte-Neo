@@ -400,11 +400,16 @@ def model_from_costs(
     n_bars: int | None = None,
     funding_bps_per_bar: float = 0.0,
     borrow_bps_per_bar: float = 0.0,
+    sl_pct: float = 0.0,
+    tp_pct: float = 0.0,
+    trail_pct: float = 0.0,
 ) -> ExecutionModel:
     """Convenience ExecutionModel for CLI / MCP callers.
 
     ``funding_bps_per_bar`` is charged on every open position, ``borrow_bps_per_bar`` on short
     positions only (bps of the position's value per bar: 300 bps a year on hourly bars is about 0.034).
+    ``sl_pct``, ``tp_pct`` and ``trail_pct`` (percent of the entry price; 0 = off) add stops inside the bar
+    to every position the engine opens, for signs, weights and universes alike.
     """
     base = _default_model(int(n_bars or 600))
     return replace(
@@ -415,6 +420,9 @@ def model_from_costs(
         warmup_bars=int(warmup_bars) if warmup_bars is not None else base.warmup_bars,
         funding_bps_per_bar=float(funding_bps_per_bar),
         borrow_bps_per_bar=float(borrow_bps_per_bar),
+        sl_pct=float(sl_pct),
+        tp_pct=float(tp_pct),
+        trail_pct=float(trail_pct),
     )
 
 

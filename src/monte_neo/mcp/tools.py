@@ -26,6 +26,7 @@ SERVER_INSTRUCTIONS = (
 def _model(
     ohlcv_path: str, commission_bps: float, slippage_bps: float, side_mode: str | None, warmup_bars: int | None,
     signals_path: str | None, funding_bps_per_bar: float = 0.0, borrow_bps_per_bar: float = 0.0,
+    sl_pct: float = 0.0, tp_pct: float = 0.0, trail_pct: float = 0.0,
 ) -> tuple[Any, Any]:
     from monte_neo.verify import load_ohlcv, load_signals, model_from_costs
     from monte_neo.verify.market import bar_count
@@ -42,6 +43,9 @@ def _model(
         n_bars=bar_count(df),
         funding_bps_per_bar=funding_bps_per_bar,
         borrow_bps_per_bar=borrow_bps_per_bar,
+        sl_pct=sl_pct,
+        tp_pct=tp_pct,
+        trail_pct=trail_pct,
     )
     return df, model
 
@@ -86,6 +90,9 @@ def verify_strategy(
     claim: dict[str, Any] | str | None = None,
     funding_bps_per_bar: float = 0.0,
     borrow_bps_per_bar: float = 0.0,
+    sl_pct: float = 0.0,
+    tp_pct: float = 0.0,
+    trail_pct: float = 0.0,
     compact: bool = True,
 ) -> dict[str, Any]:
     """Verify a strategy backtest and return a strategy-verdict/1 certificate.
@@ -109,6 +116,9 @@ def verify_strategy(
             "n_trades": 300} (or a JSON file path): a claim better than the verified result fails.
         funding_bps_per_bar: Funding on every open position, bps of its value per bar (default 0).
         borrow_bps_per_bar: Borrow fee on short positions only, bps of their value per bar (default 0).
+        sl_pct: Stop-loss in percent of the entry price, tested inside each bar (default 0 = off).
+        tp_pct: Take-profit in percent of the entry price (default 0 = off).
+        trail_pct: Trailing stop in percent from the best price since entry (default 0 = off).
         compact: Drop details of passing checks to keep the response short.
     """
     from monte_neo.verify import verify_strategy as _verify
@@ -116,7 +126,8 @@ def verify_strategy(
     if not signals_path and not strategy_path:
         return {"error": "provide signals_path or strategy_path"}
     df, model = _model(
-        ohlcv_path, commission_bps, slippage_bps, side_mode, warmup_bars, signals_path, funding_bps_per_bar, borrow_bps_per_bar
+        ohlcv_path, commission_bps, slippage_bps, side_mode, warmup_bars, signals_path, funding_bps_per_bar, borrow_bps_per_bar,
+        sl_pct, tp_pct, trail_pct,
     )
     runs = {"timeout": timeout, "jobs": jobs, "isolate": isolate} if strategy_path else {}
     report = _verify(
@@ -140,6 +151,9 @@ def verify_grid(
     claim: dict[str, Any] | str | None = None,
     funding_bps_per_bar: float = 0.0,
     borrow_bps_per_bar: float = 0.0,
+    sl_pct: float = 0.0,
+    tp_pct: float = 0.0,
+    trail_pct: float = 0.0,
     compact: bool = True,
 ) -> dict[str, Any]:
     """Run the parameter search inside the verifier and verify the best combo.
@@ -163,11 +177,16 @@ def verify_grid(
         claim: What was claimed (see verify_strategy); compared with the verified result.
         funding_bps_per_bar: Funding on every open position, bps of its value per bar (default 0).
         borrow_bps_per_bar: Borrow fee on short positions only, bps of their value per bar (default 0).
+        sl_pct: Stop-loss in percent of the entry price, tested inside each bar (default 0 = off).
+        tp_pct: Take-profit in percent of the entry price (default 0 = off).
+        trail_pct: Trailing stop in percent from the best price since entry (default 0 = off).
         compact: Drop details of passing checks to keep the response short.
     """
     from monte_neo.verify import verify_grid as _verify_grid
 
-    df, model = _model(ohlcv_path, commission_bps, slippage_bps, side_mode, None, None, funding_bps_per_bar, borrow_bps_per_bar)
+    df, model = _model(
+        ohlcv_path, commission_bps, slippage_bps, side_mode, None, None, funding_bps_per_bar, borrow_bps_per_bar, sl_pct, tp_pct, trail_pct
+    )
     report = _verify_grid(
         df, grid, strategy=strategy_path, model=model, folds=folds, positions=positions,
         timeout=timeout, jobs=jobs, isolate=isolate, claim=claim,

@@ -26,7 +26,9 @@ def is_weights(positions: np.ndarray) -> bool:
 def simulate(ohlc: dict[str, np.ndarray], positions: np.ndarray, model: ExecutionModel) -> dict[str, Any]:
     """Backtest ``positions`` on ``ohlc``; returns equity, total_return, max_drawdown, n_trades, n_closed_trades."""
     if is_weights(positions):
-        return run_weight_backtest(ohlc["open"], ohlc["close"], np.asarray(positions, dtype=np.float64), model=model)
+        return run_weight_backtest(
+            ohlc["open"], ohlc["close"], np.asarray(positions, dtype=np.float64), model=model, high=ohlc["high"], low=ohlc["low"]
+        )
     return run_bar_equity(ohlc["open"], ohlc["high"], ohlc["low"], ohlc["close"], positions, model=model)
 
 

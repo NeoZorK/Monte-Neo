@@ -37,6 +37,18 @@ inputs:
     description: "Borrow fee charged on short positions only, bps of their value per bar"
     required: false
     default: "0"
+  sl-pct:
+    description: "Stop-loss in percent of the entry price, tested inside each bar (0 = off)"
+    required: false
+    default: "0"
+  tp-pct:
+    description: "Take-profit in percent of the entry price (0 = off)"
+    required: false
+    default: "0"
+  trail-pct:
+    description: "Trailing stop in percent from the best price since entry (0 = off)"
+    required: false
+    default: "0"
   timeout:
     description: "Seconds allowed per signal() call; the strategy runs in a worker process (empty: no limit)"
     required: false
@@ -133,6 +145,9 @@ runs:
         MN_SLIPPAGE: ${{ inputs.slippage-bps }}
         MN_FUNDING: ${{ inputs.funding-bps-per-bar }}
         MN_BORROW: ${{ inputs.borrow-bps-per-bar }}
+        MN_SL: ${{ inputs.sl-pct }}
+        MN_TP: ${{ inputs.tp-pct }}
+        MN_TRAIL: ${{ inputs.trail-pct }}
         MN_FAIL_ON: ${{ inputs.fail-on }}
         MN_GRID: ${{ inputs.grid }}
         MN_CLAIM: ${{ inputs.claim }}
@@ -174,6 +189,7 @@ runs:
         monte-neo verify --ohlcv "$MN_OHLCV" "${src[@]}" ${extra[@]+"${extra[@]}"} \
           --commission-bps "$MN_COMMISSION" --slippage-bps "$MN_SLIPPAGE" --positions "$MN_POSITIONS" \
           --funding-bps-per-bar "$MN_FUNDING" --borrow-bps-per-bar "$MN_BORROW" \
+          --sl-pct "$MN_SL" --tp-pct "$MN_TP" --trail-pct "$MN_TRAIL" \
           --out "$cert" --html "$html" ${sign[@]+"${sign[@]}"}
         code=$?
         if [ -n "$MN_SIGNING_KEY" ]; then rm -f "$key"; fi

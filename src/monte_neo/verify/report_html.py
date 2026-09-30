@@ -299,6 +299,15 @@ def _carry(model: dict[str, Any]) -> str:
     return " + " + " + ".join(parts) if parts else ""
 
 
+def _stops(model: dict[str, Any]) -> str:
+    """Stops inside the bar, when the cost model has them."""
+    parts = []
+    for key, label in (("sl_pct", "stop-loss"), ("tp_pct", "take-profit"), ("trail_pct", "trailing stop")):
+        if _positive(model.get(key)):
+            parts.append(f"{label} {_num(model.get(key))}%")
+    return "; " + ", ".join(parts) if parts else ""
+
+
 def _positive(value: Any) -> bool:
     return isinstance(value, int | float) and not isinstance(value, bool) and math.isfinite(value) and value > 0
 
@@ -362,7 +371,7 @@ def render_html(report: dict[str, Any]) -> str:
         + _grid_section(report.get("grid"))
         + "<h2>Reproduce</h2><div class='card'>"
         f"<p>Costs: {_num(model.get('commission_bps'))} bps commission + {_num(model.get('slippage_bps'))} bps slippage per side"
-        f"{_carry(model)}; "
+        f"{_carry(model)}{_stops(model)}; "
         f"fills at the next bar's {'open' if model.get('fill_policy') == 'next_bar_open' else 'close'}; "
         f"{_e(model.get('side_mode', ''))}; warm-up {_e(model.get('warmup_bars', ''))} bars; "
         f"n_trials {_e(repro.get('n_trials', ''))}; min_trades {_e(settings.get('min_trades', '—'))}.</p>"
