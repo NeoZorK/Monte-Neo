@@ -136,6 +136,11 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 ## v0.45.0 — per-symbol costs
 - [x] `--costs-file` / `symbol_costs` / `costs-file`: commission and slippage by symbol, resolved into the certificate
 
+## v0.47.0 — stage 7: first run and real use
+- [x] `verify --demo` (no files) and a plain-language summary under the table
+- [ ] Runnable examples with real vectorbt and Backtrader projects
+- [ ] One-line CI setup: a ready workflow file and a `monte-neo init-ci` helper
+
 ## v0.46.0 — capacity for universes
 - [x] Capacity from volume for multi-symbol universes: pooled fills, tightest symbols listed, "Capacity by symbol" table in the report
 

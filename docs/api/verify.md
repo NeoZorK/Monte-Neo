@@ -71,6 +71,11 @@ monte-neo verify --precompile      # compile and cache the engines once (Docker 
 | 4 | `--recheck`: the certificate was not reproduced |
 | 5 | `--check-signature`: the signature is invalid, or the certificate was signed by a key other than `--public-key` |
 
+`monte-neo verify --demo` needs no files: it verifies a strategy that reads tomorrow's close and a no-peeking
+moving-average crossover on synthetic prices, and prints for each the verdict, whether the look-ahead checks are
+clean, the first reason and the first step. The text output of every run ends its table with the same plain-language
+lines (`In short`, `Why`).
+
 ## Verdicts
 
 | Verdict | Rule |
