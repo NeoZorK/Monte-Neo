@@ -240,8 +240,9 @@ Numba — только для CPython (`platform_python_implementation`), extra 
 ### Этап 4 — «80 ловушек» (P1) — ✅ выпущено 29.09.2026 (v0.40.0)
 Сделано: 80 ловушек и 35 честных контролей (ML-конвейеры, слияния по календарю, наборы инструментов, честный код на испорченных данных); правила линтера `shuffled_split` и `kfold_split` (всего 23). Известные ограничения: делистинг с нулевой доходностью не ловится (ловушки нет); `kmeans_regime_full` ловит только линтер (предупреждение), динамические пробы её не видят.
 
-### Этап 5 — v0.41 «слой проверки для всех фреймворков» (P1)
-- Адаптеры vectorbt / backtrader / freqtrade / Lean / zipline / Nautilus, Jupyter-отображение, pandas-аксессор, pre-commit, Docker-образ, бейдж «Verified by Monte-Neo».
+### Этап 5 — «слой проверки для всех фреймворков» (P1) — ✅ выпущено 29.09.2026 (v0.41.0)
+Сделано: адаптеры vectorbt / Freqtrade / Lean / Zipline / `from_fills` (Backtrader и Nautilus через `from_fills`, рецепт в руководстве), Jupyter-отображение (`Certificate._repr_html_`), pandas-аксессор, `--badge` (shields endpoint), pre-commit хук `monte-neo-lint` (`--lint`), workflow публикации Docker-образа в GHCR.
+Не сделано / проверить владельцу: адаптеры проверены на имитирующих объектах, не на живых vectorbt/Freqtrade/Lean (нужны примеры на реальных выгрузках); образ в GHCR появится после следующего выпуска (после первой публикации сделать пакет публичным в настройках пакета); conda-forge (рецепт), расширения VS Code / JetBrains и Pyodide (P3) не делались.
 
 ### Этап 6 — рост аудитории (параллельно)
 - Главная GitHub (раздел 9), примеры на реальных данных, серия «ловушка недели», заметка на arXiv, awesome-списки (awesome-quant, awesome-mcp-servers, awesome-systematic-trading), conda-forge.

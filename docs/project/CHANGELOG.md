@@ -3,6 +3,20 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.41.0] — 2026-09-29
+
+### Added
+- **Framework adapters.** `from_vectorbt`, `from_freqtrade`, `from_lean`, `from_zipline` and `from_fills` turn a
+  backtest run elsewhere into positions on the price table; `.verify()` runs the verifier on them. Backtrader and
+  Nautilus use `from_fills` (recipe in the guide). See `docs/guides/frameworks.md`.
+- **Jupyter display.** `verify_strategy` and `verify_grid` return a `Certificate` (a `dict` subclass) that draws the HTML
+  report in a notebook cell inside a sandboxed frame; `show(cert)` does the same for a loaded certificate.
+- **pandas accessor** `df.monte_neo.verify(...)` (`import monte_neo.verify.accessor`).
+- **Badge.** `--badge PATH` writes a shields.io endpoint file with the verdict and certificate id.
+- **pre-commit hook** `monte-neo-lint` and `monte-neo verify --lint FILE...` (static lint only, exit 1 on a fail-level finding).
+- **Docker image on GHCR.** `.github/workflows/docker.yml` builds and pushes `ghcr.io/neozork/monte-neo-verify` after each
+  successful Publish run (plain docker CLI, no third-party action).
+
 ## [v0.40.0] — 2026-09-29
 
 ### Added

@@ -1,0 +1,53 @@
+name: Docker image
+
+# Builds the verifier image (docker/verify) from the release that Publish just put on PyPI and pushes it
+# to GHCR. The plain docker CLI is used on purpose: no third-party action to pin or trust.
+on:
+  workflow_run:
+    workflows: ["Publish"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release to build, e.g. v0.41.0 (must already be on PyPI)"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'v')) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      TAG: ${{ github.event.inputs.version || github.event.workflow_run.head_branch }}
+    steps:
+      # Always the default branch: this job can push packages, so it never checks out the commit that
+      # triggered the Publish run. Only docker/verify is used, and the release itself comes from PyPI.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Check the tag
+        run: |
+          case "$TAG" in v[0-9]*.[0-9]*.[0-9]*) ;; *) echo "not a release tag: $TAG"; exit 1;; esac
+      - name: Build
+        run: |
+          version="${TAG#v}"
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/monte-neo-verify"
+          docker build --build-arg "VERSION=$version" -t "$image:$version" -t "$image:latest" docker/verify
+      - name: Smoke test
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/monte-neo-verify"
+          docker run --rm --network none --read-only --tmpfs /tmp "$image:latest" monte-neo --version
+      - name: Push
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="${TAG#v}"
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/monte-neo-verify"
+          echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker push "$image:$version"
+          docker push "$image:latest"
