@@ -136,9 +136,12 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 ## v0.45.0 — per-symbol costs
 - [x] `--costs-file` / `symbol_costs` / `costs-file`: commission and slippage by symbol, resolved into the certificate
 
+## v0.48.0 — stage 7: real frameworks
+- [x] Adapters for Backtrader, backtesting.py, bt, Nautilus; a CI job runs the real frameworks; close fills read at their own bar (a bug fix)
+
 ## v0.47.0 — stage 7: first run and real use
 - [x] `verify --demo` (no files) and a plain-language summary under the table
-- [ ] Runnable examples with real vectorbt and Backtrader projects
+- [x] Adapters checked against real vectorbt, Backtrader, backtesting.py, bt, Nautilus Trader and Zipline (v0.48.0); Freqtrade and Lean adapters still only checked on fake data
 - [ ] One-line CI setup: a ready workflow file and a `monte-neo init-ci` helper
 
 ## v0.46.0 — capacity for universes
