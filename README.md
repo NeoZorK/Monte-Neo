@@ -97,7 +97,7 @@ The run used a synthetic random walk; output shortened.
 | Family | Checks |
 |--------|--------|
 | **Look-ahead** | Truncation probe (does bar *t* change when later bars are removed?), future-perturbation probe, outside-data watch (files or network read by the strategy), static AST lint (23 rules), implausible hit rate |
-| **Economics** | Net return after commission and slippage (with optional funding, short-borrow fees, stops inside the bar and per-symbol costs for universes), break-even cost in bps, one- and two-bar execution delay, a spread estimate from high and low next to the modeled cost, capacity from volume |
+| **Economics** | Net return after commission and slippage (with optional funding, short-borrow fees, stops inside the bar and per-symbol costs for universes), break-even cost in bps, one- and two-bar execution delay, a spread estimate from high and low next to the modeled cost, capacity from volume (for universes with the tightest symbols named) |
 | **Statistics** | Probabilistic and Deflated Sharpe priced by `n_trials`, Monte Carlo timing test (does the signal beat shifted copies of itself, or just ride the market?), sample size, holdout consistency, bootstrap confidence intervals, the minimum track record length and the result of each of six equal windows; for grid searches, walk-forward out-of-sample, parameter-plateau, probability-of-backtest-overfitting (PBO) and Reality Check / SPA checks |
 | **Integrity** | Broken OHLCV (NaN, bad prices, bars out of time order), bad data that makes fake profit (one-bar spikes, frozen prices, unadjusted splits, gaps in time), non-deterministic signals, survivorship bias in a universe |
 | **Claims** | `--claim`: the Sharpe, return, drawdown and trade count that were reported, checked against the verified ones (an overclaim fails) |
@@ -211,7 +211,7 @@ MCP tools: `verify_strategy`, `verify_grid`, `probe_lookahead`, `cost_stress`,
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.45.0
+- uses: NeoZorK/Monte-Neo@v0.46.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py

@@ -107,7 +107,7 @@ monte-neo verify --precompile      # compile and cache the engines once (Docker 
 | `sharpe_confidence` | statistics | info only: 95% interval of the annualized Sharpe and of the total return from a circular block bootstrap (1000 resamples, fixed seed), and the share of resamples with a positive Sharpe |
 | `track_record` | statistics | info only: the Minimum Track Record Length, how many bars the observed Sharpe needs to be positive at 95%, next to the bars the sample has |
 | `spread_estimate` | economics | info only: a rough spread estimate from high and low (Corwin-Schultz) next to the slippage the backtest charged; says when the model looks optimistic |
-| `capacity` | economics | info only, single instrument with a `volume` column: the capital at which 90% of the fills stay within 1%, 5% and 10% of the bar's traded value |
+| `capacity` | economics | info only, with a `volume` column: the capital at which 90% of the fills stay within 1%, 5% and 10% of the bar's traded value. For a universe every symbol's order counts (capital x weight change against that symbol's traded value) and the report lists the tightest symbols |
 | `walk_forward_stability` | statistics | info only: the per-bar returns cut into 6 equal consecutive windows: how many made money, the worst and best window and the Sharpe of each |
 | `claim_consistency` | claim | only with `--claim`: a claimed Sharpe, return, drawdown, trade count, win rate or profit factor is better than the verified one by more than a tolerance (fail) |
 | `walk_forward_oos` | statistics | `verify_grid` only: walk-forward out-of-sample Sharpe ≤ 0 (fail) or < 50% of the in-sample best (warn) |
@@ -128,7 +128,7 @@ monte-neo verify --precompile      # compile and cache the engines once (Docker 
 - **Reality Check and SPA.** For a search, `reality_check` asks whether the best combination beats cash by more than the search explains. Both tests bootstrap the returns of all combinations (circular blocks, fixed seed, 1000 resamples). The Reality Check compares the largest mean with its null; SPA studentises and ignores clearly bad combinations, so many losing combinations do not hide a real edge. The SPA p-value decides the row; the Reality Check value is shown next to it. The benchmark is cash. Like every p-value from a bootstrap, it has sampling noise.
 - **Costs and capacity.** The spread estimate is biased upward in volatile bars (a few bps at 0.3% bars, about
   15 bps at 1% bars): read it as an order of magnitude. Capacity takes `volume` in instrument units
-  (traded value = volume x close) and does not model market impact.
+  (traded value = volume x close) and does not model market impact. A symbol without volume at a fill bar is counted in `fills_without_volume` and left out.
 - **Claims.** `--claim claim.json` (or `claim=` in Python and MCP, `claim:` in the Action) compares reported
   numbers with verified ones. All keys are optional: `sharpe` (annualized), `total_return` (fraction: `0.85` or `"85%"`),
   `max_drawdown`, `n_trades`, `win_rate` (`0.62` or `62`), `profit_factor`. A number that is better than the verified one by more
