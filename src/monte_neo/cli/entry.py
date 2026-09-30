@@ -1,6 +1,6 @@
 """``monte-neo`` entry point: dispatch before importing anything heavy.
 
-``verify``, ``bench`` and ``mcp`` load only what they need; ``--version`` loads
+``verify``, ``init-ci``, ``bench`` and ``mcp`` load only what they need; ``--version`` loads
 nothing. Everything else opens the interactive research CLI (extra ``research``).
 """
 
@@ -12,6 +12,7 @@ HELP = """usage: monte-neo <command> [options]
 
 Commands:
   verify   verify a trading-strategy backtest (monte-neo verify --help)
+  init-ci  write a GitHub Actions workflow that verifies your strategy (monte-neo init-ci --help)
   bench    Honesty Bench: score agent submissions (monte-neo bench --help)
   mcp      run the MCP server for coding agents (monte-neo mcp --help)
 
@@ -37,6 +38,10 @@ def main() -> int:
         from monte_neo.cli.verify_cmd import main as verify_main
 
         return verify_main(sys.argv[2:])
+    if command == "init-ci":
+        from monte_neo.cli.init_ci_cmd import main as init_ci_main
+
+        return init_ci_main(sys.argv[2:])
     if command == "bench":
         from monte_neo.cli.bench_cmd import main as bench_main
 
@@ -52,7 +57,7 @@ def main() -> int:
         print(
             f"{what}The interactive research CLI needs extra packages ({exc.name or exc}): "
             "pip install 'monte-neo[research]'.\n"
-            "Commands in the base install: monte-neo verify | bench | mcp | --version (monte-neo --help lists them)",
+            "Commands in the base install: monte-neo verify | init-ci | bench | mcp | --version (monte-neo --help lists them)",
             file=sys.stderr,
         )
         return 2
