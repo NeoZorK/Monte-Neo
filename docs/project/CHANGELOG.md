@@ -3,6 +3,23 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.44.0] — 2026-09-30
+
+### Added
+- **Stops inside the bar for target weights.** `sl_pct`, `tp_pct` and `trail_pct` now work in the target-weight engine
+  (fractional weights and universes), using each instrument's high and low. With weights in {-1, 0, 1} on one
+  instrument the result equals the discrete engine bit for bit, stops included (tested on hundreds of random
+  configurations with costs, funding, borrow fees, leverage and both fill policies), and an independent reference
+  covers fractional weights over several instruments. Models without stops give bit-identical results to before, and
+  the pure-Python fallback gives the same numbers.
+- **Stops in the verifier:** `--sl-pct`, `--tp-pct`, `--trail-pct` in the CLI, `sl_pct` / `tp_pct` / `trail_pct` in the MCP
+  tools and `model_from_costs`, and the same inputs in the GitHub Action. They are part of the certificate's cost model and
+  appear on the report's cost line. The buy-and-hold benchmark never uses them.
+
+### Changed
+- `run_weight_backtest` takes optional `high` and `low`; a model with stops and no high and low is an error (it used to
+  refuse stops for weights altogether).
+
 ## [v0.43.2] — 2026-09-30
 
 ### Security

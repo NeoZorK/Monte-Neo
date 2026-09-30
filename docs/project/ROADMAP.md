@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.43.2)
+# Monte-Neo Roadmap (v0.44.0)
 
 Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier for agent-built strategies).
 
@@ -128,9 +128,13 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 
 ## v0.43.0 — stage 3 leftovers
 - [x] Short-borrow and funding fees (CLI, MCP, Action); White Reality Check and Hansen SPA for grids; rolling-window stability
-- [ ] Still open: SL/TP inside the bar for target weights, per-symbol costs, capacity for universes
 
-## Next (v0.44+)
+## v0.44.0 — stops for target weights
+- [x] SL/TP/trailing stops inside the bar for fractional weights and universes (bit-identical to the discrete engine on unit signals)
+- [x] `--sl-pct` / `--tp-pct` / `--trail-pct` in the CLI, MCP and the Action
+- [ ] Still open: per-symbol costs, capacity for universes
+
+## Next (v0.45+)
 - [ ] First public bench run (owner runs it; tooling ready in v0.32.0): Claude Code / Codex / Gemini CLI / Cursor → published leaderboard
 - [~] Publish to MCP catalogues: official registry (done), glama / smithery / mcp.so / mcpmarket (owner submits; texts in docs/marketing/launch-kit.md)
 - [x] Signed certificates (v0.25.0), signing in the GitHub Action (v0.27.0), public verification page (v0.29.0)
