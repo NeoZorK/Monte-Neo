@@ -140,6 +140,7 @@ verifier cannot silently stop catching a leak or start accusing honest code.
 
 ```bash
 pip install monte-neo
+monte-neo verify --demo      # no files needed: a strategy that peeks at tomorrow's close is rejected
 ```
 
 **Command line**
@@ -211,7 +212,7 @@ MCP tools: `verify_strategy`, `verify_grid`, `probe_lookahead`, `cost_stress`,
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.46.0
+- uses: NeoZorK/Monte-Neo@v0.47.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py
