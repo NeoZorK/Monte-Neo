@@ -1,4 +1,4 @@
-# Monte-Neo v0.46.0
+# Monte-Neo v0.47.0
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -35,10 +35,10 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/project-structure.md - Deep dive into physical directory layout
 - docs/project/features.md - Detailed overview of framework features
 - docs/project/dynamic_indicators.md - Explanation of dynamic indicator generation
-- docs/project/ROADMAP.md - Development roadmap and milestones (v0.46.0)
+- docs/project/ROADMAP.md - Development roadmap and milestones (v0.47.0)
 - docs/project/PRODUCT_STRATEGY_RU.md - Product strategy: agent-native strategy verifier niche, moat, roadmap (RU, internal)
 - docs/project/CLEANUP_CANDIDATES_RU.md - Cleanup candidate list with evidence, awaiting owner approval (RU, internal)
-- docs/project/CHANGELOG.md - Release changelog (current: v0.46.0)
+- docs/project/CHANGELOG.md - Release changelog (current: v0.47.0)
 - docs/project/backtest_engine.md - Fee-aware research bar engine
 - docs/project/oms_engine.md - Paper OMS (bar + tick/L2) + venue adapters
 - docs/assets/monteneo-logo.png - Project logo (original, with the old tagline)
@@ -80,6 +80,7 @@ A simplified guide to the Monte-Neo file structure.
 - docs/paper/methodology.md - Technical note on the verification method (probes, costs, selection, certificates, Trap Suite evaluation)
 - docs/marketing/trap-of-the-week.md - Twelve weekly post drafts built on Trap Suite strategies, with measured verdicts
 - docs/project/STAGE6_OWNER_TASKS_RU.md - Stage 6: what the owner does (conda-forge, lists, publications, settings, contributor issues) (RU, internal)
+- docs/project/REGISTRATION_RUNBOOK_RU.md - Step-by-step registration in catalogues, Marketplace and repository settings (RU, internal)
 - packaging/conda-forge/meta.yaml - conda-forge recipe draft (not built)
 - .github/ISSUE_TEMPLATE/false_accusation.yml - Issue form for false accusations of honest strategies
 - docs/guides/frameworks.md - Adapters (vectorbt, Freqtrade, Lean, Zipline, fills), Jupyter display, pandas accessor, pre-commit, badge, Docker image
@@ -99,7 +100,7 @@ A simplified guide to the Monte-Neo file structure.
 - docker/verify/Dockerfile - Verifier image for untrusted strategy code (engines precompiled, runs as nobody)
 
 ### Source Code (src/monte_neo/)
-- src/monte_neo/_version.py - Central version management (v0.46.0)
+- src/monte_neo/_version.py - Central version management (v0.47.0)
 - src/monte_neo/verify/ - Strategy verifier (ingest, single and universe markets, data quality, look-ahead probes, outside-data watch, strategy workers (jobs, timeout, isolation), lint, benchmark and breakdown, HTML report, costs, stats, checks, verdict, grid + walk-forward, certificate recheck)
 - src/monte_neo/mcp/ - MCP server (monte-neo-mcp) + agent-facing tool functions
 - src/monte_neo/cli/verify_cmd.py - `monte-neo verify` command (CI exit codes)

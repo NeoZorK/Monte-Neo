@@ -74,11 +74,66 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--public-key", help="Expected signer for --check-signature: 'ed25519:<base64>' or a .pub file")
     p.add_argument("--format", choices=["text", "json"], default="text", help="stdout format (default text)")
     p.add_argument("--schema", action="store_true", help="Print the strategy-verdict/1 JSON schema and exit")
+    p.add_argument("--demo", action="store_true", help="Try it with no files: verify a leaky and an honest built-in strategy on synthetic data")
     p.add_argument(
         "--precompile", action="store_true",
         help="Compile and cache the backtest engines (about 5 s once), e.g. when building a Docker image, and exit",
     )
     return p
+
+
+_VERDICT_MEANING = {
+    "PASS": "no problem found in the backtest",
+    "PASS_WITH_WARNINGS": "usable, read the warnings",
+    "NEEDS_MORE_EVIDENCE": "not enough evidence to trust the result yet",
+    "REJECT": "do not trust this backtest",
+}
+
+
+def _render_summary(report: dict[str, Any], console: Console, with_next: bool = True) -> None:
+    """Plain-language answer under the table: what the verdict means, the first reason and the first step."""
+    verdict = report["verdict"]
+    console.print(f"[bold]In short:[/] {verdict}, {_VERDICT_MEANING.get(verdict, '')}")
+    reasons = report.get("reasons") or []
+    if reasons:
+        console.print(f"[bold]Why:[/] {reasons[0]}" + (f" (+{len(reasons) - 1} more)" if len(reasons) > 1 else ""))
+    actions = report.get("next_actions") or []
+    if with_next and actions:
+        console.print(f"[bold]Next:[/] {actions[0]}")
+
+
+def _run_demo(console: Console) -> int:
+    """Verify a strategy that reads tomorrow's close and an honest moving-average one, on synthetic prices."""
+    import numpy as np
+
+    from monte_neo.backtest import synthetic_ohlcv
+    from monte_neo.verify import verify_strategy
+
+    def leaky(df):
+        return np.sign(df["close"].shift(-1) - df["close"]).to_numpy()  # tomorrow's close decides today's position
+
+    def honest(df):
+        return np.where(df["close"].rolling(20).mean() > df["close"].rolling(80).mean(), 1, 0)  # rows <= t only
+
+    df = synthetic_ohlcv(3000, seed=1)
+    console.print("[bold]Demo:[/] two strategies on 3000 synthetic bars. The first one peeks at tomorrow's close.\n")
+    for name, fn, src in (
+        ("leaky (uses shift(-1))", leaky, "x = df['close'].shift(-1)"),
+        ("no-peeking (moving-average crossover)", honest, None),
+    ):
+        report = verify_strategy(df, signal_fn=fn, source=src, n_trials=10)
+        console.print(f"[bold]{name}[/]")
+        console.print(f"[{_VERDICT_STYLE[report['verdict']]}]{report['verdict']}[/]  certificate {report['certificate_id']}")
+        leaks = [c for c in report["checks"] if c["category"] == "lookahead" and c["status"] == "fail"]
+        console.print("Look-ahead checks: " + ("[red]leak found[/]" if leaks else "[green]clean, no future data used[/]"))
+        _render_summary(report, console)
+        console.print()
+    console.print(
+        "Prices here are random, so a strategy that does not cheat has no edge either: "
+        "Monte-Neo separates 'the backtest lies' from 'the strategy does not earn'."
+    )
+    console.print("Now try your own: [bold]monte-neo verify --ohlcv data.csv --strategy my_strategy.py[/]")
+    return 0
 
 
 def _render_text(report: dict[str, Any], console: Console) -> None:
@@ -91,6 +146,7 @@ def _render_text(report: dict[str, Any], console: Console) -> None:
         style = _STATUS_STYLE.get(c["status"], "")
         table.add_row(c["id"], c["category"], f"[{style}]{c['status']}[/]", c["summary"])
     console.print(table)
+    _render_summary(report, console, with_next=False)
     grid = report.get("grid")
     if grid:
         wf = grid["walk_forward"]
@@ -203,6 +259,8 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
     if args.precompile:
         console.print(f"engines compiled and cached in {precompile():.1f} s")
         return 0
+    if args.demo:
+        return _run_demo(console)
     if args.keygen or args.check_signature:
         return _run_signing(args, console)
     if args.lint:

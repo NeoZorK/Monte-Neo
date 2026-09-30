@@ -3,6 +3,14 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.47.0] — 2026-09-30
+
+### Added
+- **`monte-neo verify --demo`**: a first run with no files. It verifies a strategy that peeks at tomorrow's close and a
+  no-peeking moving-average crossover on synthetic prices, and says for each whether the look-ahead checks are clean.
+- **Plain-language summary** under the check table of every text run: what the verdict means, the first reason and how
+  many more there are. The certificate and its id are unchanged.
+
 ## [v0.46.0] — 2026-09-30
 
 ### Added
