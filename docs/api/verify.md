@@ -50,6 +50,7 @@ monte-neo verify --precompile      # compile and cache the engines once (Docker 
   The MCP server uses 300 s by default, the GitHub Action 600 s.
 - `--isolate`: the strategy runs in worker processes without network, subprocesses, file writes
   outside the temp dir and secrets in the environment (see the security note).
+- `--funding-bps-per-bar X` / `--borrow-bps-per-bar X`: funding on every open position and a borrow fee on short positions only, in bps of the position's value per bar (300 bps a year on hourly bars is about 0.034). Both are part of the certificate's cost model; a model without them keeps its certificate id. MCP and the Action take the same two settings.
 - `--badge PATH`: also write a shields.io endpoint JSON with the verdict and certificate id.
 - `--lint FILE...`: run only the static look-ahead lint on the files and exit (0, or 1 on a fail-level finding).
 - `--precompile`: the first run in a new environment compiles the engines (about 4-5 s, then cached).
@@ -100,9 +101,11 @@ monte-neo verify --precompile      # compile and cache the engines once (Docker 
 | `track_record` | statistics | info only: the Minimum Track Record Length, how many bars the observed Sharpe needs to be positive at 95%, next to the bars the sample has |
 | `spread_estimate` | economics | info only: a rough spread estimate from high and low (Corwin-Schultz) next to the slippage the backtest charged; says when the model looks optimistic |
 | `capacity` | economics | info only, single instrument with a `volume` column: the capital at which 90% of the fills stay within 1%, 5% and 10% of the bar's traded value |
+| `walk_forward_stability` | statistics | info only: the per-bar returns cut into 6 equal consecutive windows: how many made money, the worst and best window and the Sharpe of each |
 | `claim_consistency` | claim | only with `--claim`: a claimed Sharpe, return, drawdown, trade count, win rate or profit factor is better than the verified one by more than a tolerance (fail) |
 | `walk_forward_oos` | statistics | `verify_grid` only: walk-forward out-of-sample Sharpe ≤ 0 (fail) or < 50% of the in-sample best (warn) |
 | `pbo` | statistics | `verify_grid` only: the probability of backtest overfitting (CSCV) is 0.5 or more: the best combination in training ranks below the median in testing (warn) |
+| `reality_check` | statistics | `verify_grid` only: White's Reality Check and Hansen's SPA on the returns of every combination against cash; warns when the SPA p-value is 0.10 or more: luck cannot be excluded as the source of the best result |
 | `parameter_plateau` | statistics | `verify_grid` only: the best combo's neighbours (one parameter one step away) keep < 50% of its Sharpe (warn): an isolated peak |
 
 ### How sure are we, and what was claimed
@@ -115,6 +118,7 @@ monte-neo verify --precompile      # compile and cache the engines once (Docker 
   (Bailey, Borwein, Lopez de Prado and Zhu, 2015). PBO is the share of splits where the winner ranks below the
   median. It is a probability with real noise: about 0.4 on average for pure noise and near 0 for a strong
   edge that every combination shares.
+- **Reality Check and SPA.** For a search, `reality_check` asks whether the best combination beats cash by more than the search explains. Both tests bootstrap the returns of all combinations (circular blocks, fixed seed, 1000 resamples). The Reality Check compares the largest mean with its null; SPA studentises and ignores clearly bad combinations, so many losing combinations do not hide a real edge. The SPA p-value decides the row; the Reality Check value is shown next to it. The benchmark is cash. Like every p-value from a bootstrap, it has sampling noise.
 - **Costs and capacity.** The spread estimate is biased upward in volatile bars (a few bps at 0.3% bars, about
   15 bps at 1% bars): read it as an order of magnitude. Capacity takes `volume` in instrument units
   (traded value = volume x close) and does not model market impact.
