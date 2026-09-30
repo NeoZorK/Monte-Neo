@@ -27,7 +27,7 @@ jobs:
           test "$pkg" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME != package $pkg"; exit 1; }
       - name: Build
         run: |
-          pip install "build>=1.2" "hatchling>=1.24,<1.26"
+          pip install --require-hashes --no-deps -r scripts/requirements/build.txt
           python -m build
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
@@ -123,11 +123,9 @@ jobs:
         run: |
           set -euo pipefail
           version="${GITHUB_REF_NAME#v}"
+          # The tag's own source is what PyPI received, so the SBOM is built from the checkout.
           python -m venv sbom-env
-          for i in 1 2 3 4 5 6; do
-            sbom-env/bin/pip install -q "monte-neo[sign,mcp]==$version" && break
-            echo "waiting for PyPI ($i)"; sleep 30
-          done
-          python -m pip install -q "cyclonedx-bom>=4,<8"
+          sbom-env/bin/pip install -q ".[sign,mcp]"
+          python -m pip install -q --require-hashes --no-deps -r scripts/requirements/sbom.txt
           cyclonedx-py environment sbom-env --of JSON -o "monte-neo-$version.cdx.json"
           gh release upload "$GITHUB_REF_NAME" "monte-neo-$version.cdx.json"
