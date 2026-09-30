@@ -3,6 +3,14 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.46.0] — 2026-09-30
+
+### Added
+- **Capacity for universes.** The capacity row now works for multi-symbol runs: each order (capital x weight change) is set
+  against the traded value of that symbol at the fill bar, and the capital at which 90% of the fills stay within 1%, 5% and 10%
+  of it is reported. The row names the tightest symbols, and the HTML report gets a "Capacity by symbol" table. Fills at bars
+  without volume are counted, not used. Single-instrument capacity and all certificate ids are unchanged.
+
 ## [v0.45.0] — 2026-09-30
 
 ### Added

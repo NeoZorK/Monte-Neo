@@ -239,7 +239,7 @@ def _checks_and_report(
     interval = bootstrap_ci(rets, ppy)
     windows = rolling_stability(rets, ppy)
     spread = spread_estimate(ohlc, model)
-    room = capacity(ohlc, market.volume, traded, model) if market.kind == "single" else {}
+    room = capacity(ohlc, market.capacity_volume, traded, model, market.symbols)
     history = track_record(dsr, ppy)
     breakeven = breakeven_cost_bps(ohlc, sig, model)
     delay = delay_scan(ohlc, sig, model)
@@ -275,7 +275,7 @@ def _checks_and_report(
         *([claim_row(settings["claim"], _verified(dsr, run, n_closed, journal_stats))] if "claim" in settings else []),
         rows.benchmark_row(total_return, dsr["sharpe_annualized"], bench),
         spread_row(spread),
-        *([capacity_row(room)] if market.kind == "single" and market.volume is not None else []),
+        *([capacity_row(room)] if market.capacity_volume is not None else []),
         *(extra_checks or []),
     ]
     active = np.abs(traded) if traded.ndim == 1 else np.abs(traded).sum(axis=1)

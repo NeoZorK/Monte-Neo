@@ -83,7 +83,7 @@ def test_capacity_needs_volume_fills_and_a_single_instrument() -> None:
     assert capacity({"close": close}, np.ones(50), traded, MODEL) == {}  # shape mismatch
     assert capacity({"close": close}, np.ones(100), np.ones(100, dtype=int), MODEL) == {}  # never trades after warm-up
     assert capacity({"close": close}, np.zeros(100), traded, MODEL) == {}  # no traded value at all
-    assert capacity({"close": close}, np.ones(100), np.ones((100, 2)), MODEL) == {}  # universes are not covered
+    assert capacity({"close": close}, np.ones(100), np.ones((100, 2)), MODEL) == {}  # positions and prices must have one shape
 
 
 def test_capacity_row() -> None:
@@ -109,7 +109,7 @@ def test_verify_adds_context_rows_only_when_the_data_allows() -> None:
     assert without["certificate_id"] == with_volume["certificate_id"] or True  # the id covers data hashes, which differ
 
 
-def test_universe_gets_a_spread_estimate_but_no_capacity() -> None:
+def test_universe_with_volume_gets_a_capacity_row() -> None:
     import sys
     from pathlib import Path
 
@@ -119,8 +119,9 @@ def test_universe_gets_a_spread_estimate_but_no_capacity() -> None:
     df = universe_ohlcv()
     df["volume"] = 1000.0
     report = verify_strategy(df, signals=np.ones(len(df)))
-    ids = {c["id"] for c in report["checks"]}
-    assert "spread_estimate" in ids and "capacity" not in ids
+    ids = {c["id"]: c for c in report["checks"]}
+    assert "spread_estimate" in ids and ids["capacity"]["status"] == "info"
+    assert ids["capacity"]["details"]["symbols"] == 6 and ids["capacity"]["details"]["by_symbol"]
 
 
 def test_report_cards_and_chart_marker() -> None:

@@ -135,7 +135,9 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 
 ## v0.45.0 — per-symbol costs
 - [x] `--costs-file` / `symbol_costs` / `costs-file`: commission and slippage by symbol, resolved into the certificate
-- [ ] Still open: capacity for universes
+
+## v0.46.0 — capacity for universes
+- [x] Capacity from volume for multi-symbol universes: pooled fills, tightest symbols listed, "Capacity by symbol" table in the report
 
 ## Next (v0.46+)
 - [ ] First public bench run (owner runs it; tooling ready in v0.32.0): Claude Code / Codex / Gemini CLI / Cursor → published leaderboard

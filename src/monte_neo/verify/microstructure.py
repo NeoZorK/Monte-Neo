@@ -25,6 +25,7 @@ from monte_neo.verify.checks import check
 MIN_BARS = 100
 PARTICIPATION = (0.01, 0.05, 0.10)
 FILL_QUANTILE = 0.10  # capital at which 90% of the fills are inside the limit
+TIGHTEST = 8  # symbols listed for a universe
 _K = 3.0 - 2.0 * math.sqrt(2.0)
 
 
@@ -80,34 +81,65 @@ def _human(value: float) -> str:
     return f"{value:.3g}"
 
 
-def capacity(ohlc: dict[str, np.ndarray], volume: Any, traded: np.ndarray, model: ExecutionModel) -> dict[str, Any]:
-    """Capital at which the fills stay within 1%, 5% and 10% of the bar's traded value; ``{}`` without volume or fills."""
-    if volume is None or np.ndim(traded) != 1:
+def capacity(
+    ohlc: dict[str, np.ndarray],
+    volume: Any,
+    traded: np.ndarray,
+    model: ExecutionModel,
+    symbols: list[str] | tuple[str, ...] | None = None,
+) -> dict[str, Any]:
+    """Capital at which the fills stay within 1%, 5% and 10% of the bar's traded value; ``{}`` without volume or fills.
+
+    One instrument: ``traded`` and ``volume`` are ``(bars,)``. A universe: ``(bars, symbols)`` matrices (``symbols``
+    names the columns). Every change of a symbol's weight is an order for that symbol, and it is filled in the next
+    bar: the order is ``capital x weight change`` and it must stay within the share of that symbol's traded value
+    (``volume x close``). The capacity is the capital at which 90% of all fills, over all symbols, are inside the limit;
+    for a universe the symbols with the smallest capacity are listed, because they set the limit.
+    """
+    if volume is None:
         return {}
     vol = np.asarray(volume, dtype=np.float64)
     close = np.asarray(ohlc["close"], dtype=np.float64)
-    if vol.shape != close.shape:
+    weight = np.asarray(traded, dtype=np.float64)
+    if vol.shape != close.shape or weight.shape != close.shape or close.ndim not in (1, 2):
         return {}
-    weight = np.asarray(traded, dtype=np.float64) * float(model.size_fraction * model.fill_fraction * model.leverage)
-    change = np.abs(np.diff(weight))
-    bars = np.flatnonzero(change > 0.0)
-    bars = bars[(bars >= model.warmup_bars) & (bars + 1 < close.size)]  # decided at bar t, filled in bar t + 1
+    if close.ndim == 1:
+        vol, close, weight = vol[:, None], close[:, None], weight[:, None]
+    weight = weight * float(model.size_fraction * model.fill_fraction * model.leverage)
+    change = np.abs(np.diff(weight, axis=0))
+    bars, cols = np.nonzero(change > 0.0)
+    keep = (bars >= model.warmup_bars) & (bars + 1 < close.shape[0])  # decided at bar t, filled in bar t + 1
+    bars, cols = bars[keep], cols[keep]
     dollars = vol * close
-    fill_value = dollars[bars + 1]
+    fill_value = dollars[bars + 1, cols]
     ok = np.isfinite(fill_value) & (fill_value > 0.0)
     if not ok.any():
         return {}
-    room = fill_value[ok] / change[bars][ok]  # capital that would use all of the bar's volume
+    room = fill_value[ok] / change[bars, cols][ok]  # capital that would use all of the bar's volume
     base = float(np.quantile(room, FILL_QUANTILE))
-    return {
+    seen = dollars[np.isfinite(dollars) & (dollars > 0)]
+    info: dict[str, Any] = {
         "participation": list(PARTICIPATION),
         "capital": [round(base * p, 2) for p in PARTICIPATION],
         "fills": int(ok.sum()),
         "fills_without_volume": int((~ok).sum()),
-        "median_bar_value": round(float(np.median(dollars[np.isfinite(dollars) & (dollars > 0)])), 2),
+        "median_bar_value": round(float(np.median(seen)), 2),
         "share_of_fills_inside": 1.0 - FILL_QUANTILE,
         "assumption": "volume in instrument units; traded value = volume x close",
     }
+    if symbols is not None and close.shape[1] > 1 and len(symbols) == close.shape[1]:
+        rooms = room
+        who = cols[ok]
+        rows = []
+        for j, name in enumerate(symbols):
+            mine = rooms[who == j]
+            if mine.size:
+                cap = float(np.quantile(mine, FILL_QUANTILE))
+                rows.append({"symbol": str(name), "fills": int(mine.size), "capital": [round(cap * p, 2) for p in PARTICIPATION]})
+        rows.sort(key=lambda r: r["capital"][1])
+        info["symbols"] = int(close.shape[1])
+        info["by_symbol"] = rows[:TIGHTEST]
+    return info
 
 
 def capacity_row(info: dict[str, Any]) -> dict[str, Any]:
@@ -119,6 +151,10 @@ def capacity_row(info: dict[str, Any]) -> dict[str, Any]:
         f"capital that keeps {info['share_of_fills_inside']:.0%} of {info['fills']:,} fills within a share of the bar's volume: {caps} "
         f"(median bar trades {_human(info['median_bar_value'])})"
     )
+    tight = [r for r in (info.get("by_symbol") or []) if isinstance(r, dict) and isinstance(r.get("capital"), list) and len(r["capital"]) == 3]
+    if tight:
+        names = ", ".join(f"{r['symbol']} {_human(r['capital'][1])}" for r in tight[:3])
+        summary += f"; tightest of {info.get('symbols', len(tight))} symbols at 5%: {names}"
     return check("capacity", "economics", "info", summary, info)
 
 
