@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.41.0)
+# Monte-Neo Roadmap (v0.42.0)
 
 Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier for agent-built strategies).
 
@@ -122,7 +122,11 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 - [x] Adapters: vectorbt, Freqtrade, Lean, Zipline, plain fills (Backtrader / Nautilus via fills)
 - [x] Jupyter display, pandas accessor, `--badge`, pre-commit hook, GHCR image workflow
 
-## Next (v0.42+)
+## v0.42.0 — audience content
+- [x] Technical note on the method, weekly "trap of the week" drafts, differences table, false-accusation issue form
+- [x] conda-forge recipe draft; owner tasks in `docs/project/STAGE6_OWNER_TASKS_RU.md`
+
+## Next (v0.43+)
 - [ ] First public bench run (owner runs it; tooling ready in v0.32.0): Claude Code / Codex / Gemini CLI / Cursor → published leaderboard
 - [~] Publish to MCP catalogues: official registry (done), glama / smithery / mcp.so / mcpmarket (owner submits; texts in docs/marketing/launch-kit.md)
 - [x] Signed certificates (v0.25.0), signing in the GitHub Action (v0.27.0), public verification page (v0.29.0)

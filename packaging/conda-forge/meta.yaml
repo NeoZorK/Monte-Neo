@@ -1,0 +1,57 @@
+{% set name = "monte-neo" %}
+{% set version = "0.41.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/monte_neo-{{ version }}.tar.gz
+  sha256: 918bb7a4d4382461743a49e88f64103f9a0c84db28aadce9227e62719b8e855d
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  entry_points:
+    - monte-neo = monte_neo.cli.entry:main
+    - monte-neo-verify = monte_neo.cli.verify_cmd:main
+    - monte-neo-mcp = monte_neo.mcp.server:main
+
+requirements:
+  host:
+    - python >=3.11
+    - hatchling >=1.24,<1.26
+    - pip
+  run:
+    - python >=3.11
+    - numpy >=1.24
+    - pandas >=2.0
+    - numba >=0.58
+    - rich >=13.0
+    - mcp >=1.10
+
+test:
+  imports:
+    - monte_neo
+    - monte_neo.verify
+  commands:
+    - monte-neo --version
+    - monte-neo verify --help
+
+about:
+  home: https://github.com/NeoZorK/Monte-Neo
+  summary: Independent verifier for trading-strategy backtests (look-ahead, costs, selection bias, signed certificates)
+  description: |
+    Monte-Neo runs a strategy as an untrusted program, probes it for look-ahead bias, charges costs and
+    execution delay, prices selection with the Deflated Sharpe ratio and returns a reproducible certificate.
+    It has an MCP server for coding agents, a CLI and a GitHub Action.
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  doc_url: https://neozork.github.io/Monte-Neo/
+  dev_url: https://github.com/NeoZorK/Monte-Neo
+
+extra:
+  recipe-maintainers:
+    - NeoZorK

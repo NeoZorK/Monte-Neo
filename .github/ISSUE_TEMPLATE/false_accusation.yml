@@ -1,0 +1,44 @@
+name: False accusation
+description: The verifier flagged an honest strategy (look-ahead, costs or statistics) that you believe is fine
+labels: ["false-positive"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A false accusation costs as much trust as a missed leak. Thank you for reporting it.
+  - type: textarea
+    id: code
+    attributes:
+      label: Minimal strategy
+      description: The smallest `signal(df)` that is flagged. pandas and numpy only, and no private data.
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: verdict
+    attributes:
+      label: What monte-neo returns
+      description: Output of `monte-neo verify --ohlcv <data> --strategy <file> --format json` (verdict and the failing checks), and the version (`monte-neo --version`).
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why the strategy is honest
+      description: Which bars does each value use? A sentence is enough.
+    validations:
+      required: true
+  - type: dropdown
+    id: check
+    attributes:
+      label: Which check is wrong
+      options:
+        - Truncation probe
+        - Perturbation probe
+        - Static lint rule
+        - Implausible accuracy
+        - Data quality
+        - Costs or statistics
+        - Not sure
+    validations:
+      required: true

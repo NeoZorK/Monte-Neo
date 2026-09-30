@@ -3,10 +3,17 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
-## [Unreleased]
+## [v0.42.0] — 2026-09-30
+
+### Added
+- **Technical note** on the verification method (`docs/paper/methodology.md`, also on the docs site): probes, costs,
+  selection, certificates and the Trap Suite evaluation.
+- **Trap of the week:** twelve post drafts with measured verdicts (`docs/marketing/trap-of-the-week.md`).
+- README: "How it differs from other tools" and a link to the note; issue form for **false accusations**.
+- conda-forge recipe draft (`packaging/conda-forge/meta.yaml`), list and catalogue entries in the launch kit.
 
 ### Fixed
-- The Docker image on GHCR is now built by the `docker` job of `publish.yml` (after the PyPI smoke test), through
+- The Docker image on GHCR is built by the `docker` job of `publish.yml` (after the PyPI smoke test), through
   `scripts/build_docker_image.sh`, which waits for the package index. `docker.yml` is a manual rebuild. In v0.41.0 the
   separate `workflow_run` build never started and the first manual run hit the index delay.
 
