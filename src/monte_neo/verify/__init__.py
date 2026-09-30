@@ -11,6 +11,14 @@ from typing import Any
 # Public names load on first access, so importing one submodule (for example in a
 # strategy worker process) does not pull in the backtest engine and numba.
 _LAZY = {
+    "Certificate": "monte_neo.verify.notebook",
+    "badge_payload": "monte_neo.verify.badge",
+    "from_fills": "monte_neo.verify.adapters",
+    "from_freqtrade": "monte_neo.verify.adapters",
+    "from_lean": "monte_neo.verify.adapters",
+    "from_vectorbt": "monte_neo.verify.adapters",
+    "from_zipline": "monte_neo.verify.adapters",
+    "show": "monte_neo.verify.notebook",
     "POSITION_MODES": "monte_neo.verify.ingest",
     "RECHECK_SCHEMA_ID": "monte_neo.verify.recheck",
     "SIGNATURE_CHECK_SCHEMA_ID": "monte_neo.verify.signing",
@@ -100,6 +108,7 @@ __all__ = [
     "verify_grid",
     "verify_strategy",
     "walk_forward",
+    "Certificate",
 ]
 
 
