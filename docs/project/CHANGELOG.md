@@ -3,6 +3,23 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.48.0] — 2026-09-30
+
+### Added
+- **Adapters for more real frameworks**: `from_backtrader` (the `Transactions` analyzer), `from_backtesting_py`
+  (`stats["_trades"]`), `from_bt` (security weights) and `from_nautilus` (the engine or its fills report).
+  A CI job now runs a moving-average strategy in each installed framework (Backtrader, backtesting.py, bt,
+  vectorbt, Nautilus Trader, Zipline) and compares what the adapter reads with the position the framework itself
+  held on every bar. The framework versions are hash-locked (`scripts/requirements/frameworks.txt`).
+- `from_fills(..., fill_at="open" | "close")`: say where in its bar a fill happens.
+
+### Fixed
+- **Close fills were read one bar too early.** `from_fills` treated every fill as an open fill, so a framework that
+  fills at the close of the decision bar (Nautilus on bar data) gave the strategy one bar of foresight: its results
+  looked better than they were. `from_nautilus` reads such fills at their own bar, and `fill_at` covers the rest.
+- `from_zipline` read a daily transaction, stamped with the session close time, one bar late; it now uses the session date.
+- An empty list of fills (a strategy that never traded) raised a confusing error; it now means flat all the way.
+
 ## [v0.47.0] — 2026-09-30
 
 ### Added
