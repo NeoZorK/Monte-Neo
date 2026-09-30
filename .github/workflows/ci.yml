@@ -79,5 +79,5 @@ jobs:
 
       - name: Build the docs site (strict)
         run: |
-          pip install "mkdocs-material>=9.5"
+          pip install --require-hashes --no-deps -r scripts/requirements/docs.txt
           mkdocs build --strict

@@ -75,3 +75,9 @@ Bandit в CI теперь проверяет весь `src`, а не тольк�
 1. Settings → Code security: включить **Private vulnerability reporting** (ссылка в SECURITY.md ведёт на него), **Dependabot security updates**, **Secret scanning** и **Push protection**.
 2. Settings → Branches: защита ветки `main` (обязательные проверки CI, запрет force-push).
 3. После первого запуска `scorecard.yml` — добавить бейдж Scorecard в README (результат появится на securityscorecards.dev).
+
+## OpenSSF Scorecard (30.09.2026)
+
+Закрыто в коде: Pinned-Dependencies — образы Docker закреплены по sha256 (`docker/Dockerfile`, `docker/verify/Dockerfile`, образ `uv`); все `pip install` в workflow используют файлы с хешами `scripts/requirements/*.txt` (`--require-hashes`); зависимости образа проверки — `docker/verify/requirements.txt` с хешами; SBOM собирается из исходников тега, а не из индекса. Fuzzing — property-тесты Hypothesis в `tests/fuzz/` (сертификаты, таблицы издержек, цены, векторы позиций, HTML-отчёт).
+Обновление хешей: `uv pip compile --generate-hashes --python-version 3.12 scripts/requirements/NAME.in -o scripts/requirements/NAME.txt`.
+Остаётся: собственная установка `monte-neo` в образе проверки берётся из индекса по версии (без хеша) — хеш выпуска заранее не известен. Code-Review — процессная проверка: пока один мейнтейнер, оценка 0 объективна; варианты в отчёте владельцу.
