@@ -45,6 +45,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--funding-bps-per-bar", type=float, default=0.0, help="Funding charged on every open position, bps of its value per bar (default 0)")
     p.add_argument("--borrow-bps-per-bar", type=float, default=0.0, help="Borrow fee charged on short positions only, bps of their value per bar (default 0)")
+    p.add_argument("--sl-pct", type=float, default=0.0, help="Stop-loss in percent of the entry price, tested inside each bar (default off)")
+    p.add_argument("--tp-pct", type=float, default=0.0, help="Take-profit in percent of the entry price (default off)")
+    p.add_argument("--trail-pct", type=float, default=0.0, help="Trailing stop in percent from the best price since entry (default off)")
     p.add_argument("--side-mode", choices=["long_flat", "long_short"], default=None, help="Default: long_short if signals contain shorts")
     p.add_argument("--warmup-bars", type=int, default=None, help="Bars ignored before trading (default min(60, n/10))")
     p.add_argument("--periods-per-year", type=float, default=None, help="Bars per year for annualization (default: inferred)")
@@ -244,6 +247,9 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
             n_bars=bar_count(df),
             funding_bps_per_bar=args.funding_bps_per_bar,
             borrow_bps_per_bar=args.borrow_bps_per_bar,
+            sl_pct=args.sl_pct,
+            tp_pct=args.tp_pct,
+            trail_pct=args.trail_pct,
         )
         common = {
             "model": model, "periods_per_year": args.periods_per_year, "min_trades": args.min_trades,

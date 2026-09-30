@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import math
 import warnings
+from dataclasses import replace
 from typing import Any
 
 import numpy as np
@@ -34,8 +35,8 @@ def _compound(rets: np.ndarray) -> float:
 def buy_and_hold(
     ohlc: dict[str, np.ndarray], model: ExecutionModel, positions: np.ndarray, periods_per_year: float
 ) -> dict[str, Any]:
-    """Run the passive benchmark ``positions`` with the same costs and warm-up."""
-    run = simulate(ohlc, positions, model)
+    """Run the passive benchmark ``positions`` with the same costs and warm-up (never with the strategy's stops)."""
+    run = simulate(ohlc, positions, replace(model, sl_pct=0.0, tp_pct=0.0, trail_pct=0.0))
     rets = bar_returns(run["equity"], start=model.warmup_bars)
     return {
         "equity": run["equity"],

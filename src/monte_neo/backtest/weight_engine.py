@@ -21,6 +21,7 @@ from typing import Any
 
 import numpy as np
 
+from monte_neo.backtest.core_numba import _stop_hit
 from monte_neo.backtest.jit import njit_cached
 from monte_neo.backtest.model import ExecutionModel
 
@@ -39,7 +40,12 @@ def _weight_core(  # pragma: no cover  # njit body; covered through run_weight_b
     initial_cash: float,
     warmup: int,
     funding_bps: float,
-    borrow_bps: float = 0.0,
+    borrow_bps: float,
+    high: np.ndarray,
+    low: np.ndarray,
+    sl_pct: float,
+    tp_pct: float,
+    trail_pct: float,
 ) -> tuple:
     n, m = close.shape
     equity = np.empty(n, dtype=np.float64)
@@ -56,6 +62,13 @@ def _weight_core(  # pragma: no cover  # njit body; covered through run_weight_b
     slip_rate = slip_bps * 1e-4
     fund_rate = funding_bps * 1e-4
     borrow_rate = borrow_bps * 1e-4
+    use_sl = sl_pct > 0.0
+    use_tp = tp_pct > 0.0
+    use_trail = trail_pct > 0.0
+    use_stops = use_sl or use_tp or use_trail
+    sl_lvl = np.zeros(m, dtype=np.float64)  # stop, take-profit and trailing-peak levels of each open position
+    tp_lvl = np.zeros(m, dtype=np.float64)
+    peak_lvl = np.zeros(m, dtype=np.float64)
 
     for i in range(n):
         # A position left open after the instrument's last price is closed at that price.
@@ -91,6 +104,35 @@ def _weight_core(  # pragma: no cover  # njit body; covered through run_weight_b
         dd = (peak_eq - mtm) / peak_eq if peak_eq > 0.0 else 0.0
         if dd > max_dd:
             max_dd = dd
+
+        if use_stops:
+            # Stops inside the bar, exactly as the discrete engine does them: a position that touches
+            # its level on this bar leaves at that level (slippage against it) and the target is free
+            # to re-enter from the next decision.
+            stopped = False
+            for s in range(m):
+                if qty[s] != 0.0 and not np.isnan(high[i, s]) and not np.isnan(low[i, s]):
+                    pos = 1 if qty[s] > 0.0 else -1
+                    hit, exit_raw, sl_lvl[s], peak_lvl[s] = _stop_hit(
+                        pos, high[i, s], low[i, s], use_sl, use_tp, use_trail,
+                        sl_lvl[s], tp_lvl[s], peak_lvl[s], trail_pct,
+                    )
+                    if hit != 0:
+                        px = exit_raw * (1.0 - float(pos) * slip_rate)
+                        proceeds = qty[s] * px
+                        cash += proceeds - abs(proceeds) * fee_rate
+                        traded_notional += abs(proceeds)
+                        qty[s] = 0.0
+                        applied[s] = 0.0
+                        fills += 1
+                        closed += 1
+                        stopped = True
+            if stopped:
+                after = cash
+                for s in range(m):
+                    if qty[s] != 0.0:
+                        after += qty[s] * last_px[s]
+                equity[i] = after
 
         if i < warmup or i + 1 >= n:
             continue
@@ -135,8 +177,19 @@ def _weight_core(  # pragma: no cover  # njit body; covered through run_weight_b
                         # and the next orders in this loop value the position with it.
                         last_px[s] = fill
                     hold += (desired - qty[s]) * last_px[s]
+                    opening = qty[s] == 0.0
                     qty[s] = desired
                     fills += 1
+                    if use_stops and opening:
+                        # Levels come from the price a position is opened at; adding to it or
+                        # trimming it later keeps them.
+                        peak_lvl[s] = px
+                        if use_sl:
+                            sl_lvl[s] = px * (1.0 - sl_pct * 0.01) if desired > 0.0 else px * (1.0 + sl_pct * 0.01)
+                        elif use_trail:
+                            sl_lvl[s] = px * (1.0 - trail_pct * 0.01) if desired > 0.0 else px * (1.0 + trail_pct * 0.01)
+                        if use_tp:
+                            tp_lvl[s] = px * (1.0 + tp_pct * 0.01) if desired > 0.0 else px * (1.0 - tp_pct * 0.01)
             applied[s] = target
 
     for s in range(m):
@@ -179,25 +232,41 @@ def run_weight_backtest(
     close: np.ndarray,
     weights: np.ndarray,
     model: ExecutionModel | None = None,
+    high: np.ndarray | None = None,
+    low: np.ndarray | None = None,
 ) -> dict[str, Any]:
     """Run target weights (1-D for one instrument, 2-D ``bars x instruments``).
 
     Weights are used as given (call :func:`normalize_weights` first); the model's
     ``size_fraction``, ``fill_fraction`` and ``leverage`` scale them like the
-    discrete engine scales its notional. Stops (``sl_pct`` / ``tp_pct`` /
-    ``trail_pct``) are not supported for weights.
+    discrete engine scales its notional.
+
+    Stops (``sl_pct`` / ``tp_pct`` / ``trail_pct``, in percent) work inside the bar and need
+    ``high`` and ``low`` of the same shape as ``close``. They follow the discrete engine: the
+    levels come from the price a position is opened at (from flat, or after a change of side),
+    the stop is tested before the take-profit when a bar touches both, and the position leaves at
+    the level with slippage against it. Adding to a position or trimming it keeps its levels.
+    A stopped instrument is flat until the target asks for a position again, which it may do on
+    the same bar (the target has not changed, so a held weight re-enters at the next open).
     """
     model = model or ExecutionModel()
-    if model.sl_pct > 0.0 or model.tp_pct > 0.0 or model.trail_pct > 0.0:
-        raise ValueError("stop-loss / take-profit / trailing stops are not supported for target weights")
+    stops = model.sl_pct > 0.0 or model.tp_pct > 0.0 or model.trail_pct > 0.0
     o = np.asarray(open_, dtype=np.float64)
     c = np.asarray(close, dtype=np.float64)
     w = np.asarray(weights, dtype=np.float64)
+    hi = None if high is None else np.asarray(high, dtype=np.float64)
+    lo = None if low is None else np.asarray(low, dtype=np.float64)
+    if stops and (hi is None or lo is None):
+        raise ValueError("stop-loss / take-profit / trailing stops need the bars' high and low")
     single = c.ndim == 1
     if single:
         o, c, w = o[:, None], c[:, None], w[:, None]
+        hi = None if hi is None else hi[:, None]
+        lo = None if lo is None else lo[:, None]
     if not (o.shape == c.shape == w.shape) or c.ndim != 2:
         raise ValueError("open, close and weights must share the shape (bars,) or (bars, instruments)")
+    if stops and not (hi.shape == lo.shape == c.shape):  # type: ignore[union-attr]
+        raise ValueError("high and low must have the shape of close")
     n = c.shape[0]
     if n < model.warmup_bars + 2:
         raise ValueError("need enough bars for warmup + fill")
@@ -212,6 +281,8 @@ def run_weight_backtest(
         np.ascontiguousarray(o), np.ascontiguousarray(c), w, last_bar,
         model.fill_policy == "next_bar_open", float(model.commission_bps), float(model.effective_slip_bps),
         float(model.initial_cash), int(model.warmup_bars), float(model.funding_bps_per_bar), float(model.borrow_bps_per_bar),
+        np.ascontiguousarray(hi if stops else c), np.ascontiguousarray(lo if stops else c),  # placeholders when unused
+        float(model.sl_pct), float(model.tp_pct), float(model.trail_pct),
     )
     return {
         "equity": equity,

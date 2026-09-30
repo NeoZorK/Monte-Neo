@@ -99,7 +99,7 @@ def test_normalize_weights() -> None:
 
 def test_input_errors() -> None:
     px = _prices(1, 2, 3)
-    with pytest.raises(ValueError, match="not supported"):
+    with pytest.raises(ValueError, match="high and low"):
         run_weight_backtest(px, px, px, model=ExecutionModel(sl_pct=1.0, warmup_bars=0))
     with pytest.raises(ValueError, match="share the shape"):
         run_weight_backtest(px, px, np.ones(2), model=FREE)
