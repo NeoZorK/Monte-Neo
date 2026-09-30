@@ -177,7 +177,7 @@ def economics_rows(
     model: ExecutionModel, total_return: float, breakeven: dict[str, Any], delay: dict[str, Any]
 ) -> list[dict[str, Any]]:
     """Costs modeled, net profitability, cost margin and delay sensitivity."""
-    side_cost = float(model.commission_bps + model.slippage_bps + model.impact_bps)
+    side_cost = float(model.mean_side_cost_bps)
     rows = [
         check(
             "costs_modeled", "economics", "warn" if side_cost <= 0.0 else "pass",

@@ -93,6 +93,7 @@ def verify_strategy(
     sl_pct: float = 0.0,
     tp_pct: float = 0.0,
     trail_pct: float = 0.0,
+    symbol_costs: dict[str, Any] | str | None = None,
     compact: bool = True,
 ) -> dict[str, Any]:
     """Verify a strategy backtest and return a strategy-verdict/1 certificate.
@@ -119,6 +120,8 @@ def verify_strategy(
         sl_pct: Stop-loss in percent of the entry price, tested inside each bar (default 0 = off).
         tp_pct: Take-profit in percent of the entry price (default 0 = off).
         trail_pct: Trailing stop in percent from the best price since entry (default 0 = off).
+        symbol_costs: Universes only: costs by symbol, e.g. {"AAA": {"commission_bps": 2, "slippage_bps": 1}, "default": {"slippage_bps": 10}}
+            (or a JSON file path). A symbol takes its own values, then "default", then the uniform costs above.
         compact: Drop details of passing checks to keep the response short.
     """
     from monte_neo.verify import verify_strategy as _verify
@@ -131,7 +134,8 @@ def verify_strategy(
     )
     runs = {"timeout": timeout, "jobs": jobs, "isolate": isolate} if strategy_path else {}
     report = _verify(
-        df, signals=signals_path, strategy=strategy_path, model=model, n_trials=n_trials, positions=positions, claim=claim, **runs
+        df, signals=signals_path, strategy=strategy_path, model=model, n_trials=n_trials, positions=positions, claim=claim,
+        symbol_costs=symbol_costs, **runs
     )
     return _compact(report) if compact else report
 
@@ -154,6 +158,7 @@ def verify_grid(
     sl_pct: float = 0.0,
     tp_pct: float = 0.0,
     trail_pct: float = 0.0,
+    symbol_costs: dict[str, Any] | str | None = None,
     compact: bool = True,
 ) -> dict[str, Any]:
     """Run the parameter search inside the verifier and verify the best combo.
@@ -180,6 +185,8 @@ def verify_grid(
         sl_pct: Stop-loss in percent of the entry price, tested inside each bar (default 0 = off).
         tp_pct: Take-profit in percent of the entry price (default 0 = off).
         trail_pct: Trailing stop in percent from the best price since entry (default 0 = off).
+        symbol_costs: Universes only: costs by symbol, e.g. {"AAA": {"commission_bps": 2, "slippage_bps": 1}, "default": {"slippage_bps": 10}}
+            (or a JSON file path). A symbol takes its own values, then "default", then the uniform costs above.
         compact: Drop details of passing checks to keep the response short.
     """
     from monte_neo.verify import verify_grid as _verify_grid
@@ -189,7 +196,7 @@ def verify_grid(
     )
     report = _verify_grid(
         df, grid, strategy=strategy_path, model=model, folds=folds, positions=positions,
-        timeout=timeout, jobs=jobs, isolate=isolate, claim=claim,
+        timeout=timeout, jobs=jobs, isolate=isolate, claim=claim, symbol_costs=symbol_costs,
     )
     return _compact(report) if compact else report
 

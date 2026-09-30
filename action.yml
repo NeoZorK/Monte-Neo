@@ -37,6 +37,10 @@ inputs:
     description: "Borrow fee charged on short positions only, bps of their value per bar"
     required: false
     default: "0"
+  costs-file:
+    description: "Universes only: costs by symbol as a JSON file path or JSON text, e.g. {\"AAA\": {\"commission_bps\": 2, \"slippage_bps\": 1}, \"default\": {\"slippage_bps\": 10}}"
+    required: false
+    default: ""
   sl-pct:
     description: "Stop-loss in percent of the entry price, tested inside each bar (0 = off)"
     required: false
@@ -145,6 +149,7 @@ runs:
         MN_SLIPPAGE: ${{ inputs.slippage-bps }}
         MN_FUNDING: ${{ inputs.funding-bps-per-bar }}
         MN_BORROW: ${{ inputs.borrow-bps-per-bar }}
+        MN_COSTS: ${{ inputs.costs-file }}
         MN_SL: ${{ inputs.sl-pct }}
         MN_TP: ${{ inputs.tp-pct }}
         MN_TRAIL: ${{ inputs.trail-pct }}
@@ -171,6 +176,7 @@ runs:
         if [ -n "$MN_TRIALS" ]; then extra=(--n-trials "$MN_TRIALS"); fi
         if [ -n "$MN_GRID" ]; then extra=(--grid "$MN_GRID"); fi
         if [ -n "$MN_CLAIM" ]; then extra+=(--claim "$MN_CLAIM"); fi
+        if [ -n "$MN_COSTS" ]; then extra+=(--costs-file "$MN_COSTS"); fi
         if [ -n "$MN_STRATEGY" ]; then
           extra+=(--jobs "$MN_JOBS")
           if [ -n "$MN_TIMEOUT" ]; then extra+=(--timeout "$MN_TIMEOUT"); fi

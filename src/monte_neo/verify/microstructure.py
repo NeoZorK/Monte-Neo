@@ -51,8 +51,8 @@ def spread_estimate(ohlc: dict[str, np.ndarray], model: ExecutionModel) -> dict[
         "method": "Corwin-Schultz (2012), median over bars",
         "spread_bps": round(spread_bps, 2),
         "half_spread_bps": round(spread_bps / 2.0, 2),
-        "modeled_bps_per_side": round(float(model.commission_bps + model.effective_slip_bps), 2),
-        "modeled_slippage_bps": round(float(model.effective_slip_bps), 2),
+        "modeled_bps_per_side": round(float(model.mean_side_cost_bps), 2),
+        "modeled_slippage_bps": round(float(model.mean_slip_bps), 2),
         "bars": int(est.size),
     }
 

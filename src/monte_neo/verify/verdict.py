@@ -42,6 +42,7 @@ from monte_neo.verify.report_data import MAX_TRADES_FOR_STATS, build_charts, tra
 from monte_neo.verify.schema import DISCLAIMER, VERDICT_SCHEMA_ID, aggregate_verdict, to_jsonable
 from monte_neo.verify.stability import rolling_stability, stability_row
 from monte_neo.verify.stats import bar_returns, deflated_sharpe, infer_periods_per_year, sharpe_per_bar
+from monte_neo.verify.symbol_costs import apply_symbol_costs
 from monte_neo.verify.timing import timing_significance
 
 
@@ -100,6 +101,7 @@ def verify_strategy(
     timeout: float | None = None,
     isolate: bool = False,
     claim: dict[str, Any] | str | Path | None = None,
+    symbol_costs: dict[str, Any] | str | Path | None = None,
 ) -> dict[str, Any]:
     """Verify one strategy and return a ``strategy-verdict/1`` report.
 
@@ -120,6 +122,8 @@ def verify_strategy(
     ``claim`` (a dict, JSON text or a JSON file: ``sharpe``, ``total_return``, ``max_drawdown``,
     ``n_trades``, ``win_rate``, ``profit_factor``) is compared with the verified numbers; an
     overclaim fails the ``claim_consistency`` check.
+    ``symbol_costs`` (a dict, JSON text or a JSON file: ``{"AAA": {"commission_bps": 2, "slippage_bps": 1},
+    "default": {...}}``) gives a universe different costs per symbol; see :mod:`monte_neo.verify.symbol_costs`.
     """
     if n_trials is not None and int(n_trials) < 1:
         raise ValueError(f"n_trials must be >= 1 (the chosen variant counts), got {n_trials}")
@@ -132,6 +136,8 @@ def verify_strategy(
     df = load_ohlcv(ohlcv)
     market = market_for(df)
     n = market.n_bars
+    if symbol_costs is not None:
+        model = apply_symbol_costs(market, model or _default_model(n), symbol_costs)  # written into the certificate's model
     # Every knob that can change the verdict goes into the certificate, so a recheck
     # reruns the same test and a reader sees e.g. a lowered min_trades.
     settings = {

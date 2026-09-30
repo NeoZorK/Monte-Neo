@@ -33,6 +33,7 @@ from monte_neo.verify.market import SingleMarket, UniverseMarket, market_for
 from monte_neo.verify.pbo import pbo_cscv, pbo_row
 from monte_neo.verify.reality import reality_check, reality_row
 from monte_neo.verify.stats import bar_returns, sharpe_per_bar
+from monte_neo.verify.symbol_costs import apply_symbol_costs
 from monte_neo.verify.verdict import _default_model, _runner_for, verify_strategy
 
 MAX_COMBOS = 512
@@ -207,6 +208,7 @@ def _search_and_verify(
     verify_kwargs: dict[str, Any],
 ) -> dict[str, Any]:
     model = model or _default_model(market.n_bars)
+    model = apply_symbol_costs(market, model, verify_kwargs.pop("symbol_costs", None))
     combos = expand_grid(grid)
     positions = verify_kwargs.pop("positions", "auto")
     with io_watch:
