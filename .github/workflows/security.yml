@@ -23,9 +23,7 @@ jobs:
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
       - name: Bandit (medium and high findings fail the job)
         run: >-
-          uvx "bandit>=1.8,<2" -q -ll -r
-          src/monte_neo/verify src/monte_neo/mcp src/monte_neo/bench
-          src/monte_neo/cli/verify_cmd.py src/monte_neo/cli/entry.py
+          uvx "bandit>=1.8,<2" -q -ll -r src
 
   pip-audit:
     runs-on: ubuntu-latest
