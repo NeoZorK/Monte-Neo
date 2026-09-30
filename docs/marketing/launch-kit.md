@@ -133,7 +133,15 @@ One-line description used everywhere:
 | MCP Market (mcpmarket.com) | Submission form, with the GitHub URL | one-line description |
 | awesome-mcp-servers | Pull request to the list, "Finance & Fintech" section | `- [NeoZorK/Monte-Neo](https://github.com/NeoZorK/Monte-Neo) 🐍 🏠 - Verify trading-strategy backtests: look-ahead probes, costs, Deflated Sharpe, signed certificates.` |
 | awesome-quant | Pull request, "Python → Backtesting" or "Trading & Backtesting" section | `- [Monte-Neo](https://github.com/NeoZorK/Monte-Neo) - Verifier for backtests: look-ahead bias, costs, Deflated Sharpe, reproducible certificates.` |
+| awesome-systematic-trading | Pull request, verification / backtesting tools section | `- [Monte-Neo](https://github.com/NeoZorK/Monte-Neo) - Independent verifier for backtests: look-ahead probes, costs, Deflated Sharpe, reproducible certificates.` |
+| conda-forge | Pull request to `conda-forge/staged-recipes` with `packaging/conda-forge/meta.yaml` (steps in `docs/project/STAGE6_OWNER_TASKS_RU.md`) | recipe in the repository |
+| arXiv / SSRN | Turn `docs/paper/methodology.md` into a preprint (the note is written to be converted) | title and abstract of the note |
+| Framework documentation | Once a framework's maintainers agree, a "Verify your backtest" link to `docs/guides/frameworks.md` | one line and the guide link |
 | GitHub Marketplace (Action) | When drafting a release, tick "Publish this Action to the GitHub Marketplace" | Category: Testing; Code quality |
+
+## Weekly series
+
+[Trap of the week](trap-of-the-week.md): twelve drafts, one per week, each with its own numbers.
 
 ## Rules for all posts
 

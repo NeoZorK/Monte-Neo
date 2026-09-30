@@ -1,4 +1,4 @@
-# Monte-Neo v0.41.0
+# Monte-Neo v0.42.0
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -35,10 +35,10 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/project-structure.md - Deep dive into physical directory layout
 - docs/project/features.md - Detailed overview of framework features
 - docs/project/dynamic_indicators.md - Explanation of dynamic indicator generation
-- docs/project/ROADMAP.md - Development roadmap and milestones (v0.41.0)
+- docs/project/ROADMAP.md - Development roadmap and milestones (v0.42.0)
 - docs/project/PRODUCT_STRATEGY_RU.md - Product strategy: agent-native strategy verifier niche, moat, roadmap (RU, internal)
 - docs/project/CLEANUP_CANDIDATES_RU.md - Cleanup candidate list with evidence, awaiting owner approval (RU, internal)
-- docs/project/CHANGELOG.md - Release changelog (current: v0.41.0)
+- docs/project/CHANGELOG.md - Release changelog (current: v0.42.0)
 - docs/project/backtest_engine.md - Fee-aware research bar engine
 - docs/project/oms_engine.md - Paper OMS (bar + tick/L2) + venue adapters
 - docs/assets/monteneo-logo.png - Project logo (original, with the old tagline)
@@ -77,6 +77,11 @@ A simplified guide to the Monte-Neo file structure.
 - docs/guides/agents.md - Use the verifier from Claude Code / Codex / Gemini / Cursor / GitHub Actions
 - docs/guides/honesty-bench.md - Agent Backtest Honesty Bench: layout, metrics, fair-play rules
 - docs/verify.md - Browser page that checks a certificate's Ed25519 signature (docs/assets/verify-certificate.js)
+- docs/paper/methodology.md - Technical note on the verification method (probes, costs, selection, certificates, Trap Suite evaluation)
+- docs/marketing/trap-of-the-week.md - Twelve weekly post drafts built on Trap Suite strategies, with measured verdicts
+- docs/project/STAGE6_OWNER_TASKS_RU.md - Stage 6: what the owner does (conda-forge, lists, publications, settings, contributor issues) (RU, internal)
+- packaging/conda-forge/meta.yaml - conda-forge recipe draft (not built)
+- .github/ISSUE_TEMPLATE/false_accusation.yml - Issue form for false accusations of honest strategies
 - docs/guides/frameworks.md - Adapters (vectorbt, Freqtrade, Lean, Zipline, fills), Jupyter display, pandas accessor, pre-commit, badge, Docker image
 - docs/guides/trap-suite.md - Trap Suite catalogue (80 traps, 35 honest controls) and how to contribute a trap
 - src/monte_neo/bench/ - Honesty Bench (verify agent submissions, compare claims, leaderboard; v1 tasks + answer key)
@@ -94,7 +99,7 @@ A simplified guide to the Monte-Neo file structure.
 - docker/verify/Dockerfile - Verifier image for untrusted strategy code (engines precompiled, runs as nobody)
 
 ### Source Code (src/monte_neo/)
-- src/monte_neo/_version.py - Central version management (v0.41.0)
+- src/monte_neo/_version.py - Central version management (v0.42.0)
 - src/monte_neo/verify/ - Strategy verifier (ingest, single and universe markets, data quality, look-ahead probes, outside-data watch, strategy workers (jobs, timeout, isolation), lint, benchmark and breakdown, HTML report, costs, stats, checks, verdict, grid + walk-forward, certificate recheck)
 - src/monte_neo/mcp/ - MCP server (monte-neo-mcp) + agent-facing tool functions
 - src/monte_neo/cli/verify_cmd.py - `monte-neo verify` command (CI exit codes)
