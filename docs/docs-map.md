@@ -65,6 +65,7 @@ A simplified guide to the Monte-Neo file structure.
 ### Development (docs/development/)
 - docs/development/rules.md - Project-specific rules and conventions
 - docs/development/testing.md - Testing strategy and execution guide
+- docs/development/review-policy.md - Review with a single maintainer: what is done, how to get a real reviewer (RU, internal)
 - docs/development/performance.md - Performance notes and benchmarks
 - docs/development/generation_mechanics.md - Deep dive into generator and dynamic indicator logic
 - docs/development/external-libs.md - List and purpose of external dependencies
