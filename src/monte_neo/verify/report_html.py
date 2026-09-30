@@ -198,6 +198,27 @@ def _confidence_stats(m: dict[str, Any]) -> list[str]:
     return out
 
 
+def _capacity_table(report: dict[str, Any]) -> str:
+    """The symbols that limit the capacity of a universe (from the ``capacity`` check), or nothing."""
+    check = next((c for c in _checks(report) if c.get("id") == "capacity"), {})
+    details = check.get("details") if isinstance(check.get("details"), dict) else {}
+    rows = [r for r in (details.get("by_symbol") or []) if isinstance(r, dict) and isinstance(r.get("capital"), list) and len(r["capital"]) == 3]
+    if not rows:
+        return ""
+    body = "".join(
+        f"<tr><td>{_e(r.get('symbol', ''))}</td><td>{_e(r.get('fills', ''))}</td>"
+        + "".join(f"<td>{_money(v) if _number(v) else '—'}</td>" for v in r["capital"])
+        + "</tr>"
+        for r in rows
+    )
+    return (
+        "<h2>Capacity by symbol</h2><div class='card'><table><tr><th>symbol</th><th>fills</th>"
+        "<th>capital at 1% of volume</th><th>at 5%</th><th>at 10%</th></tr>"
+        f"{body}</table><p class='muted'>The {len(rows)} symbols with the smallest capacity of {_e(details.get('symbols', ''))}: "
+        "a trade in each of them stays within the share of the bar's traded value up to this capital (90% of its fills).</p></div>"
+    )
+
+
 def _figure(title: str, svg: str, note: str = "") -> str:
     return f"<div class='card'><b>{_e(title)}</b>{svg}" + (f"<p class='muted'>{_e(note)}</p>" if note else "") + "</div>" if svg else ""
 
@@ -378,6 +399,7 @@ def render_html(report: dict[str, Any]) -> str:
         f"<h2>Equity</h2><div class='card'>{charts.equity_chart(report.get('series') or {})}</div>"
         + _charts_section(report)
         + _trade_stats((report.get("charts") or {}).get("trade_stats") if isinstance(report.get("charts"), dict) else None)
+        + _capacity_table(report)
         + (f"<h2>What to fix</h2><div class='card'><ol>{actions}</ol></div>" if actions else "")
         + _evidence(report)
         + f"<h2>Checks</h2><div class='card'>{_checks_table(report.get('checks') or [])}</div>"

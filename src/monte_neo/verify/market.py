@@ -64,6 +64,7 @@ class SingleMarket:
         self.timestamps = df.get("timestamp")
         self.volume = df["volume"].to_numpy() if "volume" in df.columns else None
         self.symbols: list[str] | None = None
+        self.capacity_volume = self.volume  # (bars,) volume for the capacity estimate
 
     def integrity(self) -> dict[str, Any]:
         return rows.data_integrity(self.ohlc, self.timestamps)
@@ -146,6 +147,11 @@ class UniverseMarket:
         keys = self.t_idx.astype(np.int64) * len(self.symbols) + self.s_idx
         self.duplicates = int(keys.size - np.unique(keys).size)
         self.volume = frame["volume"].to_numpy() if "volume" in frame.columns else None
+        self.capacity_volume = None  # (bars, symbols) volume for the capacity estimate
+        if self.volume is not None:
+            vm = np.full(shape, np.nan)
+            vm[self.t_idx, self.s_idx] = pd.to_numeric(frame["volume"], errors="coerce").to_numpy(dtype=np.float64)
+            self.capacity_volume = vm
         # Rows of each symbol in time order (the table is sorted by time, so a stable sort keeps it).
         self._by_symbol = np.argsort(self.s_idx, kind="stable")
         self._symbol_bounds = np.searchsorted(self.s_idx[self._by_symbol], np.arange(len(self.symbols) + 1))
