@@ -1,0 +1,16 @@
+# Real backtesting frameworks for tests/frameworks (Python 3.12). pandas < 3: the Nautilus data wrangler needs it.
+numpy
+numba
+rich
+mcp
+backtrader
+backtesting
+bt
+vectorbt
+nautilus_trader
+zipline-reloaded
+pandas<3
+plotly<6  # vectorbt uses figure paths that plotly 6 removed
+pytest>=9
+pytest-xdist
+hypothesis

@@ -10,48 +10,53 @@ so. If you have the strategy function, also verify it with `--strategy` (or `sig
 ## Timing convention
 
 The verifier reads the position at bar `t` as "decided at the close of `t`, filled at the open of `t + 1`".
-A trade that the framework opened at the open of bar `t` therefore enters the position array at `t - 1`.
-A framework that fills at the close of `t` is read one bar later than it filled, which is the conservative side.
+A framework that fills at the open of bar `t` therefore enters the position array at `t - 1`. A framework
+that fills at the close of bar `t` (Nautilus on bar data, bt) enters it at `t`. Reading a close fill as an
+open fill would put every position one bar too early, and the verifier would see one bar of the future: the
+adapters below set this per framework, and `from_fills(..., fill_at="open" | "close")` lets you say it for any other.
 
 ## Adapters
 
 ```python
-from monte_neo.verify import from_vectorbt, from_freqtrade, from_lean, from_zipline, from_fills
+from monte_neo.verify import (
+    from_vectorbt, from_backtrader, from_backtesting_py, from_bt, from_nautilus,
+    from_zipline, from_freqtrade, from_lean, from_fills,
+)
 
-report = from_vectorbt(pf["BTC"]).verify()                       # a vectorbt Portfolio, one column
+report = from_vectorbt(pf["BTC"]).verify()                        # a vectorbt Portfolio, one column
+report = from_backtrader(strat.analyzers.tx.get_analysis(), "prices.csv").verify()
+report = from_backtesting_py(stats, "prices.csv").verify()        # Backtest(..., finalize_trades=True)
+report = from_bt(result, "prices.csv").verify()                   # bt: security weights
+report = from_nautilus(engine, "prices.csv").verify()             # BacktestEngine or its fills report
+report = from_zipline(transactions, "prices.csv").verify()
 report = from_freqtrade(trades_df, "BTC_USDT-1h.feather").verify()
 report = from_lean(order_events, "spy_hour.csv").verify()
-report = from_zipline(transactions, "prices.csv").verify()
-report = from_fills(fills_df, "prices.csv").verify()             # any framework
+report = from_fills(fills_df, "prices.csv", fill_at="open").verify()   # any other framework
 ```
 
 Every adapter returns an `Adapted` object with `.ohlcv`, `.positions` and `.verify(**kwargs)`. The keyword
 arguments are those of `verify_strategy` (`model=`, `n_trials=`, `claim=`, ...).
 
-| Function | Input | Positions |
-|----------|-------|-----------|
-| `from_vectorbt(pf)` | a `Portfolio` with one column (`pf["BTC"]`) | weight of equity: `assets x close / value` |
-| `from_freqtrade(trades, ohlcv)` | trades of one pair: `open_date`, `close_date`, `is_short` | +1 / -1 while a trade is open |
-| `from_lean(events, ohlcv)` | order events: `time`, `fillQuantity`, `status` | sign of the running fill quantity |
-| `from_zipline(transactions, ohlcv)` | flat list of `{dt, amount}` | sign of the running amount |
-| `from_fills(fills, ohlcv)` | `timestamp`, signed `quantity` | sign of the running quantity |
+| Function | Input | Positions | Fills read as | Checked against |
+|----------|-------|-----------|---------------|-----------------|
+| `from_vectorbt(pf)` | a `Portfolio` with one column (`pf["BTC"]`) | weight of equity: `assets x close / value` | (weights) | the real framework |
+| `from_backtrader(tx, ohlcv)` | `bt.analyzers.Transactions` analysis, or a list of `{timestamp, quantity}` | sign of the running size | open | the real framework |
+| `from_backtesting_py(stats, ohlcv)` | `stats` of `Backtest.run()` | sign of the running size | open | the real framework |
+| `from_bt(result, ohlcv)` | `result.get_security_weights()` of one security | the weights | (close: weight on `t` is decided at `t`) | the real framework |
+| `from_nautilus(engine, ohlcv)` | `BacktestEngine`, or `generate_order_fills_report()` | sign of the running quantity | close (`fill_at="close"`) | the real framework |
+| `from_zipline(tx, ohlcv)` | flat list of `{dt, amount}` | sign of the running amount | open, on the session date | the real framework |
+| `from_freqtrade(trades, ohlcv)` | trades of one pair: `open_date`, `close_date`, `is_short` | +1 / -1 while a trade is open | open | fake trade tables only |
+| `from_lean(events, ohlcv)` | order events: `time`, `fillQuantity`, `status` | sign of the running fill quantity | open | fake events only |
+| `from_fills(fills, ohlcv, fill_at=)` | `timestamp`, signed `quantity` | sign of the running quantity | your choice | unit tests |
 
-### Backtrader and Nautilus
+"The real framework" means a CI job runs a moving-average strategy in the installed framework and compares the
+adapter's positions with the position the framework itself held on every bar (`tests/frameworks`). Freqtrade and Lean
+are not in that job (Freqtrade needs exchange access to start, Lean runs in Docker): check their adapters on your
+own run before trusting a certificate, and tell us the result.
 
-Collect the fills in a list and use `from_fills`. In Backtrader:
-
-```python
-class Strategy(bt.Strategy):
-    def __init__(self):
-        self.fills = []
-
-    def notify_order(self, order):
-        if order.status == order.Completed:
-            size = order.executed.size          # negative for sells
-            self.fills.append({"timestamp": bt.num2date(order.executed.dt), "quantity": size})
-```
-
-then `from_fills(strategy.fills, prices).verify()`.
+Notes from those runs: Backtrader and backtesting.py fill at the next open; backtesting.py leaves a trade that is
+still open at the last bar out of its `_trades` unless you pass `finalize_trades=True`; Zipline stamps a daily
+transaction with the session close time, so the adapter uses its date; the Nautilus data wrangler needs pandas below 3.
 
 ## Jupyter
 
@@ -82,7 +87,7 @@ fits, shuffled splits, ...):
 ```yaml
 repos:
   - repo: https://github.com/NeoZorK/Monte-Neo
-    rev: v0.47.0
+    rev: v0.49.0
     hooks:
       - id: monte-neo-lint
 ```

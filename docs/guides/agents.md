@@ -42,7 +42,7 @@ reporting results. It fires once per file per session and never blocks an edit.
 MCP server only:
 
 ```bash
-claude mcp add monte-neo -- uvx --from "monte-neo[mcp]>=0.47.0" monte-neo-mcp
+claude mcp add monte-neo -- uvx --from "monte-neo[mcp]>=0.49.0" monte-neo-mcp
 ```
 
 ## Codex (OpenAI)
@@ -69,7 +69,7 @@ Use this stdio command:
 
 ```bash
 uvx monte-neo mcp          # v0.20.0+: the MCP SDK is a default dependency
-# older pin: uvx --from "monte-neo[mcp]>=0.47.0" monte-neo-mcp
+# older pin: uvx --from "monte-neo[mcp]>=0.49.0" monte-neo-mcp
 ```
 
 Monte-Neo is published to the official MCP Registry as `io.github.NeoZorK/monte-neo` (`server.json`),
@@ -79,8 +79,15 @@ For HTTP clients, add `--transport streamable-http`.
 
 ## GitHub Actions
 
+The quickest way: run `monte-neo init-ci` in your project. It finds your strategy file and price table, and writes
+`.github/workflows/monte-neo.yml` (checkout pinned to a commit, the action pinned to the release you have installed,
+a verdict comment on pull requests, the certificate uploaded as an artifact). Options: `--n-trials`, `--fail-on`,
+`--isolate`, `--sign`, `--out`, `--print` (show it without writing), `--force`. It never overwrites a file without
+`--force`. Comments on pull requests from forks are not possible (GitHub gives those runs a read-only token); the
+verdict is still in the job summary. By hand:
+
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.47.0
+- uses: NeoZorK/Monte-Neo@v0.49.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py

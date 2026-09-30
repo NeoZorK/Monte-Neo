@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release to build, e.g. v0.47.0 (must already be on PyPI)"
+        description: "Release to build, e.g. v0.49.0 (must already be on PyPI)"
         required: true
 
 permissions:

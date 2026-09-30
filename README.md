@@ -112,7 +112,7 @@ verifier cannot silently stop catching a leak or start accusing honest code.
 | Kind of tool | What it does | What Monte-Neo adds |
 |--------------|--------------|---------------------|
 | Performance report libraries | Charts and ratios from a return series | Checks whether the backtest behind the returns is broken, prices the number of variants tried, issues a certificate |
-| Backtesting frameworks | Run whatever strategy code they are given | An independent second opinion on the result; adapters for vectorbt, Freqtrade, Lean, Zipline and plain fills |
+| Backtesting frameworks | Run whatever strategy code they are given | An independent second opinion on the result; adapters for vectorbt, Backtrader, backtesting.py, bt, Nautilus Trader, Zipline, Freqtrade, Lean and plain fills (the first six are tested against the real frameworks) |
 | Look-ahead checkers inside one framework | Compare indicator values on cut data for that framework's strategies | Works with any strategy function or positions, adds costs, selection bias and claim checks |
 | Statistics libraries (Deflated Sharpe, PBO) | Formulas you wire up yourself | The whole pipeline: probes, engine, statistics, report, certificate, agent tools |
 
@@ -141,6 +141,7 @@ verifier cannot silently stop catching a leak or start accusing honest code.
 ```bash
 pip install monte-neo
 monte-neo verify --demo      # no files needed: a strategy that peeks at tomorrow's close is rejected
+monte-neo init-ci            # write a GitHub Actions workflow that verifies your strategy on every pull request
 ```
 
 **Command line**
@@ -212,7 +213,7 @@ MCP tools: `verify_strategy`, `verify_grid`, `probe_lookahead`, `cost_stress`,
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.47.0
+- uses: NeoZorK/Monte-Neo@v0.49.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py
