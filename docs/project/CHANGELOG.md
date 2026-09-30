@@ -3,6 +3,20 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.43.2] — 2026-09-30
+
+### Security
+Findings from a full security pass (Bandit over all of `src`, `pip-audit` over the whole lock file including dev
+dependencies, secret scanning of the tree and history, review of every workflow). None touched the verifier's own code.
+
+- Research modules: the calibration cache no longer reads or writes pickle files (loading a pickle runs code); its
+  directory is created private (700); the cache key hash is marked as not security-relevant.
+- Dynamic indicators: expressions are checked (no private names or attributes) and run with a whitelist of built-ins
+  instead of the full set.
+- The generated `compile.sh` is executable by its owner only.
+- `pypi-smoke.yml` passes the resolved version through the environment instead of splicing it into the script.
+- Bandit in CI now covers all of `src`.
+
 ## [v0.43.1] — 2026-09-30
 
 Quality release after a full check of the product as a customer (clean install from PyPI on Python 3.11, 3.12 and 3.13,

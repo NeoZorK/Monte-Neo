@@ -53,10 +53,11 @@ jobs:
         env:
           VERIFY_PYPI_MAX_ATTEMPTS: "8"
           VERIFY_PYPI_SLEEP_SECS: "20"
+          RESOLVED_VERSION: ${{ steps.ver.outputs.ver }}  # through the environment, never spliced into the script
         run: |
           set -euo pipefail
-          if [ -n "${{ steps.ver.outputs.ver }}" ]; then
-            bash scripts/verify_pypi_install.sh "${{ steps.ver.outputs.ver }}"
+          if [ -n "${RESOLVED_VERSION}" ]; then
+            bash scripts/verify_pypi_install.sh "${RESOLVED_VERSION}"
           else
             bash scripts/verify_pypi_install.sh
           fi

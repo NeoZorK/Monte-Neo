@@ -266,11 +266,11 @@ def test_cache_error_paths(tmp_path, monkeypatch):
 
     monkeypatch.setattr(c, "CACHE_DIR", str(tmp_path / "cache"))
     assert c.get_cache_path("x.npy").endswith("x.npy")
-    assert c.save_cache("a", {"k": 1}, use_pickle=True)
-    assert c.load_cache("a", use_pickle=True) == {"k": 1}
+    assert c.save_cache("a", {"k": 1})
+    assert c.load_cache("a") == {"k": 1}
     with patch("builtins.open", side_effect=OSError("nope")):
-        assert c.save_cache("b", {"k": 2}, use_pickle=True) is False
-        assert c.load_cache("a", use_pickle=True) is None
+        assert c.save_cache("b", {"k": 2}) is False
+        assert c.load_cache("a") is None
     c.save_calibration("ind", np.arange(10), {"p": 1})
     c.load_calibration("ind", np.arange(10))
     c.clear_cache("a")
