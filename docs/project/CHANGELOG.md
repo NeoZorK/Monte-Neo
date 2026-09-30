@@ -3,6 +3,14 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.49.0] — 2026-09-30
+
+### Added
+- **`monte-neo init-ci`**: writes a GitHub Actions workflow that verifies your strategy on every pull request. It finds the
+  strategy file and the price table in the project (or takes `--strategy` / `--ohlcv`), pins the checkout to a commit and the
+  action to the installed release, posts the verdict as a pull-request comment and uploads the certificate. Options:
+  `--n-trials`, `--fail-on`, `--isolate`, `--sign`, `--out`, `--print`, `--force`. It never overwrites a file without `--force`.
+
 ## [v0.48.0] — 2026-09-30
 
 ### Added
