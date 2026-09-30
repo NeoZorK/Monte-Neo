@@ -35,6 +35,7 @@ def _terminal_return(ohlc: dict[str, np.ndarray], signals: np.ndarray, model: Ex
             float(model.commission_bps), float(model.effective_slip_bps), float(model.initial_cash),
             int(model.warmup_bars), float(model.sl_pct), float(model.tp_pct), float(model.trail_pct),
             float(model.fill_fraction), float(model.leverage), float(model.funding_bps_per_bar),
+            float(model.borrow_bps_per_bar),
         )
     )
 

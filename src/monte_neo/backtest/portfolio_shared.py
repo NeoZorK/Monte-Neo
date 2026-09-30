@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 
 from monte_neo.backtest.jit import njit_cached
-from monte_neo.backtest.model import ExecutionModel
+from monte_neo.backtest.model import ExecutionModel, require_no_borrow
 
 
 @njit_cached
@@ -192,6 +192,7 @@ def run_portfolio_shared_cash(
 ) -> dict[str, Any]:
     """Multi-symbol backtest with one shared cash book (bar-aligned)."""
     model = model or ExecutionModel()
+    require_no_borrow(model, "shared-cash portfolio")
     if not books:
         raise ValueError("books must be non-empty")
     missing = set(books) - set(signals)

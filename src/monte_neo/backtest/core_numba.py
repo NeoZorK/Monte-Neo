@@ -81,6 +81,7 @@ def run_core_full(  # pragma: no cover  # njit body; covered via public API / su
     fill_fraction: float,
     leverage: float,
     funding_bps: float,
+    borrow_bps: float = 0.0,
 ) -> tuple:
     """Full path: equity + journal (SL/TP/trail/partial/funding/leverage/session)."""
     n = close.shape[0]
@@ -94,6 +95,7 @@ def run_core_full(  # pragma: no cover  # njit body; covered via public API / su
     fee_rate = commission_bps * 1e-4
     slip_rate = slip_bps * 1e-4
     fund_rate = funding_bps * 1e-4
+    borrow_rate = borrow_bps * 1e-4
     use_sl = sl_pct > 0.0
     use_tp = tp_pct > 0.0
     use_trail = trail_pct > 0.0
@@ -115,6 +117,8 @@ def run_core_full(  # pragma: no cover  # njit body; covered via public API / su
     for i in range(n):
         if position != 0 and qty != 0.0 and fund_rate > 0.0:
             cash -= abs(qty * close[i]) * fund_rate
+        if qty < 0.0 and borrow_rate > 0.0:
+            cash -= abs(qty * close[i]) * borrow_rate
         mtm = cash + qty * close[i]
         equity[i] = mtm
         if mtm > peak_eq:
@@ -270,6 +274,7 @@ def run_terminal_return(  # pragma: no cover  # njit body; covered via public AP
     fill_fraction: float,
     leverage: float,
     funding_bps: float,
+    borrow_bps: float = 0.0,
 ) -> float:
     """Scalar terminal return — same economics as :func:`run_core_full`."""
     _, ret, _, _, _, _, _, _, _, _, _, _, _ = run_core_full(
@@ -292,5 +297,6 @@ def run_terminal_return(  # pragma: no cover  # njit body; covered via public AP
         fill_fraction,
         leverage,
         funding_bps,
+        borrow_bps,
     )
     return ret

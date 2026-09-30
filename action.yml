@@ -29,6 +29,14 @@ inputs:
     description: Slippage per side (bps)
     required: false
     default: "5"
+  funding-bps-per-bar:
+    description: "Funding charged on every open position, bps of its value per bar"
+    required: false
+    default: "0"
+  borrow-bps-per-bar:
+    description: "Borrow fee charged on short positions only, bps of their value per bar"
+    required: false
+    default: "0"
   timeout:
     description: "Seconds allowed per signal() call; the strategy runs in a worker process (empty: no limit)"
     required: false
@@ -123,6 +131,8 @@ runs:
         MN_TRIALS: ${{ inputs.n-trials }}
         MN_COMMISSION: ${{ inputs.commission-bps }}
         MN_SLIPPAGE: ${{ inputs.slippage-bps }}
+        MN_FUNDING: ${{ inputs.funding-bps-per-bar }}
+        MN_BORROW: ${{ inputs.borrow-bps-per-bar }}
         MN_FAIL_ON: ${{ inputs.fail-on }}
         MN_GRID: ${{ inputs.grid }}
         MN_CLAIM: ${{ inputs.claim }}
@@ -163,6 +173,7 @@ runs:
         fi
         monte-neo verify --ohlcv "$MN_OHLCV" "${src[@]}" ${extra[@]+"${extra[@]}"} \
           --commission-bps "$MN_COMMISSION" --slippage-bps "$MN_SLIPPAGE" --positions "$MN_POSITIONS" \
+          --funding-bps-per-bar "$MN_FUNDING" --borrow-bps-per-bar "$MN_BORROW" \
           --out "$cert" --html "$html" ${sign[@]+"${sign[@]}"}
         code=$?
         if [ -n "$MN_SIGNING_KEY" ]; then rm -f "$key"; fi

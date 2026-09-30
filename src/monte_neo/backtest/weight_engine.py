@@ -39,6 +39,7 @@ def _weight_core(  # pragma: no cover  # njit body; covered through run_weight_b
     initial_cash: float,
     warmup: int,
     funding_bps: float,
+    borrow_bps: float = 0.0,
 ) -> tuple:
     n, m = close.shape
     equity = np.empty(n, dtype=np.float64)
@@ -54,6 +55,7 @@ def _weight_core(  # pragma: no cover  # njit body; covered through run_weight_b
     fee_rate = commission_bps * 1e-4
     slip_rate = slip_bps * 1e-4
     fund_rate = funding_bps * 1e-4
+    borrow_rate = borrow_bps * 1e-4
 
     for i in range(n):
         # A position left open after the instrument's last price is closed at that price.
@@ -75,6 +77,10 @@ def _weight_core(  # pragma: no cover  # njit body; covered through run_weight_b
             for s in range(m):
                 if qty[s] != 0.0 and not np.isnan(last_px[s]):
                     cash -= abs(qty[s] * last_px[s]) * fund_rate
+        if borrow_rate > 0.0:
+            for s in range(m):
+                if qty[s] < 0.0 and not np.isnan(last_px[s]):
+                    cash -= abs(qty[s] * last_px[s]) * borrow_rate
         mtm = cash
         for s in range(m):
             if qty[s] != 0.0:
@@ -205,7 +211,7 @@ def run_weight_backtest(
     equity, total_return, max_dd, fills, closed, traded = _weight_core(
         np.ascontiguousarray(o), np.ascontiguousarray(c), w, last_bar,
         model.fill_policy == "next_bar_open", float(model.commission_bps), float(model.effective_slip_bps),
-        float(model.initial_cash), int(model.warmup_bars), float(model.funding_bps_per_bar),
+        float(model.initial_cash), int(model.warmup_bars), float(model.funding_bps_per_bar), float(model.borrow_bps_per_bar),
     )
     return {
         "equity": equity,

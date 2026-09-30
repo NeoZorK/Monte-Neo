@@ -40,6 +40,7 @@ from monte_neo.verify.notebook import Certificate
 from monte_neo.verify.quality import data_quality, quality_row, spike_profit_share
 from monte_neo.verify.report_data import MAX_TRADES_FOR_STATS, build_charts, trade_stats
 from monte_neo.verify.schema import DISCLAIMER, VERDICT_SCHEMA_ID, aggregate_verdict, to_jsonable
+from monte_neo.verify.stability import rolling_stability, stability_row
 from monte_neo.verify.stats import bar_returns, deflated_sharpe, infer_periods_per_year, sharpe_per_bar
 from monte_neo.verify.timing import timing_significance
 
@@ -230,6 +231,7 @@ def _checks_and_report(
     dsr = deflated_sharpe(rets, n_trials=int(n_trials or 1), trial_sharpes=trials, periods_per_year=ppy)
     holdout = _holdout(rets, holdout_fraction)
     interval = bootstrap_ci(rets, ppy)
+    windows = rolling_stability(rets, ppy)
     spread = spread_estimate(ohlc, model)
     room = capacity(ohlc, market.volume, traded, model) if market.kind == "single" else {}
     history = track_record(dsr, ppy)
@@ -261,6 +263,7 @@ def _checks_and_report(
         rows.timing_row(timing),
         *rows.statistics_rows(dsr, n_closed, int(min_trades), trials_declared=n_trials is not None, holdout=holdout),
         rows.period_row(by_period, total_return),
+        stability_row(windows),
         confidence_row(interval),
         track_record_row(history),
         *([claim_row(settings["claim"], _verified(dsr, run, n_closed, journal_stats))] if "claim" in settings else []),
@@ -288,6 +291,7 @@ def _checks_and_report(
         "sharpe_ci95": interval.get("sharpe_annualized"),
         "return_ci95": interval.get("total_return"),
         "min_track_record_bars": history["need_bars"],
+        "windows_positive": windows.get("positive"),
         "estimated_spread_bps": spread.get("spread_bps"),
         "capacity_5pct": room["capital"][1] if room else None,
         "benchmark_total_return": bench["total_return"],
@@ -394,8 +398,14 @@ def model_from_costs(
     side_mode: str = "long_short",
     warmup_bars: int | None = None,
     n_bars: int | None = None,
+    funding_bps_per_bar: float = 0.0,
+    borrow_bps_per_bar: float = 0.0,
 ) -> ExecutionModel:
-    """Convenience ExecutionModel for CLI / MCP callers."""
+    """Convenience ExecutionModel for CLI / MCP callers.
+
+    ``funding_bps_per_bar`` is charged on every open position, ``borrow_bps_per_bar`` on short
+    positions only (bps of the position's value per bar: 300 bps a year on hourly bars is about 0.034).
+    """
     base = _default_model(int(n_bars or 600))
     return replace(
         base,
@@ -403,6 +413,8 @@ def model_from_costs(
         slippage_bps=float(slippage_bps),
         side_mode=side_mode,  # type: ignore[arg-type]
         warmup_bars=int(warmup_bars) if warmup_bars is not None else base.warmup_bars,
+        funding_bps_per_bar=float(funding_bps_per_bar),
+        borrow_bps_per_bar=float(borrow_bps_per_bar),
     )
 
 
