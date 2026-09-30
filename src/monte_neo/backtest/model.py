@@ -9,12 +9,20 @@ FillPolicy = Literal["next_bar_open", "next_bar_close"]
 SideMode = Literal["long_flat", "long_short"]
 
 
+def require_no_borrow(model: ExecutionModel, engine: str) -> None:
+    """Refuse a model with a borrow fee in an engine that would silently ignore it."""
+    if model.borrow_bps_per_bar > 0.0:
+        raise ValueError(f"borrow_bps_per_bar is not supported by the {engine} engine")
+
+
 @dataclass(frozen=True, slots=True)
 class ExecutionModel:
     """Documented execution model shared by single, batch, portfolio, strategy.
 
     Signal on bar ``t`` fills on bar ``t+1``. Costs are bps on fill notional.
-    ``leverage`` scales entry notional; ``funding_bps_per_bar`` debits holders.
+    ``leverage`` scales entry notional; ``funding_bps_per_bar`` debits every holder and
+    ``borrow_bps_per_bar`` debits holders of short positions only (the verifier's engines
+    apply it; the batch, sweep and shared-cash engines refuse a model that sets it).
     Session masks are passed at call time (block new entries only).
     """
 
@@ -33,6 +41,7 @@ class ExecutionModel:
     oco_bracket: bool = True
     leverage: float = 1.0
     funding_bps_per_bar: float = 0.0
+    borrow_bps_per_bar: float = 0.0
 
     def __post_init__(self) -> None:
         if self.size_fraction <= 0.0 or self.size_fraction > 1.0:
@@ -43,6 +52,8 @@ class ExecutionModel:
             raise ValueError("bps costs must be non-negative")
         if self.funding_bps_per_bar < 0.0:
             raise ValueError("funding_bps_per_bar must be non-negative")
+        if self.borrow_bps_per_bar < 0.0:
+            raise ValueError("borrow_bps_per_bar must be non-negative")
         if self.leverage < 1.0:
             raise ValueError("leverage must be >= 1")
         if self.initial_cash <= 0.0:
@@ -53,7 +64,10 @@ class ExecutionModel:
             raise ValueError("sl_pct/tp_pct/trail_pct must be non-negative")
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        out = asdict(self)
+        if not out["borrow_bps_per_bar"]:
+            del out["borrow_bps_per_bar"]  # keeps the certificate id of models without a borrow fee unchanged
+        return out
 
     @property
     def effective_slip_bps(self) -> float:
@@ -78,6 +92,7 @@ class ExecutionModel:
             "strategy_expressions": True,
             "leverage": self.leverage > 1.0,
             "funding": self.funding_bps_per_bar > 0.0,
+            "borrow": self.borrow_bps_per_bar > 0.0,
             "session_mask": bool(session_mask_used),
             "shared_cash_portfolio": False,
         }

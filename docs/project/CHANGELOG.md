@@ -3,6 +3,19 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.43.0] — 2026-09-30
+
+### Added
+- **Short-borrow and funding fees.** `--funding-bps-per-bar` (every open position) and the new `--borrow-bps-per-bar`
+  (short positions only), in the CLI, MCP tools (`funding_bps_per_bar`, `borrow_bps_per_bar`), the GitHub Action and
+  `model_from_costs`. Both engines (sign and target-weight) charge them; the batch and shared-cash engines refuse a
+  model that sets a borrow fee instead of ignoring it. The fee is part of the certificate's cost model only when set,
+  so existing certificates keep their ids and recheck.
+- **Reality Check and SPA** for `verify_grid`: the new `reality_check` row (White 2000, Hansen 2005) tests whether the best
+  combination beats cash by more than the whole search explains; it warns at an SPA p-value of 0.10 or more.
+- **Rolling stability** (`walk_forward_stability`, context): the returns cut into 6 equal windows, how many made money and
+  the worst and best window. `metrics.windows_positive`.
+
 ## [v0.42.0] — 2026-09-30
 
 ### Added

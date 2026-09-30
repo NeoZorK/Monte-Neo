@@ -23,7 +23,10 @@ SERVER_INSTRUCTIONS = (
 )
 
 
-def _model(ohlcv_path: str, commission_bps: float, slippage_bps: float, side_mode: str | None, warmup_bars: int | None, signals_path: str | None) -> tuple[Any, Any]:
+def _model(
+    ohlcv_path: str, commission_bps: float, slippage_bps: float, side_mode: str | None, warmup_bars: int | None,
+    signals_path: str | None, funding_bps_per_bar: float = 0.0, borrow_bps_per_bar: float = 0.0,
+) -> tuple[Any, Any]:
     from monte_neo.verify import load_ohlcv, load_signals, model_from_costs
     from monte_neo.verify.market import bar_count
 
@@ -37,6 +40,8 @@ def _model(ohlcv_path: str, commission_bps: float, slippage_bps: float, side_mod
         side_mode=side_mode,
         warmup_bars=warmup_bars,
         n_bars=bar_count(df),
+        funding_bps_per_bar=funding_bps_per_bar,
+        borrow_bps_per_bar=borrow_bps_per_bar,
     )
     return df, model
 
@@ -79,6 +84,8 @@ def verify_strategy(
     jobs: int = 1,
     isolate: bool = False,
     claim: dict[str, Any] | str | None = None,
+    funding_bps_per_bar: float = 0.0,
+    borrow_bps_per_bar: float = 0.0,
     compact: bool = True,
 ) -> dict[str, Any]:
     """Verify a strategy backtest and return a strategy-verdict/1 certificate.
@@ -100,13 +107,17 @@ def verify_strategy(
         isolate: Block network, subprocesses and file writes for the strategy.
         claim: What was claimed, e.g. {"sharpe": 2.1, "total_return": 0.85, "max_drawdown": 0.12,
             "n_trades": 300} (or a JSON file path): a claim better than the verified result fails.
+        funding_bps_per_bar: Funding on every open position, bps of its value per bar (default 0).
+        borrow_bps_per_bar: Borrow fee on short positions only, bps of their value per bar (default 0).
         compact: Drop details of passing checks to keep the response short.
     """
     from monte_neo.verify import verify_strategy as _verify
 
     if not signals_path and not strategy_path:
         return {"error": "provide signals_path or strategy_path"}
-    df, model = _model(ohlcv_path, commission_bps, slippage_bps, side_mode, warmup_bars, signals_path)
+    df, model = _model(
+        ohlcv_path, commission_bps, slippage_bps, side_mode, warmup_bars, signals_path, funding_bps_per_bar, borrow_bps_per_bar
+    )
     runs = {"timeout": timeout, "jobs": jobs, "isolate": isolate} if strategy_path else {}
     report = _verify(
         df, signals=signals_path, strategy=strategy_path, model=model, n_trials=n_trials, positions=positions, claim=claim, **runs
@@ -127,6 +138,8 @@ def verify_grid(
     jobs: int = 1,
     isolate: bool = False,
     claim: dict[str, Any] | str | None = None,
+    funding_bps_per_bar: float = 0.0,
+    borrow_bps_per_bar: float = 0.0,
     compact: bool = True,
 ) -> dict[str, Any]:
     """Run the parameter search inside the verifier and verify the best combo.
@@ -148,11 +161,13 @@ def verify_grid(
         jobs: Worker processes (the grid's combos run in parallel).
         isolate: Block network, subprocesses and file writes for the strategy.
         claim: What was claimed (see verify_strategy); compared with the verified result.
+        funding_bps_per_bar: Funding on every open position, bps of its value per bar (default 0).
+        borrow_bps_per_bar: Borrow fee on short positions only, bps of their value per bar (default 0).
         compact: Drop details of passing checks to keep the response short.
     """
     from monte_neo.verify import verify_grid as _verify_grid
 
-    df, model = _model(ohlcv_path, commission_bps, slippage_bps, side_mode, None, None)
+    df, model = _model(ohlcv_path, commission_bps, slippage_bps, side_mode, None, None, funding_bps_per_bar, borrow_bps_per_bar)
     report = _verify_grid(
         df, grid, strategy=strategy_path, model=model, folds=folds, positions=positions,
         timeout=timeout, jobs=jobs, isolate=isolate, claim=claim,

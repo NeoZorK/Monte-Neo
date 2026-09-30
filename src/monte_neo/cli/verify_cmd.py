@@ -43,6 +43,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--claim", help="What was claimed, as a JSON file or text, e.g. '{\"sharpe\": 2.1, \"total_return\": 0.85}': an overclaim fails the check",
     )
+    p.add_argument("--funding-bps-per-bar", type=float, default=0.0, help="Funding charged on every open position, bps of its value per bar (default 0)")
+    p.add_argument("--borrow-bps-per-bar", type=float, default=0.0, help="Borrow fee charged on short positions only, bps of their value per bar (default 0)")
     p.add_argument("--side-mode", choices=["long_flat", "long_short"], default=None, help="Default: long_short if signals contain shorts")
     p.add_argument("--warmup-bars", type=int, default=None, help="Bars ignored before trading (default min(60, n/10))")
     p.add_argument("--periods-per-year", type=float, default=None, help="Bars per year for annualization (default: inferred)")
@@ -240,6 +242,8 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
             side_mode=_side_mode(args),
             warmup_bars=args.warmup_bars,
             n_bars=bar_count(df),
+            funding_bps_per_bar=args.funding_bps_per_bar,
+            borrow_bps_per_bar=args.borrow_bps_per_bar,
         )
         common = {
             "model": model, "periods_per_year": args.periods_per_year, "min_trades": args.min_trades,

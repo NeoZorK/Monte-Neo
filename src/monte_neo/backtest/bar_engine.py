@@ -64,6 +64,7 @@ def _run_core(
         float(model.fill_fraction),
         float(model.leverage),
         float(model.funding_bps_per_bar),
+        float(model.borrow_bps_per_bar),
     )
     return out, sess_used
 
