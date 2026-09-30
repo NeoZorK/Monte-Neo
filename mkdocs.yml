@@ -84,6 +84,7 @@ nav:
       - Contributing: development/contributing.md
   - Articles:
       - Six ways your agent's backtest lies: marketing/article-six-ways.md
+      - Technical note (method): paper/methodology.md
   - API:
       - Strategy verifier: api/verify.md
   - Research (frozen):

@@ -82,7 +82,7 @@ fits, shuffled splits, ...):
 ```yaml
 repos:
   - repo: https://github.com/NeoZorK/Monte-Neo
-    rev: v0.41.0
+    rev: v0.42.0
     hooks:
       - id: monte-neo-lint
 ```
