@@ -80,6 +80,7 @@ A simplified guide to the Monte-Neo file structure.
 - docs/paper/methodology.md - Technical note on the verification method (probes, costs, selection, certificates, Trap Suite evaluation)
 - docs/marketing/trap-of-the-week.md - Twelve weekly post drafts built on Trap Suite strategies, with measured verdicts
 - docs/project/STAGE6_OWNER_TASKS_RU.md - Stage 6: what the owner does (conda-forge, lists, publications, settings, contributor issues) (RU, internal)
+- docs/project/REGISTRATION_RUNBOOK_RU.md - Step-by-step registration in catalogues, Marketplace and repository settings (RU, internal)
 - packaging/conda-forge/meta.yaml - conda-forge recipe draft (not built)
 - .github/ISSUE_TEMPLATE/false_accusation.yml - Issue form for false accusations of honest strategies
 - docs/guides/frameworks.md - Adapters (vectorbt, Freqtrade, Lean, Zipline, fills), Jupyter display, pandas accessor, pre-commit, badge, Docker image
