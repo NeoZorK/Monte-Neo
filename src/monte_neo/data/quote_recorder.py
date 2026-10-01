@@ -194,7 +194,7 @@ def _default_fetch_time() -> Callable[[], int]:  # pragma: no cover - network gl
         return TimeClient()
 
     def through_proxy() -> int:
-        with urlopen(TIME_URL, timeout=10) as response:  # noqa: S310 - fixed https URL
+        with urlopen(TIME_URL, timeout=10) as response:  # noqa: S310  # nosec B310 - TIME_URL is a constant https URL
             return int(json.load(response)["serverTime"])
 
     return through_proxy
