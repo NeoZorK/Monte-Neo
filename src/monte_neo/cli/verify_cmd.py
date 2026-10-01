@@ -31,6 +31,9 @@ def build_parser() -> argparse.ArgumentParser:
     src = p.add_mutually_exclusive_group()
     src.add_argument("--signals", help="Positions per bar (.csv / .parquet / .npy): +1 long, 0 flat, -1 short, or weights in [-1, 1]")
     src.add_argument("--strategy", help="Strategy file 'path.py[:func]' with func(df) -> positions (default func: signal)")
+    p.add_argument("--quotes", help="Quotes table (.csv / .parquet) with timestamp, bid, ask and latency_ms (or arrival): checks the strategy against the time data arrived (needs --strategy)")
+    p.add_argument("--bar-ms", type=float, default=1000.0, help="Bar length in milliseconds for --quotes (default 1000)")
+    p.add_argument("--latency-samples", type=int, default=200, help="Latency draws for the --quotes Monte Carlo (default 200)")
     p.add_argument("--n-trials", type=int, default=None, help="How many variants were tried before this one")
     p.add_argument("--grid", help="Parameter grid as JSON or a .json file, e.g. '{\"fast\": [10, 20], \"slow\": [50, 100]}' (needs --strategy)")
     p.add_argument("--folds", type=int, default=4, help="Walk-forward folds for --grid (default 4)")
@@ -74,6 +77,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--public-key", help="Expected signer for --check-signature: 'ed25519:<base64>' or a .pub file")
     p.add_argument("--format", choices=["text", "json"], default="text", help="stdout format (default text)")
     p.add_argument("--schema", action="store_true", help="Print the strategy-verdict/1 JSON schema and exit")
+    p.add_argument("--demo-quotes", action="store_true", help="Try the arrival-time checks with no files: a strategy that needs data before it arrived, and an honest one")
     p.add_argument("--demo", action="store_true", help="Try it with no files: verify a leaky and an honest built-in strategy on synthetic data")
     p.add_argument(
         "--precompile", action="store_true",
@@ -155,7 +159,12 @@ def _render_text(report: dict[str, Any], console: Console) -> None:
             f" {wf['oos_sharpe']:+.4f} · stability {wf['param_stability']:.2f}"
         )
     m = report.get("metrics") or {}
-    if m:
+    if "latency_p50_ms" in m:  # a quote certificate (verify --quotes)
+        console.print(
+            f"exchange clock {m['return_exchange_clock']:+.2%} · arrival clock {m['return_arrival_clock']:+.2%}"
+            f" · latency p50 {m['latency_p50_ms']:.0f} ms, p95 {m['latency_p95_ms']:.0f} ms · bars {m['bar_ms']:g} ms"
+        )
+    elif m:
         console.print(
             f"return {m['total_return']:+.2%} · maxDD {m['max_drawdown']:.2%} · trades {m['n_closed_trades']}"
             f" · Sharpe(ann) {m['sharpe_annualized']:.2f} · DSR {m['deflated_sharpe']:.3f}"
@@ -261,6 +270,14 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
         return 0
     if args.demo:
         return _run_demo(console)
+    if args.demo_quotes:
+        from monte_neo.cli.quotes_cmd import run_quotes_demo
+
+        return run_quotes_demo(console)
+    if args.quotes:
+        from monte_neo.cli.quotes_cmd import run_quotes
+
+        return run_quotes(args, console)
     if args.keygen or args.check_signature:
         return _run_signing(args, console)
     if args.lint:
@@ -326,6 +343,11 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
     except Exception as exc:  # input errors must not look like a verdict
         console.print(f"[red]verify failed: {exc}[/]")
         return 3
+    return _finish(report, args, console)
+
+
+def _finish(report: dict[str, Any], args: argparse.Namespace, console: Console) -> int:
+    """Sign, write the outputs, print, and return the verdict's exit code."""
     if args.sign:
         from monte_neo.verify.signing import sign_certificate
 

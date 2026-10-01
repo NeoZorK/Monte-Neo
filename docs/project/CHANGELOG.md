@@ -3,6 +3,24 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [Unreleased]
+
+### Added
+- **Quotes with arrival time** (`monte_neo.verify.quotes`): load top-of-book quotes with their latency, check them
+  (`quote_quality`: crossed and non-positive quotes, negative latency, out-of-order arrivals, latency percentiles per
+  venue, share of stale quotes, rows that did not parse) and build mid-price bars on the exchange clock or the arrival clock.
+- **Arrival look-ahead** (`monte_neo.verify.arrival.arrival_lookahead`): the strategy sees bars binned by stamp + latency and
+  trades against the market bars; `warn` when its profit exists only with zero latency.
+- **`latency_scan`**: profit when data arrives later, and the delay at which it vanishes.
+- **`latency_monte_carlo`**: the same strategy over 200 seeded redraws of the observed latency; distribution of the
+  return and the probability of a loss.
+- **`verify_quotes`**, **`monte-neo verify --quotes`** (`--bar-ms`, `--latency-samples`, `--demo-quotes`) and the MCP tool
+  `verify_quotes`: one `strategy-verdict/1` certificate from the four checks plus `net_profitability` on the exchange
+  clock; the HTML report gets a "Time and latency" section with a return-against-delay chart.
+- Traps and honest controls for the arrival checks (`tests/traps/test_quote_traps.py`): three traps draw their warning,
+  seven honest strategies (four seeds, three latencies) pass with no warning.
+- The arrival checks are `warn` at most; a strategy that loses money on the exchange clock is rejected, as in `verify_strategy`.
+
 ## [v0.49.0] — 2026-09-30
 
 ### Added

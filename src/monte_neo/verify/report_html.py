@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from monte_neo.verify import report_charts as charts
+from monte_neo.verify.report_latency import latency_section
 
 VERIFY_PAGE = "https://neozork.github.io/Monte-Neo/verify/"
 # The report is static: no scripts, no network, no embedding. The policy keeps it that way even if a
@@ -382,6 +383,12 @@ def render_html(report: dict[str, Any]) -> str:
     model = repro.get("model") or {}
     actions = "".join(f"<li>{_e(a)}</li>" for a in report.get("next_actions") or [])
     settings = repro.get("settings") or {}
+    is_quotes = settings.get("kind") == "quotes"
+    rerun = (
+        f"monte-neo verify --quotes QUOTES --strategy STRATEGY.py --bar-ms {_e(settings.get('bar_ms', ''))}"
+        if is_quotes
+        else "monte-neo verify --recheck CERT --ohlcv DATA " + ("--strategy STRATEGY.py" if repro.get("source_sha256") else "--signals SIGNALS")
+    )
     return (
         "<!doctype html><html lang='en'><head><meta charset='utf-8'>"
         "<meta name='viewport' content='width=device-width,initial-scale=1'>"
@@ -395,8 +402,9 @@ def render_html(report: dict[str, Any]) -> str:
         f"<div class='card headline {_VERDICT_TONE.get(verdict, 'mute')}'>{_e(_headline(report))}</div>"
         f"{_category_cards(report)}"
         f"<div class='card'>{signed}</div>"
-        f"<h2>Summary</h2><div class='card grid'>{''.join(stats)}</div>"
-        f"<h2>Equity</h2><div class='card'>{charts.equity_chart(report.get('series') or {})}</div>"
+        + ("" if is_quotes else f"<h2>Summary</h2><div class='card grid'>{''.join(stats)}</div>")
+        + ("" if is_quotes else f"<h2>Equity</h2><div class='card'>{charts.equity_chart(report.get('series') or {})}</div>")
+        + latency_section(report)
         + _charts_section(report)
         + _trade_stats((report.get("charts") or {}).get("trade_stats") if isinstance(report.get("charts"), dict) else None)
         + _capacity_table(report)
@@ -414,9 +422,7 @@ def render_html(report: dict[str, Any]) -> str:
         f"n_trials {_e(repro.get('n_trials', ''))}; min_trades {_e(settings.get('min_trades', '—'))}.</p>"
         f"<p class='mono'>data {_e(repro.get('data_sha256') or '—')}<br>signals {_e(repro.get('signals_sha256') or '—')}"
         f"<br>source {_e(repro.get('source_sha256') or '—')}</p>"
-        "<p>Re-run with the same data and code: <span class='mono'>monte-neo verify --recheck CERT --ohlcv DATA "
-        + ("--strategy STRATEGY.py" if repro.get("source_sha256") else "--signals SIGNALS")
-        + "</span></p></div>"
+        f"<p>Re-run with the same data and code: <span class='mono'>{rerun}</span></p></div>"
         f"<p class='muted'>{_e(report.get('disclaimer', ''))}</p>"
         "</main></body></html>\n"
     )

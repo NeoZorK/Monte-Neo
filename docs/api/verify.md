@@ -259,6 +259,71 @@ mostly luck. The verifier prices this in, but only if it knows the number of tri
 The trap suite (`tests/traps`) includes this case: the best of 200 random strategies
 passes when `n_trials` is hidden and fails once `n_trials=200` is declared.
 
+## Quotes and arrival time (`verify.quotes`, `verify.arrival`)
+
+A quote carries two times: the exchange stamp and the moment it reached you (stamp + latency). A backtest that
+bins quotes by the exchange stamp lets a strategy act on prices it could not have seen yet. These checks keep both
+clocks. They give `strategy-verdict/1` check rows; every arrival check is context: `warn` at most, never `fail`.
+`verify_quotes` runs them all and returns one certificate; the CLI and the MCP tool wrap it.
+
+```python
+import pandas as pd
+from monte_neo.backtest.model import ExecutionModel
+from monte_neo.verify.arrival import arrival_lookahead, arrival_row
+from monte_neo.verify.quotes import load_quotes, quote_quality, quote_row
+
+q = load_quotes(pd.read_csv("quotes.csv"))     # timestamp, bid, ask, latency_ms (or an arrival timestamp)
+print(quote_row(quote_quality(q))["summary"])   # crossed quotes, negative latency, latency p50/p95, share of stale quotes
+
+model = ExecutionModel(commission_bps=0.5, slippage_bps=0.0)
+info = arrival_lookahead(q, signal, model, bar_ms=1000)    # signal(df) -> positions, same contract as verify_strategy
+print(arrival_row(info)["summary"])
+```
+
+The idea: the strategy decides on what it **sees** (bars binned by stamp + latency) and trades against what the
+market **does** (bars binned by stamp). A plain backtest is the special case with zero latency.
+
+| Check | Question | Status |
+|---|---|---|
+| `quote_quality` | Are the quotes usable? Crossed (`bid > ask`), non-positive, negative latency, rows that did not parse, quotes that arrive out of order, latency p50/p95/p99 (per venue when known), share older than 20 ms | `warn` for broken data, else `pass` |
+| `arrival_lookahead` | Profit with zero latency against profit on arrival-time information. `warn` when profitable on the exchange clock and not on the arrival clock | `pass`, `warn`, `skip` |
+| `latency_tolerance` (`latency_scan`) | Profit when data arrives 0, 5, 20, 50, 100, 250 ms and one more observed p95 later; reports the delay at which the profit vanishes (linear interpolation) | `warn` when one more p95 of delay erases the profit |
+| `latency_monte_carlo` | The latency of each quote is redrawn from the observed latencies (inside its venue), 200 draws, seed 42; returns p5, median, p95 and the probability of a loss | `warn` when most draws lose while the observed sample earns |
+
+### One certificate: `verify_quotes`, `--quotes`, the MCP tool
+
+```bash
+monte-neo verify --demo-quotes                       # no files: a strategy that needs data before it arrived, and an honest one
+monte-neo verify --quotes quotes.csv --strategy my_strategy.py --bar-ms 1000 \
+    --commission-bps 0.5 --slippage-bps 0 --html report.html --out cert.json
+```
+
+```python
+from monte_neo.verify import verify_quotes     # also the MCP tool `verify_quotes`
+
+report = verify_quotes("quotes.csv", strategy="my_strategy.py", bar_ms=1000)
+```
+
+`signal(df)` gets bars of `open, high, low, close, volume` (mid price; `volume` counts quotes) and returns positions,
+the same contract as `verify_strategy`. The certificate holds `quote_quality`, `net_profitability` (a plain backtest
+on the exchange clock: a loss is `fail`, so `REJECT`, as in `verify_strategy`), `arrival_lookahead`, `latency_tolerance`
+and `latency_monte_carlo`. A `latency` section carries the numbers, and the HTML report draws the return against the
+extra delay. Costs default to 5 + 5 bps per side on the CLI (as everywhere); a strategy on 10 ms bars needs its real ones.
+
+Limits: one instrument per table; the OHLCV look-ahead probes are not run (the bars depend on the clock);
+`--recheck` does not take quotes yet, rerun `verify_quotes` on the same file to reproduce a certificate (the
+certificate id is stable for the same quotes, code and settings); the strategy file runs with your permissions.
+
+Reading the numbers, and what they are not:
+
+* The bar grid is shared by both clocks, so the two runs see the same number of bars. Empty bars repeat the previous close.
+* Fills are priced on the exchange-clock mid: the latency is the strategy's information delay, not the order's delay to
+  the venue. Order latency, queue position and partial fills are not modelled.
+* `pass` only means the profit did not turn negative; `retained` in the details says how much of it is left.
+  A 15% `retained` still passes: read it before trusting the strategy.
+* A strategy that does not earn on the exchange clock is `skip`: there is no profit to lose.
+* Bar length is your choice (`bar_ms`); the checks matter when it is not much longer than the latency.
+
 ## Grid search inside the verifier: `verify_grid`
 
 Agents tend to under-report `n_trials`. With `verify_grid`, the verifier runs the

@@ -207,7 +207,7 @@ uvx monte-neo mcp
 It is also listed in the official MCP Registry as `io.github.NeoZorK/monte-neo`. Setup for each
 client: [Use from agents](https://neozork.github.io/Monte-Neo/guides/agents/).
 
-MCP tools: `verify_strategy`, `verify_grid`, `probe_lookahead`, `cost_stress`,
+MCP tools: `verify_strategy`, `verify_grid`, `verify_quotes`, `probe_lookahead`, `cost_stress`,
 `recheck_certificate`, `check_signature`, `render_report`, `verdict_schema`, `verifier_manifest`.
 
 ## GitHub Action

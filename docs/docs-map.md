@@ -229,3 +229,8 @@ A simplified guide to the Monte-Neo file structure.
 - src/monte_neo/verify/pbo.py - Probability of Backtest Overfitting (CSCV) for parameter searches
 - src/monte_neo/verify/claim.py - Claimed numbers against verified ones (--claim)
 - src/monte_neo/verify/microstructure.py - Spread estimate from high and low, capacity from volume
+- src/monte_neo/verify/quotes.py - Top-of-book quotes with arrival time: loading, quote quality, bars on the exchange and arrival clocks
+- src/monte_neo/verify/arrival.py - Arrival look-ahead, latency scan and latency Monte Carlo on quotes
+- src/monte_neo/verify/quotes_verdict.py - verify_quotes: one certificate for a strategy run on quotes with arrival time
+- src/monte_neo/verify/report_latency.py - "Time and latency" section and chart of the HTML report
+- src/monte_neo/cli/quotes_cmd.py - monte-neo verify --quotes and --demo-quotes

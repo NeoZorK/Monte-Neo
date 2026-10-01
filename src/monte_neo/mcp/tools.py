@@ -19,7 +19,9 @@ SERVER_INSTRUCTIONS = (
     "Treat REJECT as a bug in the backtest, fix what next_actions says and re-verify. "
     "Report the verdict and certificate_id to the user instead of your own backtest numbers. "
     "If you already have numbers you plan to report, pass them as claim (sharpe, total_return, max_drawdown, "
-    "n_trades): a claim better than the verified result fails the claim_consistency check."
+    "n_trades): a claim better than the verified result fails the claim_consistency check. "
+    "For intraday strategies on bid/ask quotes call verify_quotes: it checks whether the profit survives the "
+    "time the quotes really arrived (stamp + latency)."
 )
 
 
@@ -360,6 +362,43 @@ def render_report(certificate_path: str, html_path: str) -> dict[str, Any]:
     return {"html_path": str(path), "bytes": path.stat().st_size}
 
 
+def verify_quotes(
+    quotes_path: str,
+    strategy_path: str,
+    bar_ms: float = 1000.0,
+    commission_bps: float = 1.0,
+    slippage_bps: float = 0.0,
+    latency_samples: int = 200,
+    positions: str = "auto",
+    compact: bool = True,
+) -> dict[str, Any]:
+    """Verify a strategy against the time its quotes really arrived; returns a strategy-verdict/1 certificate.
+
+    Use this for intraday strategies built on bid/ask quotes. A backtest that bins quotes by the exchange
+    stamp lets the strategy act on prices that had not reached you yet; this tool also bins them by
+    stamp + latency and compares.
+
+    Args:
+        quotes_path: CSV/Parquet of one instrument with timestamp, bid, ask and latency_ms (or an arrival timestamp).
+        strategy_path: Python file 'path.py[:func]' defining func(df) -> positions on bars of open, high, low,
+            close, volume. Runs with your permissions.
+        bar_ms: Bar length in milliseconds.
+        commission_bps: Commission per side in basis points (default 1: quote strategies trade often).
+        slippage_bps: Slippage per side in basis points.
+        latency_samples: Seeded redraws of the observed latency for the Monte Carlo.
+        positions: 'sign', 'weight' or 'auto'.
+        compact: Drop details of passing checks to keep the response short.
+    """
+    from monte_neo.verify.quotes_verdict import verify_quotes as _verify
+    from monte_neo.verify.verdict import model_from_costs
+
+    model = model_from_costs(commission_bps=commission_bps, slippage_bps=slippage_bps, side_mode="long_short")
+    report = _verify(
+        quotes_path, strategy=strategy_path, bar_ms=bar_ms, model=model, samples=latency_samples, positions=positions
+    )
+    return _compact(report) if compact else report
+
+
 def verdict_schema() -> dict[str, Any]:
     """JSON schema of the strategy-verdict/1 certificate."""
     from monte_neo.verify import VERDICT_JSON_SCHEMA
@@ -402,6 +441,7 @@ TOOLS: tuple[Callable[..., dict[str, Any]], ...] = (
     probe_lookahead,
     cost_stress,
     render_report,
+    verify_quotes,
     verdict_schema,
     verifier_manifest,
 )
@@ -417,5 +457,6 @@ __all__ = [
     "verdict_schema",
     "verifier_manifest",
     "verify_grid",
+    "verify_quotes",
     "verify_strategy",
 ]
