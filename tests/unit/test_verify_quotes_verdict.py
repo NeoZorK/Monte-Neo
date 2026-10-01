@@ -12,7 +12,7 @@ import pytest
 from monte_neo.cli.verify_cmd import EXIT_CODES
 from monte_neo.cli.verify_cmd import main as verify_main
 from monte_neo.mcp import tools
-from monte_neo.verify.quotes import load_quotes, quote_quality, synthetic_quotes
+from monte_neo.verify.quotes import load_quotes, make_grid, quote_quality, synthetic_quotes
 from monte_neo.verify.quotes_verdict import verify_quotes
 from monte_neo.verify.report_html import render_html
 from monte_neo.verify.report_latency import latency_chart, latency_section
@@ -87,6 +87,15 @@ def test_certificate_id_is_reproducible_and_depends_on_the_data(slow_quotes: pd.
 def test_too_few_bars_is_a_clear_error(fast_quotes: pd.DataFrame) -> None:
     with pytest.raises(ValueError, match="record longer or use a shorter bar_ms"):
         verify_quotes(fast_quotes.iloc[:200], signal_fn=_fast, bar_ms=1000.0, model=MODEL)
+
+
+def test_costs_and_warmup_can_be_given_without_a_model(fast_quotes: pd.DataFrame) -> None:
+    report = verify_quotes(fast_quotes.iloc[:6000], signal_fn=_fast, bar_ms=50.0, commission_bps=0.2, slippage_bps=0.0, warmup_bars=7, samples=2)
+    model = report["reproducibility"]["model"]
+    assert model["commission_bps"] == 0.2 and model["slippage_bps"] == 0.0 and model["warmup_bars"] == 7
+    default = verify_quotes(fast_quotes.iloc[:6000], signal_fn=_fast, bar_ms=50.0, samples=2)
+    n_bars = make_grid(load_quotes(fast_quotes.iloc[:6000]), 50.0).n_bars
+    assert default["reproducibility"]["model"]["warmup_bars"] == min(60, n_bars // 10)
 
 
 def test_needs_exactly_one_strategy_source(slow_quotes: pd.DataFrame) -> None:

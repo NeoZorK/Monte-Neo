@@ -10,7 +10,7 @@ depend on the clock. The certificate cannot be rechecked with ``--recheck`` yet 
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -66,6 +66,9 @@ def verify_quotes(
     source: str | None = None,
     bar_ms: float = 1000.0,
     model: ExecutionModel | None = None,
+    commission_bps: float | None = None,
+    slippage_bps: float | None = None,
+    warmup_bars: int | None = None,
     samples: int = MC_SAMPLES,
     seed: int = MC_SEED,
     positions: str = "auto",
@@ -73,7 +76,8 @@ def verify_quotes(
     """Verify a strategy against the time its quotes really arrived; returns a ``strategy-verdict/1`` report.
 
     ``quotes``: a table or a ``.csv`` / ``.parquet`` file with ``timestamp``, ``bid``, ``ask`` and ``latency_ms``
-    (or an ``arrival`` timestamp), one instrument. ``strategy`` is ``file.py[:func]`` (runs with your permissions)
+    (or an ``arrival`` timestamp), one instrument. ``model`` is a full execution model; or give ``commission_bps`` /
+    ``slippage_bps`` / ``warmup_bars`` (default: a tenth of the bars, at most 60) on top of the verifier's defaults. ``strategy`` is ``file.py[:func]`` (runs with your permissions)
     or pass ``signal_fn``; either way ``signal(df)`` gets bars of ``open, high, low, close, volume`` and returns positions.
     """
     if (strategy is None) == (signal_fn is None):
@@ -83,7 +87,10 @@ def verify_quotes(
         source = source if source is not None else read_source(Path(str(strategy).split(":")[0]))
     q = load_quotes(_table(quotes))
     n_bars = make_grid(q, bar_ms).n_bars
-    model = model or _default_model(n_bars)
+    if model is None:
+        model = _default_model(n_bars)
+        overrides = {"commission_bps": commission_bps, "slippage_bps": slippage_bps, "warmup_bars": warmup_bars}
+        model = replace(model, **{k: v for k, v in overrides.items() if v is not None})
     if n_bars <= model.warmup_bars + 2:
         raise ValueError(
             f"only {n_bars} bars of {bar_ms:g} ms for a warm-up of {model.warmup_bars}: record longer or use a shorter bar_ms"

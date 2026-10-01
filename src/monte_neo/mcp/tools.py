@@ -390,11 +390,10 @@ def verify_quotes(
         compact: Drop details of passing checks to keep the response short.
     """
     from monte_neo.verify.quotes_verdict import verify_quotes as _verify
-    from monte_neo.verify.verdict import model_from_costs
 
-    model = model_from_costs(commission_bps=commission_bps, slippage_bps=slippage_bps, side_mode="long_short")
     report = _verify(
-        quotes_path, strategy=strategy_path, bar_ms=bar_ms, model=model, samples=latency_samples, positions=positions
+        quotes_path, strategy=strategy_path, bar_ms=bar_ms, commission_bps=commission_bps, slippage_bps=slippage_bps,
+        samples=latency_samples, positions=positions,
     )
     return _compact(report) if compact else report
 

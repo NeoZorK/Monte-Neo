@@ -13,18 +13,14 @@ from monte_neo.cli.verify_cmd import _VERDICT_STYLE, _finish, _render_summary
 def run_quotes(args: argparse.Namespace, console: Console) -> int:
     """Verify ``--strategy`` on ``--quotes``; exit codes as for ``monte-neo verify``."""
     from monte_neo.verify.quotes_verdict import verify_quotes
-    from monte_neo.verify.verdict import model_from_costs
 
     if not args.strategy:
         console.print("[red]--quotes needs --strategy (signal(df) on bars of open, high, low, close, volume)[/]")
         return 3
     try:
-        model = model_from_costs(
-            commission_bps=args.commission_bps, slippage_bps=args.slippage_bps,
-            side_mode="long_short", warmup_bars=args.warmup_bars,
-        )
         report = verify_quotes(
-            args.quotes, strategy=args.strategy, bar_ms=args.bar_ms, model=model,
+            args.quotes, strategy=args.strategy, bar_ms=args.bar_ms, commission_bps=args.commission_bps,
+            slippage_bps=args.slippage_bps, warmup_bars=args.warmup_bars,
             samples=args.latency_samples, positions=args.positions,
         )
     except Exception as exc:  # input errors must not look like a verdict
