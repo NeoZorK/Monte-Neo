@@ -23,6 +23,8 @@ from monte_neo.verify.checks import check
 _NS_PER_MS = 1_000_000
 _ALIASES = {"bid_price": "bid", "ask_price": "ask", "latency": "latency_ms", "ticker": "symbol"}
 STALE_MS = 20.0
+BURSTY_RATIO = 20.0  # p99 latency over the median: beyond this the latency is queueing, not the path
+BURSTY_MIN_QUOTES = 100  # percentiles of fewer quotes say nothing about bursts
 
 
 @dataclass(frozen=True)
@@ -120,11 +122,15 @@ def quote_quality(q: Quotes, *, stale_ms: float = STALE_MS) -> dict[str, Any]:
         "stale_ms": float(stale_ms),
         "share_stale": float((q.latency_ms > stale_ms).mean()),
     }
+    ratio = float(pct[2] / pct[0]) if pct[0] > 0 and n >= BURSTY_MIN_QUOTES else None
+    info["latency_p99_over_p50"] = ratio
+    bursty = ratio is not None and ratio > BURSTY_RATIO
+    info["bursty_latency"] = bool(bursty)
     if q.venue is not None:
         info["latency_p50_ms_by_venue"] = {
             str(v): float(np.median(q.latency_ms[q.venue == v])) for v in sorted(set(q.venue.tolist()))
         }
-    broken = crossed / n > 0.001 or bad_price > 0 or negative > 0 or q.dropped > 0
+    broken = crossed / n > 0.001 or bad_price > 0 or negative > 0 or q.dropped > 0 or bursty
     info["status"] = "warn" if broken else "pass"
     return info
 
@@ -137,6 +143,11 @@ def quote_row(info: dict[str, Any]) -> dict[str, Any]:
             f"{info['crossed']} crossed, {info['non_positive_price']} non-positive, "
             f"{info['negative_latency']} negative-latency quotes, {info['dropped_rows']} unparseable rows dropped"
         )
+        if info["bursty_latency"]:
+            summary += (
+                f"; latency p99 is {info['latency_p99_over_p50']:.0f}x its median: messages queue up on the path "
+                "(VPN, Wi-Fi, congestion) and arrive in bursts, so the arrival checks would measure your network, not the exchange"
+            )
     else:
         summary = (
             f"{info['quotes']} quotes; latency p50 {lat['p50']:.1f} ms, p95 {lat['p95']:.1f} ms; "

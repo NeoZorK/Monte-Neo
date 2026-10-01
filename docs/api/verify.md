@@ -285,7 +285,7 @@ market **does** (bars binned by stamp). A plain backtest is the special case wit
 
 | Check | Question | Status |
 |---|---|---|
-| `quote_quality` | Are the quotes usable? Crossed (`bid > ask`), non-positive, negative latency, rows that did not parse, quotes that arrive out of order, latency p50/p95/p99 (per venue when known), share older than 20 ms | `warn` for broken data, else `pass` |
+| `quote_quality` | Are the quotes usable? Crossed (`bid > ask`), non-positive, negative latency, rows that did not parse, quotes that arrive out of order, latency p50/p95/p99 (per venue when known), share older than 20 ms, and bursty latency (p99 more than 20 times the median, from 100 quotes up: messages queue on the path and arrive in bursts, so the arrival checks would measure your network) | `warn` for broken data, else `pass` |
 | `arrival_lookahead` | Profit with zero latency against profit on arrival-time information. `warn` when profitable on the exchange clock and not on the arrival clock | `pass`, `warn`, `skip` |
 | `latency_tolerance` (`latency_scan`) | Profit when data arrives 0, 5, 20, 50, 100, 250 ms and one more observed p95 later; reports the delay at which the profit vanishes (linear interpolation) | `warn` when one more p95 of delay erases the profit |
 | `latency_monte_carlo` | The latency of each quote is redrawn from the observed latencies (inside its venue), 200 draws, seed 42; returns p5, median, p95 and the probability of a loss | `warn` when most draws lose while the observed sample earns |

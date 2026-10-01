@@ -25,7 +25,7 @@ def _table(n: int = 6, **over: object) -> pd.DataFrame:
             "timestamp": pd.Timestamp("2025-10-02", tz="UTC") + pd.to_timedelta(np.arange(n) * 100, unit="ms"),
             "bid_price": 99.0 + np.arange(n),
             "ask_price": 101.0 + np.arange(n),
-            "latency": [5.0, 30.0, 5.0, 300.0, 5.0, 5.0][:n],
+            "latency": ([5.0, 30.0, 5.0, 300.0, 5.0, 5.0] * (n // 6 + 1))[:n],
             "ticker": [("AAA-USDT@BINANCE", "AAA-USDT@KRAKEN")[i % 2] for i in range(n)],
         }
     )
@@ -158,3 +158,15 @@ def test_synthetic_quotes_are_reproducible_and_latency_is_bounded() -> None:
     assert not synthetic_quotes(500, seed=4).equals(a)
     trending = synthetic_quotes(500, drift=1e-4)
     assert (trending["bid"] < trending["ask"]).all()
+
+
+def test_bursty_latency_is_flagged_because_it_measures_the_path_not_the_exchange() -> None:
+    calm = _table(60, latency=np.full(60, 20.0))
+    assert quote_quality(load_quotes(calm))["bursty_latency"] is False
+    stalled = _table(100, latency=np.r_[np.full(94, 20.0), np.full(6, 5000.0)])
+    info = quote_quality(load_quotes(stalled.drop(columns=["ticker"])))
+    assert info["bursty_latency"] is True and info["latency_p99_over_p50"] > 20 and info["status"] == "warn"
+    summary = quote_row(info)["summary"]
+    assert "queue up" in summary and "measure your network" in summary
+    zero = quote_quality(load_quotes(_table(20, latency=np.zeros(20))))
+    assert zero["latency_p99_over_p50"] is None and zero["bursty_latency"] is False
