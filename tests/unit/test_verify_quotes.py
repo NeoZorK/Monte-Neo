@@ -14,6 +14,7 @@ from monte_neo.verify.quotes import (
     make_grid,
     quote_quality,
     quote_row,
+    select_symbol,
     synthetic_quotes,
 )
 from monte_neo.verify.schema import CATEGORIES
@@ -170,3 +171,39 @@ def test_bursty_latency_is_flagged_because_it_measures_the_path_not_the_exchange
     assert "queue up" in summary and "measure your network" in summary
     zero = quote_quality(load_quotes(_table(20, latency=np.zeros(20))))
     assert zero["latency_p99_over_p50"] is None and zero["bursty_latency"] is False
+
+
+def _two_symbols() -> pd.DataFrame:
+    a, b = synthetic_quotes(30, seed=1), synthetic_quotes(10, seed=2)
+    a["symbol"], b["symbol"] = "AAA-USDT@X", "BBB-USDT@X"
+    return pd.concat([a, b], ignore_index=True)
+
+
+def test_select_symbol_needs_a_choice_when_there_are_several_and_names_the_options() -> None:
+    q = load_quotes(_two_symbols())
+    with pytest.raises(ValueError, match=r"2 symbols: pass symbol=.*AAA-USDT@X \(30\)"):
+        select_symbol(q)
+    one = select_symbol(q, "BBB-USDT@X")
+    assert len(one) == 10 and set(one.symbol) == {"BBB-USDT@X"} and np.all(np.diff(one.exchange_ns) >= 0)
+    with pytest.raises(ValueError, match="not in the quotes"):
+        select_symbol(q, "ZZZ")
+
+
+def test_select_symbol_with_one_symbol_or_none_at_all() -> None:
+    single = load_quotes(synthetic_quotes(20))
+    assert select_symbol(single) is single and select_symbol(single, "SYN-USDT@SIM") is not single
+    bare = load_quotes(synthetic_quotes(20).drop(columns=["symbol"]))
+    assert select_symbol(bare) is bare
+    with pytest.raises(ValueError, match="no symbol column"):
+        select_symbol(bare, "AAA")
+
+
+def test_order_latency_moves_the_market_bars_later_in_time() -> None:
+    q = load_quotes(synthetic_quotes(2000))
+    grid = make_grid(q, 50.0)
+    now = bars_from_quotes(q, grid)
+    later = bars_from_quotes(q, grid, order_latency_ms=200.0)
+    shifted = np.r_[now["close"][4:], np.full(4, now["close"][-1])]  # 200 ms = four 50 ms bars
+    assert not np.array_equal(now["close"], later["close"])
+    assert np.corrcoef(later["close"][:-8], shifted[:-8])[0, 1] > 0.999
+    assert np.array_equal(bars_from_quotes(q, grid, order_latency_ms=0.0)["close"], now["close"])

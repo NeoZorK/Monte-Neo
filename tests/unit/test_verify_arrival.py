@@ -136,3 +136,19 @@ def test_monte_carlo_skips_when_not_profitable(fast_quotes: Quotes) -> None:
 def test_next_actions_exist_for_the_new_ids() -> None:
     for check_id in ("quote_quality", "arrival_lookahead", "latency_tolerance", "latency_monte_carlo"):
         assert check_id in NEXT_ACTIONS
+
+
+def test_order_latency_lowers_the_return_of_a_fast_strategy(fast_quotes: Quotes) -> None:
+    plain = arrival_lookahead(fast_quotes, momentum, MODEL, bar_ms=50.0)
+    slow_fill = arrival_lookahead(fast_quotes, momentum, MODEL, bar_ms=50.0, order_latency_ms=100.0)
+    assert plain["order_latency_ms"] == 0.0 and slow_fill["order_latency_ms"] == 100.0
+    assert slow_fill["return_exchange_clock"] < plain["return_exchange_clock"]
+
+
+def test_order_latency_reaches_the_scan_and_the_monte_carlo(fast_quotes: Quotes) -> None:
+    scan0 = latency_scan(fast_quotes, momentum, MODEL, bar_ms=50.0)
+    scan1 = latency_scan(fast_quotes, momentum, MODEL, bar_ms=50.0, order_latency_ms=100.0)
+    assert scan0["return_by_extra_ms"] != scan1["return_by_extra_ms"]
+    mc0 = latency_monte_carlo(fast_quotes, momentum, MODEL, bar_ms=100.0, samples=4)
+    mc1 = latency_monte_carlo(fast_quotes, momentum, MODEL, bar_ms=100.0, samples=4, order_latency_ms=200.0)
+    assert mc0["observed_return"] != mc1["observed_return"]

@@ -56,3 +56,19 @@ def test_honest_strategy_passes_at_any_realistic_latency(median_latency_ms: floa
     quotes = synthetic_quotes(40_000, rho=0.0, drift=1.5e-5, regime_steps=3000, median_latency_ms=median_latency_ms)
     report = verify_quotes(quotes, signal_fn=three_bar_trend, bar_ms=2000.0, model=MODEL, samples=8)
     assert report["verdict"] == "PASS", _statuses(report)
+
+
+def test_trap_the_edge_lives_in_instant_order_execution() -> None:
+    """Profitable when the fill is instant, a loss once the order takes 50 ms to reach the market."""
+    quotes = synthetic_quotes(30_000, rho=0.5)
+    instant = verify_quotes(quotes, signal_fn=react_to_last_bar, bar_ms=50.0, model=MODEL, samples=4)
+    delayed = verify_quotes(quotes, signal_fn=react_to_last_bar, bar_ms=50.0, model=MODEL, samples=4, order_latency_ms=50.0)
+    assert _statuses(instant)["net_profitability"] == "pass" and instant["verdict"] != "REJECT"
+    assert _statuses(delayed)["net_profitability"] == "fail" and delayed["verdict"] == "REJECT"
+    assert "50 ms order delay" in next(c for c in delayed["checks"] if c["id"] == "net_profitability")["summary"]
+
+
+def test_honest_strategy_survives_a_realistic_order_delay() -> None:
+    quotes = synthetic_quotes(40_000, rho=0.0, drift=1.5e-5, regime_steps=3000)
+    report = verify_quotes(quotes, signal_fn=three_bar_trend, bar_ms=1000.0, model=MODEL, samples=8, order_latency_ms=50.0)
+    assert report["verdict"] == "PASS", _statuses(report)

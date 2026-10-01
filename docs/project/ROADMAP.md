@@ -136,6 +136,15 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 ## v0.45.0 — per-symbol costs
 - [x] `--costs-file` / `symbol_costs` / `costs-file`: commission and slippage by symbol, resolved into the certificate
 
+## v0.50.0 — stage 8: arrival time and latency (experimental)
+- [x] Quotes with arrival time: `quote_quality` (crossed quotes, negative latency, out-of-order arrivals, bursty latency), bars on the exchange and the arrival clock
+- [x] `arrival_lookahead`, `latency_scan` (the delay in ms where the profit vanishes), `latency_monte_carlo` (200 seeded redraws of the observed latency)
+- [x] `verify_quotes` / `monte-neo verify --quotes` / MCP `verify_quotes`; `--symbol`, `--order-latency-ms`, `--recheck` for quote certificates
+- [x] "Time and latency" section in the HTML report; guide, GIF demo, traps and honest controls
+- [x] Quote recorder for Binance futures (`python -m monte_neo.data.quote_recorder`) with the clock-offset uncertainty
+- [ ] Calibrate and validate on real exchange latency recorded near the exchange; then decide which rows may fail the verdict
+- [ ] Several feeds in one strategy (cross-venue latency arbitrage); queue position and partial fills
+
 ## v0.49.0 — stage 7: CI in one command
 - [x] `monte-neo init-ci`
 

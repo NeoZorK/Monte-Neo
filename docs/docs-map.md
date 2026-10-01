@@ -45,6 +45,8 @@ A simplified guide to the Monte-Neo file structure.
 - docs/assets/logo-sphere.png - Logo mark without text (transparent)
 - docs/assets/social-preview.png - 1280×640 banner: README hero and GitHub social preview
 - docs/assets/demo-verify.gif - Animated demo: leaky agent strategy → fix → honest verdict (scripts/make_demo_gif.py)
+- docs/assets/demo-arrival.gif - Animated demo: a strategy that lives on data it could not have seen, and an honest one (scripts/make_arrival_gif.py)
+- docs/guides/arrival-time.md - Latency audit guide: arrival look-ahead, the delay where the profit vanishes, latency Monte Carlo, recorder, limits
 - docs/project/MARKETING_PLAN_RU.md - Marketing plan: goals, audiences, channels, launch order (RU, internal)
 - docs/project/PRODUCT_PLAN_RU.md - Audit of v0.35 and the product plan: risks, report, traps, integrations, security check, speed and Metal, stages (RU, internal)
 - docs/marketing/launch-kit.md - Ready-to-post launch texts, GitHub About text, catalogue entries
@@ -215,6 +217,7 @@ A simplified guide to the Monte-Neo file structure.
 - scripts/verify_hardware.py - Float8 / Metal hardware check (Apple Silicon)
 - scripts/experiments/ - One-off Metal / MLX experiments, not maintained
 - scripts/make_demo_gif.py - Renders docs/assets/demo-verify.gif from real verify output
+- scripts/make_arrival_gif.py - Renders docs/assets/demo-arrival.gif from live verify_quotes runs
 - docs/project/PACKAGING.md - PyPI / TestPyPI free packaging checklist
 - docs/project/SECURITY_AUDIT_RU.md - Security audit of the verifier (findings, fixes, open risks)
 - SECURITY.md - Security policy and threat model

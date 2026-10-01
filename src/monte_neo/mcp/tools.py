@@ -205,25 +205,35 @@ def verify_grid(
 
 def recheck_certificate(
     certificate_path: str,
-    ohlcv_path: str,
+    ohlcv_path: str | None = None,
     signals_path: str | None = None,
     strategy_path: str | None = None,
     timeout: float = 300.0,
     isolate: bool = False,
+    quotes_path: str | None = None,
 ) -> dict[str, Any]:
     """Reproduce a strategy-verdict/1 certificate from its original inputs.
 
     Args:
         certificate_path: JSON certificate written by verify (--out) or returned by a tool.
-        ohlcv_path: The same OHLCV file that was verified.
+        ohlcv_path: The same OHLCV file that was verified (not for a quote certificate).
         signals_path: The same positions file (or use strategy_path).
         strategy_path: The same strategy file that was verified.
         timeout: Seconds allowed per signal() call; the strategy runs in a worker process.
         isolate: Block network, subprocesses and file writes for the strategy.
+        quotes_path: The same quotes file, for a certificate issued by verify_quotes (needs strategy_path).
     """
     from monte_neo.verify import recheck_certificate as _recheck
     from monte_neo.verify import to_jsonable
 
+    if quotes_path:
+        from monte_neo.verify.quotes_verdict import recheck_quotes
+
+        if not strategy_path:
+            return {"error": "provide strategy_path with quotes_path"}
+        return to_jsonable(recheck_quotes(certificate_path, quotes_path, strategy=strategy_path))
+    if not ohlcv_path:
+        return {"error": "provide ohlcv_path (or quotes_path for a quote certificate)"}
     if not signals_path and not strategy_path:
         return {"error": "provide signals_path or strategy_path"}
     runs = {"timeout": timeout, "isolate": isolate} if strategy_path else {}
@@ -371,6 +381,8 @@ def verify_quotes(
     latency_samples: int = 200,
     positions: str = "auto",
     compact: bool = True,
+    symbol: str | None = None,
+    order_latency_ms: float = 0.0,
 ) -> dict[str, Any]:
     """Verify a strategy against the time its quotes really arrived; returns a strategy-verdict/1 certificate.
 
@@ -388,12 +400,14 @@ def verify_quotes(
         latency_samples: Seeded redraws of the observed latency for the Monte Carlo.
         positions: 'sign', 'weight' or 'auto'.
         compact: Drop details of passing checks to keep the response short.
+        symbol: The symbol to verify when the table holds several.
+        order_latency_ms: Delay from the decision to the fill in ms (the data latency comes from the quotes).
     """
     from monte_neo.verify.quotes_verdict import verify_quotes as _verify
 
     report = _verify(
         quotes_path, strategy=strategy_path, bar_ms=bar_ms, commission_bps=commission_bps, slippage_bps=slippage_bps,
-        samples=latency_samples, positions=positions,
+        samples=latency_samples, positions=positions, symbol=symbol, order_latency_ms=order_latency_ms,
     )
     return _compact(report) if compact else report
 

@@ -13,7 +13,7 @@ from monte_neo.cli.verify_cmd import EXIT_CODES
 from monte_neo.cli.verify_cmd import main as verify_main
 from monte_neo.mcp import tools
 from monte_neo.verify.quotes import load_quotes, make_grid, quote_quality, synthetic_quotes
-from monte_neo.verify.quotes_verdict import verify_quotes
+from monte_neo.verify.quotes_verdict import recheck_quotes, verify_quotes
 from monte_neo.verify.report_html import render_html
 from monte_neo.verify.report_latency import latency_chart, latency_section
 from monte_neo.verify.schema import VERDICT_SCHEMA_ID
@@ -184,3 +184,82 @@ def test_verify_quotes_is_a_lazy_public_name() -> None:
     import monte_neo.verify as v
 
     assert v.verify_quotes is verify_quotes and "verify_quotes" in v.__all__
+
+
+def test_verify_quotes_picks_one_symbol_and_records_it(fast_quotes: pd.DataFrame) -> None:
+    other = synthetic_quotes(500, seed=9)
+    other["symbol"] = "OTHER@SIM"
+    table = pd.concat([fast_quotes, other], ignore_index=True)
+    with pytest.raises(ValueError, match="2 symbols"):
+        verify_quotes(table, signal_fn=_fast, bar_ms=50.0, model=MODEL, samples=2)
+    report = verify_quotes(table, signal_fn=_fast, bar_ms=50.0, model=MODEL, samples=2, symbol="SYN-USDT@SIM")
+    assert report["reproducibility"]["settings"]["symbol"] == "SYN-USDT@SIM"
+    alone = verify_quotes(fast_quotes, signal_fn=_fast, bar_ms=50.0, model=MODEL, samples=2, symbol="SYN-USDT@SIM")
+    assert report["reproducibility"]["data_sha256"] == alone["reproducibility"]["data_sha256"]
+
+
+def test_order_latency_is_in_the_certificate_and_the_profit_line(fast_quotes: pd.DataFrame) -> None:
+    report = verify_quotes(fast_quotes, signal_fn=_fast, bar_ms=50.0, model=MODEL, samples=2, order_latency_ms=100.0)
+    assert report["reproducibility"]["settings"]["order_latency_ms"] == 100.0 and report["metrics"]["order_latency_ms"] == 100.0
+    assert "100 ms order delay" in next(c for c in report["checks"] if c["id"] == "net_profitability")["summary"]
+    with pytest.raises(ValueError, match="order_latency_ms"):
+        verify_quotes(fast_quotes, signal_fn=_fast, bar_ms=50.0, model=MODEL, order_latency_ms=-1.0)
+
+
+def test_recheck_reproduces_a_quote_certificate_and_catches_changed_inputs(files: dict[str, str], fast_quotes: pd.DataFrame) -> None:
+    report = verify_quotes(files["fast_csv"], strategy=files["fast_py"], bar_ms=50.0, model=MODEL, samples=3, order_latency_ms=20.0)
+    ok = recheck_quotes(report, files["fast_csv"], strategy=files["fast_py"])
+    assert ok["reproduced"] is True and ok["verdict_matches"] and ok["certificate_id_matches"]
+    assert ok["inputs_match"] == {"data_sha256": True, "source_sha256": True}
+    changed = fast_quotes.copy()
+    changed.loc[5, "bid"] *= 1.5
+    bad_data = recheck_quotes(report, changed, strategy=files["fast_py"])
+    assert bad_data["reproduced"] is False and bad_data["reason"] == "inputs differ from the certificate"
+    Path(files["dir"], "other.py").write_text(SLOW)
+    bad_code = recheck_quotes(report, files["fast_csv"], strategy=str(Path(files["dir"]) / "other.py"))
+    assert bad_code["inputs_match"]["source_sha256"] is False and bad_code["reproduced"] is False
+    older = json.loads(json.dumps(report))
+    older["reproducibility"]["engine_version"] = "v0.0.1"
+    older["certificate_id"] = "0123456789abcdef"  # an older engine produced another id
+    stale = recheck_quotes(older, files["fast_csv"], strategy=files["fast_py"])
+    assert stale["reproduced"] is False and "v0.0.1" in stale["reason"]
+    tampered = json.loads(json.dumps(report))
+    tampered["verdict"] = "PASS"
+    assert recheck_quotes(tampered, files["fast_csv"], strategy=files["fast_py"])["reason"] == "verdict differs"
+
+
+def test_recheck_refuses_an_ohlcv_certificate_and_a_signal_function_source(files: dict[str, str], fast_quotes: pd.DataFrame) -> None:
+    with pytest.raises(ValueError, match="not a quote certificate"):
+        recheck_quotes({"schema": VERDICT_SCHEMA_ID, "reproducibility": {"settings": {}}}, files["fast_csv"], strategy=files["fast_py"])
+    report = verify_quotes(fast_quotes, signal_fn=_fast, bar_ms=50.0, model=MODEL, samples=2)
+    same = recheck_quotes(report, fast_quotes, signal_fn=_fast)
+    assert same["inputs_match"]["source_sha256"] is True and same["reproduced"] is True
+
+
+def test_cli_recheck_and_the_new_options(files: dict[str, str], capsys: pytest.CaptureFixture[str]) -> None:
+    cert = Path(files["dir"]) / "cert50.json"
+    args = ["--quotes", files["fast_csv"], "--strategy", files["fast_py"], "--bar-ms", "50", "--commission-bps", "0.2",
+            "--slippage-bps", "0", "--latency-samples", "2", "--symbol", "SYN-USDT@SIM", "--order-latency-ms", "20"]
+    verify_main([*args, "--out", str(cert)])
+    capsys.readouterr()
+    assert verify_main(["--recheck", str(cert), "--quotes", files["fast_csv"], "--strategy", files["fast_py"]]) == 0
+    assert '"reproduced": true' in capsys.readouterr().out
+    other = Path(files["dir"]) / "other_quotes.csv"
+    pd.read_csv(files["fast_csv"]).iloc[:-50].to_csv(other, index=False)
+    assert verify_main(["--recheck", str(cert), "--quotes", str(other), "--strategy", files["fast_py"]]) == 4
+    capsys.readouterr()
+    assert verify_main(["--recheck", str(Path(files["dir"]) / "missing.json"), "--quotes", files["fast_csv"], "--strategy", files["fast_py"]]) == 3
+    assert "recheck failed" in capsys.readouterr().out
+    assert verify_main(["--recheck", str(cert), "--quotes", files["fast_csv"]]) == 3  # needs --strategy
+    capsys.readouterr()
+
+
+def test_mcp_recheck_takes_quotes(files: dict[str, str]) -> None:
+    cert = Path(files["dir"]) / "mcp_cert.json"
+    report = tools.verify_quotes(files["fast_csv"], files["fast_py"], bar_ms=50.0, commission_bps=0.2, latency_samples=2,
+                                 symbol="SYN-USDT@SIM", order_latency_ms=10.0, compact=False)
+    cert.write_text(json.dumps(report))
+    out = tools.recheck_certificate(str(cert), quotes_path=files["fast_csv"], strategy_path=files["fast_py"])
+    assert out["reproduced"] is True
+    assert "error" in tools.recheck_certificate(str(cert), quotes_path=files["fast_csv"])
+    assert "error" in tools.recheck_certificate(str(cert))

@@ -33,6 +33,8 @@ def build_parser() -> argparse.ArgumentParser:
     src.add_argument("--strategy", help="Strategy file 'path.py[:func]' with func(df) -> positions (default func: signal)")
     p.add_argument("--quotes", help="Quotes table (.csv / .parquet) with timestamp, bid, ask and latency_ms (or arrival): checks the strategy against the time data arrived (needs --strategy)")
     p.add_argument("--bar-ms", type=float, default=1000.0, help="Bar length in milliseconds for --quotes (default 1000)")
+    p.add_argument("--symbol", help="Symbol to verify when the --quotes table holds several (the quotes of one instrument are verified)")
+    p.add_argument("--order-latency-ms", type=float, default=0.0, help="Delay from the decision to the fill in ms for --quotes (default 0: only the data latency counts)")
     p.add_argument("--latency-samples", type=int, default=200, help="Latency draws for the --quotes Monte Carlo (default 200)")
     p.add_argument("--n-trials", type=int, default=None, help="How many variants were tried before this one")
     p.add_argument("--grid", help="Parameter grid as JSON or a .json file, e.g. '{\"fast\": [10, 20], \"slow\": [50, 100]}' (needs --strategy)")

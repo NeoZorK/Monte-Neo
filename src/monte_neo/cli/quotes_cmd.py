@@ -17,11 +17,21 @@ def run_quotes(args: argparse.Namespace, console: Console) -> int:
     if not args.strategy:
         console.print("[red]--quotes needs --strategy (signal(df) on bars of open, high, low, close, volume)[/]")
         return 3
+    if args.recheck:
+        from monte_neo.verify.quotes_verdict import recheck_quotes
+
+        try:
+            result = recheck_quotes(args.recheck, args.quotes, strategy=args.strategy)
+        except Exception as exc:
+            console.print(f"[red]recheck failed: {exc}[/]")
+            return 3
+        console.print_json(data=result)
+        return 0 if result["reproduced"] else 4
     try:
         report = verify_quotes(
             args.quotes, strategy=args.strategy, bar_ms=args.bar_ms, commission_bps=args.commission_bps,
-            slippage_bps=args.slippage_bps, warmup_bars=args.warmup_bars,
-            samples=args.latency_samples, positions=args.positions,
+            slippage_bps=args.slippage_bps, warmup_bars=args.warmup_bars, samples=args.latency_samples,
+            positions=args.positions, symbol=args.symbol, order_latency_ms=args.order_latency_ms,
         )
     except Exception as exc:  # input errors must not look like a verdict
         console.print(f"[red]verify failed: {exc}[/]")

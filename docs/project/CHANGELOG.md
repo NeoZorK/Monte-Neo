@@ -25,6 +25,14 @@ Version source of truth: `src/monte_neo/_version.py`.
   `verify --quotes` reads. It reports how well the offset is known and warns when the latencies cannot be trusted
   (proxy, VPN, slow network); a dropped connection keeps what was recorded.
 - `verify_quotes` says plainly when a recording has too few bars for the warm-up.
+- **`--symbol`** picks one instrument from a table of several (an unclear table is an error that lists the symbols);
+  **`--order-latency-ms`** delays every fill by a constant, so an edge that lives in instant execution is rejected.
+- **`--recheck` for quote certificates**: `monte-neo verify --recheck CERT --quotes Q --strategy S`, `recheck_quotes()` and the
+  MCP tool `recheck_certificate(quotes_path=...)` reproduce the certificate id from the quotes, the code and the recorded
+  settings; changed quotes or code are named in `inputs_match`.
+- A guide ([Latency audit](../guides/arrival-time.md)), a second demo GIF (`docs/assets/demo-arrival.gif`, rendered from live
+  runs by `scripts/make_arrival_gif.py`) and the README section that explains what the feature catches and how it differs
+  from latency-aware backtest engines.
 - Measured speed on 1 million quotes: load 0.6 s, `verify_quotes` with 200 latency draws on 100 ms bars 7 s (see docs/api/verify.md).
 - `quote_quality` warns about **bursty latency** (p99 more than 20 times the median, from 100 quotes): a congested path
   (VPN, Wi-Fi) holds messages back and releases them in bursts, and the arrival checks would then measure the network.

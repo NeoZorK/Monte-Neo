@@ -37,6 +37,7 @@ class Quotes:
     ask: np.ndarray
     venue: np.ndarray | None = None
     dropped: int = 0  # rows that did not parse and were left out
+    symbol: np.ndarray | None = None
 
     def __len__(self) -> int:
         return int(self.exchange_ns.size)
@@ -88,6 +89,7 @@ def load_quotes(table: pd.DataFrame) -> Quotes:
     ok = exchange.notna().to_numpy() & np.isfinite(latency) & np.isfinite(bid) & np.isfinite(ask)
     if not ok.any():
         raise ValueError("no usable quote rows (timestamp, bid, ask, latency must all parse)")
+    symbol = df["symbol"].astype(str).to_numpy() if "symbol" in df.columns else None
     venue = None
     if "venue" in df.columns:
         venue = df["venue"].astype(str).to_numpy()
@@ -96,7 +98,31 @@ def load_quotes(table: pd.DataFrame) -> Quotes:
     ns = exchange.to_numpy(dtype="datetime64[ns]").astype(np.int64)
     order = np.argsort(ns[ok], kind="stable")
     pick = lambda a: a[ok][order]  # noqa: E731
-    return Quotes(pick(ns), pick(latency), pick(bid), pick(ask), None if venue is None else pick(venue), int((~ok).sum()))
+    return Quotes(
+        pick(ns), pick(latency), pick(bid), pick(ask),
+        None if venue is None else pick(venue), int((~ok).sum()), None if symbol is None else pick(symbol),
+    )
+
+
+def select_symbol(q: Quotes, symbol: str | None = None) -> Quotes:
+    """The quotes of one instrument. A table of several symbols needs ``symbol``; one symbol needs nothing."""
+    if q.symbol is None:
+        if symbol is not None:
+            raise ValueError("the quotes have no symbol column to select from")
+        return q
+    names, counts = np.unique(q.symbol, return_counts=True)
+    if symbol is None:
+        if names.size == 1:
+            return q
+        top = ", ".join(f"{n} ({c})" for n, c in sorted(zip(names, counts, strict=True), key=lambda x: -x[1])[:5])
+        raise ValueError(f"the quotes hold {names.size} symbols: pass symbol=... (most quotes: {top})")
+    if symbol not in names:
+        raise ValueError(f"symbol {symbol!r} is not in the quotes (found {names.size}: {', '.join(names[:5])})")
+    keep = q.symbol == symbol
+    return Quotes(
+        q.exchange_ns[keep], q.latency_ms[keep], q.bid[keep], q.ask[keep],
+        None if q.venue is None else q.venue[keep], 0, q.symbol[keep],
+    )
 
 
 def quote_quality(q: Quotes, *, stale_ms: float = STALE_MS) -> dict[str, Any]:
@@ -167,18 +193,26 @@ def make_grid(q: Quotes, bar_ms: float, *, max_extra_ms: float = 0.0) -> Grid:
 
 
 def bars_from_quotes(
-    q: Quotes, grid: Grid, *, clock: str = "exchange", extra_latency_ms: float = 0.0, latency_ms: np.ndarray | None = None
+    q: Quotes,
+    grid: Grid,
+    *,
+    clock: str = "exchange",
+    extra_latency_ms: float = 0.0,
+    latency_ms: np.ndarray | None = None,
+    order_latency_ms: float = 0.0,
 ) -> dict[str, np.ndarray]:
     """Mid-price OHLC per bar with the quote's ``volume`` (a count of quotes).
 
     ``clock="exchange"`` bins by the exchange stamp (what a plain backtest does); ``"arrival"`` bins by
     stamp + latency + ``extra_latency_ms`` (what you could have seen). ``latency_ms`` overrides the
-    per-quote latency (used to resample it). Empty bars repeat the previous close, flat, with zero volume.
+    per-quote latency (used to resample it). ``order_latency_ms`` (exchange clock only) moves the market bars: a
+    fill at the open of a bar happens that many ms later, at the price the market had then. Empty bars repeat the
+    previous close, flat, with zero volume.
     """
     if clock not in ("exchange", "arrival"):
         raise ValueError(f"clock must be 'exchange' or 'arrival', got {clock!r}")
     if clock == "exchange":
-        when = q.exchange_ns
+        when = q.exchange_ns - int(round(float(order_latency_ms) * _NS_PER_MS))
     else:
         lat = q.latency_ms if latency_ms is None else np.asarray(latency_ms, dtype=np.float64)
         when = q.exchange_ns + np.rint((lat + float(extra_latency_ms)) * _NS_PER_MS).astype(np.int64)
@@ -235,6 +269,7 @@ __all__ = [
     "bars_from_quotes",
     "load_quotes",
     "make_grid",
+    "select_symbol",
     "quote_quality",
     "quote_row",
     "synthetic_quotes",
