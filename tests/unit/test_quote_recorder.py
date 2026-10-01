@@ -126,3 +126,43 @@ def test_cli_prints_the_summary(monkeypatch: pytest.MonkeyPatch, capsys: pytest.
     assert seen["symbol"] == "ETHUSDT" and seen["seconds"] == 5.0
     text = capsys.readouterr().out
     assert '"rows": 3' in text and "verify --quotes" in text and "proxy or VPN" in text and "WARNING: slow clock" in text
+
+
+class FakeHttpConnection:
+    """Answers each request with a server time; ``fail_on`` makes chosen calls raise like a dropped connection."""
+
+    instances: list[FakeHttpConnection] = []
+
+    def __init__(self, fail_on: tuple[int, ...] = ()) -> None:
+        self.calls, self.fail_on = 0, fail_on
+        FakeHttpConnection.instances.append(self)
+
+    def request(self, method: str, path: str) -> None:
+        self.calls += 1
+        if self.calls in self.fail_on:
+            raise ConnectionResetError("dropped")
+        assert (method, path) == ("GET", rec.TIME_PATH)
+
+    def getresponse(self) -> FakeHttpConnection:
+        return self
+
+    def read(self) -> bytes:
+        return json.dumps({"serverTime": 1_790_000_000_000 + self.calls}).encode()
+
+
+def test_time_client_reuses_one_connection() -> None:
+    FakeHttpConnection.instances.clear()
+    client = rec.TimeClient(factory=FakeHttpConnection)
+    assert [client() for _ in range(3)] == [1_790_000_000_001, 1_790_000_000_002, 1_790_000_000_003]
+    assert len(FakeHttpConnection.instances) == 1
+
+
+def test_time_client_reconnects_once_and_then_gives_up() -> None:
+    FakeHttpConnection.instances.clear()
+    client = rec.TimeClient(factory=lambda: FakeHttpConnection(fail_on=(2,)))
+    assert client() == 1_790_000_000_001
+    assert client() == 1_790_000_000_001  # the second request on the first connection dropped; a fresh connection answers
+    assert len(FakeHttpConnection.instances) == 2
+    broken = rec.TimeClient(factory=lambda: FakeHttpConnection(fail_on=(1,)))
+    with pytest.raises(ConnectionResetError):
+        broken()

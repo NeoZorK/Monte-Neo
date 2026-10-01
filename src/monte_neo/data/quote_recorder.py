@@ -16,6 +16,7 @@ What the latency is, and is not:
 from __future__ import annotations
 
 import argparse
+import http.client
 import json
 import time
 from collections.abc import Callable
@@ -27,6 +28,7 @@ import numpy as np
 
 STREAM_URL = "wss://fstream.binance.com/ws/{symbol}@bookTicker"
 TIME_URL = "https://fapi.binance.com/fapi/v1/time"
+TIME_HOST, TIME_PATH = "fapi.binance.com", "/fapi/v1/time"
 MAX_TRUSTED_UNCERTAINTY_MS = 10.0
 COLUMNS = ("timestamp", "bid", "ask", "latency_ms", "symbol", "recv_ns")
 
@@ -55,7 +57,7 @@ def parse_book_ticker(message: str | bytes | dict[str, Any]) -> dict[str, Any] |
 
 
 def estimate_clock_offset(
-    fetch_time_ms: Callable[[], int], *, samples: int = 7, clock_ns: Callable[[], int] = time.time_ns
+    fetch_time_ms: Callable[[], int], *, samples: int = 9, clock_ns: Callable[[], int] = time.time_ns
 ) -> tuple[float, float]:
     """``(offset_ms, rtt_ms)`` of the exchange clock against this machine, from the round trip with the smallest delay.
 
@@ -126,7 +128,7 @@ def record(
     ``stopped_early_by``.
     """
     connect = connect or _default_connect
-    fetch_time_ms = fetch_time_ms or _default_fetch_time
+    fetch_time_ms = fetch_time_ms or _default_fetch_time()
     offset, rtt = estimate_clock_offset(fetch_time_ms, clock_ns=clock_ns)
     conn = connect(STREAM_URL.format(symbol=symbol.lower()))
     rows: list[dict[str, Any]] = []
@@ -159,11 +161,43 @@ def _default_connect(url: str) -> Connection:  # pragma: no cover - network glue
     return websocket.create_connection(url, timeout=30)
 
 
-def _default_fetch_time() -> int:  # pragma: no cover - network glue
-    from urllib.request import urlopen
+class TimeClient:
+    """Exchange time over one keep-alive HTTPS connection.
 
-    with urlopen(TIME_URL, timeout=10) as response:  # noqa: S310 - fixed https URL
-        return int(json.load(response)["serverTime"])
+    A new connection per sample costs a TCP and a TLS handshake on top of the request (about three round trips), which
+    inflates the round trip the offset error is judged by. Here only the first sample pays for the handshake.
+    """
+
+    def __init__(self, factory: Callable[[], Any] | None = None) -> None:
+        self._factory = factory or (lambda: http.client.HTTPSConnection(TIME_HOST, timeout=10))
+        self._conn: Any = None
+
+    def __call__(self) -> int:
+        for attempt in (0, 1):
+            try:
+                if self._conn is None:
+                    self._conn = self._factory()
+                self._conn.request("GET", TIME_PATH)
+                return int(json.loads(self._conn.getresponse().read())["serverTime"])
+            except (OSError, http.client.HTTPException):
+                self._conn = None  # a dropped keep-alive connection: reconnect once
+                if attempt:
+                    raise
+        raise AssertionError("unreachable")  # pragma: no cover
+
+
+def _default_fetch_time() -> Callable[[], int]:  # pragma: no cover - network glue
+    """Keep-alive client on a direct connection; the plain per-request fetch when an HTTPS proxy is configured."""
+    from urllib.request import getproxies, urlopen
+
+    if not getproxies().get("https"):
+        return TimeClient()
+
+    def through_proxy() -> int:
+        with urlopen(TIME_URL, timeout=10) as response:  # noqa: S310 - fixed https URL
+            return int(json.load(response)["serverTime"])
+
+    return through_proxy
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -188,4 +222,4 @@ def main(argv: list[str] | None = None) -> int:
 if __name__ == "__main__":  # pragma: no cover
     raise SystemExit(main())
 
-__all__ = ["estimate_clock_offset", "latency_ms", "main", "parse_book_ticker", "record", "summarize", "write_rows"]
+__all__ = ["TimeClient", "estimate_clock_offset", "latency_ms", "main", "parse_book_ticker", "record", "summarize", "write_rows"]
