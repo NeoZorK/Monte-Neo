@@ -44,6 +44,14 @@ Override budgets / auto policy with:
 
 Signal grids default to Numba for exact parity; MLX signal remains opt-in. OMS `resolve_device("auto")` is separate and still prefers Metal when available.
 
+## Does Monte-Neo model latency?
+
+It audits it. `monte-neo verify --quotes` takes a finished strategy and a table of bid/ask quotes, runs the strategy on the time
+the quotes arrived, names the delay in ms where its profit vanishes and redraws the observed latency in a Monte Carlo. The
+latency comes from the quotes, or you state it with `--latency-model` when there is no server near the exchange. It needs
+quotes, not OHLC bars. Queue position and partial fills are out of scope, by design. See the
+[latency audit guide](arrival-time.md).
+
 ## Is this a live trading bot?
 
 No. The primary job is **fast local research** on macOS (fee-aware next-bar economics). The paper OMS lane is for validation semantics, not a “replace my production stack” claim.

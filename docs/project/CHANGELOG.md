@@ -3,6 +3,68 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.50.0] — 2026-10-01
+
+**Latency audit (experimental).** The new `--quotes` checks are context: they warn, they do not fail the verdict, and they were
+calibrated on synthetic data and checked on 1.18 million real quotes with an assumed latency. Read the
+[guide](../guides/arrival-time.md) before relying on a number.
+
+
+### Added
+- **Quotes with arrival time** (`monte_neo.verify.quotes`): load top-of-book quotes with their latency, check them
+  (`quote_quality`: crossed and non-positive quotes, negative latency, out-of-order arrivals, latency percentiles per
+  venue, share of stale quotes, rows that did not parse) and build mid-price bars on the exchange clock or the arrival clock.
+- **Arrival look-ahead** (`monte_neo.verify.arrival.arrival_lookahead`): the strategy sees bars binned by stamp + latency and
+  trades against the market bars; `warn` when its profit exists only with zero latency.
+- **`latency_scan`**: profit when data arrives later, and the delay at which it vanishes.
+- **`latency_monte_carlo`**: the same strategy over 200 seeded redraws of the observed latency; distribution of the
+  return and the probability of a loss.
+- **`verify_quotes`**, **`monte-neo verify --quotes`** (`--bar-ms`, `--latency-samples`, `--demo-quotes`) and the MCP tool
+  `verify_quotes`: one `strategy-verdict/1` certificate from the four checks plus `net_profitability` on the exchange
+  clock; the HTML report gets a "Time and latency" section with a return-against-delay chart.
+- Traps and honest controls for the arrival checks (`tests/traps/test_quote_traps.py`): three traps draw their warning,
+  seven honest strategies (four seeds, three latencies) pass with no warning.
+- The arrival checks are `warn` at most; a strategy that loses money on the exchange clock is rejected, as in `verify_strategy`.
+- **Quote recorder** (`python -m monte_neo.data.quote_recorder`): records Binance USD-M futures `bookTicker` quotes with
+  their latency (receive time corrected by the clock offset to the exchange, minus the event time) into the table
+  `verify --quotes` reads. It reports how well the offset is known and warns when the latencies cannot be trusted
+  (proxy, VPN, slow network); a dropped connection keeps what was recorded.
+- `verify_quotes` says plainly when a recording has too few bars for the warm-up.
+- **`--symbol`** picks one instrument from a table of several (an unclear table is an error that lists the symbols);
+  **`--order-latency-ms`** delays every fill by a constant, so an edge that lives in instant execution is rejected.
+- **`--recheck` for quote certificates**: `monte-neo verify --recheck CERT --quotes Q --strategy S`, `recheck_quotes()` and the
+  MCP tool `recheck_certificate(quotes_path=...)` reproduce the certificate id from the quotes, the code and the recorded
+  settings; changed quotes or code are named in `inputs_match`.
+- **`--latency-model`** (`constant:MS` or `lognormal:MEDIAN,P95`) assumes the data latency instead of reading it (the table needs no
+  latency column); the certificate records it and says the latency is assumed, not measured.
+- **`--symbol` + `--feeds`**: a strategy may read other instruments (`<alias>_close`...), each feed with its own latency;
+  `synthetic_feeds` is the latency-arbitrage test pair. A leader that arrives after the follower moved turns the edge into a loss.
+- **Look-ahead probes on the arrival bars** (`--no-probes` skips): a strategy that reads the next bar is rejected, which the
+  clock check alone cannot see.
+- **`spread_cost`** warns when the modeled slippage is below the half-spread a taker pays; every certificate carries
+  `assumptions` (taker fills at the mid, no queue position, no partial fills, order delay, latency source), shown in the report.
+- `latency_tolerance` calls the profit vanished only when two scanned delays in a row earn nothing: one noisy point of a thin
+  honest edge no longer warns.
+- **Checked on real quotes** (`scripts/validate_on_real_quotes.py`, 1.18 million real quotes of BTC, ETH and SOL futures, assumed
+  latency): 36 honest runs, no false accusation (33 lose money after costs, 3 pass); the foresight control is rejected 3 of 3; an edge
+  planted on the real SOL path (a follower that repeats it 2 s later) is caught at the matching delay. Almost no honest
+  strategy earns on real prices, so the false-warning rate among earning strategies is still unmeasured.
+- A guide ([Latency audit](../guides/arrival-time.md)), a second demo GIF (`docs/assets/demo-arrival.gif`, rendered from live
+  runs by `scripts/make_arrival_gif.py`) and the README section that explains what the feature catches and what sets it apart
+  (an audit of a finished strategy, not an environment).
+- Measured speed on 1 million quotes: load 0.6 s, `verify_quotes` with 200 latency draws on 100 ms bars 7 s (see docs/api/verify.md).
+- `quote_quality` warns about **bursty latency** (p99 more than 20 times the median, from 100 quotes): a congested path
+  (VPN, Wi-Fi) holds messages back and releases them in bursts, and the arrival checks would then measure the network.
+  Found on a real two-minute recording: latency climbed from 0.5 s to 12 s and drained in one burst.
+- The recorder measures the clock offset over one keep-alive connection (a new connection per sample inflated the
+  round trip about three times), and `verify --quotes` takes costs and warm-up into `verify_quotes`.
+
+### Security
+- `virtualenv` 20.36.1 -> 21.14.2 in `uv.lock` (four Dependabot advisories; a development tool pulled in by `pre-commit`, not a runtime dependency).
+- The release SBOM is built from `scripts/requirements/runtime.txt`, a hash-locked file made from `uv.lock` (a test keeps it in
+  step), and the package itself installed with `--no-deps`; the verifier image installs the release with `--require-hashes`
+  (hashes read from PyPI by `scripts/build_docker_image.sh`). This closes the two remaining Pinned-Dependencies findings.
+
 ## [v0.49.0] — 2026-09-30
 
 ### Added

@@ -16,6 +16,9 @@ for i in 1 2 3 4 5 6 7 8 9 10; do
   echo "waiting for PyPI ($i)"; sleep 30
 done
 
+# Pin the release itself by hash: the sha256 of every file PyPI holds for this version (the Dockerfile installs with --require-hashes).
+python3 scripts/pin_release.py "$version" > docker/verify/monte-neo.txt
+
 docker build --build-arg "VERSION=$version" -t "$image:$version" -t "$image:latest" docker/verify
 docker run --rm --network none --read-only --tmpfs /tmp "$image:latest" monte-neo --version
 

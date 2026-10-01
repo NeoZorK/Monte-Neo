@@ -1,5 +1,6 @@
 import os
 import re
+import tomllib
 from pathlib import Path
 
 
@@ -168,3 +169,44 @@ def test_workflows_grant_least_privilege() -> None:
     for path in (Path(__file__).resolve().parents[2] / ".github" / "workflows").glob("*.yml"):
         workflow = yaml.safe_load(path.read_text(encoding="utf-8"))
         assert workflow.get("permissions") in ({"contents": "read"}, "read-all"), f"{path.name} lacks a read-only default"
+
+
+def test_runtime_requirements_match_the_lock() -> None:
+    """scripts/requirements/runtime.txt (hash-locked, for the SBOM) is made from uv.lock and must not drift from it.
+
+    Regenerate: uv export --frozen --no-dev --no-emit-project --extra sign --extra mcp --format requirements-txt -o scripts/requirements/runtime.txt
+    """
+    root = find_root()
+    lock = tomllib.loads((root / "uv.lock").read_text(encoding="utf-8"))
+    locked = {re.sub(r"[-_.]+", "-", p["name"]).lower(): p.get("version") for p in lock["package"]}  # the project itself has none
+    text = (root / "scripts" / "requirements" / "runtime.txt").read_text(encoding="utf-8")
+    pins = re.findall(r"(?m)^([A-Za-z0-9_.\-]+)==([^\s;\\]+)", text)
+    assert len(pins) > 20
+    for name, version in pins:
+        assert locked.get(re.sub(r"[-_.]+", "-", name).lower()) == version, f"{name}=={version} differs from uv.lock: regenerate runtime.txt"
+    assert text.count("--hash=sha256:") >= len(pins), "every pin needs a hash"
+    assert "-o scripts/requirements/runtime.txt" in text, "regenerate with the command in the test docstring (relative path)"
+
+
+def test_release_pin_lists_every_file_hash_of_the_version() -> None:
+    """scripts/pin_release.py writes what `pip install --require-hashes` needs for the image build."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("pin_release", find_root() / "scripts" / "pin_release.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    files = [{"digests": {"sha256": "b" * 64}}, {"digests": {"sha256": "a" * 64}}, {"digests": {"sha256": "b" * 64}}]
+    text = module.pin_lines("1.2.3", files)
+    assert text == f"monte-neo==1.2.3 \\\n    --hash=sha256:{'a' * 64} \\\n    --hash=sha256:{'b' * 64}\n"
+    try:
+        module.pin_lines("1.2.3", [])
+    except SystemExit as exc:
+        assert "no files" in str(exc)
+    else:
+        raise AssertionError("an empty release must be refused")
+    try:
+        module.main([])
+    except SystemExit as exc:
+        assert "usage" in str(exc)
+    else:
+        raise AssertionError("a missing version must be refused")

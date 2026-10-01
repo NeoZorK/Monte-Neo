@@ -35,6 +35,11 @@ NEXT_ACTIONS: dict[str, str] = {
     "parameter_plateau": "The best parameters are an isolated peak: neighbouring values do much worse. Prefer a region where nearby parameters also work.",
     "claim_consistency": "The claimed numbers are better than the backtest reproduces: report the verified Sharpe, return, drawdown and trade count instead of the claimed ones.",
     "pbo": "The winner of the parameter search usually ranks below the median on unseen data: shrink the search space, prefer a parameter plateau, or confirm on new data before trusting the best combination.",
+    "quote_quality": "Fix the quotes: drop crossed (bid > ask) and non-positive prices, find why latency is negative (clock offset between the exchange stamp and your receive time) and why rows do not parse.",
+    "arrival_lookahead": "The profit exists only when quotes are binned by exchange time: the strategy acts on prices that had not reached you yet. Rebuild features from arrival time (exchange stamp + latency) and trade against later prices.",
+    "latency_tolerance": "Profit disappears with a little more data delay: slow the decision horizon (longer bars), cut turnover, or measure real latency before trusting the edge.",
+    "latency_monte_carlo": "Most plausible latency draws lose money although the observed sample earns: the edge depends on lucky latency. Use longer horizons or require a latency budget for the strategy.",
+    "spread_cost": "Charge at least the half-spread as slippage_bps: a taker pays it on every fill. Or trade only while the spread is tight, and re-run.",
     "walk_forward_oos": "Parameters picked on past folds do not hold on the next fold: shrink the grid or prefer robust parameter plateaus.",
 }
 

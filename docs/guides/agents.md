@@ -12,6 +12,7 @@ Requirements: [uv](https://docs.astral.sh/uv/) (for `uvx`) and Python 3.11+.
 |------|---------|
 | `verify_strategy` | Full verification, returns a `strategy-verdict/1` certificate |
 | `verify_grid` | Runs the parameter search inside the verifier (counts `n_trials`) and adds walk-forward, parameter-plateau and PBO checks |
+| `verify_quotes` | Intraday strategies on bid/ask quotes: does the profit survive the time the quotes arrived (stamp + latency)? Arrival look-ahead, latency scan and latency Monte Carlo |
 | `probe_lookahead` | Look-ahead probes only (lint, outside data, truncation, perturbation, determinism); works on universes too |
 | `cost_stress` | Break-even cost and returns under 0, 1 and 2 bars of execution delay |
 | `recheck_certificate` | Reproduces a certificate from its original data and strategy or signals |
@@ -42,7 +43,7 @@ reporting results. It fires once per file per session and never blocks an edit.
 MCP server only:
 
 ```bash
-claude mcp add monte-neo -- uvx --from "monte-neo[mcp]>=0.49.0" monte-neo-mcp
+claude mcp add monte-neo -- uvx --from "monte-neo[mcp]>=0.50.0" monte-neo-mcp
 ```
 
 ## Codex (OpenAI)
@@ -87,7 +88,7 @@ a verdict comment on pull requests, the certificate uploaded as an artifact). Op
 verdict is still in the job summary. By hand:
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.49.0
+- uses: NeoZorK/Monte-Neo@v0.50.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py
