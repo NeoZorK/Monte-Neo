@@ -84,6 +84,11 @@ def test_certificate_id_is_reproducible_and_depends_on_the_data(slow_quotes: pd.
     assert a["certificate_id"] == b["certificate_id"] != c["certificate_id"]
 
 
+def test_too_few_bars_is_a_clear_error(fast_quotes: pd.DataFrame) -> None:
+    with pytest.raises(ValueError, match="record longer or use a shorter bar_ms"):
+        verify_quotes(fast_quotes.iloc[:200], signal_fn=_fast, bar_ms=1000.0, model=MODEL)
+
+
 def test_needs_exactly_one_strategy_source(slow_quotes: pd.DataFrame) -> None:
     with pytest.raises(ValueError, match="exactly one"):
         verify_quotes(slow_quotes)

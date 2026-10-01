@@ -31,7 +31,7 @@ from monte_neo.verify.arrival import (
 from monte_neo.verify.checks import check
 from monte_neo.verify.ingest import SignalFn, load_signal_fn
 from monte_neo.verify.limits import read_source
-from monte_neo.verify.quotes import Quotes, load_quotes, quote_quality, quote_row
+from monte_neo.verify.quotes import Quotes, load_quotes, make_grid, quote_quality, quote_row
 from monte_neo.verify.verdict import _default_model, _report
 
 
@@ -82,7 +82,12 @@ def verify_quotes(
         signal_fn, source = load_signal_fn(strategy)
         source = source if source is not None else read_source(Path(str(strategy).split(":")[0]))
     q = load_quotes(_table(quotes))
-    model = model or _default_model(int(len(q) // max(1, bar_ms // 10)))
+    n_bars = make_grid(q, bar_ms).n_bars
+    model = model or _default_model(n_bars)
+    if n_bars <= model.warmup_bars + 2:
+        raise ValueError(
+            f"only {n_bars} bars of {bar_ms:g} ms for a warm-up of {model.warmup_bars}: record longer or use a shorter bar_ms"
+        )
     quality = quote_quality(q)
     arrival = arrival_lookahead(q, signal_fn, model, bar_ms=bar_ms, positions=positions)
     scan = latency_scan(q, signal_fn, model, bar_ms=bar_ms, positions=positions)

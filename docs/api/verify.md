@@ -314,6 +314,23 @@ Limits: one instrument per table; the OHLCV look-ahead probes are not run (the b
 `--recheck` does not take quotes yet, rerun `verify_quotes` on the same file to reproduce a certificate (the
 certificate id is stable for the same quotes, code and settings); the strategy file runs with your permissions.
 
+### Real latency: the quote recorder
+
+Synthetic latency proves the method; your strategy needs your own. The recorder writes Binance USD-M futures
+`bookTicker` quotes with their latency, in the table `verify --quotes` reads (needs `pip install "monte-neo[data]"`):
+
+```bash
+python -m monte_neo.data.quote_recorder --symbol BTCUSDT --seconds 600 --out quotes.csv
+monte-neo verify --quotes quotes.csv --strategy my_strategy.py --bar-ms 1000 --commission-bps 0.5 --slippage-bps 0
+```
+
+`latency_ms` is the local receive time, corrected by the clock offset to the exchange (`/fapi/v1/time`, the sample with
+the smallest round trip), minus the event time `E` of the message. It includes the network path, the exchange's push
+delay and your machine, so **record on the machine and network where the strategy would trade**. A proxy or VPN
+inflates it. The offset is only known to about half its round trip: when that exceeds 10 ms the summary carries a
+`warning` and the latencies are not trustworthy at that scale. `E` has millisecond resolution. A connection that drops
+ends the recording: the rows received so far are written and `stopped_early_by` says why.
+
 Reading the numbers, and what they are not:
 
 * The bar grid is shared by both clocks, so the two runs see the same number of bars. Empty bars repeat the previous close.

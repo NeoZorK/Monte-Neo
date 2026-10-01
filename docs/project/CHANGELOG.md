@@ -20,6 +20,11 @@ Version source of truth: `src/monte_neo/_version.py`.
 - Traps and honest controls for the arrival checks (`tests/traps/test_quote_traps.py`): three traps draw their warning,
   seven honest strategies (four seeds, three latencies) pass with no warning.
 - The arrival checks are `warn` at most; a strategy that loses money on the exchange clock is rejected, as in `verify_strategy`.
+- **Quote recorder** (`python -m monte_neo.data.quote_recorder`): records Binance USD-M futures `bookTicker` quotes with
+  their latency (receive time corrected by the clock offset to the exchange, minus the event time) into the table
+  `verify --quotes` reads. It reports how well the offset is known and warns when the latencies cannot be trusted
+  (proxy, VPN, slow network); a dropped connection keeps what was recorded.
+- `verify_quotes` says plainly when a recording has too few bars for the warm-up.
 
 ## [v0.49.0] — 2026-09-30
 

@@ -233,4 +233,5 @@ A simplified guide to the Monte-Neo file structure.
 - src/monte_neo/verify/arrival.py - Arrival look-ahead, latency scan and latency Monte Carlo on quotes
 - src/monte_neo/verify/quotes_verdict.py - verify_quotes: one certificate for a strategy run on quotes with arrival time
 - src/monte_neo/verify/report_latency.py - "Time and latency" section and chart of the HTML report
+- src/monte_neo/data/quote_recorder.py - Records Binance futures bookTicker quotes with latency for verify --quotes
 - src/monte_neo/cli/quotes_cmd.py - monte-neo verify --quotes and --demo-quotes
