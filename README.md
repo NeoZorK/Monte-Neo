@@ -92,6 +92,50 @@ The run used a synthetic random walk; output shortened.
 | `NEEDS_MORE_EVIDENCE` | Too few trades, or the Sharpe does not survive the number of variants tried | 1 |
 | `REJECT` | The backtest is broken or loses money after costs | 2 |
 
+## New: catch look-ahead that hides in milliseconds
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/NeoZorK/Monte-Neo/main/docs/assets/demo-arrival.gif" alt="monte-neo verify --quotes: a fast strategy earns +191% on exchange time and loses 23% on arrival time; a slow honest strategy keeps its profit" width="820"/>
+</p>
+
+**The problem.** A quote has two times: when the exchange stamped it and when it reached you. Most backtests on
+intraday quotes bin them by the stamp, so a fast strategy trades on prices it could not have seen yet. No code lint finds
+this: the leak is in the clock, not in the code.
+
+**What Monte-Neo does** (`monte-neo verify --quotes quotes.csv --strategy my_strategy.py`):
+
+- **Arrival look-ahead.** The same strategy sees bars built from the arrival time and trades against the market. If the
+  profit exists only with zero latency, it is a leak at millisecond scale.
+- **The delay where the profit vanishes.** One number you can act on: "the profit disappears at 38 ms of extra delay".
+- **Latency Monte Carlo.** Each quote's latency is redrawn from the latency you actually observed (inside its venue),
+  200 seeded draws: the distribution of the return and the probability of a loss. It shows when a profit was lucky latency.
+- **Order delay.** `--order-latency-ms` delays every fill, so an edge that lives in instant execution is rejected.
+- **No server near the exchange?** `--latency-model lognormal:8,25` assumes the latency (median and p95 in ms) instead of
+  reading it, and the certificate says plainly that it is assumed, not measured.
+- **Several feeds in one strategy.** `--symbol` and `--feeds` let a strategy trade one instrument on the prices of another
+  (lead-lag, futures against spot); each feed has its own latency. A leader that arrives after the follower moved is caught.
+- **Look-ahead probes too.** The truncation and perturbation probes of `verify_strategy` run on the arrival bars, so a strategy
+  that reads the next bar (`shift(-1)`) is rejected: that leak exists on every clock.
+- **Quote quality.** Crossed quotes, negative latency, out-of-order arrivals and **bursty latency**: a congested path
+  (VPN, Wi-Fi) holds messages and releases them in bursts, and the check says so instead of reporting your network as a result.
+- **A certificate.** Signed, and reproducible with `--recheck` like every other certificate.
+
+```console
+$ monte-neo verify --demo-quotes     # no files: a fast strategy and an honest one
+$ python -m monte_neo.data.quote_recorder --symbol BTCUSDT --seconds 600 --out quotes.csv   # your own latency
+```
+
+What sets it apart: it is an **audit, not an environment**. It takes a finished strategy from any source (any `signal(df)`
+function, or an agent's code) and your own quote recording, and says whether the profit survives the time the data
+arrived, with a certificate others can reproduce. The strategy does not have to be written for a particular engine.
+
+Honest scope: experimental. The latency checks are context (`warn` at most) and were calibrated on synthetic data, so record
+real latency on the machine that will trade, or state an assumed latency and read the verdict as conditional on it. Fills
+are taker orders at the mid, with the data latency from the quotes (or assumed) plus a fixed order delay. **Queue position and
+partial fills are not modelled, on purpose** (they need the order book and a passive-order model; a rough formula would give
+false precision), so a market-making strategy cannot be validated here; the certificate lists these assumptions.
+[Read the guide](https://neozork.github.io/Monte-Neo/guides/arrival-time/).
+
 ## What it checks
 
 | Family | Checks |
@@ -100,6 +144,7 @@ The run used a synthetic random walk; output shortened.
 | **Economics** | Net return after commission and slippage (with optional funding, short-borrow fees, stops inside the bar and per-symbol costs for universes), break-even cost in bps, one- and two-bar execution delay, a spread estimate from high and low next to the modeled cost, capacity from volume (for universes with the tightest symbols named) |
 | **Statistics** | Probabilistic and Deflated Sharpe priced by `n_trials`, Monte Carlo timing test (does the signal beat shifted copies of itself, or just ride the market?), sample size, holdout consistency, bootstrap confidence intervals, the minimum track record length and the result of each of six equal windows; for grid searches, walk-forward out-of-sample, parameter-plateau, probability-of-backtest-overfitting (PBO) and Reality Check / SPA checks |
 | **Integrity** | Broken OHLCV (NaN, bad prices, bars out of time order), bad data that makes fake profit (one-bar spikes, frozen prices, unadjusted splits, gaps in time), non-deterministic signals, survivorship bias in a universe |
+| **Latency** (quotes) | Arrival look-ahead (profit on exchange time against arrival time), the delay in ms where the profit vanishes, a Monte Carlo over the observed latency distribution, order delay, quote quality including bursty latency. [Guide](https://neozork.github.io/Monte-Neo/guides/arrival-time/) |
 | **Claims** | `--claim`: the Sharpe, return, drawdown and trade count that were reported, checked against the verified ones (an overclaim fails) |
 | **Context** | Buy-and-hold on the same data and costs, results by year / quarter / month and by market regime, a warning when one period makes all the profit |
 
@@ -113,6 +158,7 @@ verifier cannot silently stop catching a leak or start accusing honest code.
 |--------------|--------------|---------------------|
 | Performance report libraries | Charts and ratios from a return series | Checks whether the backtest behind the returns is broken, prices the number of variants tried, issues a certificate |
 | Backtesting frameworks | Run whatever strategy code they are given | An independent second opinion on the result; adapters for vectorbt, Backtrader, backtesting.py, bt, Nautilus Trader, Zipline, Freqtrade, Lean and plain fills (the first six are tested against the real frameworks) |
+| Latency simulation inside a backtest | Models feed and order latency as part of the backtest run, for strategies written for that environment | Audits a finished strategy from any source on your own quote recording: where its profit vanishes, a Monte Carlo over the real latency distribution, a signed certificate |
 | Look-ahead checkers inside one framework | Compare indicator values on cut data for that framework's strategies | Works with any strategy function or positions, adds costs, selection bias and claim checks |
 | Statistics libraries (Deflated Sharpe, PBO) | Formulas you wire up yourself | The whole pipeline: probes, engine, statistics, report, certificate, agent tools |
 
@@ -131,6 +177,7 @@ verifier cannot silently stop catching a leak or start accusing honest code.
 - **Independent.** It checks code it did not write, with probes that do not trust the strategy's own numbers.
 - **Careful with accusations.** 35 honest strategies (loops, windows, resampling, fits inside rolling windows, a real edge with a high hit rate) must never be flagged for look-ahead, on every build.
 - **Built for agents.** An MCP server, a Claude Code plugin with a skill, a slash command and a reminder hook, plus rules for Codex, Gemini CLI and Cursor. Every failed check returns a `next_action` the agent can act on.
+- **Time-aware.** It checks whether the profit survives the time the quotes really arrived, not only the time the exchange stamped them.
 - **Reproducible.** The same data, code and `n_trials` always give the same `certificate_id`. Anyone can reproduce a certificate with `--recheck`.
 - **Signed.** Ed25519 signatures show who issued a certificate and that nobody edited it.
 - **Honest about selection bias.** Declare how many variants you tried, or let `verify_grid` count them for you. The Deflated Sharpe prices them in.
@@ -207,13 +254,13 @@ uvx monte-neo mcp
 It is also listed in the official MCP Registry as `io.github.NeoZorK/monte-neo`. Setup for each
 client: [Use from agents](https://neozork.github.io/Monte-Neo/guides/agents/).
 
-MCP tools: `verify_strategy`, `verify_grid`, `probe_lookahead`, `cost_stress`,
+MCP tools: `verify_strategy`, `verify_grid`, `verify_quotes`, `probe_lookahead`, `cost_stress`,
 `recheck_certificate`, `check_signature`, `render_report`, `verdict_schema`, `verifier_manifest`.
 
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.49.0
+- uses: NeoZorK/Monte-Neo@v0.50.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py

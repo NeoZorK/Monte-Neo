@@ -48,6 +48,15 @@ certificate that can be signed.
 | **Statistics** | Probabilistic and Deflated Sharpe priced by `n_trials`, Monte Carlo timing test, sample size, holdout; walk-forward and parameter plateau for grids |
 | **Integrity** | Broken OHLCV (NaN, bad prices, bars out of time order), non-deterministic signals |
 
+## New: catch look-ahead that hides in milliseconds
+
+![monte-neo verify --quotes](assets/demo-arrival.gif){ width="820" }
+
+A quote has two times: when the exchange stamped it and when it reached you. A backtest that bins by the stamp lets a fast
+strategy trade on prices it could not have seen yet, and no code lint can find that. `monte-neo verify --quotes` runs the
+strategy on the time the data arrived, names the delay in ms where its profit vanishes, redraws the observed latency
+200 times and issues a certificate you can reproduce. [Read the guide](guides/arrival-time.md).
+
 ## Where to use it
 
 - **Inside your coding agent:** Claude Code plugin, or the MCP server for Codex, Gemini CLI and

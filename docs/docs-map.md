@@ -1,4 +1,4 @@
-# Monte-Neo v0.49.0
+# Monte-Neo v0.50.0
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -35,16 +35,18 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/project-structure.md - Deep dive into physical directory layout
 - docs/project/features.md - Detailed overview of framework features
 - docs/project/dynamic_indicators.md - Explanation of dynamic indicator generation
-- docs/project/ROADMAP.md - Development roadmap and milestones (v0.49.0)
+- docs/project/ROADMAP.md - Development roadmap and milestones (v0.50.0)
 - docs/project/PRODUCT_STRATEGY_RU.md - Product strategy: agent-native strategy verifier niche, moat, roadmap (RU, internal)
 - docs/project/CLEANUP_CANDIDATES_RU.md - Cleanup candidate list with evidence, awaiting owner approval (RU, internal)
-- docs/project/CHANGELOG.md - Release changelog (current: v0.49.0)
+- docs/project/CHANGELOG.md - Release changelog (current: v0.50.0)
 - docs/project/backtest_engine.md - Fee-aware research bar engine
 - docs/project/oms_engine.md - Paper OMS (bar + tick/L2) + venue adapters
 - docs/assets/monteneo-logo.png - Project logo (original, with the old tagline)
 - docs/assets/logo-sphere.png - Logo mark without text (transparent)
 - docs/assets/social-preview.png - 1280×640 banner: README hero and GitHub social preview
 - docs/assets/demo-verify.gif - Animated demo: leaky agent strategy → fix → honest verdict (scripts/make_demo_gif.py)
+- docs/assets/demo-arrival.gif - Animated demo: a strategy that lives on data it could not have seen, and an honest one (scripts/make_arrival_gif.py)
+- docs/guides/arrival-time.md - Latency audit guide: arrival look-ahead, the delay where the profit vanishes, latency Monte Carlo, recorder, limits
 - docs/project/MARKETING_PLAN_RU.md - Marketing plan: goals, audiences, channels, launch order (RU, internal)
 - docs/project/PRODUCT_PLAN_RU.md - Audit of v0.35 and the product plan: risks, report, traps, integrations, security check, speed and Metal, stages (RU, internal)
 - docs/marketing/launch-kit.md - Ready-to-post launch texts, GitHub About text, catalogue entries
@@ -100,7 +102,7 @@ A simplified guide to the Monte-Neo file structure.
 - docker/verify/Dockerfile - Verifier image for untrusted strategy code (engines precompiled, runs as nobody)
 
 ### Source Code (src/monte_neo/)
-- src/monte_neo/_version.py - Central version management (v0.49.0)
+- src/monte_neo/_version.py - Central version management (v0.50.0)
 - src/monte_neo/verify/ - Strategy verifier (ingest, single and universe markets, data quality, look-ahead probes, outside-data watch, strategy workers (jobs, timeout, isolation), lint, benchmark and breakdown, HTML report, costs, stats, checks, verdict, grid + walk-forward, certificate recheck)
 - src/monte_neo/mcp/ - MCP server (monte-neo-mcp) + agent-facing tool functions
 - src/monte_neo/cli/verify_cmd.py - `monte-neo verify` command (CI exit codes)
@@ -214,6 +216,10 @@ A simplified guide to the Monte-Neo file structure.
 - scripts/verify_hardware.py - Float8 / Metal hardware check (Apple Silicon)
 - scripts/experiments/ - One-off Metal / MLX experiments, not maintained
 - scripts/make_demo_gif.py - Renders docs/assets/demo-verify.gif from real verify output
+- scripts/validate_on_real_quotes.py - Runs the quote checks on real recordings (honest strategies, foresight control, planted lead-lag) and prints what happened
+- scripts/requirements/runtime.txt - Hash-locked runtime dependencies (made from uv.lock with uv export; used for the SBOM; a test keeps it in step with the lock)
+- scripts/pin_release.py - Writes the hash-locked requirement line of a release on PyPI (the verifier image installs it with --require-hashes)
+- scripts/make_arrival_gif.py - Renders docs/assets/demo-arrival.gif from live verify_quotes runs
 - docs/project/PACKAGING.md - PyPI / TestPyPI free packaging checklist
 - docs/project/SECURITY_AUDIT_RU.md - Security audit of the verifier (findings, fixes, open risks)
 - SECURITY.md - Security policy and threat model
@@ -228,3 +234,10 @@ A simplified guide to the Monte-Neo file structure.
 - src/monte_neo/verify/pbo.py - Probability of Backtest Overfitting (CSCV) for parameter searches
 - src/monte_neo/verify/claim.py - Claimed numbers against verified ones (--claim)
 - src/monte_neo/verify/microstructure.py - Spread estimate from high and low, capacity from volume
+- src/monte_neo/verify/quotes.py - Top-of-book quotes with arrival time: loading, quote quality, bars on the exchange and arrival clocks
+- src/monte_neo/verify/arrival.py - Arrival look-ahead, latency scan and latency Monte Carlo on quotes
+- src/monte_neo/verify/quotes_probes.py - The look-ahead probes of verify_strategy, run on the arrival bars of a quote run
+- src/monte_neo/verify/quotes_verdict.py - verify_quotes: one certificate for a strategy run on quotes with arrival time
+- src/monte_neo/verify/report_latency.py - "Time and latency" section and chart of the HTML report
+- src/monte_neo/data/quote_recorder.py - Records Binance futures bookTicker quotes with latency for verify --quotes
+- src/monte_neo/cli/quotes_cmd.py - monte-neo verify --quotes and --demo-quotes
