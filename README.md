@@ -125,11 +125,9 @@ $ monte-neo verify --demo-quotes     # no files: a fast strategy and an honest o
 $ python -m monte_neo.data.quote_recorder --symbol BTCUSDT --seconds 600 --out quotes.csv   # your own latency
 ```
 
-How it differs: latency-aware engines such as [hftbacktest](https://hft.readthedocs.io/en/latest/latency_models.html) and
-[NautilusTrader](https://nautilustrader.io/docs/core-latest/nautilus_execution/models/latency/trait.LatencyModel.html)
-**simulate** feed and order latency inside their own engine, for strategies written for it. Monte-Neo does not replace
-them: it **audits a finished strategy from any source** on your own quote recording and says whether its profit survives
-the time the data arrived. To our knowledge, no other independent verifier does that.
+What sets it apart: it is an **audit, not an environment**. It takes a finished strategy from any source (any `signal(df)`
+function, or an agent's code) and your own quote recording, and says whether the profit survives the time the data
+arrived, with a certificate others can reproduce. The strategy does not have to be written for a particular engine.
 
 Honest scope: experimental. The latency checks are context (`warn` at most) and were calibrated on synthetic data, so record
 real latency on the machine that will trade, or state an assumed latency and read the verdict as conditional on it. Fills
@@ -160,7 +158,7 @@ verifier cannot silently stop catching a leak or start accusing honest code.
 |--------------|--------------|---------------------|
 | Performance report libraries | Charts and ratios from a return series | Checks whether the backtest behind the returns is broken, prices the number of variants tried, issues a certificate |
 | Backtesting frameworks | Run whatever strategy code they are given | An independent second opinion on the result; adapters for vectorbt, Backtrader, backtesting.py, bt, Nautilus Trader, Zipline, Freqtrade, Lean and plain fills (the first six are tested against the real frameworks) |
-| Latency-aware engines (hftbacktest, NautilusTrader) | Simulate feed and order latency inside their own engine for strategies written for it | Audits a finished strategy from any source on your own quote recording: where its profit vanishes, a Monte Carlo over the real latency distribution, a signed certificate |
+| Latency simulation inside a backtest | Models feed and order latency as part of the backtest run, for strategies written for that environment | Audits a finished strategy from any source on your own quote recording: where its profit vanishes, a Monte Carlo over the real latency distribution, a signed certificate |
 | Look-ahead checkers inside one framework | Compare indicator values on cut data for that framework's strategies | Works with any strategy function or positions, adds costs, selection bias and claim checks |
 | Statistics libraries (Deflated Sharpe, PBO) | Formulas you wire up yourself | The whole pipeline: probes, engine, statistics, report, certificate, agent tools |
 
@@ -262,7 +260,7 @@ MCP tools: `verify_strategy`, `verify_grid`, `verify_quotes`, `probe_lookahead`,
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.49.0
+- uses: NeoZorK/Monte-Neo@v0.50.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py

@@ -134,24 +134,22 @@ quantized to 1 ms.
 | any of the three | `skip` | There is no profit to lose: the strategy does not earn on the plain backtest |
 | any of the three | `pass` | The profit did not turn negative; `retained` in the details says how much is left (a 15% retained still passes: read it) |
 
-## How it differs from latency-aware backtest engines
+## What sets it apart
 
-| | Latency-aware engines (hftbacktest, NautilusTrader) | Monte-Neo `--quotes` |
+| | A latency model inside a backtest | Monte-Neo `--quotes` |
 |---|---|---|
-| Role | A backtest environment: they simulate feed and order latency inside their own engine | An independent audit of a finished strategy |
-| Strategy | Written for the engine | Any `signal(df)` function, from any framework or an agent |
-| Latency source | Models you configure (constant, interpolated, your own) | The latency you recorded, redrawn per venue |
+| Role | Part of the environment the strategy is built and run in | An independent audit of a finished strategy |
+| Strategy | Written for that environment | Any `signal(df)` function, from any framework or an agent |
+| Latency source | A model you configure | The latency you recorded (redrawn per venue), or one you state (`--latency-model`) |
 | Output | Backtest results | A verdict, the ms where the profit vanishes, a certificate others can reproduce |
 
-They solve different problems and work together: simulate in an engine, then audit what comes out. [hftbacktest](https://hft.readthedocs.io/en/latest/latency_models.html)
-and [NautilusTrader](https://nautilustrader.io/docs/core-latest/nautilus_execution/models/latency/trait.LatencyModel.html)
-document their latency models. To our knowledge, no other independent verifier checks arrival-time look-ahead.
+To our knowledge, no other independent verifier checks arrival-time look-ahead.
 
 ## Limits
 
 - **Experimental.** The checks warn and do not fail the verdict; the honest-strategy controls (several seeds, three latency levels and an order delay) ran on synthetic data.
 - **One traded instrument per run.** Pick it with `--symbol`; other feeds are read through `--feeds`. A strategy that trades several instruments at once is not supported.
-- **Information latency plus a fixed order delay.** `--order-latency-ms` delays every fill by a constant. **Queue position and partial fills are not modelled, on purpose:** they need the order book and the trade prints and a passive-order model, and a rough formula would give false precision. Fills are taker orders at the mid; use a latency-aware engine such as hftbacktest for market-making strategies. Every certificate lists these assumptions in `assumptions`.
+- **Information latency plus a fixed order delay.** `--order-latency-ms` delays every fill by a constant. **Queue position and partial fills are not modelled, on purpose:** they need the order book and the trade prints and a passive-order model, and a rough formula would give false precision. Fills are taker orders at the mid, so market-making (passive-order) strategies are out of scope. Every certificate lists these assumptions in `assumptions`.
 - **Bars from the mid price.** The strategy sees `open, high, low, close` of the mid and `volume`, the count of quotes.
 - **The strategy file runs with your permissions,** as with `verify_strategy`; the `--isolate` sandbox does not apply to `--quotes` yet.
 - **The look-ahead probes run on the arrival bars** (`--no-probes` skips them), so a strategy that reads the future of its bars is caught; the statistical checks of `verify_strategy` (Deflated Sharpe, timing test) do not run.
