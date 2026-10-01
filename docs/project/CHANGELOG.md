@@ -25,6 +25,7 @@ Version source of truth: `src/monte_neo/_version.py`.
   `verify --quotes` reads. It reports how well the offset is known and warns when the latencies cannot be trusted
   (proxy, VPN, slow network); a dropped connection keeps what was recorded.
 - `verify_quotes` says plainly when a recording has too few bars for the warm-up.
+- Measured speed on 1 million quotes: load 0.6 s, `verify_quotes` with 200 latency draws on 100 ms bars 7 s (see docs/api/verify.md).
 - `quote_quality` warns about **bursty latency** (p99 more than 20 times the median, from 100 quotes): a congested path
   (VPN, Wi-Fi) holds messages back and releases them in bursts, and the arrival checks would then measure the network.
   Found on a real two-minute recording: latency climbed from 0.5 s to 12 s and drained in one burst.

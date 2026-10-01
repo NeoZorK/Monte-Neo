@@ -339,6 +339,10 @@ Reading the numbers, and what they are not:
 * `pass` only means the profit did not turn negative; `retained` in the details says how much of it is left.
   A 15% `retained` still passes: read it before trusting the strategy.
 * A strategy that does not earn on the exchange clock is `skip`: there is no profit to lose.
+* Speed (measured on an Apple M1 Pro, one instrument of synthetic quotes, a three-bar trend rule): loading 1 million quotes
+  takes 0.6 s and `quote_quality` 0.06 s; the whole `verify_quotes` with 20 latency draws on 1 s bars takes 1.3 s, with
+  200 draws on 100 ms bars (100 000 bars) 7 s, and on 20 ms bars (500 000 bars) 11 s. The cost is the strategy's own
+  `signal(df)` run once per draw, not the number of quotes.
 * Bar length is your choice (`bar_ms`); the checks matter when it is not much longer than the latency.
 
 ## Grid search inside the verifier: `verify_grid`
