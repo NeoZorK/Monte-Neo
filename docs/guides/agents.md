@@ -43,7 +43,7 @@ reporting results. It fires once per file per session and never blocks an edit.
 MCP server only:
 
 ```bash
-claude mcp add monte-neo -- uvx --from "monte-neo[mcp]>=0.49.0" monte-neo-mcp
+claude mcp add monte-neo -- uvx --from "monte-neo[mcp]>=0.50.0" monte-neo-mcp
 ```
 
 ## Codex (OpenAI)
@@ -88,7 +88,7 @@ a verdict comment on pull requests, the certificate uploaded as an artifact). Op
 verdict is still in the job summary. By hand:
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.49.0
+- uses: NeoZorK/Monte-Neo@v0.50.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py

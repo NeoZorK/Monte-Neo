@@ -3,7 +3,12 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
-## [Unreleased]
+## [v0.50.0] — 2026-10-01
+
+**Latency audit (experimental).** The new `--quotes` checks are context: they warn, they do not fail the verdict, and they were
+calibrated on synthetic data and checked on 1.18 million real quotes with an assumed latency. Read the
+[guide](../guides/arrival-time.md) before relying on a number.
+
 
 ### Added
 - **Quotes with arrival time** (`monte_neo.verify.quotes`): load top-of-book quotes with their latency, check them
@@ -45,14 +50,20 @@ Version source of truth: `src/monte_neo/_version.py`.
   planted on the real SOL path (a follower that repeats it 2 s later) is caught at the matching delay. Almost no honest
   strategy earns on real prices, so the false-warning rate among earning strategies is still unmeasured.
 - A guide ([Latency audit](../guides/arrival-time.md)), a second demo GIF (`docs/assets/demo-arrival.gif`, rendered from live
-  runs by `scripts/make_arrival_gif.py`) and the README section that explains what the feature catches and how it differs
-  from latency-aware backtest engines.
+  runs by `scripts/make_arrival_gif.py`) and the README section that explains what the feature catches and what sets it apart
+  (an audit of a finished strategy, not an environment).
 - Measured speed on 1 million quotes: load 0.6 s, `verify_quotes` with 200 latency draws on 100 ms bars 7 s (see docs/api/verify.md).
 - `quote_quality` warns about **bursty latency** (p99 more than 20 times the median, from 100 quotes): a congested path
   (VPN, Wi-Fi) holds messages back and releases them in bursts, and the arrival checks would then measure the network.
   Found on a real two-minute recording: latency climbed from 0.5 s to 12 s and drained in one burst.
 - The recorder measures the clock offset over one keep-alive connection (a new connection per sample inflated the
   round trip about three times), and `verify --quotes` takes costs and warm-up into `verify_quotes`.
+
+### Security
+- `virtualenv` 20.36.1 -> 21.14.2 in `uv.lock` (four Dependabot advisories; a development tool pulled in by `pre-commit`, not a runtime dependency).
+- The release SBOM is built from `scripts/requirements/runtime.txt`, a hash-locked file made from `uv.lock` (a test keeps it in
+  step), and the package itself installed with `--no-deps`; the verifier image installs the release with `--require-hashes`
+  (hashes read from PyPI by `scripts/build_docker_image.sh`). This closes the two remaining Pinned-Dependencies findings.
 
 ## [v0.49.0] — 2026-09-30
 
