@@ -383,6 +383,9 @@ def verify_quotes(
     compact: bool = True,
     symbol: str | None = None,
     order_latency_ms: float = 0.0,
+    feeds: list[str] | None = None,
+    latency_model: str | None = None,
+    probes: bool = True,
 ) -> dict[str, Any]:
     """Verify a strategy against the time its quotes really arrived; returns a strategy-verdict/1 certificate.
 
@@ -402,12 +405,17 @@ def verify_quotes(
         compact: Drop details of passing checks to keep the response short.
         symbol: The symbol to verify when the table holds several.
         order_latency_ms: Delay from the decision to the fill in ms (the data latency comes from the quotes).
+        feeds: Other symbols the strategy reads (needs symbol); their columns are prefixed by the symbol with
+            non-word characters replaced by "_", e.g. ETH_USDT_X_close.
+        latency_model: Assume the data latency instead of reading it: "constant:MS" or "lognormal:MEDIAN_MS,P95_MS".
+        probes: Also run the look-ahead probes of verify_strategy on the arrival bars.
     """
     from monte_neo.verify.quotes_verdict import verify_quotes as _verify
 
     report = _verify(
         quotes_path, strategy=strategy_path, bar_ms=bar_ms, commission_bps=commission_bps, slippage_bps=slippage_bps,
         samples=latency_samples, positions=positions, symbol=symbol, order_latency_ms=order_latency_ms,
+        feeds=feeds, latency_model=latency_model, probes=probes,
     )
     return _compact(report) if compact else report
 

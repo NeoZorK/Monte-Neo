@@ -11,7 +11,10 @@ and the delay as ``latency_ms`` (``latency``) or an ``arrival`` timestamp. Optio
 
 from __future__ import annotations
 
+import math
+import re
 import warnings
+import zlib
 from dataclasses import dataclass
 from typing import Any
 
@@ -70,8 +73,11 @@ def _to_time(values: pd.Series) -> pd.Series:
     return out
 
 
-def load_quotes(table: pd.DataFrame) -> Quotes:
-    """Quotes from a table; raises ``ValueError`` naming what is missing."""
+def load_quotes(table: pd.DataFrame, *, allow_missing_latency: bool = False) -> Quotes:
+    """Quotes from a table; raises ``ValueError`` naming what is missing.
+
+    ``allow_missing_latency`` accepts a table without a latency column (all zero): the caller assumes a latency model.
+    """
     df = table.rename(columns={k: v for k, v in _ALIASES.items() if k in table.columns and v not in table.columns})
     missing = [c for c in ("timestamp", "bid", "ask") if c not in df.columns]
     if missing:
@@ -82,8 +88,10 @@ def load_quotes(table: pd.DataFrame) -> Quotes:
     elif "arrival" in df.columns:
         arrival = _to_time(df["arrival"])
         latency = ((arrival - exchange).dt.total_seconds() * 1000.0).to_numpy(dtype=np.float64)
+    elif allow_missing_latency:
+        latency = np.zeros(len(df))
     else:
-        raise ValueError("quotes need a latency_ms column (or an arrival timestamp column)")
+        raise ValueError("quotes need a latency_ms column (or an arrival timestamp column), or an assumed latency model")
     bid = pd.to_numeric(df["bid"], errors="coerce").to_numpy(dtype=np.float64)
     ask = pd.to_numeric(df["ask"], errors="coerce").to_numpy(dtype=np.float64)
     ok = exchange.notna().to_numpy() & np.isfinite(latency) & np.isfinite(bid) & np.isfinite(ask)
@@ -182,13 +190,14 @@ def quote_row(info: dict[str, Any]) -> dict[str, Any]:
     return check("quote_quality", "integrity", info["status"], summary, info)
 
 
-def make_grid(q: Quotes, bar_ms: float, *, max_extra_ms: float = 0.0) -> Grid:
-    """Bar grid covering both clocks (arrival plus ``max_extra_ms`` of extra delay)."""
+def make_grid(q: Quotes | QuoteSet, bar_ms: float, *, max_extra_ms: float = 0.0) -> Grid:
+    """Bar grid covering both clocks of every feed (arrival plus ``max_extra_ms`` of extra delay)."""
     if not bar_ms > 0:
         raise ValueError("bar_ms must be positive")
+    feeds = [f for _, f in as_set(q).feeds]
     bar_ns = max(1, int(round(bar_ms * _NS_PER_MS)))
-    start = int(q.exchange_ns[0] // bar_ns * bar_ns)
-    end = int(max(q.exchange_ns[-1], q.arrival_ns.max() + int(max_extra_ms * _NS_PER_MS)))
+    start = int(min(f.exchange_ns[0] for f in feeds) // bar_ns * bar_ns)
+    end = int(max(max(f.exchange_ns[-1], f.arrival_ns.max() + int(max_extra_ms * _NS_PER_MS)) for f in feeds))
     return Grid(start, bar_ns, int((end - start) // bar_ns) + 1)
 
 
@@ -237,6 +246,83 @@ def bars_from_quotes(
     return out
 
 
+@dataclass(frozen=True)
+class QuoteSet:
+    """The traded instrument plus other feeds the strategy reads (``others`` as ``(alias, quotes)``)."""
+
+    main: Quotes
+    others: tuple[tuple[str, Quotes], ...] = ()
+
+    @property
+    def feeds(self) -> tuple[tuple[str, Quotes], ...]:
+        """Every feed; the traded one has the empty alias, so its columns are plain ``open, high, low, close, volume``."""
+        return (("", self.main), *self.others)
+
+    @property
+    def latency_ms(self) -> np.ndarray:
+        return self.main.latency_ms if not self.others else np.concatenate([f.latency_ms for _, f in self.feeds])
+
+    def __len__(self) -> int:
+        return len(self.main)
+
+
+def as_set(q: Quotes | QuoteSet) -> QuoteSet:
+    return q if isinstance(q, QuoteSet) else QuoteSet(q)
+
+
+def feed_alias(symbol: str) -> str:
+    """Column prefix of a feed: the symbol with every non-word character as ``_`` (``ETH-USDT@X`` -> ``ETH_USDT_X``)."""
+    return re.sub(r"\W", "_", symbol)
+
+
+def parse_latency_model(spec: str) -> tuple[str, float, float]:
+    """``constant:MS`` or ``lognormal:MEDIAN_MS,P95_MS`` as ``(kind, median, p95)``."""
+    kind, _, args = str(spec).partition(":")
+    try:
+        nums = [float(x) for x in args.split(",") if x.strip()]
+    except ValueError:
+        nums = []
+    if kind == "constant" and len(nums) == 1 and nums[0] >= 0:
+        return kind, nums[0], nums[0]
+    if kind == "lognormal" and len(nums) == 2 and 0 < nums[0] < nums[1]:
+        return kind, nums[0], nums[1]
+    raise ValueError(f"latency model {spec!r}: use constant:MS or lognormal:MEDIAN_MS,P95_MS (0 < median < p95)")
+
+
+def assume_latency(q: Quotes, spec: str, *, seed: int = 42, salt: str = "") -> Quotes:
+    """The same quotes with an *assumed* latency: ``constant:5`` or ``lognormal:8,25`` (median and p95 in ms).
+
+    Use it when the latency is known from outside (a ping to the server, a provider's figure) or was not recorded.
+    The draws are seeded, so a certificate that records the model reproduces.
+    """
+    kind, median, p95 = parse_latency_model(spec)
+    if kind == "constant":
+        latency = np.full(len(q), median)
+    else:
+        sigma = math.log(p95 / median) / 1.6448536269514722  # p95 of a lognormal is median * exp(1.645 sigma)
+        rng = np.random.default_rng([int(seed), zlib.crc32(salt.encode())])
+        latency = median * np.exp(sigma * rng.standard_normal(len(q)))
+    return Quotes(q.exchange_ns, latency, q.bid, q.ask, q.venue, q.dropped, q.symbol)
+
+
+def info_bars(
+    q: Quotes | QuoteSet,
+    grid: Grid,
+    *,
+    clock: str = "exchange",
+    extra_latency_ms: float = 0.0,
+    latency_overrides: dict[str, np.ndarray] | None = None,
+) -> dict[str, np.ndarray]:
+    """Bars the strategy reads: the traded feed as ``open, high, low, close, volume``, every other feed with its alias prefix."""
+    out: dict[str, np.ndarray] = {}
+    for alias, feed in as_set(q).feeds:
+        bars = bars_from_quotes(
+            feed, grid, clock=clock, extra_latency_ms=extra_latency_ms, latency_ms=(latency_overrides or {}).get(alias)
+        )
+        out.update({(f"{alias}_" if alias else "") + k: v for k, v in bars.items()})
+    return out
+
+
 def synthetic_quotes(
     n: int = 20_000,
     *,
@@ -263,13 +349,46 @@ def synthetic_quotes(
     )
 
 
+def synthetic_feeds(
+    n: int = 20_000,
+    *,
+    seed: int = 7,
+    lead_ms: float = 30.0,
+    leader_latency_ms: float = 5.0,
+    follower_latency_ms: float = 5.0,
+    step_ms: float = 10.0,
+) -> pd.DataFrame:
+    """Two instruments in one table: ``LEAD@SIM`` moves first and ``LAG@SIM`` repeats it ``lead_ms`` later.
+
+    The classic latency-arbitrage setup: a strategy that trades ``LAG@SIM`` on the move of ``LEAD@SIM`` earns on the exchange
+    clock; whether it still earns depends on how late each feed reaches the machine (median latencies in ms, lognormal).
+    """
+    rng = np.random.default_rng(seed)
+    lead_mid = 100.0 * np.exp(np.cumsum(rng.normal(0.0, 2e-4, n)))
+    shift = max(0, int(round(lead_ms / step_ms)))
+    lag_mid = np.r_[np.full(shift, lead_mid[0]), lead_mid[: n - shift]] * np.exp(rng.normal(0.0, 2e-5, n))
+    stamp = pd.Timestamp("2025-10-02 00:00:00", tz="UTC") + pd.to_timedelta(np.arange(n) * step_ms, unit="ms")
+    frames = []
+    for symbol, mid, median in (("LEAD@SIM", lead_mid, leader_latency_ms), ("LAG@SIM", lag_mid, follower_latency_ms)):
+        latency = np.clip(rng.lognormal(np.log(max(median, 1e-3)), 0.3, n), 0.0, 500.0) if median > 0 else np.zeros(n)
+        frames.append(pd.DataFrame({"timestamp": stamp, "bid": mid * (1 - 1e-5), "ask": mid * (1 + 1e-5), "latency_ms": latency, "symbol": symbol}))
+    return pd.concat(frames, ignore_index=True)
+
+
 __all__ = [
     "Grid",
+    "QuoteSet",
     "Quotes",
+    "as_set",
+    "assume_latency",
+    "feed_alias",
+    "info_bars",
+    "parse_latency_model",
     "bars_from_quotes",
     "load_quotes",
     "make_grid",
     "select_symbol",
+    "synthetic_feeds",
     "quote_quality",
     "quote_row",
     "synthetic_quotes",

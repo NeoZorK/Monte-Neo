@@ -34,6 +34,9 @@ but no static lint and no truncation probe can see it: the leak is in the clock,
 | The edge is thinner than the data delay | `latency_tolerance` warns and names the extra delay in ms where the profit vanishes |
 | The profit was lucky latency | `latency_monte_carlo` warns: most redraws of the latency lose money while the observed sample earned |
 | The edge lives in instant execution | With `--order-latency-ms` the plain backtest turns into a loss and the verdict is `REJECT` |
+| A leader feed arrives after the follower moved (latency arbitrage) | `arrival_lookahead` warns when a strategy that trades one instrument on the move of another earns only on exchange time |
+| The strategy reads the future of its own bars (`shift(-1)`) | The look-ahead probes of `verify_strategy` run on the arrival bars and `REJECT` it: this leak exists on every clock |
+| Costs ignore the spread | `spread_cost` warns when the modeled slippage is below the half-spread a taker pays |
 | The recording itself is unreliable | `quote_quality` warns about crossed quotes, negative latency, rows that did not parse and **bursty latency** |
 
 The last row matters. A congested path (VPN, Wi-Fi, an overloaded router) holds messages back and releases them in bursts.
@@ -70,6 +73,39 @@ from monte_neo.verify import verify_quotes
 
 report = verify_quotes("quotes.csv", strategy="my_strategy.py", bar_ms=1000, symbol="BTCUSDT@BINANCE-FUTURES")
 ```
+
+## No server near the exchange? Assume the latency
+
+Measuring latency needs a machine near the exchange. Without one you can still ask the question that matters: *how much
+latency can this strategy take?* Give the latency yourself (a ping to the server you will rent, a provider's figure), and the
+table does not even need a latency column:
+
+```bash
+monte-neo verify --quotes quotes.csv --strategy my_strategy.py --bar-ms 100 --latency-model lognormal:8,25   # median 8 ms, p95 25 ms
+monte-neo verify --quotes quotes.csv --strategy my_strategy.py --bar-ms 100 --latency-model constant:5
+```
+
+The certificate records `latency_model` and says in plain words that the latency is **assumed, not measured**, so the verdict
+holds only if the real latency is not worse. The prices stay real: the exchange's own timestamps are exact on any network, only
+your receive time is not. Use `latency_scan` (the table of returns against extra delay) to see the whole curve instead of one point.
+
+## Several feeds in one strategy
+
+A strategy may trade one instrument on the prices of another (lead-lag, cross-venue, futures against spot). Select the traded
+symbol and the feeds it reads; each feed has its own latency, and its columns are prefixed with the symbol, non-word
+characters replaced by `_`:
+
+```bash
+monte-neo verify --quotes both.csv --strategy lead_lag.py --symbol LAG@SIM --feeds LEAD@SIM --bar-ms 10
+```
+
+```python
+def signal(df):                                   # df.close is LAG@SIM, df.LEAD_SIM_close is LEAD@SIM
+    return np.sign(df["LEAD_SIM_close"].diff(3).fillna(0.0).to_numpy())
+```
+
+On the synthetic pair the follower repeats the leader 30 ms later. With a leader that reaches the machine in 1 to 5 ms the edge
+survives; with a leader 30 ms late or more the exchange-time profit turns into a loss on arrival time and `arrival_lookahead` warns.
 
 ## Record your own latency
 
@@ -114,11 +150,30 @@ document their latency models. To our knowledge, no other independent verifier c
 ## Limits
 
 - **Experimental.** The checks warn and do not fail the verdict; the honest-strategy controls (several seeds, three latency levels and an order delay) ran on synthetic data.
-- **One instrument per run.** Pick it with `--symbol`. Cross-venue latency arbitrage (two feeds in one strategy) is not modelled.
-- **Information latency plus a fixed order delay.** `--order-latency-ms` delays every fill by a constant; queue position, partial fills and the exchange's own matching delay are not modelled.
+- **One traded instrument per run.** Pick it with `--symbol`; other feeds are read through `--feeds`. A strategy that trades several instruments at once is not supported.
+- **Information latency plus a fixed order delay.** `--order-latency-ms` delays every fill by a constant. **Queue position and partial fills are not modelled, on purpose:** they need the order book and the trade prints and a passive-order model, and a rough formula would give false precision. Fills are taker orders at the mid; use a latency-aware engine such as hftbacktest for market-making strategies. Every certificate lists these assumptions in `assumptions`.
 - **Bars from the mid price.** The strategy sees `open, high, low, close` of the mid and `volume`, the count of quotes.
 - **The strategy file runs with your permissions,** as with `verify_strategy`; the `--isolate` sandbox does not apply to `--quotes` yet.
-- **The OHLCV look-ahead probes do not run:** the bars depend on the clock.
+- **The look-ahead probes run on the arrival bars** (`--no-probes` skips them), so a strategy that reads the future of its bars is caught; the statistical checks of `verify_strategy` (Deflated Sharpe, timing test) do not run.
+
+## Checked on real quotes
+
+`scripts/validate_on_real_quotes.py` runs the checks on real recordings. The run behind these numbers used 15 minutes each of
+Binance USD-M futures BTCUSDT, ETHUSDT and SOLUSDT (1.18 million real quotes, 1 October 2026), recorded on the author's own
+network. The prices and exchange timestamps are real; that network is too congested to trust its latency, so every run
+*assumed* a latency (`lognormal:5,15`, `lognormal:20,60`, `constant:50`) with costs of 0.2 bps commission + 0.3 bps slippage.
+
+| What ran | Result |
+|---|---|
+| 36 honest strategies (3-bar trend, mean reversion, breakout, fast momentum; 3 recordings; 3 latency scenarios) | 0 rejected for any reason other than losing money; 33 rejected because they lose money after costs, 3 passed (BTC breakout, +0.01%) with no latency warning |
+| Foresight control (`shift(-1)`) on each recording | 3 of 3 rejected by `lookahead_truncation` |
+| A real pair, ETH traded on the move of BTC (100 ms bars) | Loses money after costs: nothing to audit |
+| An edge planted on the real SOL price path: a follower that repeats it 2 s later | Passes at 20 to 500 ms of latency, `latency_tolerance` warns at 1.5 s, `arrival_lookahead` warns at 2.5 s (+2.08% on exchange time, -1.64% on arrival time) |
+
+How to read it, honestly: on real prices there was almost no honest edge to audit, which is what an independent verifier
+should report. The latency checks fired only where the ground truth was planted (the 2 s lag), and at the delay that matches
+it. What this does **not** show: how often the warnings accuse an honest strategy that really earns, because only three honest
+runs earned anything. Fifteen minutes of one day is a smoke test, not a study. Run the script on your own recordings.
 
 ## Speed
 

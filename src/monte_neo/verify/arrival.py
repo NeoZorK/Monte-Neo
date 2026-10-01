@@ -22,7 +22,7 @@ from monte_neo.backtest.model import ExecutionModel
 from monte_neo.verify.checks import check
 from monte_neo.verify.engine import total_return
 from monte_neo.verify.ingest import SignalFn, call_signal_fn
-from monte_neo.verify.quotes import Grid, Quotes, bars_from_quotes, make_grid
+from monte_neo.verify.quotes import Grid, Quotes, QuoteSet, as_set, bars_from_quotes, info_bars, make_grid
 
 SCAN_MS = (0.0, 5.0, 20.0, 50.0, 100.0, 250.0)
 MC_SAMPLES = 200
@@ -31,7 +31,8 @@ _OHLC = ("open", "high", "low", "close")
 
 
 def _frame(bars: dict[str, np.ndarray]) -> pd.DataFrame:
-    return pd.DataFrame({k: bars[k] for k in (*_OHLC, "volume")})
+    """The traded feed as ``open ... volume`` first, then every other feed's columns with its alias prefix."""
+    return pd.DataFrame(dict(bars))
 
 
 def _return(fn: SignalFn, info: dict[str, np.ndarray], market: dict[str, np.ndarray], model: ExecutionModel, positions: str) -> float:
@@ -46,18 +47,19 @@ def _market(q: Quotes, grid: Grid, order_latency_ms: float = 0.0) -> dict[str, n
 
 
 def arrival_lookahead(
-    q: Quotes, fn: SignalFn, model: ExecutionModel, *, bar_ms: float, positions: str = "sign", order_latency_ms: float = 0.0
+    q: Quotes | QuoteSet, fn: SignalFn, model: ExecutionModel, *, bar_ms: float, positions: str = "sign", order_latency_ms: float = 0.0
 ) -> dict[str, Any]:
     """Return with zero data latency (plain backtest) against the return on arrival-time information.
 
     ``warn`` when the strategy is profitable on the exchange clock and loses money on the arrival clock.
     ``order_latency_ms`` delays every fill in both runs, so it lowers both returns.
     """
-    grid = make_grid(q, bar_ms)
-    market = _market(q, grid, order_latency_ms)
-    ideal = _return(fn, bars_from_quotes(q, grid, clock="exchange"), market, model, positions)
-    seen = _return(fn, bars_from_quotes(q, grid, clock="arrival"), market, model, positions)
-    if not (q.latency_ms > 0).any():
+    qs = as_set(q)
+    grid = make_grid(qs, bar_ms)
+    market = _market(qs.main, grid, order_latency_ms)
+    ideal = _return(fn, info_bars(qs, grid, clock="exchange"), market, model, positions)
+    seen = _return(fn, info_bars(qs, grid, clock="arrival"), market, model, positions)
+    if not (qs.latency_ms > 0).any():
         status = "skip"
     elif ideal <= 0.0:
         status = "skip"
@@ -70,7 +72,7 @@ def arrival_lookahead(
         "return_exchange_clock": ideal,
         "return_arrival_clock": seen,
         "retained": (seen / ideal) if ideal > 0.0 else None,
-        "median_latency_ms": float(np.median(q.latency_ms)),
+        "median_latency_ms": float(np.median(qs.latency_ms)),
     }
 
 
@@ -87,7 +89,7 @@ def arrival_row(info: dict[str, Any]) -> dict[str, Any]:
 
 
 def latency_scan(
-    q: Quotes,
+    q: Quotes | QuoteSet,
     fn: SignalFn,
     model: ExecutionModel,
     *,
@@ -98,26 +100,26 @@ def latency_scan(
 ) -> dict[str, Any]:
     """Return when data arrives ``extra_ms`` later than it did, plus the delay where the profit disappears.
 
-    The observed p95 latency is always scanned: ``warn`` when the strategy is profitable on the observed
-    arrival clock and loses money once one more p95 of delay is added (a slow day).
+    The observed p95 latency is always scanned. The profit has *vanished* at the smallest extra delay whose return and the
+    next scanned delay's return are both not positive (one noisy point of a thin edge does not count).
+    ``warn`` when it has vanished by one more p95 of delay (a slow day).
     """
-    p95 = float(np.percentile(q.latency_ms, 95))
+    qs = as_set(q)
+    p95 = float(np.percentile(qs.latency_ms, 95))
     points = sorted({float(x) for x in extra_ms} | {p95})
-    grid = make_grid(q, bar_ms, max_extra_ms=points[-1])
-    market = _market(q, grid, order_latency_ms)
-    returns = {x: _return(fn, bars_from_quotes(q, grid, clock="arrival", extra_latency_ms=x), market, model, positions) for x in points}
-    base = returns[0.0] if 0.0 in returns else _return(fn, bars_from_quotes(q, grid, clock="arrival"), market, model, positions)
+    grid = make_grid(qs, bar_ms, max_extra_ms=points[-1])
+    market = _market(qs.main, grid, order_latency_ms)
+    returns = {x: _return(fn, info_bars(qs, grid, clock="arrival", extra_latency_ms=x), market, model, positions) for x in points}
+    base = returns[0.0] if 0.0 in returns else _return(fn, info_bars(qs, grid, clock="arrival"), market, model, positions)
     vanish = None
     if base > 0.0:
-        prev_x, prev_r = 0.0, base
-        for x in points:
-            if x <= 0.0:
-                continue
-            if returns[x] <= 0.0:
-                vanish = prev_x + (x - prev_x) * prev_r / (prev_r - returns[x])
+        later = [x for x in points if x > 0.0]
+        values = [returns[x] for x in later]
+        for i, x in enumerate(later):  # gone at x: this scanned delay and the next one both earn nothing
+            if values[i] <= 0.0 and (i == len(later) - 1 or values[i + 1] <= 0.0):
+                vanish = x
                 break
-            prev_x, prev_r = x, returns[x]
-    status = "skip" if base <= 0.0 else ("warn" if returns[p95] <= 0.0 else "pass")
+    status = "skip" if base <= 0.0 else ("warn" if vanish is not None and vanish <= p95 else "pass")
     return {
         "status": status,
         "bar_ms": float(bar_ms),
@@ -137,7 +139,7 @@ def latency_row(info: dict[str, Any]) -> dict[str, Any]:
 
 
 def latency_monte_carlo(
-    q: Quotes,
+    q: Quotes | QuoteSet,
     fn: SignalFn,
     model: ExecutionModel,
     *,
@@ -153,16 +155,23 @@ def latency_monte_carlo(
     and can sit in a certificate. ``warn`` when most draws lose money although the observed sample earns.
     """
     rng = np.random.default_rng(seed)
-    grid = make_grid(q, bar_ms, max_extra_ms=float(q.latency_ms.max()))
-    market = _market(q, grid, order_latency_ms)
-    observed = _return(fn, bars_from_quotes(q, grid, clock="arrival"), market, model, positions)
-    groups = [np.arange(len(q))] if q.venue is None else [np.flatnonzero(q.venue == v) for v in sorted(set(q.venue.tolist()))]
+    qs = as_set(q)
+    grid = make_grid(qs, bar_ms, max_extra_ms=float(qs.latency_ms.max()))
+    market = _market(qs.main, grid, order_latency_ms)
+    observed = _return(fn, info_bars(qs, grid, clock="arrival"), market, model, positions)
+    groups = {
+        alias: [np.arange(len(f))] if f.venue is None else [np.flatnonzero(f.venue == v) for v in sorted(set(f.venue.tolist()))]
+        for alias, f in qs.feeds
+    }
     returns = np.empty(int(samples))
     for s in range(int(samples)):
-        lat = np.empty(len(q))
-        for g in groups:
-            lat[g] = rng.choice(q.latency_ms[g], size=g.size, replace=True)
-        returns[s] = _return(fn, bars_from_quotes(q, grid, clock="arrival", latency_ms=lat), market, model, positions)
+        draws: dict[str, np.ndarray] = {}
+        for alias, f in qs.feeds:  # every feed redraws its own latency, inside its venue
+            lat = np.empty(len(f))
+            for g in groups[alias]:
+                lat[g] = rng.choice(f.latency_ms[g], size=g.size, replace=True)
+            draws[alias] = lat
+        returns[s] = _return(fn, info_bars(qs, grid, clock="arrival", latency_overrides=draws), market, model, positions)
     p5, p50, p95 = (float(x) for x in np.percentile(returns, [5, 50, 95]))
     loss = float((returns <= 0.0).mean())
     return {

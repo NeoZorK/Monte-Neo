@@ -34,7 +34,7 @@ def momentum(df: pd.DataFrame) -> np.ndarray:
 
 @pytest.fixture(scope="module")
 def slow_quotes() -> Quotes:
-    return load_quotes(synthetic_quotes(40_000, rho=0.0, drift=1.5e-5, regime_steps=3000))
+    return load_quotes(synthetic_quotes(150_000, rho=0.0, drift=4e-6, regime_steps=3000))
 
 
 @pytest.fixture(scope="module")
@@ -134,7 +134,7 @@ def test_monte_carlo_skips_when_not_profitable(fast_quotes: Quotes) -> None:
 
 
 def test_next_actions_exist_for_the_new_ids() -> None:
-    for check_id in ("quote_quality", "arrival_lookahead", "latency_tolerance", "latency_monte_carlo"):
+    for check_id in ("quote_quality", "arrival_lookahead", "latency_tolerance", "latency_monte_carlo", "spread_cost"):
         assert check_id in NEXT_ACTIONS
 
 

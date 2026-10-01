@@ -217,6 +217,7 @@ A simplified guide to the Monte-Neo file structure.
 - scripts/verify_hardware.py - Float8 / Metal hardware check (Apple Silicon)
 - scripts/experiments/ - One-off Metal / MLX experiments, not maintained
 - scripts/make_demo_gif.py - Renders docs/assets/demo-verify.gif from real verify output
+- scripts/validate_on_real_quotes.py - Runs the quote checks on real recordings (honest strategies, foresight control, planted lead-lag) and prints what happened
 - scripts/make_arrival_gif.py - Renders docs/assets/demo-arrival.gif from live verify_quotes runs
 - docs/project/PACKAGING.md - PyPI / TestPyPI free packaging checklist
 - docs/project/SECURITY_AUDIT_RU.md - Security audit of the verifier (findings, fixes, open risks)
@@ -234,6 +235,7 @@ A simplified guide to the Monte-Neo file structure.
 - src/monte_neo/verify/microstructure.py - Spread estimate from high and low, capacity from volume
 - src/monte_neo/verify/quotes.py - Top-of-book quotes with arrival time: loading, quote quality, bars on the exchange and arrival clocks
 - src/monte_neo/verify/arrival.py - Arrival look-ahead, latency scan and latency Monte Carlo on quotes
+- src/monte_neo/verify/quotes_probes.py - The look-ahead probes of verify_strategy, run on the arrival bars of a quote run
 - src/monte_neo/verify/quotes_verdict.py - verify_quotes: one certificate for a strategy run on quotes with arrival time
 - src/monte_neo/verify/report_latency.py - "Time and latency" section and chart of the HTML report
 - src/monte_neo/data/quote_recorder.py - Records Binance futures bookTicker quotes with latency for verify --quotes

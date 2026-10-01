@@ -110,6 +110,12 @@ this: the leak is in the clock, not in the code.
 - **Latency Monte Carlo.** Each quote's latency is redrawn from the latency you actually observed (inside its venue),
   200 seeded draws: the distribution of the return and the probability of a loss. It shows when a profit was lucky latency.
 - **Order delay.** `--order-latency-ms` delays every fill, so an edge that lives in instant execution is rejected.
+- **No server near the exchange?** `--latency-model lognormal:8,25` assumes the latency (median and p95 in ms) instead of
+  reading it, and the certificate says plainly that it is assumed, not measured.
+- **Several feeds in one strategy.** `--symbol` and `--feeds` let a strategy trade one instrument on the prices of another
+  (lead-lag, futures against spot); each feed has its own latency. A leader that arrives after the follower moved is caught.
+- **Look-ahead probes too.** The truncation and perturbation probes of `verify_strategy` run on the arrival bars, so a strategy
+  that reads the next bar (`shift(-1)`) is rejected: that leak exists on every clock.
 - **Quote quality.** Crossed quotes, negative latency, out-of-order arrivals and **bursty latency**: a congested path
   (VPN, Wi-Fi) holds messages and releases them in bursts, and the check says so instead of reporting your network as a result.
 - **A certificate.** Signed, and reproducible with `--recheck` like every other certificate.
@@ -125,10 +131,12 @@ How it differs: latency-aware engines such as [hftbacktest](https://hft.readthed
 them: it **audits a finished strategy from any source** on your own quote recording and says whether its profit survives
 the time the data arrived. To our knowledge, no other independent verifier does that.
 
-Honest scope: experimental. These checks are context (`warn` at most); the calibration used synthetic data, so record
-real latency on the machine that will trade (a server near the exchange) before trusting a number. One instrument per
-run (`--symbol` picks it), data latency from the quotes plus a fixed order delay; queue position and partial fills are not
-modelled. [Read the guide](https://neozork.github.io/Monte-Neo/guides/arrival-time/).
+Honest scope: experimental. The latency checks are context (`warn` at most) and were calibrated on synthetic data, so record
+real latency on the machine that will trade, or state an assumed latency and read the verdict as conditional on it. Fills
+are taker orders at the mid, with the data latency from the quotes (or assumed) plus a fixed order delay. **Queue position and
+partial fills are not modelled, on purpose** (they need the order book and a passive-order model; a rough formula would give
+false precision), so a market-making strategy cannot be validated here; the certificate lists these assumptions.
+[Read the guide](https://neozork.github.io/Monte-Neo/guides/arrival-time/).
 
 ## What it checks
 

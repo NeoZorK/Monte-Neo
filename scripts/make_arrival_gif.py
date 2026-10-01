@@ -10,6 +10,7 @@ Run: uv run --extra plot python scripts/make_arrival_gif.py
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 
 import numpy as np
@@ -20,7 +21,7 @@ from monte_neo.verify.quotes_verdict import verify_quotes
 from monte_neo.verify.verdict import model_from_costs
 
 OUT = Path(__file__).resolve().parents[1] / "docs" / "assets" / "demo-arrival.gif"
-W, H = 960, 560
+W, H = 960, 650
 BG, PANEL, BORDER = (13, 17, 23), (22, 27, 34), (48, 54, 61)
 FG, DIM = (201, 209, 217), (125, 133, 144)
 RED, GRN, YEL, BLU = (248, 81, 73), (63, 185, 80), (210, 153, 34), (121, 192, 255)
@@ -46,14 +47,15 @@ VERDICT_COLOR = {"PASS": GRN, "PASS_WITH_WARNINGS": YEL, "REJECT": RED, "NEEDS_M
 def short(summary: str) -> str:
     """The sentence the CLI prints, without its trailing clauses, so a line fits the window whole."""
     kept = [part for part in summary.split("; ") if "older than" not in part]
-    return "; ".join(kept).replace(" on the exchange clock (a plain backtest)", " (plain backtest)")
+    text = "; ".join(kept).replace(" on the exchange clock (a plain backtest)", " (plain backtest)")
+    return re.sub(r" \(p95 [^)]*\)", "", text).replace("modeled slippage", "slippage")
 
 
 def result_lines(report: dict) -> list[list[Part]]:
     """The verdict and one line per check, as the CLI prints them."""
     lines = [[p(report["verdict"], VERDICT_COLOR[report["verdict"]], True), p(f"  certificate {report['certificate_id']}", DIM)]]
     for c in report["checks"]:
-        lines.append([p(f"  {c['id']:<22}"), p(f"{c['status']:<5}", STATUS_COLOR[c["status"]], True), p(f" {short(c['summary'])}")])
+        lines.append([p(f"  {c['id']:<25}"), p(f"{c['status']:<5}", STATUS_COLOR[c["status"]], True), p(f" {short(c['summary'])}")])
     return lines
 
 
@@ -69,7 +71,7 @@ def bars(report: dict) -> list[list[Part]]:
 
 
 def build_scenes() -> list[list[list[Part]] | str]:
-    model = model_from_costs(commission_bps=0.2, slippage_bps=0.0)
+    model = model_from_costs(commission_bps=0.2, slippage_bps=0.15)
 
     def fast(df):  # reacts to each 10 ms bar the moment it closes
         return np.sign(df["close"].diff().fillna(0.0).to_numpy())
@@ -79,7 +81,7 @@ def build_scenes() -> list[list[list[Part]] | str]:
 
     bad = verify_quotes(synthetic_quotes(30_000, rho=0.5), signal_fn=fast, bar_ms=10.0, model=model, samples=20)
     good = verify_quotes(
-        synthetic_quotes(40_000, rho=0.0, drift=1.5e-5, regime_steps=3000), signal_fn=slow, bar_ms=1000.0, model=model, samples=20
+        synthetic_quotes(150_000, rho=0.0, drift=4e-6, regime_steps=3000), signal_fn=slow, bar_ms=1000.0, model=model, samples=20
     )
     arrival = bad["latency"]["arrival"]
     return [

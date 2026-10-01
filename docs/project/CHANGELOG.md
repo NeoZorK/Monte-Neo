@@ -30,6 +30,20 @@ Version source of truth: `src/monte_neo/_version.py`.
 - **`--recheck` for quote certificates**: `monte-neo verify --recheck CERT --quotes Q --strategy S`, `recheck_quotes()` and the
   MCP tool `recheck_certificate(quotes_path=...)` reproduce the certificate id from the quotes, the code and the recorded
   settings; changed quotes or code are named in `inputs_match`.
+- **`--latency-model`** (`constant:MS` or `lognormal:MEDIAN,P95`) assumes the data latency instead of reading it (the table needs no
+  latency column); the certificate records it and says the latency is assumed, not measured.
+- **`--symbol` + `--feeds`**: a strategy may read other instruments (`<alias>_close`...), each feed with its own latency;
+  `synthetic_feeds` is the latency-arbitrage test pair. A leader that arrives after the follower moved turns the edge into a loss.
+- **Look-ahead probes on the arrival bars** (`--no-probes` skips): a strategy that reads the next bar is rejected, which the
+  clock check alone cannot see.
+- **`spread_cost`** warns when the modeled slippage is below the half-spread a taker pays; every certificate carries
+  `assumptions` (taker fills at the mid, no queue position, no partial fills, order delay, latency source), shown in the report.
+- `latency_tolerance` calls the profit vanished only when two scanned delays in a row earn nothing: one noisy point of a thin
+  honest edge no longer warns.
+- **Checked on real quotes** (`scripts/validate_on_real_quotes.py`, 1.18 million real quotes of BTC, ETH and SOL futures, assumed
+  latency): 36 honest runs, no false accusation (33 lose money after costs, 3 pass); the foresight control is rejected 3 of 3; an edge
+  planted on the real SOL path (a follower that repeats it 2 s later) is caught at the matching delay. Almost no honest
+  strategy earns on real prices, so the false-warning rate among earning strategies is still unmeasured.
 - A guide ([Latency audit](../guides/arrival-time.md)), a second demo GIF (`docs/assets/demo-arrival.gif`, rendered from live
   runs by `scripts/make_arrival_gif.py`) and the README section that explains what the feature catches and how it differs
   from latency-aware backtest engines.

@@ -142,8 +142,10 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 - [x] `verify_quotes` / `monte-neo verify --quotes` / MCP `verify_quotes`; `--symbol`, `--order-latency-ms`, `--recheck` for quote certificates
 - [x] "Time and latency" section in the HTML report; guide, GIF demo, traps and honest controls
 - [x] Quote recorder for Binance futures (`python -m monte_neo.data.quote_recorder`) with the clock-offset uncertainty
-- [ ] Calibrate and validate on real exchange latency recorded near the exchange; then decide which rows may fail the verdict
-- [ ] Several feeds in one strategy (cross-venue latency arbitrage); queue position and partial fills
+- [x] Several feeds in one strategy (`--symbol`, `--feeds`); assumed latency models (`--latency-model`); look-ahead probes on the arrival bars; `spread_cost`; `assumptions` in every certificate
+- [x] Checked on 1.18 million real quotes with assumed latency: no false accusation, foresight rejected, a planted edge caught
+- [ ] Measure the latency of a machine near the exchange and the false-warning rate among strategies that really earn; then decide which rows may fail the verdict
+- Not planned, on purpose: queue position and partial fills (they need the order book and a passive-order model; a rough formula would give false precision)
 
 ## v0.49.0 — stage 7: CI in one command
 - [x] `monte-neo init-ci`

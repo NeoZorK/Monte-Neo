@@ -287,7 +287,7 @@ market **does** (bars binned by stamp). A plain backtest is the special case wit
 |---|---|---|
 | `quote_quality` | Are the quotes usable? Crossed (`bid > ask`), non-positive, negative latency, rows that did not parse, quotes that arrive out of order, latency p50/p95/p99 (per venue when known), share older than 20 ms, and bursty latency (p99 more than 20 times the median, from 100 quotes up: messages queue on the path and arrive in bursts, so the arrival checks would measure your network) | `warn` for broken data, else `pass` |
 | `arrival_lookahead` | Profit with zero latency against profit on arrival-time information. `warn` when profitable on the exchange clock and not on the arrival clock | `pass`, `warn`, `skip` |
-| `latency_tolerance` (`latency_scan`) | Profit when data arrives 0, 5, 20, 50, 100, 250 ms and one more observed p95 later; reports the delay at which the profit vanishes (linear interpolation) | `warn` when one more p95 of delay erases the profit |
+| `latency_tolerance` (`latency_scan`) | Profit when data arrives 0, 5, 20, 50, 100, 250 ms and one more observed p95 later; reports the delay at which the profit vanishes (the smallest extra delay whose return and the next scanned delay's return are both not positive: one noisy point of a thin edge does not count) | `warn` when one more p95 of delay erases the profit |
 | `latency_monte_carlo` | The latency of each quote is redrawn from the observed latencies (inside its venue), 200 draws, seed 42; returns p5, median, p95 and the probability of a loss | `warn` when most draws lose while the observed sample earns |
 
 ### One certificate: `verify_quotes`, `--quotes`, the MCP tool
@@ -310,7 +310,7 @@ on the exchange clock: a loss is `fail`, so `REJECT`, as in `verify_strategy`), 
 and `latency_monte_carlo`. A `latency` section carries the numbers, and the HTML report draws the return against the
 extra delay. Costs default to 5 + 5 bps per side on the CLI (as everywhere); a strategy on 10 ms bars needs its real ones.
 
-Limits: one instrument per table; the OHLCV look-ahead probes are not run (the bars depend on the clock);
+Limits: one traded instrument per run (`--symbol`, other feeds through `--feeds`); the look-ahead probes of `verify_strategy` run on the arrival bars (`--no-probes` skips them) but its statistical checks do not;
 `--recheck` does not take quotes yet, rerun `verify_quotes` on the same file to reproduce a certificate (the
 certificate id is stable for the same quotes, code and settings); the strategy file runs with your permissions.
 

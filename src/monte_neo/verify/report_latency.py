@@ -72,11 +72,21 @@ def latency_section(report: dict[str, Any]) -> str:
         ]
     )
     chart = latency_chart(scan)
+    spread = _dict(block.get("spread"))
+    if _f(spread.get("median_bps")) is not None:
+        stats += _stat("half-spread (median / p95)", f"{float(spread['median_bps']):.2f} / {float(spread.get('p95_bps') or 0):.2f} bps")
+    notes = report.get("assumptions")
+    assumed = (
+        "<div class='card'><b>What this run assumes</b><ul>" + "".join(f"<li>{_e(x)}</li>" for x in notes[:12]) + "</ul></div>"
+        if isinstance(notes, list) and notes
+        else ""
+    )
     return (
         "<h2>Time and latency</h2>"
         f"<div class='card grid'>{stats}</div>"
         + (f"<div class='card'><b>Net return against extra data delay</b>{chart}"
            "<p class='muted'>Positions come from bars binned by arrival time plus the extra delay and are filled on the market bars.</p></div>" if chart else "")
+        + assumed
     )
 
 

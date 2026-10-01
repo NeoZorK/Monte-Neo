@@ -32,6 +32,8 @@ def run_quotes(args: argparse.Namespace, console: Console) -> int:
             args.quotes, strategy=args.strategy, bar_ms=args.bar_ms, commission_bps=args.commission_bps,
             slippage_bps=args.slippage_bps, warmup_bars=args.warmup_bars, samples=args.latency_samples,
             positions=args.positions, symbol=args.symbol, order_latency_ms=args.order_latency_ms,
+            feeds=[f.strip() for f in args.feeds.split(",") if f.strip()] if args.feeds else None,
+            latency_model=args.latency_model, probes=not args.no_probes,
         )
     except Exception as exc:  # input errors must not look like a verdict
         console.print(f"[red]verify failed: {exc}[/]")
@@ -53,11 +55,11 @@ def run_quotes_demo(console: Console) -> int:
     def honest_slow_trend(df: Any) -> Any:
         return np.sign(df["close"].diff(3).fillna(0.0).to_numpy())  # three 1 s bars
 
-    model = model_from_costs(commission_bps=0.2, slippage_bps=0.0)
+    model = model_from_costs(commission_bps=0.2, slippage_bps=0.15)
     console.print("[bold]Demo:[/] two strategies on synthetic quotes with 5-275 ms latency (median 20 ms).\n")
     cases = (
         ("reacts to each 10 ms bar the moment it closes", needs_data_before_it_arrives, synthetic_quotes(30_000, rho=0.5), 10.0),
-        ("three-bar trend on 1 s bars", honest_slow_trend, synthetic_quotes(40_000, rho=0.0, drift=1.5e-5, regime_steps=3000), 1000.0),
+        ("three-bar trend on 1 s bars", honest_slow_trend, synthetic_quotes(150_000, rho=0.0, drift=4e-6, regime_steps=3000), 1000.0),
     )
     for name, fn, quotes, bar_ms in cases:
         report = verify_quotes(quotes, signal_fn=fn, bar_ms=bar_ms, model=model, samples=20)

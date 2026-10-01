@@ -34,6 +34,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--quotes", help="Quotes table (.csv / .parquet) with timestamp, bid, ask and latency_ms (or arrival): checks the strategy against the time data arrived (needs --strategy)")
     p.add_argument("--bar-ms", type=float, default=1000.0, help="Bar length in milliseconds for --quotes (default 1000)")
     p.add_argument("--symbol", help="Symbol to verify when the --quotes table holds several (the quotes of one instrument are verified)")
+    p.add_argument("--feeds", help="Other symbols the strategy reads, comma separated (columns <alias>_open ... <alias>_volume; needs --symbol)")
+    p.add_argument("--latency-model", help="Assume the data latency instead of reading it: constant:MS or lognormal:MEDIAN_MS,P95_MS (the quotes may have no latency column)")
+    p.add_argument("--no-probes", action="store_true", help="Skip the look-ahead probes that run on the arrival bars with --quotes")
     p.add_argument("--order-latency-ms", type=float, default=0.0, help="Delay from the decision to the fill in ms for --quotes (default 0: only the data latency counts)")
     p.add_argument("--latency-samples", type=int, default=200, help="Latency draws for the --quotes Monte Carlo (default 200)")
     p.add_argument("--n-trials", type=int, default=None, help="How many variants were tried before this one")
@@ -172,6 +175,8 @@ def _render_text(report: dict[str, Any], console: Console) -> None:
             f" · Sharpe(ann) {m['sharpe_annualized']:.2f} · DSR {m['deflated_sharpe']:.3f}"
             f" · break-even {m['breakeven_cost_bps']:.1f} bps"
         )
+    for note in report.get("assumptions") or []:  # a quote certificate: what the run does and does not model
+        console.print(f"[dim]assumes: {note}[/]")
     by_period = (report.get("breakdown") or {}).get("periods") or []
     if by_period:
         console.print("periods: " + " · ".join(f"{p['period']} {p['return']:+.1%}" for p in by_period[:12]))

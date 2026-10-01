@@ -19,7 +19,7 @@ from monte_neo.verify.report_latency import latency_chart, latency_section
 from monte_neo.verify.schema import VERDICT_SCHEMA_ID
 from monte_neo.verify.verdict import model_from_costs
 
-MODEL = model_from_costs(commission_bps=0.2, slippage_bps=0.0)
+MODEL = model_from_costs(commission_bps=0.2, slippage_bps=0.15)
 SLOW = "import numpy as np\ndef signal(df):\n    return np.sign(df['close'].diff(3).fillna(0.0).to_numpy())\n"
 FAST = "import numpy as np\ndef signal(df):\n    return np.sign(df['close'].diff().fillna(0.0).to_numpy())\n"
 
@@ -34,7 +34,7 @@ def _fast(df: pd.DataFrame) -> np.ndarray:
 
 @pytest.fixture(scope="module")
 def slow_quotes() -> pd.DataFrame:
-    return synthetic_quotes(40_000, rho=0.0, drift=1.5e-5, regime_steps=3000)
+    return synthetic_quotes(150_000, rho=0.0, drift=4e-6, regime_steps=3000)
 
 
 @pytest.fixture(scope="module")
@@ -59,7 +59,8 @@ def test_honest_strategy_passes(slow_quotes: pd.DataFrame) -> None:
     report = verify_quotes(slow_quotes, signal_fn=_slow, bar_ms=1000.0, model=MODEL, samples=8)
     assert report["schema"] == VERDICT_SCHEMA_ID and report["verdict"] == "PASS"
     ids = {c["id"] for c in report["checks"]}
-    assert ids == {"quote_quality", "net_profitability", "arrival_lookahead", "latency_tolerance", "latency_monte_carlo"}
+    assert {"quote_quality", "net_profitability", "spread_cost", "arrival_lookahead", "latency_tolerance", "latency_monte_carlo"} <= ids
+    assert {"lookahead_truncation", "lookahead_perturbation"} <= ids  # the verify_strategy probes run on the arrival bars
     assert report["metrics"]["return_arrival_clock"] > 0
     assert report["reproducibility"]["settings"]["kind"] == "quotes"
 

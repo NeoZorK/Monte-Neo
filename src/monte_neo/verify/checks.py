@@ -39,6 +39,7 @@ NEXT_ACTIONS: dict[str, str] = {
     "arrival_lookahead": "The profit exists only when quotes are binned by exchange time: the strategy acts on prices that had not reached you yet. Rebuild features from arrival time (exchange stamp + latency) and trade against later prices.",
     "latency_tolerance": "Profit disappears with a little more data delay: slow the decision horizon (longer bars), cut turnover, or measure real latency before trusting the edge.",
     "latency_monte_carlo": "Most plausible latency draws lose money although the observed sample earns: the edge depends on lucky latency. Use longer horizons or require a latency budget for the strategy.",
+    "spread_cost": "Charge at least the half-spread as slippage_bps: a taker pays it on every fill. Or trade only while the spread is tight, and re-run.",
     "walk_forward_oos": "Parameters picked on past folds do not hold on the next fold: shrink the grid or prefer robust parameter plateaus.",
 }
 
