@@ -504,7 +504,8 @@ The repository ships the image: [`docker/verify/Dockerfile`](https://github.com/
 (`python:3.12-slim`, the verifier compiled at build time, runs as `nobody`).
 
 ```bash
-docker build -t monte-neo-verify docker/verify    # add --build-arg VERSION=X.Y.Z to pin a release
+python3 scripts/pin_release.py X.Y.Z > docker/verify/monte-neo.txt   # the release to install, pinned by hash
+docker build -t monte-neo-verify docker/verify
 docker run --rm --network none --read-only --tmpfs /tmp \
   --memory 4g --cpus 2 --pids-limit 256 \
   -v "$PWD/data:/data:ro" -v "$PWD/submission:/code:ro" -v "$PWD/out:/out" \

@@ -125,7 +125,9 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           # The tag's own source is what PyPI received, so the SBOM is built from the checkout.
           python -m venv sbom-env
-          sbom-env/bin/pip install -q ".[sign,mcp]"
+          # Runtime dependencies from the hash-locked file (made from uv.lock), then the package itself without its dependencies.
+          sbom-env/bin/pip install -q --require-hashes --no-deps -r scripts/requirements/runtime.txt
+          sbom-env/bin/pip install -q --no-deps .
           python -m pip install -q --require-hashes --no-deps -r scripts/requirements/sbom.txt
           cyclonedx-py environment sbom-env --of JSON -o "monte-neo-$version.cdx.json"
           gh release upload "$GITHUB_REF_NAME" "monte-neo-$version.cdx.json"
