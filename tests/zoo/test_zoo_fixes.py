@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 from mechanisms import HONEST, LEAKS
-from zoo_lib import build, compile_signal, dataset, oracle_causal
+from zoo_lib import build, compile_signal, dataset
 
 from monte_neo.verify.fixes import suggest_fixes
 

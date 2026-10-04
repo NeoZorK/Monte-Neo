@@ -7,6 +7,7 @@ returns strict-JSON dictionaries.
 from __future__ import annotations
 
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 from monte_neo._version import __version__
