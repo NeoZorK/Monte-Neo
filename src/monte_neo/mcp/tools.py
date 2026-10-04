@@ -439,6 +439,24 @@ def suggest_fix(strategy_path: str) -> dict[str, Any]:
     return suggest_fixes(path.read_text(encoding="utf-8"))
 
 
+def discover_indicator(
+    ohlcv_path: str, budget: int = 2000, seed: int = 1, null_runs: int = 39, lockbox: float = 0.2,
+    cost_bps: float = 5.0, side: str = "long_short",
+) -> dict[str, Any]:
+    """Search causal indicator formulas on a price table and verify the winner.
+
+    The search is counted (effective trials after clustering), tested against the same search on shuffled markets,
+    Reality Check / SPA, and a lockbox opened once. Returns found, reasons, the source of the winner, the
+    certificate and the search statistics (the per-candidate journal is left out). Nothing is written.
+    """
+    from monte_neo.discover import Config, discover
+    from monte_neo.verify import load_ohlcv
+
+    cfg = Config(budget=budget, seed=seed, null_runs=null_runs, lockbox=lockbox, cost_bps=cost_bps, side=side)
+    result = discover(load_ohlcv(ohlcv_path), cfg)
+    return {k: v for k, v in result.items() if k != "journal"}
+
+
 def verdict_schema() -> dict[str, Any]:
     """JSON schema of the strategy-verdict/1 certificate."""
     from monte_neo.verify import VERDICT_JSON_SCHEMA
@@ -483,6 +501,7 @@ TOOLS: tuple[Callable[..., dict[str, Any]], ...] = (
     render_report,
     verify_quotes,
     suggest_fix,
+    discover_indicator,
     verdict_schema,
     verifier_manifest,
 )
@@ -493,6 +512,7 @@ __all__ = [
     "TOOLS",
     "check_signature",
     "cost_stress",
+    "discover_indicator",
     "probe_lookahead",
     "render_report",
     "suggest_fix",
