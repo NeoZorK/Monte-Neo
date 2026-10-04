@@ -147,6 +147,10 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 - [ ] Measure the latency of a machine near the exchange and the false-warning rate among strategies that really earn; then decide which rows may fail the verdict
 - Not planned, on purpose: queue position and partial fills (they need the order book and a passive-order model; a rough formula would give false precision)
 
+## Planned: stages 8-10 (see PLAN_STAGES_8_10_RU.md)
+- [ ] v0.51 protection against stateful cheating; v0.52-v0.54 hypothesis zoo (about 2,400 cases, published honesty scorecard)
+- [ ] v0.55 trial ledger and suggest_fix; v0.56-v0.61 `monte-neo discover` (verified indicator search)
+
 ## v0.49.0 — stage 7: CI in one command
 - [x] `monte-neo init-ci`
 

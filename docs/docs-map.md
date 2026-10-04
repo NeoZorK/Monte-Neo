@@ -48,6 +48,7 @@ A simplified guide to the Monte-Neo file structure.
 - docs/assets/demo-arrival.gif - Animated demo: a strategy that lives on data it could not have seen, and an honest one (scripts/make_arrival_gif.py)
 - docs/guides/arrival-time.md - Latency audit guide: arrival look-ahead, the delay where the profit vanishes, latency Monte Carlo, recorder, limits
 - docs/project/MARKETING_PLAN_RU.md - Marketing plan: goals, audiences, channels, launch order (RU, internal)
+- docs/project/PLAN_STAGES_8_10_RU.md - Plan of stages 8-10: hypothesis zoo (1000+ checks), protection against stateful cheating, verified indicator discovery, indispensability loops (RU, internal)
 - docs/project/PRODUCT_PLAN_RU.md - Audit of v0.35 and the product plan: risks, report, traps, integrations, security check, speed and Metal, stages (RU, internal)
 - docs/marketing/launch-kit.md - Ready-to-post launch texts, GitHub About text, catalogue entries
 - docs/marketing/article-six-ways.md - Article draft: six ways an agent's backtest lies
