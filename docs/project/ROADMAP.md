@@ -136,6 +136,13 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 ## v0.45.0 — per-symbol costs
 - [x] `--costs-file` / `symbol_costs` / `costs-file`: commission and slippage by symbol, resolved into the certificate
 
+## v0.52.0 — stages 8–10: zoo, ledger, fixes, discover
+
+Done: hypothesis zoo (1026 leak/honest cases, data defects, claims, metamorphic), trial ledger, `suggest_fix`,
+`monte-neo discover` (CLI + MCP), generated honesty scorecard, zoo in CI (lite) and nightly (full).
+Open: pre-registration, certificate history/diff, holdout oracle, portfolio level, `doctor`; closing the gaps in
+`tests/zoo/known_gaps.json`.
+
 ## v0.51.0 — stage 8.B: protection against stateful cheating
 - [x] `data_independence`, `implausible_performance`, lint rules `cached_signal`, `import_time_fit`, `global_state`
 

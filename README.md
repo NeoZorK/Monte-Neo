@@ -136,6 +136,18 @@ partial fills are not modelled, on purpose** (they need the order book and a pas
 false precision), so a market-making strategy cannot be validated here; the certificate lists these assumptions.
 [Read the guide](https://neozork.github.io/Monte-Neo/guides/arrival-time/).
 
+## Search for an indicator, honestly
+
+```bash
+monte-neo discover --ohlcv data.csv --out found/
+```
+
+Tries thousands of causal formulas, counts the search, tests it against shuffled markets and a lockbox, and writes a
+certificate for the winner. Most of the time on noise it reports that nothing was found. See
+[the guide](docs/guides/discover.md); `verify --ledger` counts your own variants and `verify --suggest-fix` rewrites leaks
+([guide](docs/guides/ledger-and-fixes.md)). The [honesty scorecard](docs/guides/honesty-scorecard.md) shows how often the
+verifier catches leaks and spares honest strategies.
+
 ## What it checks
 
 | Family | Checks |
@@ -260,7 +272,7 @@ MCP tools: `verify_strategy`, `verify_grid`, `verify_quotes`, `probe_lookahead`,
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.51.0
+- uses: NeoZorK/Monte-Neo@v0.52.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py

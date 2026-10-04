@@ -78,10 +78,10 @@ def test_duplicates_are_one_trial_and_independent_candidates_are_many() -> None:
 
 
 def test_a_broken_gate_stops_the_run(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(S, "causality_gate", lambda source, df: True)
+    monkeypatch.setattr(search_mod, "causality_gate", lambda source, df: True)
     with pytest.raises(RuntimeError, match="leaky canary"):
         _run(_walk(), budget=30, null_runs=2)
-    monkeypatch.setattr(S, "causality_gate", lambda source, df: False)
+    monkeypatch.setattr(search_mod, "causality_gate", lambda source, df: False)
     with pytest.raises(RuntimeError, match="canar|genuine"):
         _run(_walk(), budget=30, null_runs=2)
 

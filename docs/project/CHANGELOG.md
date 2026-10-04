@@ -3,6 +3,23 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.52.0] — 2026-10-04
+
+### Added
+- **`monte-neo discover`** and MCP tool `discover_indicator`: a search over causal formulas with a causality gate, canary
+  leaks, effective-trial counting, a search null on shuffled markets, Reality Check / SPA, a lockbox opened once and a
+  certificate. See [guides/discover.md](../guides/discover.md).
+- **Trial ledger** (`verify --ledger`, MCP `ledger`): counts the variants tried on the same data; `n_trials` is the larger
+  of the count and the declared value.
+- **`verify --suggest-fix FILE`** and MCP tool `suggest_fix`: causal rewrites with a diff.
+- **Hypothesis zoo** (`tests/zoo`): about 170 mechanisms in six disguises (1026 cases), 21 data defects at three
+  frequencies, planted-claim and metamorphic tests, an independent oracle, a ratchet of known gaps, and a generated
+  [honesty scorecard](../guides/honesty-scorecard.md) (`scripts/zoo_scorecard.py`).
+
+### Known limits
+- Static lint accuses unused `shift(-1)` labels and `uniform_filter1d(origin=)`; data checks miss isolated missing bars
+  and 40-bar stale runs. All are listed in `tests/zoo/known_gaps.json`.
+
 ## [v0.51.0] — 2026-10-04
 
 ### Added

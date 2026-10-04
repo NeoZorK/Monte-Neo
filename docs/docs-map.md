@@ -1,4 +1,4 @@
-# Monte-Neo v0.51.0
+# Monte-Neo v0.52.0
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -86,6 +86,15 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/REGISTRATION_RUNBOOK_RU.md - Step-by-step registration in catalogues, Marketplace and repository settings (RU, internal)
 - packaging/conda-forge/meta.yaml - conda-forge recipe draft (not built)
 - .github/ISSUE_TEMPLATE/false_accusation.yml - Issue form for false accusations of honest strategies
+- docs/guides/discover.md - monte-neo discover: verified indicator search (gate, effective trials, search null, lockbox)
+- docs/guides/ledger-and-fixes.md - Trial ledger (--ledger) and suggested causal rewrites (--suggest-fix)
+- docs/guides/honesty-scorecard.md - Generated scorecard of the hypothesis zoo (Wilson intervals, known gaps)
+- scripts/zoo_scorecard.py - Builds the honesty scorecard from the zoo
+- tests/zoo/ - Hypothesis zoo: leak and honest mechanisms, disguises, independent oracle, data defects, claims, metamorphic relations, known gaps
+- src/monte_neo/discover/ - Verified indicator search (DSL, search, causality gate, canaries)
+- src/monte_neo/verify/ledger.py - Append-only trial ledger
+- src/monte_neo/verify/fixes.py - Causal rewrites for suggest_fix
+- src/monte_neo/cli/discover_cmd.py - monte-neo discover command
 - docs/guides/frameworks.md - Adapters (vectorbt, Freqtrade, Lean, Zipline, fills), Jupyter display, pandas accessor, pre-commit, badge, Docker image
 - docs/guides/trap-suite.md - Trap Suite catalogue (80 traps, 35 honest controls) and how to contribute a trap
 - src/monte_neo/bench/ - Honesty Bench (verify agent submissions, compare claims, leaderboard; v1 tasks + answer key)

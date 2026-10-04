@@ -1,7 +1,7 @@
 # Monte-Neo verifier image for checking strategy code you do not trust.
 #
 # The release is pinned by hash, so write the pin first (the version must be on PyPI):
-#   python3 scripts/pin_release.py 0.51.0 > docker/verify/monte-neo.txt
+#   python3 scripts/pin_release.py 0.52.0 > docker/verify/monte-neo.txt
 #   docker build -t monte-neo-verify docker/verify
 #
 # Run it without network, with a read-only file system and resource limits
