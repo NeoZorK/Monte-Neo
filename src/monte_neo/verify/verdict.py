@@ -224,9 +224,10 @@ def _checks_and_report(
         settings["positions"] = mode
         full = to_positions(values, mode)  # per row: what the probes compare and the hash covers
         sig, traded = market.positions(values, mode, model)
-        determinism = truncation = perturbation = None
+        determinism = truncation = perturbation = independence = None
         if fn is not None:
             determinism, truncation, perturbation = market.probes(fn, full, mode, probe_checks)
+            independence = market.independence(fn, full, mode)
     lint = lint_source(src) if src else None
 
     run = simulate(ohlc, sig, model)
@@ -265,6 +266,8 @@ def _checks_and_report(
         rows.external_data_row(*(_outside_data(io_watch, fn) if fn is not None else (None, None))),
         rows.lint_row(lint),
         rows.accuracy_row(accuracy),
+        rows.independence_row(independence, float(dsr["sharpe_annualized"])),
+        rows.performance_row(float(dsr["sharpe_annualized"]), int(rets.size)),
         *rows.economics_rows(model, total_return, breakeven, delay),
         rows.timing_row(timing),
         *rows.statistics_rows(dsr, n_closed, int(min_trades), trials_declared=n_trials is not None, holdout=holdout),

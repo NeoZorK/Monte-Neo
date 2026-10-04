@@ -38,6 +38,7 @@ from monte_neo.verify.lookahead import (
     _checkpoints,
     _status,
     implausible_accuracy,
+    probe_data_independence,
     probe_determinism,
     probe_perturbation,
     probe_truncation,
@@ -87,6 +88,10 @@ class SingleMarket:
             probe_truncation(fn, self.frame, n_checks=n_checks, full=full, positions=mode),
             probe_perturbation(fn, self.frame, n_checks=max(2, n_checks // 4), full=full, positions=mode),
         )
+
+    def independence(self, fn: SignalFn, full: np.ndarray, mode: str) -> dict[str, Any] | None:
+        """Do the positions react to unrelated prices and dates? (one instrument only)"""
+        return probe_data_independence(fn, self.frame, full, positions=mode)
 
     def accuracy(self, traded: np.ndarray) -> dict[str, Any]:
         return implausible_accuracy(self.ohlc["open"], self.ohlc["close"], traded)
@@ -275,6 +280,10 @@ class UniverseMarket:
             "status": _status(found, int(points.size)), "checkpoints": int(points.size),
             "mismatch_count": len(found), "mismatches": found[:MAX_REPORTED],
         }
+
+    def independence(self, fn: SignalFn, full: np.ndarray, mode: str) -> dict[str, Any] | None:
+        """Universes are not probed for stored answers yet."""
+        return None
 
     def accuracy(self, traded: np.ndarray) -> dict[str, Any]:
         return implausible_accuracy(self.ohlc["open"], self.ohlc["close"], traded)
