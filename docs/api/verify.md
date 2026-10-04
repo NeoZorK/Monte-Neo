@@ -44,6 +44,7 @@ monte-neo verify --lint strategy.py other.py   # static lint only (pre-commit); 
 monte-neo verify --precompile      # compile and cache the engines once (Docker images, CI caches)
 ```
 
+- **What the probes cannot prove.** The verifier runs your code, so it cannot prove there is no leak. A strategy that keeps its answer between calls or ignores its input is caught by `data_independence`; a model fitted on the whole file that still reacts to its input is not, and only the lint (`import_time_fit`, `cached_signal`, `global_state`) and `implausible_performance` point at it. Run strategy files with `--isolate` and a fresh process per run when you do not trust them.
 - A strategy file may import modules from its own folder (a helper file, a package) and read a parameter file next to it. Under `--isolate`, reads stay allowed and writes stay blocked. Do not read price data files from strategy code: the `external_data` check fails on that.
 - `--jobs N|auto`: run the look-ahead probes of a strategy file in N worker processes. Helps when
   one `signal()` call takes a noticeable time (ML models); a light strategy is faster with the default 1.
@@ -97,6 +98,8 @@ lines (`In short`, `Why`).
 | `lookahead_perturbation` | lookahead | rewriting bars after `t` (future returns mirrored) changes signals up to `t` |
 | `external_data` | lookahead | strategy code (import or `signal()`) reads a data file (`.csv`, `.parquet`, `.npy`…, or the OHLCV file itself) or opens a network connection: the probes rewrite `df` and cannot see data loaded elsewhere |
 | `lookahead_static_lint` | lookahead | `shift(-k)`, `center=True`, `bfill`, windows over `x[::-1]`, data loaders (`read_csv`, `np.load`, `open`, network imports) outside `if __name__ == "__main__":` (fail); full-series `fit`/`polyfit`, `rank`, `mean`/`std`/`max`…, group `transform("last")`, `x[i + k]` (warn) |
+| `data_independence` | lookahead | the strategy is run on a random walk of the same volatility, then on that walk with every date shifted. Positions that stay the same on both ignore their input (a cache between calls, an array computed in advance, a model fitted on the whole file): warn, and fail when the strategy also earns an annualized Sharpe of 6 or more. Positions that change with the prices pass; positions that change only with the dates (a calendar rule) pass unless the Sharpe is implausible; constant positions are skipped. One instrument only; skipped without strategy code |
+| `implausible_performance` | statistics | warn when the annualized Sharpe after costs is 6 or more over at least 100 bars: far above what honest strategies reach, so look for a leak the probes cannot see |
 | `implausible_accuracy` | lookahead | next-bar direction hit rate ≥ 0.70 over ≥ 100 active bars and binomial z ≥ 3.5 (fail); a high rate that is not significant is a warn |
 | `costs_modeled` | economics | zero commission and slippage (warn) |
 | `net_profitability` | economics | total return ≤ 0 after costs |

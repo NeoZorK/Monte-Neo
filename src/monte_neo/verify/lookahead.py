@@ -152,6 +152,78 @@ def probe_perturbation(
     }
 
 
+# Positions that stay the same on unrelated prices are a stored answer, not a reading of the data.
+SAME_SHARE = 0.999
+FOREIGN_SEED = 20_261_004
+DATE_SHIFT = pd.Timedelta(days=37, hours=7, minutes=13)  # moves weekday, hour and month of every stamp
+
+
+def foreign_table(df: pd.DataFrame, *, shift_dates: bool = False) -> pd.DataFrame:
+    """Same rows and columns as ``df`` with prices from an independent random walk of the same volatility.
+
+    Non-price columns are kept. With ``shift_dates`` every timestamp moves by a fixed span that changes
+    its weekday, hour and month, so a rule tied to the calendar also sees a different input.
+    """
+    out = df.copy()
+    close = df["close"].to_numpy(dtype=np.float64)
+    rets = np.diff(np.log(np.where(close > 0, close, np.nan)))
+    sigma = float(np.nanstd(rets)) if rets.size > 1 and np.isfinite(np.nanstd(rets)) else 0.01
+    sigma = sigma if sigma > 0 else 0.01
+    rng = np.random.default_rng(FOREIGN_SEED)
+    path = float(np.nanmedian(close)) * np.exp(np.cumsum(rng.normal(0.0, sigma, close.size)))
+    prev = np.r_[path[0], path[:-1]]
+    spread = np.abs(rng.normal(0.0, sigma / 2.0, close.size))
+    out["close"] = path
+    out["open"] = prev
+    out["high"] = np.maximum(prev, path) * (1.0 + spread)
+    out["low"] = np.minimum(prev, path) * (1.0 - spread)
+    if shift_dates and "timestamp" in out.columns:
+        stamps = pd.to_datetime(out["timestamp"], utc=True, errors="coerce")
+        out["timestamp"] = stamps + DATE_SHIFT
+    return out
+
+
+def probe_data_independence(
+    fn: SignalFn, df: pd.DataFrame, full: np.ndarray, *, positions: str = "sign"
+) -> dict[str, Any]:
+    """Do the positions change when the prices (and then the dates) are replaced by unrelated ones?
+
+    A strategy that reads its input must answer differently on a different random walk. One that
+    answers the same on a foreign price path *and* on shifted dates ignores both: it holds a stored
+    answer (a cache between calls, an array computed in advance, a model fitted on the whole file).
+    Identical answers on foreign prices but different ones on shifted dates mean a calendar rule, which
+    is legitimate. A strategy that never changes its position says nothing either way.
+    """
+    changes = int(np.count_nonzero(np.diff(full) != 0)) if full.size > 1 else 0
+    if changes < 4:
+        return {"status": "skip", "reason": "positions (almost) never change", "position_changes": changes}
+    tables = [foreign_table(df)]
+    if "timestamp" in df.columns:
+        tables.append(foreign_table(df, shift_dates=True))
+    try:
+        answers = run_positions(fn, df, tables, positions)
+    except Exception as exc:  # a strategy that cannot run on other prices says nothing about storing answers
+        return {"status": "skip", "reason": f"the strategy failed on the foreign table: {type(exc).__name__}"}
+    same = [float(np.mean(a == full)) for a in answers]
+    same_prices = same[0] >= SAME_SHARE
+    same_dates = same[1] >= SAME_SHARE if len(same) > 1 else None
+    stored = same_prices and same_dates is not False
+    if not same_prices:
+        verdict = "reads the prices"
+    elif same_dates is False:
+        verdict = "depends on the calendar only"
+    else:
+        verdict = "ignores prices and dates"
+    return {
+        "status": "warn" if stored else "pass",
+        "kind": verdict,
+        "same_on_foreign_prices": same[0],
+        "same_on_foreign_prices_and_dates": same[1] if len(same) > 1 else None,
+        "position_changes": changes,
+        "stored_answer": bool(stored),
+    }
+
+
 def _hit_rate(pos: np.ndarray, move: np.ndarray) -> tuple[float, int]:
     mask = (pos != 0) & (move != 0)
     n = int(np.count_nonzero(mask))

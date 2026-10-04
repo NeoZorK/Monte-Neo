@@ -192,6 +192,10 @@ def _fits_a_subset(call: ast.Call) -> bool:
     return bool(call.args) and isinstance(call.args[0], ast.Subscript)
 
 
+_CACHING_DECORATORS = {"lru_cache", "cache", "cached_property", "memoize", "cached"}
+_TRAIN_METHODS = {"fit", "fit_transform", "partial_fit", "train"}
+
+
 def _is_true(node: ast.AST | None) -> bool:
     return isinstance(node, ast.Constant) and node.value is True
 
@@ -214,6 +218,7 @@ class _Visitor(ast.NodeVisitor):
         self._in_window = 0
         # Group aggregates followed by a positive shift use completed groups only.
         self._shifted_aggs: set[int] = set()
+        self._functions = 0  # depth of function bodies: module level is 0
 
     def _add(self, node: ast.AST, rule: str, severity: str, message: str) -> None:
         if self._in_window and rule.startswith("full_sample"):
@@ -244,8 +249,29 @@ class _Visitor(ast.NodeVisitor):
     def visit_Lambda(self, node: ast.Lambda) -> Any:
         return self._windowed(node) if id(node) in self._window_lambdas else self.generic_visit(node)
 
-    def visit_FunctionDef(self, node: ast.FunctionDef) -> Any:
-        return self._windowed(node) if node.name in self._window_names else self.generic_visit(node)
+    def visit_FunctionDef(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> Any:
+        for deco in node.decorator_list:
+            target = deco.func if isinstance(deco, ast.Call) else deco
+            name = target.attr if isinstance(target, ast.Attribute) else getattr(target, "id", "")
+            if name in _CACHING_DECORATORS:
+                self._add(
+                    node, "cached_signal", "warn",
+                    f"@{name} keeps results between calls: a cached answer computed on the whole table "
+                    "passes the truncation probe without being causal",
+                )
+        self._functions += 1
+        try:
+            return self._windowed(node) if node.name in self._window_names else self.generic_visit(node)
+        finally:
+            self._functions -= 1
+
+    visit_AsyncFunctionDef = visit_FunctionDef  # noqa: N815 (the name is ast.NodeVisitor's dispatch key)
+
+    def visit_Global(self, node: ast.Global) -> Any:
+        self._add(
+            node, "global_state", "warn",
+            "a global variable survives between calls: state kept from the full table can leak into truncated runs",
+        )
 
     @staticmethod
     def _is_series_ref(node: ast.AST) -> bool:
@@ -308,6 +334,12 @@ class _Visitor(ast.NodeVisitor):
         ):
             self._external(node, f"{node.func.attr}()")
         self._split_rules(node)
+        if self._functions == 0 and isinstance(node.func, ast.Attribute) and node.func.attr in _TRAIN_METHODS:
+            self._add(
+                node, "import_time_fit", "warn",
+                f".{node.func.attr}() runs when the module loads, on data the look-ahead probes never change: "
+                "a model fitted on the whole file carries the future into every later call",
+            )
         if isinstance(node.func, ast.Attribute):
             attr = node.func.attr
             if attr == "shift":

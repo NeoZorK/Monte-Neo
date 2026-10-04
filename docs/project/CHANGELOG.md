@@ -3,6 +3,25 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.51.0] — 2026-10-04
+
+### Added
+- **`data_independence` check.** The strategy is run on a random walk of the same volatility, then on that walk with every
+  date shifted. A strategy whose positions do not change on either one ignores its input: a cache between calls, an
+  array computed in advance, a table keyed by date. It is a warning, and a failure (REJECT) when the strategy also
+  earns an annualized Sharpe of 6 or more. Calendar rules (hour of day, weekday) are recognised and pass.
+- **`implausible_performance` check**: a warning when the annualized Sharpe after costs is 6 or more.
+- Lint rules `cached_signal` (`lru_cache`, `cache`, `cached_property`), `import_time_fit` (`.fit()` when the module loads)
+  and `global_state` (`global`), all warnings.
+
+### Fixed
+- **A leaking strategy that kept its answer between calls passed as PASS.** A strategy that computed the leaky answer once
+  on the full table and returned prefixes (or held an array computed in advance) beat the truncation and perturbation
+  probes, and nothing else looked at its Sharpe of 57. Found by measuring the plan of stages 8-10; the three variants are
+  now rejected (`tests/unit/test_verify_stateful.py`). Model fits on the whole file that still react to their input
+  remain a limit of any verifier that runs your code: see "What the probes cannot prove" in the API guide.
+- Cost: one probe adds two extra runs of `signal()` (0.4 s on 50,000 bars).
+
 ## [v0.50.0] — 2026-10-01
 
 **Latency audit (experimental).** The new `--quotes` checks are context: they warn, they do not fail the verdict, and they were
