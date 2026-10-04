@@ -148,7 +148,7 @@ def _block_p(returns: np.ndarray, seed: int, samples: int = 1000) -> float:
 def causality_gate(source: str, df: pd.DataFrame) -> bool:
     """True when the positions at bars <= t do not change when the bars after t are removed."""
     scope: dict[str, Any] = {"__name__": "discover_gate"}
-    exec(compile(source, "<discover>", "exec"), scope)  # noqa: S102 - generated from a tree or from the canary list below
+    exec(compile(source, "<discover>", "exec"), scope)  # noqa: S102  # nosec B102 - generated from a tree or from the canary list below
     fn = scope["signal"]
     full = np.asarray(fn(df.copy()), dtype=float)
     n = len(df)
@@ -282,7 +282,7 @@ def _certify(data: pd.DataFrame, source: str, cfg: Config, n_eff: int, ppy: floa
     from monte_neo.verify import model_from_costs, verify_strategy
 
     scope: dict[str, Any] = {"__name__": "discover_winner"}
-    exec(compile(source, "<discover>", "exec"), scope)  # noqa: S102 - generated from a tree
+    exec(compile(source, "<discover>", "exec"), scope)  # noqa: S102  # nosec B102 - generated from a tree
     model = model_from_costs(
         commission_bps=cfg.cost_bps / 2, slippage_bps=cfg.cost_bps / 2, side_mode=cfg.side, warmup_bars=130, n_bars=len(data)
     )
