@@ -102,6 +102,7 @@ def verify_strategy(
     isolate: bool = False,
     claim: dict[str, Any] | str | Path | None = None,
     symbol_costs: dict[str, Any] | str | Path | None = None,
+    ledger: str | Path | bool | None = None,
 ) -> dict[str, Any]:
     """Verify one strategy and return a ``strategy-verdict/1`` report.
 
@@ -122,6 +123,8 @@ def verify_strategy(
     ``claim`` (a dict, JSON text or a JSON file: ``sharpe``, ``total_return``, ``max_drawdown``,
     ``n_trades``, ``win_rate``, ``profit_factor``) is compared with the verified numbers; an
     overclaim fails the ``claim_consistency`` check.
+    ``ledger`` (``True`` for ``.monte-neo/ledger.jsonl``, or a path) counts the variants tried on this data in an
+    append-only, hash-chained file; the larger of that count and ``n_trials`` is used for the Deflated Sharpe.
     ``symbol_costs`` (a dict, JSON text or a JSON file: ``{"AAA": {"commission_bps": 2, "slippage_bps": 1},
     "default": {...}}``) gives a universe different costs per symbol; see :mod:`monte_neo.verify.symbol_costs`.
     """
@@ -160,14 +163,51 @@ def verify_strategy(
             raise ValueError("jobs, timeout and isolate need strategy code in a file (strategy='file.py')")
         with io_watch:
             fn, src = _resolve_strategy(strategy, signal_fn, source)
+    book = None
+    if ledger:
+        from monte_neo.verify.ledger import Ledger, ledger_row, variant_id
+
+        book = Ledger(None if ledger is True else ledger)
+        data_id = _sha256(market.data_bytes())[:16]
+        variant = variant_id(src, _signals_array(signals))
+        chain = book.check()
+        counted = book.count_with(variant, data_id)
+        declared = n_trials
+        n_trials = max(int(n_trials or 1), counted)
+        row = ledger_row(counted, declared, chain, book.path)
+        if row["status"] != "pass":
+            row["status"] = "info"  # context only: a recheck has no ledger, so it must not move the verdict
+        extra_checks = [*(extra_checks or []), row]
     try:
-        return _checks_and_report(
+        report = _checks_and_report(
             df, market, fn, src, signals, settings, io_watch, model, n_trials, trial_sharpes,
             periods_per_year, holdout_fraction, min_trades, probe_checks, positions, extra_checks, extra,
         )
+        if book is not None:
+            entry = book.record(
+                variant=variant, data_id=data_id, sharpe=float(report["metrics"].get("sharpe_annualized") or float("nan")),
+                verdict=report["verdict"], certificate_id=report["certificate_id"],
+            )
+            report["ledger"] = {"path": str(book.path), "variants_counted": counted, "n_trials_used": n_trials, "entry": entry["seq"], "chain_ok": chain["ok"]}
+        return report
     finally:
         if runner is not None:
             runner.close()
+
+
+def _signals_array(signals: Any) -> np.ndarray | None:
+    """Positions given as an array or a file, for the ledger's variant id (``None`` when they cannot be read cheaply)."""
+    if signals is None:
+        return None
+    if isinstance(signals, str | Path):
+        try:
+            return np.frombuffer(Path(signals).read_bytes(), dtype=np.uint8)
+        except OSError:
+            return None
+    try:
+        return np.asarray(signals)
+    except (TypeError, ValueError):
+        return None
 
 
 def _runner_for(

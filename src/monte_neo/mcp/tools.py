@@ -97,6 +97,7 @@ def verify_strategy(
     trail_pct: float = 0.0,
     symbol_costs: dict[str, Any] | str | None = None,
     compact: bool = True,
+    ledger: bool = False,
 ) -> dict[str, Any]:
     """Verify a strategy backtest and return a strategy-verdict/1 certificate.
 
@@ -106,6 +107,8 @@ def verify_strategy(
         strategy_path: Python file 'path.py[:func]' defining func(df) -> positions.
             Enables look-ahead probes and static lint. Runs with your permissions.
         n_trials: Number of variants tried before choosing this one (selection bias).
+        ledger: Count the variants tried on this data in .monte-neo/ledger.jsonl (hash-chained); the larger of the
+            count and n_trials deflates the Sharpe. Turn it on when you try several variants.
         commission_bps: Commission per side in basis points.
         slippage_bps: Slippage per side in basis points.
         side_mode: 'long_flat' or 'long_short' (default inferred).
@@ -137,7 +140,7 @@ def verify_strategy(
     runs = {"timeout": timeout, "jobs": jobs, "isolate": isolate} if strategy_path else {}
     report = _verify(
         df, signals=signals_path, strategy=strategy_path, model=model, n_trials=n_trials, positions=positions, claim=claim,
-        symbol_costs=symbol_costs, **runs
+        symbol_costs=symbol_costs, ledger=ledger or None, **runs
     )
     return _compact(report) if compact else report
 
@@ -420,6 +423,21 @@ def verify_quotes(
     return _compact(report) if compact else report
 
 
+def suggest_fix(strategy_path: str) -> dict[str, Any]:
+    """Suggest a causal rewrite of a strategy file that reads the future (negative shifts, centred windows, whole-table statistics...).
+
+    Returns the rewrites (rule, line, before, after), the patched source, a unified diff and the lint findings that
+    remain. The patch keeps the shape of the strategy, not its meaning: verify it with verify_strategy before using it,
+    and write the patched source to a new file yourself (nothing is written here). Comments are not kept.
+    """
+    from monte_neo.verify.fixes import suggest_fixes
+
+    path = Path(strategy_path.split(":")[0])
+    if not path.is_file():
+        raise FileNotFoundError(f"strategy file not found: {path}")
+    return suggest_fixes(path.read_text(encoding="utf-8"))
+
+
 def verdict_schema() -> dict[str, Any]:
     """JSON schema of the strategy-verdict/1 certificate."""
     from monte_neo.verify import VERDICT_JSON_SCHEMA
@@ -463,6 +481,7 @@ TOOLS: tuple[Callable[..., dict[str, Any]], ...] = (
     cost_stress,
     render_report,
     verify_quotes,
+    suggest_fix,
     verdict_schema,
     verifier_manifest,
 )
@@ -475,6 +494,7 @@ __all__ = [
     "cost_stress",
     "probe_lookahead",
     "render_report",
+    "suggest_fix",
     "verdict_schema",
     "verifier_manifest",
     "verify_grid",

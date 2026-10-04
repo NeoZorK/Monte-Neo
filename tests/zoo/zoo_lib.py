@@ -83,3 +83,14 @@ def oracle_causal(expr: str, rule: str, pre: tuple[str, ...], df: pd.DataFrame) 
         if not np.array_equal(head, full[: t + 1]):
             return False
     return True
+
+
+def oracle_source(source: str, df: pd.DataFrame) -> bool:
+    """:func:`oracle_causal` for a complete ``signal(df)`` source."""
+    fn = compile_signal(source)
+    full = np.asarray(fn(df.copy()), dtype=float)
+    for t in (151, 233, 307, 419, 523, 607, 701, 773, 859, 911, 997, 1087):
+        head = np.asarray(fn(df.iloc[: t + 1].reset_index(drop=True).copy()), dtype=float)
+        if not np.array_equal(head, full[: t + 1]):
+            return False
+    return True
