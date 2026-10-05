@@ -95,6 +95,11 @@ def _run(argv: list[str], console: Console) -> int:
         console.print(("dry  " if info["dry_run"] else "ran  ") + line)
     for line in info["skipped"]:
         console.print(f"skip {line} (strategy.py exists: the first final answer counts)")
+    for line in info.get("failed", []):
+        console.print(f"[red]failed:[/] {line}", markup=True, highlight=False)
+    if info.get("failed"):
+        console.print("[red]The agent did not finish. Full output: <workspace>/<agent>/task-N/transcript.log. Fix that first; a task with no strategy.py is run again.[/]")
+        return 4
     if not info["dry_run"]:
         console.print(f"Next: monte-neo bench collect <bench-dir> --workspaces {args.workspaces}")
     return 0
