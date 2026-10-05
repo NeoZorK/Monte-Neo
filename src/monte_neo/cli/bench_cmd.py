@@ -85,9 +85,10 @@ def _run(argv: list[str], console: Console) -> int:
     p.add_argument("--agents", required=True, help="Comma-separated agent names, e.g. claude-code")
     p.add_argument("--dry-run", action="store_true", help="Print what would run and check that each CLI is installed; run nothing")
     p.add_argument("--timeout", type=int, default=3600, help="Seconds per task (default 3600)")
+    p.add_argument("--model", help="Model to pin for every agent that takes --model (claude-code: sonnet, opus or a full name); record it with the results")
     args = p.parse_args(argv)
     try:
-        info = run_agents(args.workspaces, [a.strip() for a in args.agents.split(",") if a.strip()], dry_run=args.dry_run, timeout=args.timeout)
+        info = run_agents(args.workspaces, [a.strip() for a in args.agents.split(",") if a.strip()], dry_run=args.dry_run, timeout=args.timeout, model=args.model)
     except ValueError as exc:
         console.print(f"[red]run failed: {exc}[/]")
         return 3
