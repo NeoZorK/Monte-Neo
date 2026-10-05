@@ -84,6 +84,7 @@ def test_certificate_records_settings_and_recheck_uses_them(df, tmp_path: Path) 
     settings = report["reproducibility"]["settings"]
     assert settings == {
         "min_trades": 1, "holdout_fraction": 0.4, "probe_checks": 24, "periods_per_year": None, "positions": "sign",
+        "repaint": "auto", "signal_timing": "close",
     }
     cert = tmp_path / "cert.json"
     cert.write_text(json.dumps(report), encoding="utf-8")

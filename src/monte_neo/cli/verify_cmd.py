@@ -44,6 +44,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--ledger", nargs="?", const="1", default=None, metavar="PATH",
         help="Count the variants tried on this data in an append-only ledger (default .monte-neo/ledger.jsonl); the larger of the count and --n-trials is used",
     )
+    p.add_argument("--repaint", choices=["off", "auto", "strict"], default="auto", help="How densely to check that a signal never changes after it was shown (default auto; strict checks many more prefixes)")
+    p.add_argument("--signal-timing", choices=["close", "open"], default="close", help="'open': the signal is declared known at the bar's open, so a signal that needs the bar's own prices fails (default close)")
     p.add_argument("--grid", help="Parameter grid as JSON or a .json file, e.g. '{\"fast\": [10, 20], \"slow\": [50, 100]}' (needs --strategy)")
     p.add_argument("--folds", type=int, default=4, help="Walk-forward folds for --grid (default 4)")
     p.add_argument("--commission-bps", type=float, default=5.0, help="Commission per side in bps (default 5)")
@@ -381,7 +383,8 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
         else:
             report = verify_strategy(
                 df, signals=args.signals, strategy=args.strategy, n_trials=args.n_trials,
-                ledger=(True if args.ledger == "1" else args.ledger) or None, **common,
+                ledger=(True if args.ledger == "1" else args.ledger) or None,
+                repaint=args.repaint, signal_timing=args.signal_timing, **common,
             )
     except Exception as exc:  # input errors must not look like a verdict
         console.print(f"[red]verify failed: {exc}[/]")

@@ -39,6 +39,9 @@ _DATA_READERS = {
     "read_table", "read_fwf", "read_orc", "read_sql", "read_sql_query", "read_sql_table", "read_ipc",
     "read_text", "read_bytes", "loadtxt", "genfromtxt", "fromfile", "memmap",
 }
+# Pivots are known only after later bars confirm them; a signal on the pivot bar repaints.
+_PIVOT_FINDERS = {"find_peaks", "find_peaks_cwt", "argrelextrema", "argrelmax", "argrelmin"}
+_HTF_AGGS = {"last", "first", "max", "min", "mean", "sum", "ohlc", "median"}
 _NETWORK_MODULES = {"requests", "urllib", "httpx", "aiohttp", "socket", "yfinance", "ccxt", "websocket", "websockets"}
 
 
@@ -84,6 +87,11 @@ def _on_groupby(node: ast.AST) -> bool:
         else:
             node = node.value
     return False
+
+
+def _on_resample(node: ast.AST) -> bool:
+    """True when ``node`` is ``x.resample(...)`` (the call whose aggregate is taken)."""
+    return isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "resample"
 
 
 def _is_timestamp_column(node: ast.AST | None) -> bool:
@@ -219,6 +227,7 @@ class _Visitor(ast.NodeVisitor):
         # Group aggregates followed by a positive shift use completed groups only.
         self._shifted_aggs: set[int] = set()
         self._functions = 0  # depth of function bodies: module level is 0
+        self._shifted: set[int] = set()  # resample aggregates that are shifted afterwards
 
     def _add(self, node: ast.AST, rule: str, severity: str, message: str) -> None:
         if self._in_window and rule.startswith("full_sample"):
@@ -250,6 +259,7 @@ class _Visitor(ast.NodeVisitor):
         return self._windowed(node) if id(node) in self._window_lambdas else self.generic_visit(node)
 
     def visit_FunctionDef(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> Any:
+        self._repaint_name(node, node.name)
         for deco in node.decorator_list:
             target = deco.func if isinstance(deco, ast.Call) else deco
             name = target.attr if isinstance(target, ast.Attribute) else getattr(target, "id", "")
@@ -266,6 +276,13 @@ class _Visitor(ast.NodeVisitor):
             self._functions -= 1
 
     visit_AsyncFunctionDef = visit_FunctionDef  # noqa: N815 (the name is ast.NodeVisitor's dispatch key)
+
+    def _repaint_name(self, node: ast.AST, name: str) -> None:
+        low = name.lower().replace("_", "")
+        if "zigzag" in low:
+            self._add(node, "repaint_zigzag", "warn", f"{name}: a ZigZag leg is redrawn until a later bar confirms it, so its signal repaints; use the confirmed leg, shifted by the confirmation lag")
+        if low == "lookaheadon":
+            self._add(node, "lookahead_on", "warn", "lookahead_on shows a higher-timeframe bar before it closed")
 
     def visit_Global(self, node: ast.Global) -> Any:
         self._add(
@@ -334,6 +351,26 @@ class _Visitor(ast.NodeVisitor):
         ):
             self._external(node, f"{node.func.attr}()")
         self._split_rules(node)
+        if _kw(node, "lookahead") is not None and (
+            _is_true(_kw(node, "lookahead")) or (isinstance(_kw(node, "lookahead"), ast.Constant) and str(_kw(node, "lookahead").value).lower() in ("on", "lookahead_on"))  # type: ignore[union-attr]
+        ):
+            self._add(node, "lookahead_on", "warn", "lookahead on shows a higher-timeframe bar before it closed: its value is future information on every lower-timeframe bar")
+        if isinstance(node.func, ast.Attribute) and node.func.attr == "shift":
+            inner = node.func.value
+            while isinstance(inner, ast.Call | ast.Attribute):
+                if isinstance(inner, ast.Call) and isinstance(inner.func, ast.Attribute) and inner.func.attr in _HTF_AGGS and _on_resample(inner.func.value):
+                    self._shifted.add(id(inner))
+                inner = inner.func if isinstance(inner, ast.Call) else inner.value
+        called = node.func.attr if isinstance(node.func, ast.Attribute) else getattr(node.func, "id", "")
+        if called in _PIVOT_FINDERS:
+            self._add(node, "unconfirmed_pivot", "warn", f"{called} finds pivots that later bars confirm: a signal on the pivot bar repaints; shift it by the confirmation lag")
+        if (
+            isinstance(node.func, ast.Attribute)
+            and node.func.attr in _HTF_AGGS
+            and _on_resample(node.func.value)
+            and id(node) not in self._shifted
+        ):
+            self._add(node, "htf_without_shift", "warn", "a higher-timeframe bar is used on lower-timeframe bars before it closed: shift(1) the resampled series before aligning it back")
         if self._functions == 0 and isinstance(node.func, ast.Attribute) and node.func.attr in _TRAIN_METHODS:
             self._add(
                 node, "import_time_fit", "warn",

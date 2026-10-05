@@ -38,6 +38,9 @@ from monte_neo.verify.market import SingleMarket, UniverseMarket, market_for
 from monte_neo.verify.microstructure import capacity, capacity_row, spread_estimate, spread_row
 from monte_neo.verify.notebook import Certificate
 from monte_neo.verify.quality import data_quality, quality_row, spike_profit_share
+from monte_neo.verify.repaint import MODES as REPAINT_MODES
+from monte_neo.verify.repaint import TIMINGS as SIGNAL_TIMINGS
+from monte_neo.verify.repaint import repaint_rows
 from monte_neo.verify.report_data import MAX_TRADES_FOR_STATS, build_charts, trade_stats
 from monte_neo.verify.schema import DISCLAIMER, VERDICT_SCHEMA_ID, aggregate_verdict, to_jsonable
 from monte_neo.verify.stability import rolling_stability, stability_row
@@ -103,6 +106,8 @@ def verify_strategy(
     claim: dict[str, Any] | str | Path | None = None,
     symbol_costs: dict[str, Any] | str | Path | None = None,
     ledger: str | Path | bool | None = None,
+    repaint: str = "auto",
+    signal_timing: str = "close",
 ) -> dict[str, Any]:
     """Verify one strategy and return a ``strategy-verdict/1`` report.
 
@@ -125,6 +130,9 @@ def verify_strategy(
     overclaim fails the ``claim_consistency`` check.
     ``ledger`` (``True`` for ``.monte-neo/ledger.jsonl``, or a path) counts the variants tried on this data in an
     append-only, hash-chained file; the larger of that count and ``n_trials`` is used for the Deflated Sharpe.
+    ``repaint`` (``off``, ``auto`` or ``strict``) sets how densely the signal is checked for changing after it was shown
+    (history) and while the bar forms; ``signal_timing="open"`` declares the signal known at the bar's open, so a signal
+    that needs the bar's own prices fails. See :mod:`monte_neo.verify.repaint`.
     ``symbol_costs`` (a dict, JSON text or a JSON file: ``{"AAA": {"commission_bps": 2, "slippage_bps": 1},
     "default": {...}}``) gives a universe different costs per symbol; see :mod:`monte_neo.verify.symbol_costs`.
     """
@@ -136,6 +144,10 @@ def verify_strategy(
         raise ValueError(f"holdout_fraction must be between 0 and 1, got {holdout_fraction}")
     if positions not in POSITION_MODES:
         raise ValueError(f"positions must be one of {POSITION_MODES}, got {positions!r}")
+    if repaint not in REPAINT_MODES:
+        raise ValueError(f"repaint must be one of {REPAINT_MODES}, got {repaint!r}")
+    if signal_timing not in SIGNAL_TIMINGS:
+        raise ValueError(f"signal_timing must be one of {SIGNAL_TIMINGS}, got {signal_timing!r}")
     df = load_ohlcv(ohlcv)
     market = market_for(df)
     n = market.n_bars
@@ -149,6 +161,8 @@ def verify_strategy(
         "probe_checks": int(probe_checks),
         "periods_per_year": float(periods_per_year) if periods_per_year else None,
         "positions": positions,
+        "repaint": repaint,
+        "signal_timing": signal_timing,
     }
     if claim is not None:
         settings["claim"] = parse_claim(claim)  # part of the certificate: a recheck compares the same claim
@@ -264,10 +278,11 @@ def _checks_and_report(
         settings["positions"] = mode
         full = to_positions(values, mode)  # per row: what the probes compare and the hash covers
         sig, traded = market.positions(values, mode, model)
-        determinism = truncation = perturbation = independence = None
+        determinism = truncation = perturbation = independence = repaint_history = repaint_live = None
         if fn is not None:
             determinism, truncation, perturbation = market.probes(fn, full, mode, probe_checks)
             independence = market.independence(fn, full, mode)
+            repaint_history, repaint_live = market.repaint(fn, full, mode, settings["repaint"], settings["signal_timing"])
     lint = lint_source(src) if src else None
 
     run = simulate(ohlc, sig, model)
@@ -304,6 +319,7 @@ def _checks_and_report(
         rows.probe_row("lookahead_truncation", truncation, "truncation probe"),
         rows.probe_row("lookahead_perturbation", perturbation, "future-perturbation probe"),
         rows.external_data_row(*(_outside_data(io_watch, fn) if fn is not None else (None, None))),
+        *repaint_rows(repaint_history, repaint_live),
         rows.lint_row(lint),
         rows.accuracy_row(accuracy),
         rows.independence_row(independence, float(dsr["sharpe_annualized"])),

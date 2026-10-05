@@ -56,24 +56,59 @@ def _series_like(node: ast.AST) -> bool:
     return isinstance(node, ast.Attribute) and _series_like(node.value)
 
 
+_HTF_AGGS = {"last", "first", "max", "min", "mean", "sum", "ohlc", "median"}
+
+
+def _is_htf_aggregate(node: ast.AST) -> bool:
+    """``x.resample(...).last()`` and the like."""
+    return (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr in _HTF_AGGS
+        and isinstance(node.func.value, ast.Call)
+        and isinstance(node.func.value.func, ast.Attribute)
+        and node.func.value.func.attr == "resample"
+    )
+
+
 class _Causalize(ast.NodeTransformer):
     def __init__(self) -> None:
         self.changes: list[dict[str, Any]] = []
         self._apply_depth = 0
+        self._shifted: set[int] = set()
 
     def _note(self, node: ast.AST, rule: str, before: str, after: str, why: str) -> None:
         self.changes.append({"line": int(getattr(node, "lineno", 0)), "rule": rule, "before": before, "after": after, "note": why})
 
+    def _mark_shifted_htf(self, node: ast.Call) -> None:
+        """A resample aggregate that is shifted afterwards needs no further shift."""
+        inner = node.func.value if isinstance(node.func, ast.Attribute) else None
+        while isinstance(inner, ast.Call | ast.Attribute):
+            if isinstance(inner, ast.Call) and _is_htf_aggregate(inner):
+                self._shifted.add(id(inner))
+            inner = inner.func if isinstance(inner, ast.Call) else inner.value
+
     def visit_Call(self, node: ast.Call) -> ast.AST:
         before = ast.unparse(node)
+        if isinstance(node.func, ast.Attribute) and node.func.attr == "shift":
+            self._mark_shifted_htf(node)
+        htf = _is_htf_aggregate(node) and id(node) not in self._shifted
         is_apply = isinstance(node.func, ast.Attribute) and node.func.attr in {"apply", "agg", "aggregate", "transform"} and _chain_has(node.func.value, {"rolling", "expanding"})
         self._apply_depth += int(is_apply)
         self.generic_visit(node)
         self._apply_depth -= int(is_apply)
+        flag = next((k for k in node.keywords if k.arg == "lookahead" and (isinstance(k.value, ast.Constant) and (k.value.value is True or str(k.value.value).lower() in {"on", "lookahead_on"}))), None)
+        if flag is not None:
+            flag.value = ast.Constant("off")
+            self._note(node, "lookahead_on", before, ast.unparse(node), "the higher-timeframe value is no longer shown before its bar closes")
+
         if not isinstance(node.func, ast.Attribute):
             return node
         attr, target = node.func.attr, node.func.value
-
+        if htf:
+            shifted = ast.Call(func=ast.Attribute(value=node, attr="shift", ctx=ast.Load()), args=[ast.Constant(1)], keywords=[])
+            self._note(node, "htf_without_shift", before, ast.unparse(shifted), "a higher-timeframe bar is used only after it closed")
+            return shifted
         if attr in {"shift", "pct_change", "diff"} and (node.args or node.keywords):
             arg = node.args[0] if node.args else next((k.value for k in node.keywords if k.arg == "periods"), None)
             if _negative(arg):

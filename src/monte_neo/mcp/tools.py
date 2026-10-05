@@ -99,6 +99,8 @@ def verify_strategy(
     symbol_costs: dict[str, Any] | str | None = None,
     compact: bool = True,
     ledger: bool = False,
+    repaint: str = "auto",
+    signal_timing: str = "close",
 ) -> dict[str, Any]:
     """Verify a strategy backtest and return a strategy-verdict/1 certificate.
 
@@ -128,6 +130,10 @@ def verify_strategy(
         trail_pct: Trailing stop in percent from the best price since entry (default 0 = off).
         symbol_costs: Universes only: costs by symbol, e.g. {"AAA": {"commission_bps": 2, "slippage_bps": 1}, "default": {"slippage_bps": 10}}
             (or a JSON file path). A symbol takes its own values, then "default", then the uniform costs above.
+        repaint: 'off', 'auto' or 'strict': how densely to check that a signal never changes after it was shown (history)
+            and while the bar forms. A signal that changes after it was shown fails.
+        signal_timing: 'close' (default) or 'open': 'open' declares the signal known at the bar's open; one that needs the
+            bar's own prices fails.
         compact: Drop details of passing checks to keep the response short.
     """
     from monte_neo.verify import verify_strategy as _verify
@@ -141,7 +147,7 @@ def verify_strategy(
     runs = {"timeout": timeout, "jobs": jobs, "isolate": isolate} if strategy_path else {}
     report = _verify(
         df, signals=signals_path, strategy=strategy_path, model=model, n_trials=n_trials, positions=positions, claim=claim,
-        symbol_costs=symbol_costs, ledger=ledger or None, **runs
+        symbol_costs=symbol_costs, ledger=ledger or None, repaint=repaint, signal_timing=signal_timing, **runs
     )
     return _compact(report) if compact else report
 

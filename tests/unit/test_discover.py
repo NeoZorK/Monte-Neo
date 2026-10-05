@@ -137,3 +137,10 @@ def test_bad_settings_are_refused(kw: dict) -> None:
         _run(_walk(), **kw)
     with pytest.raises(ValueError):
         discover(_walk(300))
+
+
+def test_the_result_reports_repainting_and_the_repainting_canaries_are_in_the_list() -> None:
+    assert sum("groupby" in c or "center=True" in c or "shift(-1)" in c for c in search_mod.CANARIES) >= 3
+    result = _run(_walk(), budget=40, null_runs=2)
+    assert result["repaint"]["confirmation"] == "close" and result["repaint"]["history"] == "pass"
+    assert result["repaint"]["flicker_rate"] is not None

@@ -13,7 +13,7 @@ from zoo_lib import DISGUISES, build, compile_signal, dataset
 from monte_neo.verify import verify_strategy
 
 DYNAMIC = ("lookahead_truncation", "lookahead_perturbation")
-ACCUSATION = (*DYNAMIC, "external_data", "lookahead_static_lint", "implausible_accuracy", "data_independence", "determinism")
+ACCUSATION = (*DYNAMIC, "repaint_history", "external_data", "lookahead_static_lint", "implausible_accuracy", "data_independence", "determinism")
 KNOWN_GAPS_FILE = Path(__file__).with_name("known_gaps.json")
 DF = dataset()
 

@@ -18,6 +18,8 @@ NEXT_ACTIONS: dict[str, str] = {
     "determinism": "Make the signal deterministic: seed every RNG and avoid wall-clock or I/O inside signal().",
     "lookahead_truncation": "The signal at bar t changes when later bars are removed: compute features only from rows <= t (no shift(-k), centered windows, bfill or full-sample stats).",
     "lookahead_perturbation": "Past signals change when the future is rewritten: remove whole-series statistics (mean/std/min/max over all rows) and future-dependent fills.",
+    "repaint_history": "The signal of a closed bar changes when later bars arrive (ZigZag, confirmed-later pivots, centred windows, whole-series statistics): use only information available at the bar, or confirm the pattern n bars later and shift the signal by n.",
+    "repaint_live": "The signal is declared known at the open but depends on the bar's own high, low, close or volume: shift it by one bar, or declare signal_timing='close' and act only after the bar closed.",
     "survivorship": "Build the universe point-in-time: include the symbols that were delisted or dropped during the test, or the backtest only trades survivors.",
     "external_data": "signal() must use only the df it is given: pass parameters as function defaults and do not load data from files or the network, which the look-ahead probes cannot see.",
     "lookahead_static_lint": "Fix the flagged source lines (negative shift, center=True, backward fill) and re-run verify.",

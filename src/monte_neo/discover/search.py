@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 
 from monte_neo.discover import dsl
+from monte_neo.verify import repaint
 from monte_neo.verify.reality import reality_check
 from monte_neo.verify.stats import infer_periods_per_year
 
@@ -157,7 +158,10 @@ def causality_gate(source: str, df: pd.DataFrame) -> bool:
         head = np.asarray(fn(df.iloc[: t + 1].reset_index(drop=True).copy()), dtype=float)
         if not np.array_equal(head, full[: t + 1]):
             return False
-    return True
+    # Appending bars or restating the last ones must not redraw what was already shown (no repainting).
+    longer = np.asarray(fn(repaint._extend(df, 12)), dtype=float)[:n]
+    revised = np.asarray(fn(repaint._revise(df, repaint.REVISED_BARS)), dtype=float)[: n - repaint.REVISED_BARS]
+    return bool(np.array_equal(longer, full) and np.array_equal(revised, full[: n - repaint.REVISED_BARS]))
 
 
 CANARIES = (
@@ -165,6 +169,10 @@ CANARIES = (
     'df["close"].rank(pct=True)', 'df["close"].where(np.arange(len(df)) % 5 == 0).bfill()', 'df["close"].shift(-20) - df["close"]',
     'df["high"].shift(-2) - df["close"]', 'df["close"].clip(upper=df["close"].quantile(0.8))',
     'df["close"].diff(-4)',
+    # Repainters: pivots and higher-timeframe bars that are shown before later bars confirm them.
+    'df["high"].where(df["high"] > df["high"].shift(-1)) - df["close"]',
+    'df["close"].groupby(np.arange(len(df)) // 24).transform("last") - df["close"]',
+    'df["low"].rolling(9, center=True).min() - df["low"]',
 )
 
 
@@ -270,6 +278,7 @@ def discover(df: pd.DataFrame, config: Config | None = None) -> dict[str, Any]:
         },
         "lockbox": {"opened": 1, "sharpe": round(lock_sharpe, 4), "p": round(lock_p, 4), "bars": int(box.size)},
         "certificate": cert,
+        "repaint": _repaint_summary(cert),
         "selftest": check,
         "config": asdict(cfg),
         "journal_sha256": hashlib.sha256(journal_text.encode()).hexdigest(),
@@ -287,6 +296,18 @@ def _certify(data: pd.DataFrame, source: str, cfg: Config, n_eff: int, ppy: floa
         commission_bps=cfg.cost_bps / 2, slippage_bps=cfg.cost_bps / 2, side_mode=cfg.side, warmup_bars=130, n_bars=len(data)
     )
     return verify_strategy(data, signal_fn=scope["signal"], source=source, model=model, n_trials=n_eff, periods_per_year=ppy)
+
+
+def _repaint_summary(cert: dict[str, Any]) -> dict[str, Any]:
+    """What the certificate says about repainting: a discovered rule is decided at the close and must not redraw history."""
+    rows = {c["id"]: c for c in cert.get("checks", []) if c["id"] in ("repaint_history", "repaint_live")}
+    history, live = rows.get("repaint_history"), rows.get("repaint_live")
+    return {
+        "confirmation": "close",
+        "history": history["status"] if history else None,
+        "known_at_open": live["details"].get("known_at_open") if live else None,
+        "flicker_rate": live["details"].get("flicker_rate") if live else None,
+    }
 
 
 def _quantiles(values: list[float]) -> dict[str, float] | None:
