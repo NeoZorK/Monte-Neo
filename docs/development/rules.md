@@ -9,10 +9,8 @@
 ## Language and publication (mandatory)
 
 - Everything in a public repository is in **English only**: code, comments, docs, issues, PRs, commits, releases.
-  `docs/internal/`, `scripts/internal/` and `tests/internal/`, which are in `.gitignore` and are **never** committed,
-- Before every commit run `git grep -nP "(*UTF)[--]{3,}"`: any match in a tracked file is a mistake to fix.
-- Files already published stay in git history; removing one from the branch is not enough when it was pushed:
-  tell the owner so that the history can be cleaned.
+- Private working files live in `docs/internal/`, `scripts/internal/` and `tests/internal/`, which are in `.gitignore`. They are never committed, pushed or linked from public files.
+- Before every commit run `git grep -nP "(*UTF)[\x{0400}-\x{04FF}]{3,}"`: any match in a tracked file is a mistake to fix.
 
 ## Coding Standards
 
