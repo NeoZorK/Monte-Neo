@@ -44,6 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--ledger", nargs="?", const="1", default=None, metavar="PATH",
         help="Count the variants tried on this data in an append-only ledger (default .monte-neo/ledger.jsonl); the larger of the count and --n-trials is used",
     )
+    p.add_argument("--registration", metavar="ID", help="id of a pre-registered hypothesis (monte-neo register): the certificate says whether it protects this result")
     p.add_argument("--repaint", choices=["off", "auto", "strict"], default="auto", help="How densely to check that a signal never changes after it was shown (default auto; strict checks many more prefixes)")
     p.add_argument("--signal-timing", choices=["close", "open"], default="close", help="'open': the signal is declared known at the bar's open, so a signal that needs the bar's own prices fails (default close)")
     p.add_argument("--grid", help="Parameter grid as JSON or a .json file, e.g. '{\"fast\": [10, 20], \"slow\": [50, 100]}' (needs --strategy)")
@@ -384,7 +385,7 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
             report = verify_strategy(
                 df, signals=args.signals, strategy=args.strategy, n_trials=args.n_trials,
                 ledger=(True if args.ledger == "1" else args.ledger) or None,
-                repaint=args.repaint, signal_timing=args.signal_timing, **common,
+                repaint=args.repaint, signal_timing=args.signal_timing, registration=args.registration, **common,
             )
     except Exception as exc:  # input errors must not look like a verdict
         console.print(f"[red]verify failed: {exc}[/]")

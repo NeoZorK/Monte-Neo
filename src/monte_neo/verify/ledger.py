@@ -112,7 +112,7 @@ class Ledger:
         body = {
             "seq": len(entries) + 1,
             "prev": prev,
-            "at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "at": datetime.now(UTC).isoformat(timespec="microseconds"),
             "variant": variant,
             "data": data_id,
             "sharpe": round(float(sharpe), 6) if np.isfinite(sharpe) else None,

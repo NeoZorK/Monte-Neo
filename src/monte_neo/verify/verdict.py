@@ -106,6 +106,7 @@ def verify_strategy(
     claim: dict[str, Any] | str | Path | None = None,
     symbol_costs: dict[str, Any] | str | Path | None = None,
     ledger: str | Path | bool | None = None,
+    registration: str | None = None,
     repaint: str = "auto",
     signal_timing: str = "close",
 ) -> dict[str, Any]:
@@ -130,6 +131,8 @@ def verify_strategy(
     overclaim fails the ``claim_consistency`` check.
     ``ledger`` (``True`` for ``.monte-neo/ledger.jsonl``, or a path) counts the variants tried on this data in an
     append-only, hash-chained file; the larger of that count and ``n_trials`` is used for the Deflated Sharpe.
+    ``registration`` is the id of a pre-registered hypothesis (``monte-neo register``): the certificate says whether the
+    verified code is the registered one and, with ``ledger``, whether the registration came before its first run.
     ``repaint`` (``off``, ``auto`` or ``strict``) sets how densely the signal is checked for changing after it was shown
     (history) and while the bar forms; ``signal_timing="open"`` declares the signal known at the bar's open, so a signal
     that needs the bar's own prices fails. See :mod:`monte_neo.verify.repaint`.
@@ -192,6 +195,18 @@ def verify_strategy(
         if row["status"] != "pass":
             row["status"] = "info"  # context only: a recheck has no ledger, so it must not move the verdict
         extra_checks = [*(extra_checks or []), row]
+    if registration:
+        from monte_neo.verify.ledger import variant_id as _variant_id
+        from monte_neo.verify.register import Registry, registration_row
+
+        settings["registration"] = str(registration)
+        mine = _variant_id(src, _signals_array(signals))
+        first_at = None
+        if book is not None:
+            data_here = _sha256(market.data_bytes())[:16]
+            first_at = next((e["at"] for e in book.entries() if e.get("variant") == mine and e.get("data") == data_here), None)
+        reg_row = registration_row(str(registration), Registry(), mine, first_at, ledger_used=book is not None)
+        extra_checks = [*(extra_checks or []), reg_row]
     try:
         report = _checks_and_report(
             df, market, fn, src, signals, settings, io_watch, model, n_trials, trial_sharpes,

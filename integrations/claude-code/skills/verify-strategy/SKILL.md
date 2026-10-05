@@ -40,3 +40,11 @@ strategy performance to the user until Monte-Neo has verified it.
 Always tell the user the verdict, the `certificate_id` and the verifier metrics
 (net return after costs, Deflated Sharpe, break-even cost) instead of the numbers from your
 own backtest code. Never lower `n_trials` or costs to get a better verdict.
+
+## When it says REJECT, and when you search
+
+- Look-ahead or repainting (a signal that changes after it was shown): call the `suggest_fix` tool, write its patched
+  source to a new file, and verify that file. Do not keep the original because its numbers look good.
+- Trying several variants: pass `ledger=true` so each one is counted automatically.
+- Do not tune against the test set: use `holdout_query`; use `register_hypothesis` before the first run.
+- Searching for an indicator: use `discover_indicator`, which counts the search and tests it against shuffled markets.

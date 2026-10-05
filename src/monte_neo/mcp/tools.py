@@ -101,6 +101,7 @@ def verify_strategy(
     ledger: bool = False,
     repaint: str = "auto",
     signal_timing: str = "close",
+    registration: str | None = None,
 ) -> dict[str, Any]:
     """Verify a strategy backtest and return a strategy-verdict/1 certificate.
 
@@ -134,6 +135,7 @@ def verify_strategy(
             and while the bar forms. A signal that changes after it was shown fails.
         signal_timing: 'close' (default) or 'open': 'open' declares the signal known at the bar's open; one that needs the
             bar's own prices fails.
+        registration: Id of a pre-registered hypothesis (register_hypothesis); the certificate says whether it protects the result.
         compact: Drop details of passing checks to keep the response short.
     """
     from monte_neo.verify import verify_strategy as _verify
@@ -147,7 +149,7 @@ def verify_strategy(
     runs = {"timeout": timeout, "jobs": jobs, "isolate": isolate} if strategy_path else {}
     report = _verify(
         df, signals=signals_path, strategy=strategy_path, model=model, n_trials=n_trials, positions=positions, claim=claim,
-        symbol_costs=symbol_costs, ledger=ledger or None, repaint=repaint, signal_timing=signal_timing, **runs
+        symbol_costs=symbol_costs, ledger=ledger or None, repaint=repaint, signal_timing=signal_timing, registration=registration, **runs
     )
     return _compact(report) if compact else report
 
@@ -463,6 +465,55 @@ def discover_indicator(
     return {k: v for k, v in result.items() if k != "journal"}
 
 
+def register_hypothesis(hypothesis: str, strategy_path: str | None = None, params: dict[str, Any] | None = None, n_trials: int | None = None) -> dict[str, Any]:
+    """Write a hypothesis down before testing it (pre-registration, hash-chained in .monte-neo/registrations.jsonl).
+
+    Pass the returned id as ``registration`` to verify_strategy: the certificate then says whether the verified code is the
+    registered one. Register before the first run; a later registration does not protect against HARKing.
+    """
+    from monte_neo.verify.register import Registry
+
+    source = Path(strategy_path.split(":")[0]).read_text(encoding="utf-8") if strategy_path else None
+    entry = Registry().register(hypothesis, source=source, params=params, n_trials=n_trials)
+    return {"id": f"reg-{entry['seq']}-{entry['hash'][:8]}", "registered_at": entry["at"], "variant": entry["variant"]}
+
+
+def compare_certificates(old_path: str, new_path: str) -> dict[str, Any]:
+    """What changed between two certificates: verdict, metrics, check statuses, and whether the verdict regressed."""
+    import json as _json
+
+    from monte_neo.verify.history import diff_certificates
+
+    return diff_certificates(_json.loads(Path(old_path).read_text(encoding="utf-8")), _json.loads(Path(new_path).read_text(encoding="utf-8")))
+
+
+def holdout_query(ohlcv_path: str, strategy_path: str, oracle_path: str | None = None) -> dict[str, Any]:
+    """Ask the hold-out oracle (Thresholdout) whether a strategy's hold-out result agrees with its training result.
+
+    Answers 'consistent' with the training Sharpe, or 'not consistent' with a noisy hold-out Sharpe that spends budget.
+    The hold-out is never shown. Initialise once with `monte-neo oracle init`.
+    """
+    from monte_neo.verify import load_ohlcv
+    from monte_neo.verify.oracle import HoldoutOracle
+
+    return HoldoutOracle(oracle_path).query(load_ohlcv(ohlcv_path), strategy_path)
+
+
+def verify_portfolio(ohlcv_path: str, strategy_paths: list[str]) -> dict[str, Any]:
+    """Verify several strategies together: effective number of independent strategies, SPA over the list, the best one deflated, the ensemble."""
+    from monte_neo.verify import load_ohlcv
+    from monte_neo.verify.portfolio import verify_portfolio as _portfolio
+
+    return _portfolio(load_ohlcv(ohlcv_path), list(strategy_paths), names=[Path(s.split(":")[0]).stem for s in strategy_paths])
+
+
+def diagnose_data(table_path: str, provider: str = "auto") -> dict[str, Any]:
+    """Known problems of a data provider's export (Binance, Yahoo, Polygon, Databento, TradingView, MT5): bar labels, time zones, units, adjustments."""
+    from monte_neo.verify.doctor import diagnose
+
+    return diagnose(table_path, provider)
+
+
 def verdict_schema() -> dict[str, Any]:
     """JSON schema of the strategy-verdict/1 certificate."""
     from monte_neo.verify import VERDICT_JSON_SCHEMA
@@ -508,6 +559,11 @@ TOOLS: tuple[Callable[..., dict[str, Any]], ...] = (
     verify_quotes,
     suggest_fix,
     discover_indicator,
+    register_hypothesis,
+    compare_certificates,
+    holdout_query,
+    verify_portfolio,
+    diagnose_data,
     verdict_schema,
     verifier_manifest,
 )
@@ -518,13 +574,18 @@ __all__ = [
     "TOOLS",
     "check_signature",
     "cost_stress",
+    "compare_certificates",
+    "diagnose_data",
     "discover_indicator",
+    "holdout_query",
+    "register_hypothesis",
     "probe_lookahead",
     "render_report",
     "suggest_fix",
     "verdict_schema",
     "verifier_manifest",
     "verify_grid",
+    "verify_portfolio",
     "verify_quotes",
     "verify_strategy",
 ]
