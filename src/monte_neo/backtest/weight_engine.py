@@ -113,7 +113,7 @@ def _weight_core(  # pragma: no cover  # njit body; covered through run_weight_b
                     pos = 1 if qty[s] > 0.0 else -1
                     hit, exit_raw, sl_lvl[s], peak_lvl[s] = _stop_hit(
                         pos, high[i, s], low[i, s], use_sl, use_tp, use_trail,
-                        sl_lvl[s], tp_lvl[s], peak_lvl[s], trail_pct,
+                        sl_lvl[s], tp_lvl[s], peak_lvl[s], trail_pct, open_[i, s],
                     )
                     if hit != 0:
                         px = exit_raw * (1.0 - float(pos) * slip_rates[s])

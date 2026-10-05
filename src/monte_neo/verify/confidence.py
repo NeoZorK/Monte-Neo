@@ -91,6 +91,19 @@ def track_record(dsr: dict[str, Any], periods_per_year: float) -> dict[str, Any]
     }
 
 
+def serial_correlation_row(info: dict[str, float]) -> dict[str, Any]:
+    """``serial_correlation`` (info): the Sharpe corrected for correlated returns (Lo, 2002) next to the plain one."""
+    from monte_neo.verify.checks import check
+
+    naive, adj, rho = info["naive"], info["adjusted"], info["rho1"]
+    over = (naive - adj) / abs(naive) if naive else 0.0
+    if naive > 0 and over > 0.2:
+        summary = f"returns are serially correlated (lag-1 {rho:+.2f}): the annualized Sharpe {naive:.2f} is about {adj:.2f} after the correction (Lo), {over:.0%} lower"
+    else:
+        summary = f"serial correlation of returns is small (lag-1 {rho:+.2f}): Sharpe {naive:.2f}, corrected {adj:.2f}"
+    return check("serial_correlation", "statistics", "info", summary, {k: round(float(v), 4) for k, v in info.items()})
+
+
 def confidence_row(ci: dict[str, Any]) -> dict[str, Any]:
     """``sharpe_confidence``: the interval of the Sharpe ratio (context, never changes the verdict)."""
     if not ci:

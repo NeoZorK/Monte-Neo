@@ -25,8 +25,13 @@ def _stop_hit(  # pragma: no cover  # njit body; covered via public API / subpro
     tp_px: float,
     peak_px: float,
     trail_pct: float,
+    open_px: float,
 ) -> tuple:
-    """Return (hit_reason, exit_raw, new_sl_px, new_peak_px). hit_reason 0 = none."""
+    """Return (hit_reason, exit_raw, new_sl_px, new_peak_px). hit_reason 0 = none.
+
+    A stop is a market order once touched: when the bar opens beyond the stop (a gap) the position leaves at the
+    open, which is worse than the stop level. A take-profit keeps its own level (a better open is not credited).
+    """
     if position > 0:
         peak = peak_px
         stop = sl_px
@@ -39,7 +44,8 @@ def _stop_hit(  # pragma: no cover  # njit body; covered via public API / subpro
             reason = REASON_TRAIL if (use_trail and stop != sl_px) else REASON_SL
             if use_trail and not use_sl:
                 reason = REASON_TRAIL
-            return reason, stop, stop, peak
+            gap_exit = min(stop, open_px) if open_px == open_px else stop  # open_px != open_px: no open price (NaN)
+            return reason, gap_exit, stop, peak
         if use_tp and high >= tp_px:
             return REASON_TP, tp_px, stop, peak
         return 0, 0.0, stop, peak
@@ -54,7 +60,8 @@ def _stop_hit(  # pragma: no cover  # njit body; covered via public API / subpro
         reason = REASON_TRAIL if (use_trail and stop != sl_px) else REASON_SL
         if use_trail and not use_sl:
             reason = REASON_TRAIL
-        return reason, stop, stop, peak
+        gap_exit = max(stop, open_px) if open_px == open_px else stop
+        return reason, gap_exit, stop, peak
     if use_tp and low <= tp_px:
         return REASON_TP, tp_px, stop, peak
     return 0, 0.0, stop, peak
@@ -139,6 +146,7 @@ def run_core_full(  # pragma: no cover  # njit body; covered via public API / su
                 tp_px,
                 peak_px,
                 trail_pct,
+                open_[i],
             )
             if hit != 0:
                 exit_px = exit_raw * (1.0 - float(position) * slip_rate)

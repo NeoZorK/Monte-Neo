@@ -38,11 +38,13 @@ from monte_neo.verify.lookahead import (
     _checkpoints,
     _status,
     implausible_accuracy,
+    probe_data_independence,
     probe_determinism,
     probe_perturbation,
     probe_truncation,
     run_positions,
 )
+from monte_neo.verify.repaint import probe_repaint_history, probe_repaint_live
 
 SYMBOL_ALIASES = ("symbol", "ticker", "asset", "instrument")
 
@@ -86,6 +88,19 @@ class SingleMarket:
             probe_determinism(fn, self.frame, full=full, positions=mode),
             probe_truncation(fn, self.frame, n_checks=n_checks, full=full, positions=mode),
             probe_perturbation(fn, self.frame, n_checks=max(2, n_checks // 4), full=full, positions=mode),
+        )
+
+    def independence(self, fn: SignalFn, full: np.ndarray, mode: str) -> dict[str, Any] | None:
+        """Do the positions react to unrelated prices and dates? (one instrument only)"""
+        return probe_data_independence(fn, self.frame, full, positions=mode)
+
+    def repaint(self, fn: SignalFn, full: np.ndarray, mode: str, how: str, timing: str) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+        """Does the signal move after it was shown (history), or while the bar forms? (one instrument only)"""
+        if how == "off":
+            return None, None
+        return (
+            probe_repaint_history(fn, self.frame, full, positions=mode, mode=how),
+            probe_repaint_live(fn, self.frame, full, positions=mode, mode=how, timing=timing),
         )
 
     def accuracy(self, traded: np.ndarray) -> dict[str, Any]:
@@ -275,6 +290,14 @@ class UniverseMarket:
             "status": _status(found, int(points.size)), "checkpoints": int(points.size),
             "mismatch_count": len(found), "mismatches": found[:MAX_REPORTED],
         }
+
+    def independence(self, fn: SignalFn, full: np.ndarray, mode: str) -> dict[str, Any] | None:
+        """Universes are not probed for stored answers yet."""
+        return None
+
+    def repaint(self, fn: SignalFn, full: np.ndarray, mode: str, how: str, timing: str) -> tuple[None, None]:
+        """Universes are not probed for repainting yet."""
+        return None, None
 
     def accuracy(self, traded: np.ndarray) -> dict[str, Any]:
         return implausible_accuracy(self.ohlc["open"], self.ohlc["close"], traded)
