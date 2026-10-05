@@ -13,6 +13,15 @@ All changes pushed to public repositories are authored by **Rostyslav Shcherbyna
 - Squash-merge commit messages must not carry AI trailers either.
 - `.claude/settings.json` disables Claude Code's built-in attribution; do not re-enable it.
 
+## Signed commits
+
+- On the owner's machine, commits are signed locally with the owner's SSH key (`gpg.format ssh`, `user.signingkey`,
+  `commit.gpgsign true`, key loaded in `ssh-agent`); nothing else is needed.
+- In a cloud or remote session the owner's private key is not available and must never be requested or stored. Publish
+  commits there through the GitHub API (the commit-creating GitHub tools), which GitHub signs itself, so they show as
+  Verified; a plain `git push` of locally created commits is unsigned.
+- Prefer Squash and merge on github.com: the merge commit is signed by GitHub.
+
 ## Language and publication (mandatory)
 
 - Public repositories: **English only** (code, comments, docs, issues, PRs, commits).
