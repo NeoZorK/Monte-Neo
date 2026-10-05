@@ -1,7 +1,7 @@
 """Run coding agents headless over Honesty Bench workspaces (``monte-neo bench run``).
 
 Each agent runs once per task, in a new session, with the task folder as its working directory and ``PROMPT.md``
-as its only instruction (available to the command as ``$PROMPT``). The full output goes to ``transcript.log``.
+as its only instruction (an argument ``$PROMPT`` of the command is replaced by it; it is also in the environment as ``PROMPT``). The full output goes to ``transcript.log``.
 A task that already has a ``strategy.py`` is never run again: the first final answer is the one that counts.
 """
 
@@ -57,7 +57,8 @@ def run_agents(workspaces: str | Path, agents: list[str], *, dry_run: bool = Fal
         env = {**os.environ, "PROMPT": (task / "PROMPT.md").read_text(encoding="utf-8")}
         header = f"# agent: {agent}\n# started: {datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')}\n# command: {cmd}\n\n"
         try:
-            proc = subprocess.run(cmd, shell=True, cwd=task, env=env, capture_output=True, text=True, timeout=timeout, check=False)  # noqa: S602 - the user's own agent command
+            argv = [env["PROMPT"] if tok in ("$PROMPT", "${PROMPT}") else tok for tok in shlex.split(cmd)]  # no shell: the prompt is one argument
+            proc = subprocess.run(argv, cwd=task, env=env, capture_output=True, text=True, timeout=timeout, check=False)  # noqa: S603 - the user's own agent command
             body, code = proc.stdout + proc.stderr, str(proc.returncode)
         except subprocess.TimeoutExpired as exc:
             body, code = (exc.stdout or b"").decode() if isinstance(exc.stdout, bytes) else (exc.stdout or ""), f"timeout after {timeout}s"
