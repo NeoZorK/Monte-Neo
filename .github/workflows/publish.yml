@@ -123,11 +123,20 @@ jobs:
         run: |
           set -euo pipefail
           version="${GITHUB_REF_NAME#v}"
-          # The tag's own source is what PyPI received, so the SBOM is built from the checkout.
-          python -m venv sbom-env
-          # Runtime dependencies from the hash-locked file (made from uv.lock), then the package itself without its dependencies.
-          sbom-env/bin/pip install -q --require-hashes --no-deps -r scripts/requirements/runtime.txt
-          sbom-env/bin/pip install -q --no-deps .
+          # The runtime dependencies come from the hash-locked file (made from uv.lock); the package is the root component.
+          # Nothing is installed from the checkout, so no unpinned install runs here.
           python -m pip install -q --require-hashes --no-deps -r scripts/requirements/sbom.txt
-          cyclonedx-py environment sbom-env --of JSON -o "monte-neo-$version.cdx.json"
+          cyclonedx-py requirements --pyproject pyproject.toml --mc-type library --of JSON -o "monte-neo-$version.cdx.json" scripts/requirements/runtime.txt
+          # The version of the package is dynamic in pyproject.toml: set it on the root component.
+          python - "$version" "monte-neo-$version.cdx.json" <<'PY'
+          import json
+          import sys
+
+          version, path = sys.argv[1:3]
+          bom = json.load(open(path, encoding="utf-8"))
+          root = bom["metadata"]["component"]
+          root["version"] = version
+          root["purl"] = f"pkg:pypi/monte-neo@{version}"
+          json.dump(bom, open(path, "w", encoding="utf-8"), indent=2)
+          PY
           gh release upload "$GITHUB_REF_NAME" "monte-neo-$version.cdx.json"
