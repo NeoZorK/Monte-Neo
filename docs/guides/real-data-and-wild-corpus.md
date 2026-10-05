@@ -4,48 +4,34 @@ Every command on this page was run before it was written down: the bench pipelin
 the scripts on synthetic files. What could not be run without your machine (the agent CLIs, downloads from the data
 sites, `gh`) is marked *not run here*.
 
-## 1. Honesty Bench v1: a public run
+## 1. Honesty Bench v1: a public run (one agent: Claude Code)
+
+`monte-neo bench run` ships in the package from v0.52.1 / the next release. Until then run it from a clone of the
+repository: `git clone https://github.com/NeoZorK/Monte-Neo && cd Monte-Neo && uv sync`, and put `uv run` in front of
+every `monte-neo` below. Check with `monte-neo bench run --help` (or `uv run monte-neo bench run --help`).
 
 ```bash
-pip install monte-neo            # or: uv pip install monte-neo
-monte-neo --version
-
 monte-neo bench init hb-v1
-shasum -a 256 hb-v1/tasks/*/data.csv > hb-v1/DATA_SHA256        # record the data hashes before the run
-monte-neo bench prepare hb-v1 --agents claude-code,codex --workspaces ~/hb-v1-runs
-```
+shasum -a 256 hb-v1/tasks/*/data.csv > hb-v1/DATA_SHA256      # record the data hashes before the run
+monte-neo bench prepare hb-v1 --agents claude-code --workspaces ~/hb-v1-runs
 
-`prepare` writes `~/hb-v1-runs/<agent>/task-1..task-5/` with only `data.csv` and `PROMPT.md`. Task names are hidden on
-purpose; the map is `hb-v1/aliases.json`. Keep `hb-v1/answer_key.json` and `aliases.json` away from the agents (move them out
-of reach for the run, put them back for scoring).
+monte-neo bench run --workspaces ~/hb-v1-runs --agents claude-code --dry-run   # prints 5 commands; stops if `claude` is missing
 
-Check the agent commands before spending time:
-
-```bash
-MN_DRY_RUN=1 scripts/honesty_bench_run.sh ~/hb-v1-runs claude-code codex
-```
-
-This prints the command for every task and stops with an error if a CLI is not installed. The defaults are:
-
-| Agent | Default command | Checked here |
-|---|---|---|
-| `claude-code` | `claude -p "$PROMPT" --permission-mode acceptEdits` | flags exist in Claude Code 2.1 |
-| `codex` | `codex exec --full-auto "$PROMPT"` | *not run here* (not installed): run `codex exec --help` |
-| `gemini-cli` | `gemini -p "$PROMPT" --yolo` | *not run here*: run `gemini --help` |
-| `cursor` | `cursor-agent -p "$PROMPT" --force` | *not run here*: run `cursor-agent --help` |
-
-If a flag changed, override it: `export MN_CMD_codex='codex exec --full-auto "$PROMPT"'` (dashes in the agent name become
-underscores: `MN_CMD_claude_code`, `MN_CMD_gemini_cli`). Then run, collect, score:
-
-```bash
-scripts/honesty_bench_run.sh ~/hb-v1-runs claude-code codex
+monte-neo bench run --workspaces ~/hb-v1-runs --agents claude-code             # the real run (5 tasks, one clean session each)
 monte-neo bench collect hb-v1 --workspaces ~/hb-v1-runs
 monte-neo bench hb-v1 --out hb-v1/report.json --markdown hb-v1/LEADERBOARD.md
 ```
 
-The script runs each task once, in a new session, and never re-runs a task that has a `strategy.py` (the first final
-answer counts). `LEADERBOARD.md` is the table; `report.json` keeps every certificate id for `monte-neo verify --recheck`.
-Fair-play rules and the checklist are in the [bench guide](honesty-bench.md).
+`prepare` writes `~/hb-v1-runs/claude-code/task-1..task-5/` with only `data.csv` and `PROMPT.md`. Task names are hidden
+on purpose; the map is `hb-v1/aliases.json`. Keep `hb-v1/answer_key.json` and `aliases.json` away from the agents.
+
+The command run for every task is `claude -p "$PROMPT" --permission-mode acceptEdits` (checked: the flags exist and a
+headless call answers). Change it with `export MN_CMD_claude_code='...'`. `run` runs each task once and never re-runs
+a task that has a `strategy.py` (the first final answer counts); the full output is in `transcript.log` next to it.
+`--timeout 3600` is the limit per task in seconds. `LEADERBOARD.md` is the table; `report.json` keeps every
+certificate id for `monte-neo verify --recheck`. Other agents work the same way: `--agents claude-code,codex`, with
+`codex exec --help`, `gemini --help` or `cursor-agent --help` checked first. Fair-play rules and the checklist are in the
+[bench guide](honesty-bench.md).
 
 ## 2. Discover on real markets
 
