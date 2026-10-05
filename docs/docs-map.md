@@ -1,4 +1,4 @@
-# Monte-Neo v0.50.0
+# Monte-Neo v0.52.0
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -35,10 +35,10 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/project-structure.md - Deep dive into physical directory layout
 - docs/project/features.md - Detailed overview of framework features
 - docs/project/dynamic_indicators.md - Explanation of dynamic indicator generation
-- docs/project/ROADMAP.md - Development roadmap and milestones (v0.50.0)
+- docs/project/ROADMAP.md - Development roadmap and milestones (v0.51.0)
 - docs/project/PRODUCT_STRATEGY_RU.md - Product strategy: agent-native strategy verifier niche, moat, roadmap (RU, internal)
 - docs/project/CLEANUP_CANDIDATES_RU.md - Cleanup candidate list with evidence, awaiting owner approval (RU, internal)
-- docs/project/CHANGELOG.md - Release changelog (current: v0.50.0)
+- docs/project/CHANGELOG.md - Release changelog (current: v0.51.0)
 - docs/project/backtest_engine.md - Fee-aware research bar engine
 - docs/project/oms_engine.md - Paper OMS (bar + tick/L2) + venue adapters
 - docs/assets/monteneo-logo.png - Project logo (original, with the old tagline)
@@ -85,6 +85,24 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/REGISTRATION_RUNBOOK_RU.md - Step-by-step registration in catalogues, Marketplace and repository settings (RU, internal)
 - packaging/conda-forge/meta.yaml - conda-forge recipe draft (not built)
 - .github/ISSUE_TEMPLATE/false_accusation.yml - Issue form for false accusations of honest strategies
+- docs/guides/discover.md - monte-neo discover: verified indicator search (gate, effective trials, search null, lockbox)
+- scripts/mutation_check.py - Mutation check of the verifier core
+- tests/unit/test_mutation_pins.py - Exact values and boundaries pinned after the mutation check
+- docs/guides/repaint.md - Repainting: history and forming-bar probes, lint rules, fixes
+- docs/guides/workflow-tools.md - history, register, oracle, portfolio, doctor
+- docs/guides/discover-calibration.md - Generated: discover on noise and the power to find a planted edge
+- scripts/discover_calibration.py - Builds the discover calibration page
+- src/monte_neo/verify/repaint.py - Repaint probes (history, forming bar)
+- src/monte_neo/verify/chainlog.py, history.py, register.py, oracle.py, portfolio.py, doctor.py, returns.py - Project tools of stage 10
+- src/monte_neo/cli/tools_cmd.py - history, register, oracle, portfolio, doctor commands
+- docs/guides/ledger-and-fixes.md - Trial ledger (--ledger) and suggested causal rewrites (--suggest-fix)
+- docs/guides/honesty-scorecard.md - Generated scorecard of the hypothesis zoo (Wilson intervals, known gaps)
+- scripts/zoo_scorecard.py - Builds the honesty scorecard from the zoo
+- tests/zoo/ - Hypothesis zoo: leak and honest mechanisms, disguises, independent oracle, data defects, claims, metamorphic relations, known gaps
+- src/monte_neo/discover/ - Verified indicator search (DSL, search, causality gate, canaries)
+- src/monte_neo/verify/ledger.py - Append-only trial ledger
+- src/monte_neo/verify/fixes.py - Causal rewrites for suggest_fix
+- src/monte_neo/cli/discover_cmd.py - monte-neo discover command
 - docs/guides/frameworks.md - Adapters (vectorbt, Freqtrade, Lean, Zipline, fills), Jupyter display, pandas accessor, pre-commit, badge, Docker image
 - docs/guides/trap-suite.md - Trap Suite catalogue (80 traps, 35 honest controls) and how to contribute a trap
 - src/monte_neo/bench/ - Honesty Bench (verify agent submissions, compare claims, leaderboard; v1 tasks + answer key)
@@ -102,7 +120,7 @@ A simplified guide to the Monte-Neo file structure.
 - docker/verify/Dockerfile - Verifier image for untrusted strategy code (engines precompiled, runs as nobody)
 
 ### Source Code (src/monte_neo/)
-- src/monte_neo/_version.py - Central version management (v0.50.0)
+- src/monte_neo/_version.py - Central version management (v0.51.0)
 - src/monte_neo/verify/ - Strategy verifier (ingest, single and universe markets, data quality, look-ahead probes, outside-data watch, strategy workers (jobs, timeout, isolation), lint, benchmark and breakdown, HTML report, costs, stats, checks, verdict, grid + walk-forward, certificate recheck)
 - src/monte_neo/mcp/ - MCP server (monte-neo-mcp) + agent-facing tool functions
 - src/monte_neo/cli/verify_cmd.py - `monte-neo verify` command (CI exit codes)

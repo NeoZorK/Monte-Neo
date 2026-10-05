@@ -2,7 +2,7 @@
 
 The verifier image installs the release with ``--require-hashes``; this prints what that needs:
 
-    python3 scripts/pin_release.py 0.50.0 > docker/verify/monte-neo.txt
+    python3 scripts/pin_release.py 0.52.0 > docker/verify/monte-neo.txt
 
 The hashes are the sha256 of every file PyPI holds for the version (the wheel and the sdist), so pip accepts the one it picks.
 """

@@ -31,6 +31,8 @@ SPIKE_REVERT = 0.75
 FROZEN_RUN = 5
 FROZEN_SHARE = 0.02
 GAP_FACTOR = 5.0
+STALE_RUN = 20  # identical bars in a row: a feed that stopped updating
+MISSING_SHARE = 0.01  # steps of 1.5-5 x the usual one, in a market without closed days
 SESSION_RATE = 0.5  # long steps per week that mark a market with closed hours
 SPLIT_RATIOS = (2.0, 3.0, 4.0, 5.0, 10.0, 20.0)
 SPLIT_TOLERANCE = 0.03
@@ -110,6 +112,21 @@ def split_jumps(ohlc: dict[str, np.ndarray]) -> list[tuple[int, int, float]]:
     return sorted(found)
 
 
+def stale_run(ohlc: dict[str, np.ndarray]) -> int:
+    """Longest run of bars identical to the one before them (open, high, low and close all equal)."""
+    best = 0
+    cols = [_columns(ohlc[k]) for k in ("open", "high", "low", "close")]
+    same = np.ones((cols[0].shape[0] - 1, cols[0].shape[1]), dtype=bool) if cols[0].shape[0] > 1 else np.zeros((0, cols[0].shape[1]), dtype=bool)
+    for c in cols:
+        same &= np.nan_to_num(c[1:] == c[:-1], nan=0.0).astype(bool)
+    for s in range(same.shape[1]):
+        run = 0
+        for hit in same[:, s]:
+            run = run + 1 if hit else 0
+            best = max(best, run)
+    return best
+
+
 def time_gaps(timestamps: Any) -> dict[str, Any]:
     """Steps in time that are missing data rather than a closed market.
 
@@ -118,7 +135,7 @@ def time_gaps(timestamps: Any) -> dict[str, Any]:
     step over 1.5 x their 95th percentile is a gap; otherwise (24/7 markets, daily bars)
     every long step is one.
     """
-    empty = {"count": 0, "largest_hours": None}
+    empty = {"count": 0, "largest_hours": None, "missing_share": 0.0}
     if timestamps is None:
         return empty
     with warnings.catch_warnings():
@@ -129,13 +146,20 @@ def time_gaps(timestamps: Any) -> dict[str, Any]:
     steps = steps[steps > 0]
     if steps.size < 20:
         return empty
-    long = steps[steps > GAP_FACTOR * float(np.median(steps))]
+    median = float(np.median(steps))
+    long = steps[steps > GAP_FACTOR * median]
     weeks = (ns[-1] - ns[0]) / 6.048e14
-    if long.size >= max(SESSION_RATE * weeks, 3):
+    closed_days = int(np.count_nonzero((steps > 2.5 * median) & (steps <= GAP_FACTOR * median)))  # a daily table with weekends
+    sessions = long.size >= max(SESSION_RATE * weeks, 3)
+    if sessions:
         big = long[long > 1.5 * float(np.percentile(long, 95))]
     else:
         big = long
-    return {"count": int(big.size), "largest_hours": float(big.max() / 3.6e12) if big.size else None}
+    missing = 0.0
+    if not sessions and closed_days < max(SESSION_RATE * weeks, 3):
+        # A market that never closes: a step of two or three bars is a bar (or two) that is missing.
+        missing = float(np.count_nonzero((steps > 1.5 * median) & (steps <= GAP_FACTOR * median)) / steps.size)
+    return {"count": int(big.size), "largest_hours": float(big.max() / 3.6e12) if big.size else None, "missing_share": missing}
 
 
 def data_quality(ohlc: dict[str, np.ndarray], timestamps: Any = None, volume: Any = None) -> dict[str, Any]:
@@ -146,6 +170,7 @@ def data_quality(ohlc: dict[str, np.ndarray], timestamps: Any = None, volume: An
     frozen_share = float(frozen.sum() / max(valid.sum(), 1))
     splits = split_jumps(ohlc)
     gaps = time_gaps(timestamps)
+    stale = stale_run(ohlc)
     zero_share = None
     if volume is not None:
         vol = np.asarray(volume, dtype=np.float64)
@@ -160,6 +185,8 @@ def data_quality(ohlc: dict[str, np.ndarray], timestamps: Any = None, volume: An
         "frozen_share": frozen_share,
         "split_jumps": len(splits),
         "split_examples": [{"bar": t, "instrument": s, "ratio": round(x, 4)} for t, s, x in splits[:MAX_LISTED]],
+        "stale_run": stale,
+        "missing_share": gaps["missing_share"],
         "time_gaps": gaps["count"],
         "largest_gap_hours": gaps["largest_hours"],
         "zero_volume_share": zero_share,
@@ -211,6 +238,10 @@ def quality_row(quality: dict[str, Any], profit_share: float | None, symbols: li
         found.append(f"{quality['spikes']} one-bar price spike{'s' if quality['spikes'] > 1 else ''}")
     if quality["frozen_share"] > FROZEN_SHARE:
         found.append(f"{quality['frozen_share']:.0%} of bars frozen")
+    if quality["stale_run"] >= STALE_RUN:
+        found.append(f"{quality['stale_run']} identical bars in a row (a feed that stopped updating)")
+    if quality["missing_share"] >= MISSING_SHARE:
+        found.append(f"{quality['missing_share']:.1%} of the steps skip a bar")
     if quality["split_jumps"]:
         found.append(f"{quality['split_jumps']} split-like jump{'s' if quality['split_jumps'] > 1 else ''}")
     if quality["time_gaps"]:

@@ -37,7 +37,7 @@ _ = sma_numba(close, 5); _ = ema_numba(close, 5); _ = rsi_numba(close, 14)
 _ = sma_crossover_signals_numba(close, 5, 10)
 _ = rsi_signals_numba(close, 14, 30.0, 70.0)
 _ = macd_signals_numba(close, 8, 16, 5)
-_ = _stop_hit(1, 101.0, 99.0, True, True, True, 98.0, 105.0, 100.0, 1.0)
+_ = _stop_hit(1, 101.0, 99.0, True, True, True, 98.0, 105.0, 100.0, 1.0, 100.0)
 _ = run_terminal_return(
     open_, high, low, close, sig, session, True, False, 0.25,
     5.0, 5.0, 100000.0, 5, 1.0, 2.0, 0.0, 1.0, 1.0, 0.0,

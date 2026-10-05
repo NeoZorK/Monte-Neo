@@ -136,6 +136,29 @@ partial fills are not modelled, on purpose** (they need the order book and a pas
 false precision), so a market-making strategy cannot be validated here; the certificate lists these assumptions.
 [Read the guide](https://neozork.github.io/Monte-Neo/guides/arrival-time/).
 
+## Search for an indicator, honestly
+
+```bash
+monte-neo discover --ohlcv data.csv --out found/
+```
+
+Tries thousands of causal formulas, counts the search, tests it against shuffled markets and a lockbox, and writes a
+certificate for the winner. On random walks it names nothing (0 of 60 searches in the
+[calibration](docs/guides/discover-calibration.md)), although a plain search would report a Sharpe above 6.
+See [the guide](docs/guides/discover.md).
+
+## The rest of the workflow
+
+- `verify --ledger` counts every variant you try; `verify --suggest-fix` rewrites leaks as a diff
+  ([guide](docs/guides/ledger-and-fixes.md)).
+- Signals must not repaint: a signal that changes after it was shown fails, and a signal that needs the bar's own prices is
+  reported ([guide](docs/guides/repaint.md)).
+- `history`, `register`, `oracle`, `portfolio`, `doctor`: certificate history with a regression exit code, pre-registered
+  hypotheses, a Thresholdout hold-out for agents, many strategies at once, and known problems of data exports
+  ([guide](docs/guides/workflow-tools.md)).
+- The [honesty scorecard](docs/guides/honesty-scorecard.md) shows how often the verifier catches leaks and spares honest
+  strategies (hypothesis zoo, with intervals and known gaps).
+
 ## What it checks
 
 | Family | Checks |
@@ -260,7 +283,7 @@ MCP tools: `verify_strategy`, `verify_grid`, `verify_quotes`, `probe_lookahead`,
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.50.0
+- uses: NeoZorK/Monte-Neo@v0.52.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py

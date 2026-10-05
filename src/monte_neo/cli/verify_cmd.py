@@ -40,6 +40,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--order-latency-ms", type=float, default=0.0, help="Delay from the decision to the fill in ms for --quotes (default 0: only the data latency counts)")
     p.add_argument("--latency-samples", type=int, default=200, help="Latency draws for the --quotes Monte Carlo (default 200)")
     p.add_argument("--n-trials", type=int, default=None, help="How many variants were tried before this one")
+    p.add_argument(
+        "--ledger", nargs="?", const="1", default=None, metavar="PATH",
+        help="Count the variants tried on this data in an append-only ledger (default .monte-neo/ledger.jsonl); the larger of the count and --n-trials is used",
+    )
+    p.add_argument("--registration", metavar="ID", help="id of a pre-registered hypothesis (monte-neo register): the certificate says whether it protects this result")
+    p.add_argument("--repaint", choices=["off", "auto", "strict"], default="auto", help="How densely to check that a signal never changes after it was shown (default auto; strict checks many more prefixes)")
+    p.add_argument("--signal-timing", choices=["close", "open"], default="close", help="'open': the signal is declared known at the bar's open, so a signal that needs the bar's own prices fails (default close)")
     p.add_argument("--grid", help="Parameter grid as JSON or a .json file, e.g. '{\"fast\": [10, 20], \"slow\": [50, 100]}' (needs --strategy)")
     p.add_argument("--folds", type=int, default=4, help="Walk-forward folds for --grid (default 4)")
     p.add_argument("--commission-bps", type=float, default=5.0, help="Commission per side in bps (default 5)")
@@ -74,6 +81,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--html", help="Also write a self-contained HTML report (charts, checks, periods) to this path")
     p.add_argument("--badge", metavar="PATH", help="Also write a shields.io endpoint JSON (verdict + certificate id) for a README badge")
     p.add_argument("--lint", nargs="+", metavar="FILE", help="Only run the static look-ahead lint on these strategy files and exit (for pre-commit)")
+    p.add_argument("--suggest-fix", metavar="FILE", help="Print a causal rewrite of a strategy file that reads the future (a diff; nothing is written) and exit")
     p.add_argument("--render", metavar="CERT", help="Render an existing certificate JSON as HTML (needs --html) and exit")
     p.add_argument("--recheck", help="Reproduce this certificate JSON from --ohlcv and --signals / --strategy")
     p.add_argument("--sign", metavar="KEY", help="Sign the certificate with this Ed25519 private key (PEM); needs monte-neo[sign]")
@@ -156,6 +164,10 @@ def _render_text(report: dict[str, Any], console: Console) -> None:
         table.add_row(c["id"], c["category"], f"[{style}]{c['status']}[/]", c["summary"])
     console.print(table)
     _render_summary(report, console, with_next=False)
+    if report.get("ledger"):
+        led = report["ledger"]
+        note = "" if led["chain_ok"] else " [red](the ledger was changed)[/]"
+        console.print(f"[bold]Ledger:[/] {led['variants_counted']} variant(s) tried on this data, n_trials {led['n_trials_used']}{note}")
     grid = report.get("grid")
     if grid:
         wf = grid["walk_forward"]
@@ -219,6 +231,28 @@ def _run_signing(args: argparse.Namespace, console: Console) -> int:
         return 3
     console.print_json(data=result)
     return 0 if signature_ok(result) else 5
+
+
+def _run_suggest_fix(name: str, console: Console) -> int:
+    """Print the rewrites and the diff; exit 0 when nothing needs rewriting, 1 when a rewrite is suggested, 3 on a read error."""
+    from monte_neo.verify.fixes import suggest_fixes
+
+    try:
+        result = suggest_fixes(Path(name).read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError) as exc:
+        console.print(f"[red]{name}: cannot read: {exc}[/]", markup=True, highlight=False)
+        return 3
+    if result.get("error"):
+        console.print(f"{name}: {result['error']}", markup=False, highlight=False)
+        return 3
+    if not result["changes"]:
+        console.print(f"{name}: no rewrite suggested", markup=False, highlight=False)
+        return 0
+    for ch in result["changes"]:
+        console.print(f"{name}:{ch['line']}: {ch['rule']}: {ch['before']}  ->  {ch['after']}  ({ch['note']})", markup=False, highlight=False)
+    console.print(result["diff"], markup=False, highlight=False)
+    console.print("The rewrite keeps the shape of the strategy, not its meaning: verify the patched file before using it.", markup=False)
+    return 1
 
 
 def _run_lint(paths: list[str], console: Console) -> int:
@@ -289,6 +323,8 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
         return _run_signing(args, console)
     if args.lint:
         return _run_lint(args.lint, console)
+    if args.suggest_fix:
+        return _run_suggest_fix(args.suggest_fix, console)
     if args.render:
         from monte_neo.verify.recheck import load_certificate
         from monte_neo.verify.report_html import write_html
@@ -346,7 +382,11 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
         if args.grid:
             report = verify_grid(df, _load_grid(args.grid), strategy=args.strategy, folds=args.folds, **common)
         else:
-            report = verify_strategy(df, signals=args.signals, strategy=args.strategy, n_trials=args.n_trials, **common)
+            report = verify_strategy(
+                df, signals=args.signals, strategy=args.strategy, n_trials=args.n_trials,
+                ledger=(True if args.ledger == "1" else args.ledger) or None,
+                repaint=args.repaint, signal_timing=args.signal_timing, registration=args.registration, **common,
+            )
     except Exception as exc:  # input errors must not look like a verdict
         console.print(f"[red]verify failed: {exc}[/]")
         return 3

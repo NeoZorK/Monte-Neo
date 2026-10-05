@@ -18,6 +18,8 @@ NEXT_ACTIONS: dict[str, str] = {
     "determinism": "Make the signal deterministic: seed every RNG and avoid wall-clock or I/O inside signal().",
     "lookahead_truncation": "The signal at bar t changes when later bars are removed: compute features only from rows <= t (no shift(-k), centered windows, bfill or full-sample stats).",
     "lookahead_perturbation": "Past signals change when the future is rewritten: remove whole-series statistics (mean/std/min/max over all rows) and future-dependent fills.",
+    "repaint_history": "The signal of a closed bar changes when later bars arrive (ZigZag, confirmed-later pivots, centred windows, whole-series statistics): use only information available at the bar, or confirm the pattern n bars later and shift the signal by n.",
+    "repaint_live": "The signal is declared known at the open but depends on the bar's own high, low, close or volume: shift it by one bar, or declare signal_timing='close' and act only after the bar closed.",
     "survivorship": "Build the universe point-in-time: include the symbols that were delisted or dropped during the test, or the backtest only trades survivors.",
     "external_data": "signal() must use only the df it is given: pass parameters as function defaults and do not load data from files or the network, which the look-ahead probes cannot see.",
     "lookahead_static_lint": "Fix the flagged source lines (negative shift, center=True, backward fill) and re-run verify.",
@@ -176,6 +178,51 @@ def accuracy_row(acc: dict[str, Any]) -> dict[str, Any]:
     else:
         summary = f"next-bar hit rate {rate:.3f} over {acc.get('active_bars', 0)} bars (z {acc.get('z_score', 0.0):.1f})"
     return check("implausible_accuracy", "lookahead", acc["status"], summary, acc)
+
+
+IMPLAUSIBLE_SHARPE = 6.0  # annualized, after costs: honest research strategies live well below this
+
+
+def independence_row(result: dict[str, Any] | None, sharpe: float) -> dict[str, Any]:
+    """Positions that ignore the input: a warning, and a failure when they also earn an implausible Sharpe."""
+    if result is None:
+        return check("data_independence", "lookahead", "skip", "needs strategy code (positions only)", {})
+    if result["status"] == "skip":
+        return check("data_independence", "lookahead", "skip", f"data independence: {result['reason']}", result)
+    impossible = sharpe >= IMPLAUSIBLE_SHARPE
+    calendar = result["kind"] == "depends on the calendar only"
+    if result["kind"] == "reads the prices":
+        return check("data_independence", "lookahead", "pass", "data independence: positions follow the prices", result)
+    if calendar and not impossible:
+        return check("data_independence", "lookahead", "pass", "data independence: positions depend on the calendar only", result)
+    if calendar:
+        summary = (
+            "positions do not depend on prices, only on dates, yet the strategy earns an annualized Sharpe of "
+            f"{sharpe:.1f}: a calendar rule does not earn that, so the answer was stored (a table keyed by date)"
+        )
+    else:
+        summary = (
+            "positions do not change on unrelated prices and dates: the strategy ignores its input "
+            "(a stored answer: a cache between calls, an array computed in advance, a model fitted on the whole file)"
+        )
+        if impossible:
+            summary += f", and it earns an annualized Sharpe of {sharpe:.1f}"
+    return check("data_independence", "lookahead", "fail" if impossible else "warn", summary, {**result, "sharpe_annualized": sharpe})
+
+
+def performance_row(sharpe: float, bars: int) -> dict[str, Any]:
+    """Net annualized Sharpe far above what honest strategies reach is a smell test, not a verdict."""
+    details = {"sharpe_annualized": sharpe, "threshold": IMPLAUSIBLE_SHARPE, "bars": bars}
+    if bars < 100 or not np.isfinite(sharpe):
+        return check("implausible_performance", "statistics", "skip", "implausible performance: too few bars", details)
+    if sharpe >= IMPLAUSIBLE_SHARPE:
+        return check(
+            "implausible_performance", "statistics", "warn",
+            f"annualized Sharpe {sharpe:.1f} after costs is far above what honest strategies reach: look for a leak "
+            "(state kept between calls, a model fitted on the whole file, data the probes cannot see)",
+            details,
+        )
+    return check("implausible_performance", "statistics", "pass", f"annualized Sharpe {sharpe:.1f} is within the usual range", details)
 
 
 def economics_rows(

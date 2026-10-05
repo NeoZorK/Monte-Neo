@@ -100,7 +100,7 @@ def test_weekly_closed_market_and_daily_bars_are_not_gaps() -> None:
 def test_outages_are_gaps() -> None:
     hours = pd.date_range("2021-01-01", periods=20000, freq="h")
     gaps = time_gaps(pd.Series(hours.delete(range(5000, 5010)).delete(range(9000, 9100))))
-    assert gaps == {"count": 2, "largest_hours": 101.0}
+    assert (gaps["count"], gaps["largest_hours"]) == (2, 101.0)
     minutes = pd.date_range("2021-01-01", periods=100000, freq="min").delete(range(1000, 1360))
     assert time_gaps(pd.Series(minutes))["count"] == 1
     # A missing week in a session market.
@@ -110,7 +110,7 @@ def test_outages_are_gaps() -> None:
 
 
 def test_time_gaps_without_enough_time() -> None:
-    empty = {"count": 0, "largest_hours": None}
+    empty = {"count": 0, "largest_hours": None, "missing_share": 0.0}
     assert time_gaps(None) == empty
     assert time_gaps(pd.Series(pd.date_range("2021", periods=10, freq="h"))) == empty
     assert time_gaps(pd.Series([pd.Timestamp("2021-01-01")] * 30)) == empty

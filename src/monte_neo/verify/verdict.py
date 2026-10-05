@@ -19,7 +19,13 @@ from monte_neo.backtest.model import ExecutionModel
 from monte_neo.verify import checks as rows
 from monte_neo.verify.breakdown import buy_and_hold, periods, regimes, series
 from monte_neo.verify.claim import claim_row, parse_claim
-from monte_neo.verify.confidence import bootstrap_ci, confidence_row, track_record, track_record_row
+from monte_neo.verify.confidence import (
+    bootstrap_ci,
+    confidence_row,
+    serial_correlation_row,
+    track_record,
+    track_record_row,
+)
 from monte_neo.verify.costs import breakeven_cost_bps, delay_scan
 from monte_neo.verify.engine import is_weights, simulate
 from monte_neo.verify.executor import ProcessRunner, resolve_jobs, split_spec
@@ -38,10 +44,19 @@ from monte_neo.verify.market import SingleMarket, UniverseMarket, market_for
 from monte_neo.verify.microstructure import capacity, capacity_row, spread_estimate, spread_row
 from monte_neo.verify.notebook import Certificate
 from monte_neo.verify.quality import data_quality, quality_row, spike_profit_share
+from monte_neo.verify.repaint import MODES as REPAINT_MODES
+from monte_neo.verify.repaint import TIMINGS as SIGNAL_TIMINGS
+from monte_neo.verify.repaint import repaint_rows
 from monte_neo.verify.report_data import MAX_TRADES_FOR_STATS, build_charts, trade_stats
 from monte_neo.verify.schema import DISCLAIMER, VERDICT_SCHEMA_ID, aggregate_verdict, to_jsonable
 from monte_neo.verify.stability import rolling_stability, stability_row
-from monte_neo.verify.stats import bar_returns, deflated_sharpe, infer_periods_per_year, sharpe_per_bar
+from monte_neo.verify.stats import (
+    bar_returns,
+    deflated_sharpe,
+    infer_periods_per_year,
+    lo_adjusted_sharpe,
+    sharpe_per_bar,
+)
 from monte_neo.verify.symbol_costs import apply_symbol_costs
 from monte_neo.verify.timing import timing_significance
 
@@ -102,6 +117,10 @@ def verify_strategy(
     isolate: bool = False,
     claim: dict[str, Any] | str | Path | None = None,
     symbol_costs: dict[str, Any] | str | Path | None = None,
+    ledger: str | Path | bool | None = None,
+    registration: str | None = None,
+    repaint: str = "auto",
+    signal_timing: str = "close",
 ) -> dict[str, Any]:
     """Verify one strategy and return a ``strategy-verdict/1`` report.
 
@@ -122,6 +141,13 @@ def verify_strategy(
     ``claim`` (a dict, JSON text or a JSON file: ``sharpe``, ``total_return``, ``max_drawdown``,
     ``n_trades``, ``win_rate``, ``profit_factor``) is compared with the verified numbers; an
     overclaim fails the ``claim_consistency`` check.
+    ``ledger`` (``True`` for ``.monte-neo/ledger.jsonl``, or a path) counts the variants tried on this data in an
+    append-only, hash-chained file; the larger of that count and ``n_trials`` is used for the Deflated Sharpe.
+    ``registration`` is the id of a pre-registered hypothesis (``monte-neo register``): the certificate says whether the
+    verified code is the registered one and, with ``ledger``, whether the registration came before its first run.
+    ``repaint`` (``off``, ``auto`` or ``strict``) sets how densely the signal is checked for changing after it was shown
+    (history) and while the bar forms; ``signal_timing="open"`` declares the signal known at the bar's open, so a signal
+    that needs the bar's own prices fails. See :mod:`monte_neo.verify.repaint`.
     ``symbol_costs`` (a dict, JSON text or a JSON file: ``{"AAA": {"commission_bps": 2, "slippage_bps": 1},
     "default": {...}}``) gives a universe different costs per symbol; see :mod:`monte_neo.verify.symbol_costs`.
     """
@@ -133,6 +159,10 @@ def verify_strategy(
         raise ValueError(f"holdout_fraction must be between 0 and 1, got {holdout_fraction}")
     if positions not in POSITION_MODES:
         raise ValueError(f"positions must be one of {POSITION_MODES}, got {positions!r}")
+    if repaint not in REPAINT_MODES:
+        raise ValueError(f"repaint must be one of {REPAINT_MODES}, got {repaint!r}")
+    if signal_timing not in SIGNAL_TIMINGS:
+        raise ValueError(f"signal_timing must be one of {SIGNAL_TIMINGS}, got {signal_timing!r}")
     df = load_ohlcv(ohlcv)
     market = market_for(df)
     n = market.n_bars
@@ -146,6 +176,8 @@ def verify_strategy(
         "probe_checks": int(probe_checks),
         "periods_per_year": float(periods_per_year) if periods_per_year else None,
         "positions": positions,
+        "repaint": repaint,
+        "signal_timing": signal_timing,
     }
     if claim is not None:
         settings["claim"] = parse_claim(claim)  # part of the certificate: a recheck compares the same claim
@@ -160,14 +192,63 @@ def verify_strategy(
             raise ValueError("jobs, timeout and isolate need strategy code in a file (strategy='file.py')")
         with io_watch:
             fn, src = _resolve_strategy(strategy, signal_fn, source)
+    book = None
+    if ledger:
+        from monte_neo.verify.ledger import Ledger, ledger_row, variant_id
+
+        book = Ledger(None if ledger is True else ledger)
+        data_id = _sha256(market.data_bytes())[:16]
+        variant = variant_id(src, _signals_array(signals))
+        chain = book.check()
+        counted = book.count_with(variant, data_id)
+        declared = n_trials
+        n_trials = max(int(n_trials or 1), counted)
+        row = ledger_row(counted, declared, chain, book.path)
+        if row["status"] != "pass":
+            row["status"] = "info"  # context only: a recheck has no ledger, so it must not move the verdict
+        extra_checks = [*(extra_checks or []), row]
+    if registration:
+        from monte_neo.verify.ledger import variant_id as _variant_id
+        from monte_neo.verify.register import Registry, registration_row
+
+        settings["registration"] = str(registration)
+        mine = _variant_id(src, _signals_array(signals))
+        first_at = None
+        if book is not None:
+            data_here = _sha256(market.data_bytes())[:16]
+            first_at = next((e["at"] for e in book.entries() if e.get("variant") == mine and e.get("data") == data_here), None)
+        reg_row = registration_row(str(registration), Registry(), mine, first_at, ledger_used=book is not None)
+        extra_checks = [*(extra_checks or []), reg_row]
     try:
-        return _checks_and_report(
+        report = _checks_and_report(
             df, market, fn, src, signals, settings, io_watch, model, n_trials, trial_sharpes,
             periods_per_year, holdout_fraction, min_trades, probe_checks, positions, extra_checks, extra,
         )
+        if book is not None:
+            entry = book.record(
+                variant=variant, data_id=data_id, sharpe=float(report["metrics"].get("sharpe_annualized") or float("nan")),
+                verdict=report["verdict"], certificate_id=report["certificate_id"],
+            )
+            report["ledger"] = {"path": str(book.path), "variants_counted": counted, "n_trials_used": n_trials, "entry": entry["seq"], "chain_ok": chain["ok"]}
+        return report
     finally:
         if runner is not None:
             runner.close()
+
+
+def _signals_array(signals: Any) -> np.ndarray | None:
+    """Positions given as an array or a file, for the ledger's variant id (``None`` when they cannot be read cheaply)."""
+    if signals is None:
+        return None
+    if isinstance(signals, str | Path):
+        try:
+            return np.frombuffer(Path(signals).read_bytes(), dtype=np.uint8)
+        except OSError:
+            return None
+    try:
+        return np.asarray(signals)
+    except (TypeError, ValueError):
+        return None
 
 
 def _runner_for(
@@ -224,9 +305,11 @@ def _checks_and_report(
         settings["positions"] = mode
         full = to_positions(values, mode)  # per row: what the probes compare and the hash covers
         sig, traded = market.positions(values, mode, model)
-        determinism = truncation = perturbation = None
+        determinism = truncation = perturbation = independence = repaint_history = repaint_live = None
         if fn is not None:
             determinism, truncation, perturbation = market.probes(fn, full, mode, probe_checks)
+            independence = market.independence(fn, full, mode)
+            repaint_history, repaint_live = market.repaint(fn, full, mode, settings["repaint"], settings["signal_timing"])
     lint = lint_source(src) if src else None
 
     run = simulate(ohlc, sig, model)
@@ -263,14 +346,18 @@ def _checks_and_report(
         rows.probe_row("lookahead_truncation", truncation, "truncation probe"),
         rows.probe_row("lookahead_perturbation", perturbation, "future-perturbation probe"),
         rows.external_data_row(*(_outside_data(io_watch, fn) if fn is not None else (None, None))),
+        *repaint_rows(repaint_history, repaint_live),
         rows.lint_row(lint),
         rows.accuracy_row(accuracy),
+        rows.independence_row(independence, float(dsr["sharpe_annualized"])),
+        rows.performance_row(float(dsr["sharpe_annualized"]), int(rets.size)),
         *rows.economics_rows(model, total_return, breakeven, delay),
         rows.timing_row(timing),
         *rows.statistics_rows(dsr, n_closed, int(min_trades), trials_declared=n_trials is not None, holdout=holdout),
         rows.period_row(by_period, total_return),
         stability_row(windows),
         confidence_row(interval),
+        serial_correlation_row(lo_adjusted_sharpe(rets, ppy)),
         track_record_row(history),
         *([claim_row(settings["claim"], _verified(dsr, run, n_closed, journal_stats))] if "claim" in settings else []),
         rows.benchmark_row(total_return, dsr["sharpe_annualized"], bench),

@@ -78,7 +78,7 @@ def render_workflow(
     *, ohlcv: str, strategy: str, version: str, n_trials: int | None = None, fail_on: str = "REJECT",
     isolate: bool = False, sign: bool = False,
 ) -> str:
-    """The workflow text. ``version`` is the release the action is pinned to (for example ``v0.50.0``)."""
+    """The workflow text. ``version`` is the release the action is pinned to (for example ``v0.52.0``)."""
     lines = [
         "name: Monte-Neo verify",
         "",

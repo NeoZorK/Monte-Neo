@@ -114,6 +114,31 @@ def deflated_sharpe(
     }
 
 
+def lo_adjusted_sharpe(rets: np.ndarray, periods_per_year: float, lags: int = 20) -> dict[str, float]:
+    """Annualized Sharpe corrected for serial correlation (Lo, 2002).
+
+    Smoothed or lagged returns (illiquid assets, marks, positions held through trends) correlate from bar to bar, and
+    the usual ``sqrt(periods)`` scaling then overstates the Sharpe: the factor is
+    ``sqrt(q) / sqrt(1 + 2 * sum_k (1 - k/q) * rho_k)`` with ``q`` the periods per year.
+    """
+    r = np.asarray(rets, dtype=np.float64)
+    r = r[np.isfinite(r)]
+    n = r.size
+    q = max(float(periods_per_year), 1.0)
+    sr = sharpe_per_bar(r)
+    naive = float(sr * math.sqrt(q))
+    if n < 30 or float(np.std(r)) == 0.0:
+        return {"naive": naive, "adjusted": naive, "rho1": 0.0, "factor": 1.0}
+    centred = r - r.mean()
+    denom = float(np.dot(centred, centred))
+    k_max = max(1, min(int(lags), n // 4, int(q) - 1 if q > 2 else 1))
+    rho = np.array([float(np.dot(centred[k:], centred[:-k])) / denom for k in range(1, k_max + 1)])
+    weights = 1.0 - np.arange(1, k_max + 1) / q
+    spread = max(1.0 + 2.0 * float(np.sum(weights * rho)), 0.05)
+    factor = 1.0 / math.sqrt(spread)
+    return {"naive": naive, "adjusted": float(naive * factor), "rho1": float(rho[0]), "factor": float(factor)}
+
+
 def timestamp_series(timestamps: Any) -> pd.Series:
     """Timestamps as a Series without boxing them into Python objects.
 
