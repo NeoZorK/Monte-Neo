@@ -87,6 +87,9 @@ A simplified guide to the Monte-Neo file structure.
 - packaging/conda-forge/meta.yaml - conda-forge recipe draft (not built)
 - .github/ISSUE_TEMPLATE/false_accusation.yml - Issue form for false accusations of honest strategies
 - docs/guides/discover.md - monte-neo discover: verified indicator search (gate, effective trials, search null, lockbox)
+- docs/development/mutation-report.md - Generated (Russian, internal): mutation check of the core, survivors
+- scripts/mutation_check.py - Mutation check of the verifier core
+- tests/unit/test_mutation_pins.py - Exact values and boundaries pinned after the mutation check
 - docs/guides/repaint.md - Repainting: history and forming-bar probes, lint rules, fixes
 - docs/guides/workflow-tools.md - history, register, oracle, portfolio, doctor
 - docs/guides/discover-calibration.md - Generated: discover on noise and the power to find a planted edge

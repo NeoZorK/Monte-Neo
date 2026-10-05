@@ -78,6 +78,12 @@ def build(level: str) -> str:
         lo, hi = wilson(k, n)
         out.append(f"| {label} | {k} | {n} | {k / n:.1%} | {lo:.1%} – {hi:.1%} |")
     out += other_classes()
+    out += [
+        "", "## How to read this", "",
+        "The mechanisms were written by the maintainers and the labels were checked by an oracle that does not use the verifier, so a rate of 100 %",
+        "is a regression guard on known mechanisms, not a claim about leaks nobody thought of. It does not measure: real Freqtrade and Lean runs",
+        "(the adapters are tested on fake data), open-source strategies in the wild, or a model fitted when the module loads that still reacts to its input.",
+    ]
     gaps = known_gaps()
     out += ["", "## Known gaps", "", "Cases the verifier gets wrong today. They are tracked in `tests/zoo/known_gaps.json`; a new miss fails CI.", ""]
     out += [f"- `{k}`: {v}" for k, v in sorted(gaps.items())] or ["- none"]

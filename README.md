@@ -143,10 +143,21 @@ monte-neo discover --ohlcv data.csv --out found/
 ```
 
 Tries thousands of causal formulas, counts the search, tests it against shuffled markets and a lockbox, and writes a
-certificate for the winner. Most of the time on noise it reports that nothing was found. See
-[the guide](docs/guides/discover.md); `verify --ledger` counts your own variants and `verify --suggest-fix` rewrites leaks
-([guide](docs/guides/ledger-and-fixes.md)). The [honesty scorecard](docs/guides/honesty-scorecard.md) shows how often the
-verifier catches leaks and spares honest strategies.
+certificate for the winner. On random walks it names nothing (0 of 60 searches in the
+[calibration](docs/guides/discover-calibration.md)), although a plain search would report a Sharpe above 6.
+See [the guide](docs/guides/discover.md).
+
+## The rest of the workflow
+
+- `verify --ledger` counts every variant you try; `verify --suggest-fix` rewrites leaks as a diff
+  ([guide](docs/guides/ledger-and-fixes.md)).
+- Signals must not repaint: a signal that changes after it was shown fails, and a signal that needs the bar's own prices is
+  reported ([guide](docs/guides/repaint.md)).
+- `history`, `register`, `oracle`, `portfolio`, `doctor`: certificate history with a regression exit code, pre-registered
+  hypotheses, a Thresholdout hold-out for agents, many strategies at once, and known problems of data exports
+  ([guide](docs/guides/workflow-tools.md)).
+- The [honesty scorecard](docs/guides/honesty-scorecard.md) shows how often the verifier catches leaks and spares honest
+  strategies (hypothesis zoo, with intervals and known gaps).
 
 ## What it checks
 

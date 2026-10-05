@@ -22,13 +22,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PKG = ROOT / "src" / "monte_neo"
+PINS = "tests/unit/test_mutation_pins.py"
 TARGETS = {
-    "verify/lookahead.py": ["tests/unit/test_verify_probes.py", "tests/unit/test_verify_stateful.py", "tests/traps/test_trap_suite.py"],
-    "verify/repaint.py": ["tests/zoo/test_zoo_repaint.py"],
-    "verify/stats.py": ["tests/unit/test_verify_stats_ingest.py", "tests/zoo/test_zoo_statistics.py"],
-    "verify/quality.py": ["tests/unit/test_verify_quality.py", "tests/zoo/test_zoo_data.py"],
-    "verify/ledger.py": ["tests/unit/test_verify_ledger.py"],
-    "verify/history.py": ["tests/unit/test_stage10_tools.py"],
+    "verify/lookahead.py": [PINS, "tests/unit/test_verify_probes.py", "tests/unit/test_verify_stateful.py", "tests/traps/test_trap_suite.py"],
+    "verify/repaint.py": [PINS, "tests/zoo/test_zoo_repaint.py"],
+    "verify/stats.py": [PINS, "tests/unit/test_verify_stats_ingest.py", "tests/zoo/test_zoo_statistics.py"],
+    "verify/quality.py": [PINS, "tests/unit/test_verify_quality.py", "tests/zoo/test_zoo_data.py"],
+    "verify/ledger.py": [PINS, "tests/unit/test_verify_ledger.py"],
+    "verify/history.py": [PINS, "tests/unit/test_stage10_tools.py"],
 }
 SWAPS = {ast.Eq: ast.NotEq, ast.NotEq: ast.Eq, ast.Lt: ast.LtE, ast.LtE: ast.Lt, ast.Gt: ast.GtE, ast.GtE: ast.Gt}
 ARITH = {ast.Add: ast.Sub, ast.Sub: ast.Add, ast.Mult: ast.Div, ast.Div: ast.Mult}
@@ -86,7 +87,7 @@ def run_mutant(target: str, tests: list[str], kind: str, index: int, source: str
         env = {**os.environ, "PYTHONPATH": tmp, "ZOO_LEVEL": "lite"}
         try:
             proc = subprocess.run(
-                [sys.executable, "-m", "pytest", "-x", "-q", "-W", "ignore", "-p", "no:cacheprovider", *tests],
+                [sys.executable, "-m", "pytest", "-x", "-q", "-W", "ignore", "-p", "no:cacheprovider", "-o", f"pythonpath={tmp}", *tests],
                 cwd=ROOT, env=env, capture_output=True, timeout=timeout, check=False,
             )
         except subprocess.TimeoutExpired:
