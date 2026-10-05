@@ -3,7 +3,8 @@
 ``monte-neo bench init <dir>`` writes the deterministic Honesty Bench v1 tasks.
 ``monte-neo bench prepare <dir> --agents a,b --workspaces <out>`` creates one clean
 workspace per agent and task; ``monte-neo bench collect <dir> --workspaces <out>``
-copies the agents' files back into ``submissions/``.
+copies the agents' files back into ``submissions/``; ``monte-neo bench run --workspaces <out> --agents a``
+runs the agents headless in between (``--dry-run`` first).
 """
 
 from __future__ import annotations
@@ -76,6 +77,40 @@ def _collect(argv: list[str], console: Console) -> int:
     return 0
 
 
+def _run(argv: list[str], console: Console) -> int:
+    from monte_neo.bench.agent_run import run_agents
+
+    p = argparse.ArgumentParser(prog="monte-neo bench run", description="Run coding agents over the prepared workspaces (one clean session per task).")
+    p.add_argument("--workspaces", required=True, help="Directory created by `monte-neo bench prepare`")
+    p.add_argument("--agents", required=True, help="Comma-separated agent names, e.g. claude-code")
+    p.add_argument("--dry-run", action="store_true", help="Print what would run and check that each CLI is installed; run nothing")
+    p.add_argument("--timeout", type=int, default=3600, help="Seconds per task (default 3600)")
+    p.add_argument("--model", help="Model to pin for every agent that takes --model (claude-code: sonnet, opus or a full name); record it with the results")
+    p.add_argument("--base-url", help="OpenAI-compatible server of a local model, e.g. http://localhost:11434/v1 (Ollama); checked before any task runs")
+    p.add_argument("--api-key", help="Key for --base-url (default: a placeholder, local servers ignore it)")
+    args = p.parse_args(argv)
+    try:
+        info = run_agents(
+            args.workspaces, [a.strip() for a in args.agents.split(",") if a.strip()], dry_run=args.dry_run, timeout=args.timeout,
+            model=args.model, base_url=args.base_url, api_key=args.api_key,
+        )
+    except ValueError as exc:
+        console.print(f"[red]run failed: {exc}[/]")
+        return 3
+    for line in info["ran"]:
+        console.print(("dry  " if info["dry_run"] else "ran  ") + line)
+    for line in info["skipped"]:
+        console.print(f"skip {line} (strategy.py exists: the first final answer counts)")
+    for line in info.get("failed", []):
+        console.print(f"[red]failed:[/] {line}", markup=True, highlight=False)
+    if info.get("failed"):
+        console.print("[red]The agent did not finish. Full output: <workspace>/<agent>/task-N/transcript.log. Fix that first; a task with no strategy.py is run again.[/]")
+        return 4
+    if not info["dry_run"]:
+        console.print(f"Next: monte-neo bench collect <bench-dir> --workspaces {args.workspaces}")
+    return 0
+
+
 def main(argv: list[str] | None = None, console: Console | None = None) -> int:
     """Entry point; exit 0 on success, 3 when the directory has no submissions."""
     from monte_neo.bench import render_markdown, run_bench
@@ -86,6 +121,8 @@ def main(argv: list[str] | None = None, console: Console | None = None) -> int:
         return _init(argv[1:], console)
     if argv and argv[0] == "prepare":
         return _prepare(argv[1:], console)
+    if argv and argv[0] == "run":
+        return _run(argv[1:], console)
     if argv and argv[0] == "collect":
         return _collect(argv[1:], console)
     args = build_parser().parse_args(argv)

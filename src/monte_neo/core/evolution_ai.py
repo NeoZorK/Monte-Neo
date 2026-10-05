@@ -143,9 +143,9 @@ class AIEvolutionEngine:
             return self._fallback_evaluate(population, data, targets)
             
         try:
-            #  3D- (10  Monte-Carlo       )
-            #       
-            n_scenarios = 5 #  -  
+            # Use the 3D backtest (Monte-Carlo scenarios for EVERY member of the population inside the loop)
+            # This gives much more robust strategies
+            n_scenarios = 5 # moderate count for evolution
             
             results_3d = self.mlx_engine.backtest_population_multi_scenario(
                 data=data,
@@ -159,34 +159,34 @@ class AIEvolutionEngine:
             # Layout: 0:ret, 1:trades, 2:winrate, 3:maxdd, 4:pf, 5:sharpe
             scores = []
             for i in range(len(population)):
-                #       
+                # Metrics over all scenarios for this individual
                 scen_metrics = results_3d[i] # [Scenarios x 6]
                 
-                #  
+                # Mean metrics
                 avg_pf = np.mean(scen_metrics[:, 4])
                 avg_mdd = np.mean(scen_metrics[:, 3])
                 avg_trades = np.mean(scen_metrics[:, 1])
                 avg_ret = np.mean(scen_metrics[:, 0])
                 
-                # Fitness score (  )
+                # Fitness score (conservative approach)
                 pf = avg_pf
                 if np.isnan(pf) or np.isinf(pf) or pf > 100.0: pf = 0.0
                 
-                #      
+                # Raise the weight of profit and profit factor
                 score = pf * 1.5
-                score += (avg_ret * 10.0) # 10%  = +1.0  
-                score -= avg_mdd * 2.0   #   
+                score += (avg_ret * 10.0) # 10% profit = +1.0 to the score
+                score -= avg_mdd * 2.0   # drawdown penalty
                 
-                #    -  ( 15  )
+                # Penalty for few trades (at least 15 for stability)
                 if avg_trades < 15:
                     score *= (avg_trades / 15.0)
                 
-                #    (  flat landscape 0.001)
-                #      ,     
+                # Activity bonus (to avoid a flat landscape at 0.001)
+                # A tiny bonus for every trade, even if the strategy still loses money
                 if avg_trades > 0:
                     score += min(0.1, avg_trades * 0.001)
                 
-                #    -      
+                # Log when something interesting is found, or to debug the first generations
                 if score > 1.0 or (gen == 0 and i < 5):
                     logger.debug(f"Candidate {i}: score={score:.4f}, pf={pf:.2f}, trades={avg_trades:.1f}, ret={avg_ret:.4f}, mdd={avg_mdd:.4f}")
                 

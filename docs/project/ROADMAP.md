@@ -1,6 +1,6 @@
 # Monte-Neo Roadmap (v0.45.0)
 
-Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier for agent-built strategies).
+Product direction: verifier for agent-built strategies.
 
 ## v0.18.0 — verifier core + agent distribution
 - [x] `export_signals()` — bring-your-own positions
@@ -124,7 +124,7 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 
 ## v0.42.0 — audience content
 - [x] Technical note on the method, weekly "trap of the week" drafts, differences table, false-accusation issue form
-- [x] conda-forge recipe draft; owner tasks in `docs/project/STAGE6_OWNER_TASKS_RU.md`
+- [x] conda-forge recipe draft
 
 ## v0.43.0 — stage 3 leftovers
 - [x] Short-borrow and funding fees (CLI, MCP, Action); White Reality Check and Hansen SPA for grids; rolling-window stability
@@ -159,7 +159,7 @@ strategies, a public Honesty Bench leaderboard, discover on real market data.
 - [ ] Measure the latency of a machine near the exchange and the false-warning rate among strategies that really earn; then decide which rows may fail the verdict
 - Not planned, on purpose: queue position and partial fills (they need the order book and a passive-order model; a rough formula would give false precision)
 
-## Planned: stages 8-10 (see PLAN_STAGES_8_10_RU.md)
+## Planned: stages 8-10 
 - [ ] v0.51 protection against stateful cheating; v0.52-v0.54 hypothesis zoo (about 2,400 cases, published honesty scorecard)
 - [ ] v0.55 trial ledger and suggest_fix; v0.56-v0.61 `monte-neo discover` (verified indicator search)
 
@@ -294,3 +294,9 @@ strategies, a public Honesty Bench leaderboard, discover on real market data.
 - [ ] Optional OMS hardening (not research speed claim)
 - [x] Metal SL/TP/trail research subset
 - [x] Release cut when green on main (v0.10.0 / v0.14.0 tagged)
+
+## Local agents
+
+- [x] `qwen-code` built-in agent for `bench run`, `--base-url` for models served locally (Ollama, LM Studio), failure hints
+- [x] `integrations/qwen/` rules and MCP entry; guide [local-agents.md](../guides/local-agents.md)
+- [ ] A checked end-to-end run with a real local model on the maintainer's machine, and further local agents as they appear

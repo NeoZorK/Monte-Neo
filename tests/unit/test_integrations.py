@@ -20,6 +20,7 @@ def test_rule_snippets_match_source() -> None:
     rules = (INTEG / "AGENT_RULES.md").read_text(encoding="utf-8")
     assert (INTEG / "codex" / "AGENTS.md").read_text(encoding="utf-8") == rules
     assert (INTEG / "gemini" / "GEMINI.md").read_text(encoding="utf-8") == rules
+    assert (INTEG / "qwen" / "QWEN.md").read_text(encoding="utf-8") == rules
     assert (INTEG / "cursor" / "rules" / "monte-neo-verify.mdc").read_text(encoding="utf-8").endswith(rules)
 
 
@@ -32,7 +33,7 @@ def test_manifest_versions_match_package() -> None:
 
 def test_mcp_launch_commands_agree() -> None:
     expected = ["--from", "monte-neo[mcp]>=0.52.0", "monte-neo-mcp"]
-    for path in (INTEG / "claude-code" / ".mcp.json", INTEG / "cursor" / "mcp.json", INTEG / "gemini" / "gemini-extension.json"):
+    for path in (INTEG / "claude-code" / ".mcp.json", INTEG / "cursor" / "mcp.json", INTEG / "gemini" / "gemini-extension.json", INTEG / "qwen" / "settings.json"):
         server = json.loads(path.read_text())["mcpServers"]["monte-neo"]
         assert server["command"] == "uvx" and server["args"] == expected, path
     assert '"monte-neo[mcp]>=0.52.0"' in (INTEG / "codex" / "config.toml").read_text()

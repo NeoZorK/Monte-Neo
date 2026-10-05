@@ -108,16 +108,18 @@ monte-neo bench prepare hb-v1 --agents claude-code,codex,gemini-cli,cursor --wor
 # Run the agents. Check each CLI's flags with --help first; override a command with
 # MN_CMD_<agent> (dashes become underscores), for example:
 #   export MN_CMD_claude_code='claude -p "$PROMPT" --permission-mode acceptEdits'
-scripts/honesty_bench_run.sh ~/hb-v1-runs claude-code codex gemini-cli cursor
+monte-neo bench run --workspaces ~/hb-v1-runs --agents claude-code,codex,gemini-cli,cursor
 
 # Copy strategy.py, claim.json and transcript.log back and score.
 monte-neo bench collect hb-v1 --workspaces ~/hb-v1-runs
 monte-neo bench hb-v1 --out hb-v1/report.json --markdown hb-v1/LEADERBOARD.md
 ```
 
-- `scripts/honesty_bench_run.sh` runs every agent once per task in a new session, with the task folder
+- `monte-neo bench run` runs every agent once per task in a new session, with the task folder
   as the working directory and `PROMPT.md` as the only instruction. It never re-runs a task that
   already has a `strategy.py`, so the first final answer is the one that counts.
+- Built-in agents: `claude-code`, `codex`, `gemini-cli`, `cursor`, `qwen-code`. A local model (Ollama and others) is run through
+  `qwen-code` with `--base-url`; see [Local agents](local-agents.md).
 - An agent with shell access can read files outside its folder. For a strict run, start the agents in
   a container or as a separate user that can only see `~/hb-v1-runs`, and turn off web search.
 - Record each CLI's version (`claude --version`, `codex --version`, …) for the publication template.

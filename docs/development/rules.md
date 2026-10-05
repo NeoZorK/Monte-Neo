@@ -2,9 +2,15 @@
 
 ## Authorship (public repositories)
 
-- Every commit, PR, comment and release on public repositories is authored as **NeoZorK**
+- Every commit, PR, comment and release on public repositories is authored as **Rostyslav Shcherbyna**
   (`63606118+NeoZorK@users.noreply.github.com`).
 - No AI co-author trailers, session links or "Generated with" footers. See root `CLAUDE.md`.
+
+## Language and publication (mandatory)
+
+- Everything in a public repository is in **English only**: code, comments, docs, issues, PRs, commits, releases.
+- Private working files live in `docs/internal/`, `scripts/internal/` and `tests/internal/`, which are in `.gitignore`. They are never committed, pushed or linked from public files.
+- Before every commit run `git grep -nP "(*UTF)[\x{0400}-\x{04FF}]{3,}"`: any match in a tracked file is a mistake to fix.
 
 ## Coding Standards
 

@@ -142,7 +142,7 @@ class SequentialMCRunner:
                 if interactive:
                     if not questionary.confirm("Continue to next stage anyway (not recommended)?", default=False, style=CUSTOM_STYLE).ask():
                         break
-                #          
+                # In non-interactive mode all steps run for a full analysis
             else:
                 console.print(f"\n[bold green]✅ STAGE PASSED: {display_name}[/]")
                 if interactive and idx < total_steps:

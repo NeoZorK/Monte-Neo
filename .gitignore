@@ -153,3 +153,9 @@ local_ai_wrapper.py
 __pycache__/
 site/
 site/
+runbook-work/
+
+# Private working files: never published
+docs/internal/
+scripts/internal/
+tests/internal/
