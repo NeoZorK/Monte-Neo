@@ -1,0 +1,25 @@
+## Trading strategy verification (Monte-Neo)
+
+Before reporting any trading strategy, signal or backtest result (returns, Sharpe, win rate):
+
+1. Save the OHLCV data as CSV/Parquet (`open, high, low, close[, timestamp]`). For several symbols,
+   use one long table with `timestamp` and `symbol` columns.
+2. Put the strategy in a Python file with `signal(df) -> positions` (+1 long, 0 flat, -1 short,
+   or a weight in [-1, 1] such as 0.5), one value per row of `df`, computed only from `df`
+   (no file or network reads).
+3. Call the `verify_strategy` tool of the `monte-neo` MCP server (or run
+   `monte-neo verify --ohlcv data.csv --strategy strategy.py --n-trials N --format json`)
+   with `n_trials` = number of variants you tried and realistic costs.
+   If you tuned parameters, make them keyword arguments of `signal(df, **params)` and call
+   `verify_grid` with the grid instead: the verifier then counts the trials and runs a walk-forward.
+   Pass `ledger=true` (CLI `--ledger`) whenever you try more than one variant: every variant is counted
+   automatically and the larger of the count and `n_trials` is used.
+4. `REJECT` means the backtest is wrong: apply `next_actions` and verify again. For look-ahead and repainting
+   (a signal that changes after it was shown) call `suggest_fix`, write the patched source to a new file and
+   verify that file; never keep a leaking or repainting rule because its numbers look good.
+   `NEEDS_MORE_EVIDENCE` means the result is not statistically established.
+5. Do not tune against the test set: ask `holdout_query` (hold-out oracle) instead of reading it, and call
+   `register_hypothesis` before the first run so the certificate can show the idea came first.
+   To search for an indicator, use `discover_indicator` (it counts and tests the search), not hundreds of manual tries.
+6. Report the verifier verdict, `certificate_id` and metrics, not your own backtest numbers.
+   Never reduce `n_trials` or costs to obtain a better verdict.

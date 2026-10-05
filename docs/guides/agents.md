@@ -58,6 +58,11 @@ into your project's `AGENTS.md`.
 Copy `integrations/gemini/` to `~/.gemini/extensions/monte-neo/`. The extension
 registers the MCP server and loads `GEMINI.md` as context.
 
+## Qwen Code (and local models)
+
+`qwen mcp add monte-neo uvx --from "monte-neo[mcp]>=0.52.0" monte-neo-mcp`, and copy `integrations/qwen/QWEN.md` into your
+project. Qwen Code can also drive a model served on your machine: see [Local agents](local-agents.md).
+
 ## Cursor
 
 1. Copy `integrations/cursor/mcp.json` to `.cursor/mcp.json` in your project, or merge it

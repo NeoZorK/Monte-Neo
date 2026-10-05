@@ -295,9 +295,8 @@ strategies, a public Honesty Bench leaderboard, discover on real market data.
 - [x] Metal SL/TP/trail research subset
 - [x] Release cut when green on main (v0.10.0 / v0.14.0 tagged)
 
-## Planned: next release after v0.52.0 (local agents)
+## Local agents
 
-- [ ] `monte-neo bench run` for local coding agents: Qwen Code (`qwen-code`), and models served locally through an OpenAI-compatible endpoint (Ollama, LM Studio)
-- [ ] Default command, model flag and `integrations/qwen/` rules and MCP setup for Qwen Code
-- [ ] Tests with a fake local agent, a dry run, and a checked end-to-end run on a real local model
-- [ ] Guide in English: install, auth, local model, bench run, failure signatures
+- [x] `qwen-code` built-in agent for `bench run`, `--base-url` for models served locally (Ollama, LM Studio), failure hints
+- [x] `integrations/qwen/` rules and MCP entry; guide [local-agents.md](../guides/local-agents.md)
+- [ ] A checked end-to-end run with a real local model on the maintainer's machine, and further local agents as they appear

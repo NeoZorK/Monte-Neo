@@ -81,6 +81,7 @@ A simplified guide to the Monte-Neo file structure.
 - docs/guides/discover.md - monte-neo discover: verified indicator search (gate, effective trials, search null, lockbox)
 - scripts/mutation_check.py - Mutation check of the verifier core
 - tests/unit/test_mutation_pins.py - Exact values and boundaries pinned after the mutation check
+- docs/guides/local-agents.md - Local agents: Qwen Code, a model served by Ollama, bench run with --base-url, failure messages
 - docs/guides/real-data-and-wild-corpus.md - Honesty Bench run commands, discover on real markets, wild scan, why real Freqtrade and Lean runs
 - scripts/fetch_market_data.py, real_markets_run.py, wild_scan.py, wild_clone.sh - Real data and wild scan tools
 - src/monte_neo/__main__.py - python -m monte_neo
@@ -121,7 +122,7 @@ A simplified guide to the Monte-Neo file structure.
 - src/monte_neo/mcp/ - MCP server (monte-neo-mcp) + agent-facing tool functions
 - src/monte_neo/cli/verify_cmd.py - `monte-neo verify` command (CI exit codes)
 - src/monte_neo/backtest/export_signals.py - Bring-your-own-signals export
-- integrations/ - Claude Code plugin (skill, /verify, PostToolUse reminder hook), Codex / Gemini / Cursor agent configs (AGENT_RULES.md source of truth)
+- integrations/ - Claude Code plugin (skill, /verify, PostToolUse reminder hook), Codex / Gemini / Cursor / Qwen Code agent configs (AGENT_RULES.md source of truth)
 - .claude-plugin/marketplace.json - Claude Code plugin marketplace entry
 - action.yml - Composite GitHub Action for strategy verification
 - server.json - Official MCP Registry entry (io.github.NeoZorK/monte-neo, PyPI package, `monte-neo mcp`)

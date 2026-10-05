@@ -73,7 +73,7 @@ def test_a_failing_agent_shows_its_output_and_exits_4(tmp_path: Path, monkeypatc
     bad.write_text("import sys\nprint('Not logged in. Run login first.', file=sys.stderr)\nsys.exit(1)\n", encoding="utf-8")
     monkeypatch.setenv("MN_CMD_fake_agent", f"python3 {bad}")
     info = run_agents(ws, ["fake-agent"])
-    assert len(info["failed"]) == 5 and "Not logged in" in info["failed"][0]
+    assert len(info["failed"]) == 1 and len(info["ran"]) == 1 and "Not logged in" in info["failed"][0]  # the other tasks are not run
     assert main(["run", "--workspaces", str(ws), "--agents", "fake-agent"], Console(quiet=True)) == 4
 
 
@@ -85,3 +85,75 @@ def test_a_pinned_model_is_appended_for_known_agents_only(tmp_path: Path, monkey
     monkeypatch.setenv("MN_CMD_odd", "python3 -c pass")
     with pytest.raises(ValueError, match="--model is not known"):
         run_agents(ws, ["odd"], dry_run=True, model="x")
+
+
+def _serve(status: int = 200) -> tuple[object, str]:
+    import threading
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:  # noqa: N802
+            self.send_response(status)
+            self.end_headers()
+
+        def log_message(self, *args: object) -> None:
+            pass
+
+    server = HTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server, f"http://127.0.0.1:{server.server_port}/v1"
+
+
+def test_qwen_code_is_a_known_agent_with_a_model_flag(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    assert command_for("qwen-code") == 'qwen "$PROMPT" --yolo'
+    _, ws = _bench(tmp_path, "qwen-code")
+    monkeypatch.setenv("MN_CMD_qwen_code", "python3 -c pass")
+    info = run_agents(ws, ["qwen-code"], dry_run=True, model="qwen3-coder")
+    assert info["ran"][0].endswith("python3 -c pass --model qwen3-coder")
+
+
+def test_a_local_server_url_reaches_the_agent_as_the_openai_environment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _, ws = _bench(tmp_path, "qwen-code")
+    server, url = _serve()
+    agent = tmp_path / "env_agent.py"
+    agent.write_text(
+        "import os\nassert os.environ['OPENAI_BASE_URL'].endswith('/v1')\nassert os.environ['OPENAI_API_KEY'] == 'local'\n"
+        "assert os.environ['OPENAI_MODEL'] == 'qwen3-coder'\nopen('strategy.py', 'w').write('def signal(df):\\n    return df[\"close\"] * 0\\n')\n",
+        encoding="utf-8")
+    monkeypatch.setenv("MN_CMD_qwen_code", f"python3 {agent}")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    try:
+        info = run_agents(ws, ["qwen-code"], model="qwen3-coder", base_url=url)
+    finally:
+        server.shutdown()  # type: ignore[attr-defined]
+    assert len(info["ran"]) == 5 and not info["failed"]
+
+
+def test_an_unreachable_or_odd_local_url_stops_before_any_task(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _, ws = _bench(tmp_path, "qwen-code")
+    monkeypatch.setenv("MN_CMD_qwen_code", "python3 -c pass")
+    with pytest.raises(ValueError, match="not reachable"):
+        run_agents(ws, ["qwen-code"], dry_run=True, base_url="http://127.0.0.1:9/v1")
+    with pytest.raises(ValueError, match="http"):
+        run_agents(ws, ["qwen-code"], dry_run=True, base_url="localhost:11434")
+    assert not list(ws.rglob("transcript.log"))
+    server, url = _serve(404)  # an HTTP answer of any kind means the server is up
+    try:
+        assert run_agents(ws, ["qwen-code"], dry_run=True, base_url=url)["dry_run"]
+    finally:
+        server.shutdown()  # type: ignore[attr-defined]
+
+
+def test_known_failure_texts_get_a_one_line_fix(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from monte_neo.bench.agent_run import hint_for
+
+    assert "OPENAI_BASE_URL" in hint_for("No auth type is selected. Please configure")
+    assert "ollama serve" in hint_for("Error: connect ECONNREFUSED 127.0.0.1:11434")
+    assert hint_for("something else") == ""
+    _, ws = _bench(tmp_path)
+    bad = tmp_path / "noauth.py"
+    bad.write_text("import sys\nprint('No auth type is selected.', file=sys.stderr)\nsys.exit(1)\n", encoding="utf-8")
+    monkeypatch.setenv("MN_CMD_fake_agent", f"python3 {bad}")
+    info = run_agents(ws, ["fake-agent"])
+    assert "-> no model is configured" in info["failed"][0]
+    assert main(["run", "--workspaces", str(ws), "--agents", "fake-agent", "--base-url", "ftp://x"], Console(quiet=True)) == 3
