@@ -36,8 +36,6 @@ A simplified guide to the Monte-Neo file structure.
 - docs/project/features.md - Detailed overview of framework features
 - docs/project/dynamic_indicators.md - Explanation of dynamic indicator generation
 - docs/project/ROADMAP.md - Development roadmap and milestones (v0.51.0)
-- docs/project/PRODUCT_STRATEGY_RU.md - Product strategy: agent-native strategy verifier niche, moat, roadmap (RU, internal)
-- docs/project/CLEANUP_CANDIDATES_RU.md - Cleanup candidate list with evidence, awaiting owner approval (RU, internal)
 - docs/project/CHANGELOG.md - Release changelog (current: v0.51.0)
 - docs/project/backtest_engine.md - Fee-aware research bar engine
 - docs/project/oms_engine.md - Paper OMS (bar + tick/L2) + venue adapters
@@ -47,9 +45,6 @@ A simplified guide to the Monte-Neo file structure.
 - docs/assets/demo-verify.gif - Animated demo: leaky agent strategy → fix → honest verdict (scripts/make_demo_gif.py)
 - docs/assets/demo-arrival.gif - Animated demo: a strategy that lives on data it could not have seen, and an honest one (scripts/make_arrival_gif.py)
 - docs/guides/arrival-time.md - Latency audit guide: arrival look-ahead, the delay where the profit vanishes, latency Monte Carlo, recorder, limits
-- docs/project/MARKETING_PLAN_RU.md - Marketing plan: goals, audiences, channels, launch order (RU, internal)
-- docs/project/PLAN_STAGES_8_10_RU.md - Plan of stages 8-10: hypothesis zoo (1000+ checks), protection against stateful cheating, verified indicator discovery, indispensability loops (RU, internal)
-- docs/project/PRODUCT_PLAN_RU.md - Audit of v0.35 and the product plan: risks, report, traps, integrations, security check, speed and Metal, stages (RU, internal)
 - docs/marketing/launch-kit.md - Ready-to-post launch texts, GitHub About text, catalogue entries
 - docs/marketing/article-six-ways.md - Article draft: six ways an agent's backtest lies
 - docs/project/BRANCHING.md - Branch and version policy
@@ -67,7 +62,6 @@ A simplified guide to the Monte-Neo file structure.
 ### Development (docs/development/)
 - docs/development/rules.md - Project-specific rules and conventions
 - docs/development/testing.md - Testing strategy and execution guide
-- docs/development/review-policy.md - Review with a single maintainer: what is done, how to get a real reviewer (RU, internal)
 - docs/development/performance.md - Performance notes and benchmarks
 - docs/development/generation_mechanics.md - Deep dive into generator and dynamic indicator logic
 - docs/development/external-libs.md - List and purpose of external dependencies
@@ -82,8 +76,6 @@ A simplified guide to the Monte-Neo file structure.
 - docs/verify.md - Browser page that checks a certificate's Ed25519 signature (docs/assets/verify-certificate.js)
 - docs/paper/methodology.md - Technical note on the verification method (probes, costs, selection, certificates, Trap Suite evaluation)
 - docs/marketing/trap-of-the-week.md - Twelve weekly post drafts built on Trap Suite strategies, with measured verdicts
-- docs/project/STAGE6_OWNER_TASKS_RU.md - Stage 6: what the owner does (conda-forge, lists, publications, settings, contributor issues) (RU, internal)
-- docs/project/REGISTRATION_RUNBOOK_RU.md - Step-by-step registration in catalogues, Marketplace and repository settings (RU, internal)
 - packaging/conda-forge/meta.yaml - conda-forge recipe draft (not built)
 - .github/ISSUE_TEMPLATE/false_accusation.yml - Issue form for false accusations of honest strategies
 - docs/guides/discover.md - monte-neo discover: verified indicator search (gate, effective trials, search null, lockbox)
@@ -92,7 +84,6 @@ A simplified guide to the Monte-Neo file structure.
 - docs/guides/real-data-and-wild-corpus.md - Honesty Bench run commands, discover on real markets, wild scan, why real Freqtrade and Lean runs
 - scripts/fetch_market_data.py, real_markets_run.py, wild_scan.py, wild_clone.sh - Real data and wild scan tools
 - src/monte_neo/__main__.py - python -m monte_neo
-- scripts/runbook_check.py - Runs the runbook steps and prints PASS/FAIL; writes the runbook document
 - docs/guides/repaint.md - Repainting: history and forming-bar probes, lint rules, fixes
 - docs/guides/workflow-tools.md - history, register, oracle, portfolio, doctor
 - docs/guides/discover-calibration.md - Generated: discover on noise and the power to find a planted edge
@@ -244,7 +235,6 @@ A simplified guide to the Monte-Neo file structure.
 - scripts/pin_release.py - Writes the hash-locked requirement line of a release on PyPI (the verifier image installs it with --require-hashes)
 - scripts/make_arrival_gif.py - Renders docs/assets/demo-arrival.gif from live verify_quotes runs
 - docs/project/PACKAGING.md - PyPI / TestPyPI free packaging checklist
-- docs/project/SECURITY_AUDIT_RU.md - Security audit of the verifier (findings, fixes, open risks)
 - SECURITY.md - Security policy and threat model
 - .github/workflows/security.yml - Bandit and pip-audit on every push, PR and weekly
 - .github/workflows/scorecard.yml - OpenSSF Scorecard (weekly)

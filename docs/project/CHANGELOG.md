@@ -330,7 +330,7 @@ an independent re-implementation of both engines and of the Sharpe statistics, 7
 ## [v0.37.0] — 2026-09-29
 
 ### Security
-Result of the security audit (details: `docs/project/SECURITY_AUDIT_RU.md`, policy and threat model: `SECURITY.md`).
+Result of the security audit (policy and threat model: `SECURITY.md`).
 - **`--isolate` could be bypassed** by renaming a temp file over any file, or by creating a symbolic or hard link in
   the temp dir and writing through it. Both ends of a rename are checked, links are blocked, paths are resolved
   with `realpath`. Reproduced by four new tests. `--isolate` remains a guard, not a security boundary.
@@ -735,7 +735,7 @@ A full audit of the verifier. Each fix below has a regression test.
   now also covers `idxmax` / `idxmin` / `argmax` / `argmin` and whole-array `np.mean` / `np.std` / `np.percentile` / …
 - Honesty Bench guide: a run checklist (contamination rules for each agent and task) and a leaderboard
   publication template
-- Internal: cleanup candidate list with evidence (`docs/project/CLEANUP_CANDIDATES_RU.md`); nothing removed
+- Internal: cleanup candidate list with evidence; nothing removed
 
 ### Notes
 - No breaking API change vs 0.22.0. `np.mean(series)` and similar calls now produce a lint `warn`.
@@ -847,7 +847,7 @@ A full audit of the verifier. Each fix below has a regression test.
 - Composite GitHub Action `action.yml` (fails on `REJECT`, step summary, `verdict` output)
 - Trap Suite `tests/traps`: 5 lying strategies + 2 honest controls + data-snooping case
 - Docs: [Verifier API](../api/verify.md), [Use from agents](../guides/agents.md),
-  internal product strategy (`docs/project/PRODUCT_STRATEGY_RU.md`)
+  internal product strategy
 
 ### Changed
 - README / docs home repositioned: "verify a trading strategy before you trust it"

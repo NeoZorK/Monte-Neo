@@ -4,7 +4,7 @@
 Monte-Neo is an independent verifier for trading strategies written by AI agents and humans
 (`src/monte_neo/verify/`, CLI `monte-neo verify`, MCP server, GitHub Action). The research engine
 (indicator generator, Monte Carlo, MLX/Metal) is a frozen lane: bug fixes only.
-Product plan (RU, internal): `docs/project/PRODUCT_PLAN_RU.md`.
+Internal planning documents are kept outside the public repository.
 
 ## Key Commands
 ```bash

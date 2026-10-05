@@ -154,3 +154,7 @@ __pycache__/
 site/
 site/
 runbook-work/
+
+docs/internal/
+scripts/internal/
+tests/internal/

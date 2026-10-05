@@ -6,6 +6,14 @@
   (`63606118+NeoZorK@users.noreply.github.com`).
 - No AI co-author trailers, session links or "Generated with" footers. See root `CLAUDE.md`.
 
+## Language and publication (mandatory)
+
+- Everything in a public repository is in **English only**: code, comments, docs, issues, PRs, commits, releases.
+  `docs/internal/`, `scripts/internal/` and `tests/internal/`, which are in `.gitignore` and are **never** committed,
+- Before every commit run `git grep -nP "(*UTF)[--]{3,}"`: any match in a tracked file is a mistake to fix.
+- Files already published stay in git history; removing one from the branch is not enough when it was pushed:
+  tell the owner so that the history can be cleaned.
+
 ## Coding Standards
 
 - **Files < 300 lines**: If a file grows larger, split it into sub-modules.

@@ -1,5 +1,5 @@
 # Every path has an owner who is asked for review automatically.
-# Add a second handle here when a co-maintainer joins (see docs/development/review-policy.md).
+# Add a second handle here when a co-maintainer joins.
 *                    @NeoZorK
 /.github/            @NeoZorK
 /docker/             @NeoZorK
