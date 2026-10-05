@@ -10,6 +10,7 @@
 
 - Everything in a public repository is in **English only**: code, comments, docs, issues, PRs, commits, releases.
 - Private working files live in `docs/internal/`, `scripts/internal/` and `tests/internal/`, which are in `.gitignore`. They are never committed, pushed or linked from public files.
+- CI enforces this: the `language-guard` check (`scripts/check_english_only.py`) fails a pull request that adds Cyrillic text or private files, in files, the title, the description or a commit message. Add it to the required status checks of protected branches.
 - Before every commit run `git grep -nP "(*UTF)[\x{0400}-\x{04FF}]{3,}"`: any match in a tracked file is a mistake to fix.
 
 ## Coding Standards
