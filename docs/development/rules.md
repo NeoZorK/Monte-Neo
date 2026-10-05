@@ -2,7 +2,7 @@
 
 ## Authorship (public repositories)
 
-- Every commit, PR, comment and release on public repositories is authored as **NeoZorK**
+- Every commit, PR, comment and release on public repositories is authored as **Rostyslav Shcherbyna**
   (`63606118+NeoZorK@users.noreply.github.com`).
 - No AI co-author trailers, session links or "Generated with" footers. See root `CLAUDE.md`.
 
