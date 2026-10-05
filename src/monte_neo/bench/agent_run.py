@@ -63,7 +63,7 @@ def check_endpoint(base_url: str, timeout: float = 5.0) -> None:
         raise ValueError(f"--base-url must start with http:// or https://, got {base_url!r}")
     url = base_url.rstrip("/") + "/models"
     try:
-        urllib.request.urlopen(url, timeout=timeout).close()  # noqa: S310 - scheme checked above
+        urllib.request.urlopen(url, timeout=timeout).close()  # noqa: S310  # nosec B310 - scheme checked above
     except urllib.error.HTTPError:
         return  # the server answered (401, 404, ...): it is up
     except (urllib.error.URLError, OSError, TimeoutError) as exc:
