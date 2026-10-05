@@ -46,7 +46,7 @@ def run_agents(workspaces: str | Path, agents: list[str], *, dry_run: bool = Fal
         if not tasks:
             raise ValueError(f"no workspaces for agent {agent!r} under {root}: was it listed in `monte-neo bench prepare --agents`?")
         plan += [(agent, t, cmd) for t in tasks]
-    done, skipped = [], []
+    done, skipped, failed = [], [], []
     for agent, task, cmd in plan:
         if (task / "strategy.py").exists():
             skipped.append(str(task))
@@ -64,4 +64,6 @@ def run_agents(workspaces: str | Path, agents: list[str], *, dry_run: bool = Fal
             body, code = (exc.stdout or b"").decode() if isinstance(exc.stdout, bytes) else (exc.stdout or ""), f"timeout after {timeout}s"
         (task / "transcript.log").write_text(f"{header}{body}\n# exit: {code}\n# finished: {datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')}\n", encoding="utf-8")
         done.append(f"{agent} {task.name}: exit {code}")
-    return {"ran": done, "skipped": skipped, "dry_run": dry_run}
+        if code != "0":
+            failed.append(f"{agent} {task.name} (exit {code}): {body.strip()[-400:] or 'no output'}")
+    return {"ran": done, "skipped": skipped, "failed": failed, "dry_run": dry_run}

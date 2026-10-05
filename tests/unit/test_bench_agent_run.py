@@ -65,3 +65,13 @@ def test_the_cli_reports_errors_with_exit_3(tmp_path: Path, monkeypatch: pytest.
     assert main(["run", "--workspaces", str(ws), "--agents", "fake-agent", "--dry-run"], Console(quiet=True)) == 3
     monkeypatch.setenv("MN_CMD_fake_agent", "python3 -c pass")
     assert main(["run", "--workspaces", str(ws), "--agents", "fake-agent", "--dry-run"], Console(quiet=True)) == 0
+
+
+def test_a_failing_agent_shows_its_output_and_exits_4(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _, ws = _bench(tmp_path)
+    bad = tmp_path / "bad.py"
+    bad.write_text("import sys\nprint('Not logged in. Run login first.', file=sys.stderr)\nsys.exit(1)\n", encoding="utf-8")
+    monkeypatch.setenv("MN_CMD_fake_agent", f"python3 {bad}")
+    info = run_agents(ws, ["fake-agent"])
+    assert len(info["failed"]) == 5 and "Not logged in" in info["failed"][0]
+    assert main(["run", "--workspaces", str(ws), "--agents", "fake-agent"], Console(quiet=True)) == 4
