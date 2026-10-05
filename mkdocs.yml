@@ -83,6 +83,7 @@ nav:
       - Ledger and fixes: guides/ledger-and-fixes.md
       - Repainting: guides/repaint.md
       - Project tools: guides/workflow-tools.md
+      - Real data and wild scan: guides/real-data-and-wild-corpus.md
       - Discover calibration: guides/discover-calibration.md
       - Honesty scorecard: guides/honesty-scorecard.md
       - Example reports: gallery.md
