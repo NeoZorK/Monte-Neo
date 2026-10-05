@@ -16,6 +16,7 @@ All changes pushed to public repositories are authored by **NeoZorK** only:
 ## Language and publication (mandatory)
 
 - Public repositories: **English only** (code, comments, docs, issues, PRs, commits).
+- Private working files live in `docs/internal/`, `scripts/internal/`, `tests/internal/` (git-ignored). Never commit, push or link them.
 
 ## Release cadence
 

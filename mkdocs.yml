@@ -108,3 +108,6 @@ nav:
       - Docs map: docs-map.md
       - Security: https://github.com/NeoZorK/Monte-Neo/blob/main/SECURITY.md
   - Commercial: en/COMMERCIAL.md
+
+exclude_docs: |
+  internal/
