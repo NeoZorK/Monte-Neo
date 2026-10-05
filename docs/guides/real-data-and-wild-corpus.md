@@ -25,8 +25,8 @@ monte-neo bench hb-v1 --out hb-v1/report.json --markdown hb-v1/LEADERBOARD.md
 `prepare` writes `~/hb-v1-runs/claude-code/task-1..task-5/` with only `data.csv` and `PROMPT.md`. Task names are hidden
 on purpose; the map is `hb-v1/aliases.json`. Keep `hb-v1/answer_key.json` and `aliases.json` away from the agents.
 
-The command run for every task is `claude -p "$PROMPT" --permission-mode acceptEdits` (checked: the flags exist and a
-headless call answers). Change it with `export MN_CMD_claude_code='...'`. `run` runs each task once and never re-runs
+The command run for every task is `claude -p "$PROMPT" --permission-mode acceptEdits --allowedTools "Bash Read Write Edit"` (checked on a real run:
+without Bash the agent writes code but cannot run it and stops to ask for approval; pin the model with `--model`). Change it with `export MN_CMD_claude_code='...'`. `run` runs each task once and never re-runs
 a task that has a `strategy.py` (the first final answer counts); the full output is in `transcript.log` next to it.
 `--timeout 3600` is the limit per task in seconds. `LEADERBOARD.md` is the table; `report.json` keeps every
 certificate id for `monte-neo verify --recheck`. Other agents work the same way: `--agents claude-code,codex`, with
