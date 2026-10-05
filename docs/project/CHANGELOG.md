@@ -6,6 +6,9 @@ Version source of truth: `src/monte_neo/_version.py`.
 ## [v0.52.0] — 2026-10-05
 
 ### Added
+- **Local agents:** `qwen-code` is a built-in `bench run` agent; `bench run --base-url` points an agent at a model on your
+  machine (Ollama, LM Studio) and checks the server before any task; known failure messages get a one-line fix, and an agent
+  that failed is not run on its remaining tasks. `integrations/qwen/` (rules and MCP entry). See [guides/local-agents.md](../guides/local-agents.md).
 - **`monte-neo discover`** and MCP tool `discover_indicator`: a search over causal formulas with a causality gate, canary
   leaks, effective-trial counting, a search null on shuffled markets, Reality Check / SPA / PBO, a lockbox opened once and a
   certificate; optional evolution (`--evolve`) and `--recheck` of a recorded search. See [guides/discover.md](../guides/discover.md)
