@@ -16,7 +16,8 @@ from pathlib import Path
 from typing import Any
 
 DEFAULT_COMMANDS = {
-    "claude-code": 'claude -p "$PROMPT" --permission-mode acceptEdits',
+    # Bash is allowed: the agent has to run its own backtests, and a headless session cannot ask for approval.
+    "claude-code": 'claude -p "$PROMPT" --permission-mode acceptEdits --allowedTools "Bash Read Write Edit"',
     "codex": 'codex exec --full-auto "$PROMPT"',
     "gemini-cli": 'gemini -p "$PROMPT" --yolo',
     "cursor": 'cursor-agent -p "$PROMPT" --force',
