@@ -41,7 +41,7 @@ def test_index_completeness():
     md_files = list(docs_dir.rglob("*.md"))
 
     # Exclude docs-map.md itself
-    md_files = [f for f in md_files if f.name != "docs-map.md"]
+    md_files = [f for f in md_files if f.name != "docs-map.md" and "internal" not in f.relative_to(docs_dir).parts]  # internal/ is git-ignored
 
     for md_file in md_files:
         # Get relative path from root

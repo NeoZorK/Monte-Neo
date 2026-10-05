@@ -13,6 +13,10 @@ All changes pushed to public repositories are authored by **NeoZorK** only:
 - Squash-merge commit messages must not carry AI trailers either.
 - `.claude/settings.json` disables Claude Code's built-in attribution; do not re-enable it.
 
+## Language and publication (mandatory)
+
+- Public repositories: **English only** (code, comments, docs, issues, PRs, commits).
+
 ## Release cadence
 
 - Releases (feature, patch, security) can be published **at any time**: there is no limit per day.
