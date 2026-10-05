@@ -17,10 +17,10 @@ All changes pushed to public repositories are authored by **Rostyslav Shcherbyna
 
 - On the owner's machine, commits are signed locally with the owner's SSH key (`gpg.format ssh`, `user.signingkey`,
   `commit.gpgsign true`, key loaded in `ssh-agent`); nothing else is needed.
-- In a cloud or remote session the owner's private key is not available and must never be requested or stored. Publish
-  commits there through the GitHub API (the commit-creating GitHub tools), which GitHub signs itself, so they show as
-  Verified; a plain `git push` of locally created commits is unsigned.
-- Prefer Squash and merge on github.com: the merge commit is signed by GitHub.
+- In a cloud or remote session the owner's private key is not available and must never be requested or stored. Commits
+  created there (a plain `git push`, or the Git Data API tools) are **unsigned** and show as Unverified; do not claim otherwise.
+- The way to get a Verified commit on `main` is Squash and merge on github.com: the merge commit is signed by GitHub.
+  To get Verified commits on a branch, re-sign them on the owner's machine (`git commit --amend --no-edit -S`).
 
 ## Language and publication (mandatory)
 
