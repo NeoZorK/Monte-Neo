@@ -96,7 +96,12 @@ def test_signature_mutation_fuzz(signed: tuple[dict[str, Any], str]) -> None:
             same = canonical_payload(mutated) == original
         except (ValueError, TypeError):
             same = False
-        result = check_signature(mutated, pub)  # must not raise
+        try:
+            result = check_signature(mutated, pub)
+        except ValueError as exc:  # only a document that is no longer a strategy-verdict/1 certificate is refused outright
+            assert mutated.get("schema") != cert["schema"] and "not a" in str(exc), (exc, mutated)
+            changed += 1
+            continue
         assert result["valid"] is same, (result, mutated)
         changed += not same
     assert changed > 400  # the fuzzer really changes things

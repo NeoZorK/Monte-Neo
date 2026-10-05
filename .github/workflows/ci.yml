@@ -63,7 +63,9 @@ jobs:
       - name: Verifier tests and Trap Suite
         run: >-
           uv run pytest -W ignore tests/traps tests/unit/test_bench_*.py tests/unit/test_verify_*.py
-          tests/unit/test_integrations.py tests/unit/test_maintenance.py
+          tests/unit/test_integrations.py tests/unit/test_maintenance.py tests/unit/test_discover_cli.py
+      - name: Hypothesis zoo (lite)
+        run: uv run pytest -W ignore tests/zoo -q
 
   # The adapters are checked against the real frameworks: each test runs a backtest in the framework and
   # compares what the verifier reads with the position the framework itself held.

@@ -136,6 +136,18 @@ Product direction: [PRODUCT_STRATEGY_RU.md](PRODUCT_STRATEGY_RU.md) (verifier fo
 ## v0.45.0 — per-symbol costs
 - [x] `--costs-file` / `symbol_costs` / `costs-file`: commission and slippage by symbol, resolved into the certificate
 
+## v0.52.0 — stages 8–10: zoo, ledger, fixes, discover, repainting, project tools
+
+Done: hypothesis zoo (leaks and honest twins in six disguises, data defects, economics, statistics, universes, machine
+learning, quotes, repainting, claims, metamorphic relations, engine fuzzing; known gaps closed), trial ledger, `suggest_fix`,
+`monte-neo discover` (CLI + MCP, evolution, recheck, calibration), repaint checks, `history`, `register`, `oracle`,
+`portfolio`, `doctor`, agent rules, honesty scorecard, mutation check of the core (87 % killed), stop fills on a gap.
+Open (needs the owner's environments, data or consent): real Freqtrade and Lean runs, a wild corpus of open-source
+strategies, a public Honesty Bench leaderboard, discover on real market data.
+
+## v0.51.0 — stage 8.B: protection against stateful cheating
+- [x] `data_independence`, `implausible_performance`, lint rules `cached_signal`, `import_time_fit`, `global_state`
+
 ## v0.50.0 — stage 8: arrival time and latency (experimental)
 - [x] Quotes with arrival time: `quote_quality` (crossed quotes, negative latency, out-of-order arrivals, bursty latency), bars on the exchange and the arrival clock
 - [x] `arrival_lookahead`, `latency_scan` (the delay in ms where the profit vanishes), `latency_monte_carlo` (200 seeded redraws of the observed latency)

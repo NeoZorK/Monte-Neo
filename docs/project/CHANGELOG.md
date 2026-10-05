@@ -3,6 +3,65 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.52.0] — 2026-10-05
+
+### Added
+- **`monte-neo discover`** and MCP tool `discover_indicator`: a search over causal formulas with a causality gate, canary
+  leaks, effective-trial counting, a search null on shuffled markets, Reality Check / SPA / PBO, a lockbox opened once and a
+  certificate; optional evolution (`--evolve`) and `--recheck` of a recorded search. See [guides/discover.md](../guides/discover.md)
+  and the generated [calibration](../guides/discover-calibration.md).
+- **Repaint checks** `repaint_history` and `repaint_live` (`--repaint off|auto|strict`, `--signal-timing close|open`): a
+  signal must not change after it was shown, and the forming bar is tested at 0, 25, 50 and 75 % of its path. Lint rules
+  `repaint_zigzag`, `unconfirmed_pivot`, `htf_without_shift`, `lookahead_on`; `suggest_fix` shifts a higher-timeframe
+  aggregate. See [guides/repaint.md](../guides/repaint.md).
+- **Trial ledger** (`verify --ledger`, MCP `ledger`): counts the variants tried on the same data; `n_trials` is the larger
+  of the count and the declared value.
+- **`verify --suggest-fix FILE`** and MCP tool `suggest_fix`: causal rewrites with a diff.
+- **Project tools** ([guide](../guides/workflow-tools.md)): `history` (certificate history, diff, regression exit code,
+  pull-request table), `register` (pre-registration, `--registration`), `oracle` (Thresholdout hold-out oracle),
+  `portfolio` (effective number of strategies, SPA over the list), `doctor` (known problems of data exports). MCP tools
+  `compare_certificates`, `register_hypothesis`, `holdout_query`, `verify_portfolio`, `diagnose_data`.
+- **`serial_correlation`** (info): the Sharpe corrected for serial correlation (Lo, 2002).
+- **Data checks:** 20 or more identical bars in a row, and a market that never closes skipping bars (1 % of the steps); quote
+  checks for repeated rows and a stalled feed.
+- **Hypothesis zoo** (`tests/zoo`): about 170 mechanisms in six disguises (1026 cases), repaint (A14), data defects (21 x 3
+  frequencies), economics (A5), statistics (A6), universes (A10), machine learning (A11), quotes (A12), planted claims and
+  metamorphic relations, an independent oracle, a ratchet of known gaps (now empty), a generated
+  [honesty scorecard](../guides/honesty-scorecard.md) (`scripts/zoo_scorecard.py`). The lite level runs in CI, the full one nightly.
+- Agent rules (`integrations/`) mention the ledger, `suggest_fix`, repainting, the hold-out oracle and `discover_indicator`.
+
+### Changed
+- **A stop that a bar gaps through leaves at the open**, not at the stop level (long: the lower of stop and open; short: the
+  higher). Before, a gap of 12 % through a 5 % stop was booked as a 5 % loss. Take-profit keeps its level. Results of
+  strategies with `--sl-pct` / `--trail-pct` can get worse; certificates of such strategies change.
+- Lint: an assigned-and-never-read future value, and a private helper nothing calls, are warnings instead of failures;
+  `uniform_filter1d` with a trailing `origin` is causal.
+- Ledger and registry stamps have microsecond resolution.
+
+### Known limits
+- Universes skip `data_independence` and the repaint probes. The Freqtrade and Lean adapters are tested on fake data only.
+  A model fitted when the module loads that still reacts to its input is not caught by the probes. Hansen's SPA is a little
+  liberal in small samples (about 7 % at a nominal 5 %).
+
+## [v0.51.0] — 2026-10-04
+
+### Added
+- **`data_independence` check.** The strategy is run on a random walk of the same volatility, then on that walk with every
+  date shifted. A strategy whose positions do not change on either one ignores its input: a cache between calls, an
+  array computed in advance, a table keyed by date. It is a warning, and a failure (REJECT) when the strategy also
+  earns an annualized Sharpe of 6 or more. Calendar rules (hour of day, weekday) are recognised and pass.
+- **`implausible_performance` check**: a warning when the annualized Sharpe after costs is 6 or more.
+- Lint rules `cached_signal` (`lru_cache`, `cache`, `cached_property`), `import_time_fit` (`.fit()` when the module loads)
+  and `global_state` (`global`), all warnings.
+
+### Fixed
+- **A leaking strategy that kept its answer between calls passed as PASS.** A strategy that computed the leaky answer once
+  on the full table and returned prefixes (or held an array computed in advance) beat the truncation and perturbation
+  probes, and nothing else looked at its Sharpe of 57. Found by measuring the plan of stages 8-10; the three variants are
+  now rejected (`tests/unit/test_verify_stateful.py`). Model fits on the whole file that still react to their input
+  remain a limit of any verifier that runs your code: see "What the probes cannot prove" in the API guide.
+- Cost: one probe adds two extra runs of `signal()` (0.4 s on 50,000 bars).
+
 ## [v0.50.0] — 2026-10-01
 
 **Latency audit (experimental).** The new `--quotes` checks are context: they warn, they do not fail the verdict, and they were

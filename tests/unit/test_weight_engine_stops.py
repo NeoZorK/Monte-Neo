@@ -111,7 +111,7 @@ def _reference(o, h, l, c, w, model):
                     if not use_sl or trail > sl[s]:
                         sl[s] = trail
                 if (use_sl or use_tr) and l[i, s] <= sl[s]:
-                    level = sl[s]
+                    level = min(sl[s], o[i, s])  # a gap through the stop: the position leaves at the open
                 elif use_tp and h[i, s] >= tp[s]:
                     level = tp[s]
             else:
@@ -121,7 +121,7 @@ def _reference(o, h, l, c, w, model):
                     if not use_sl or trail < sl[s]:
                         sl[s] = trail
                 if (use_sl or use_tr) and h[i, s] >= sl[s]:
-                    level = sl[s]
+                    level = max(sl[s], o[i, s])
                 elif use_tp and l[i, s] <= tp[s]:
                     level = tp[s]
             if level is not None:

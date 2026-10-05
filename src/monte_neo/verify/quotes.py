@@ -28,6 +28,7 @@ _ALIASES = {"bid_price": "bid", "ask_price": "ask", "latency": "latency_ms", "ti
 STALE_MS = 20.0
 BURSTY_RATIO = 20.0  # p99 latency over the median: beyond this the latency is queueing, not the path
 BURSTY_MIN_QUOTES = 100  # percentiles of fewer quotes say nothing about bursts
+FROZEN_QUOTES = 500  # unchanged updates in a row (or 2 % of the table) that mark a stalled feed
 
 
 @dataclass(frozen=True)
@@ -143,6 +144,13 @@ def quote_quality(q: Quotes, *, stale_ms: float = STALE_MS) -> dict[str, Any]:
     arrival = q.arrival_ns
     late = int((arrival < np.maximum.accumulate(arrival)).sum())  # arrived before a quote stamped earlier
     pct = np.percentile(q.latency_ms, [50, 95, 99])
+    same = (q.exchange_ns[1:] == q.exchange_ns[:-1]) & (q.bid[1:] == q.bid[:-1]) & (q.ask[1:] == q.ask[:-1])
+    repeated = int(same.sum())  # the same quote delivered twice (a restarted download, a duplicated feed)
+    held = (q.bid[1:] == q.bid[:-1]) & (q.ask[1:] == q.ask[:-1])
+    longest, run = 0, 0
+    for hit in held:
+        run = run + 1 if hit else 0
+        longest = max(longest, run)
     info: dict[str, Any] = {
         "quotes": n,
         "dropped_rows": int(q.dropped),
@@ -150,6 +158,8 @@ def quote_quality(q: Quotes, *, stale_ms: float = STALE_MS) -> dict[str, Any]:
         "locked": locked,
         "non_positive_price": bad_price,
         "negative_latency": negative,
+        "duplicate_quotes": repeated,
+        "longest_unchanged_run": longest,
         "out_of_order_arrivals": late,
         "share_out_of_order_arrivals": late / n,
         "latency_ms": {"p50": float(pct[0]), "p95": float(pct[1]), "p99": float(pct[2])},
@@ -164,7 +174,9 @@ def quote_quality(q: Quotes, *, stale_ms: float = STALE_MS) -> dict[str, Any]:
         info["latency_p50_ms_by_venue"] = {
             str(v): float(np.median(q.latency_ms[q.venue == v])) for v in sorted(set(q.venue.tolist()))
         }
-    broken = crossed / n > 0.001 or bad_price > 0 or negative > 0 or q.dropped > 0 or bursty
+    frozen = longest >= max(FROZEN_QUOTES, n // 50)
+    info["frozen_quotes"] = bool(frozen)
+    broken = crossed / n > 0.001 or bad_price > 0 or negative > 0 or q.dropped > 0 or bursty or repeated / n > 0.001 or frozen
     info["status"] = "warn" if broken else "pass"
     return info
 
@@ -177,6 +189,10 @@ def quote_row(info: dict[str, Any]) -> dict[str, Any]:
             f"{info['crossed']} crossed, {info['non_positive_price']} non-positive, "
             f"{info['negative_latency']} negative-latency quotes, {info['dropped_rows']} unparseable rows dropped"
         )
+        if info["duplicate_quotes"] / info["quotes"] > 0.001:
+            summary += f"; {info['duplicate_quotes']} quotes are repeated rows"
+        if info["frozen_quotes"]:
+            summary += f"; the quote did not change for {info['longest_unchanged_run']} updates in a row (a stalled feed)"
         if info["bursty_latency"]:
             summary += (
                 f"; latency p99 is {info['latency_p99_over_p50']:.0f}x its median: messages queue up on the path "
