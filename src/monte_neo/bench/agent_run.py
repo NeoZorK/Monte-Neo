@@ -31,7 +31,12 @@ def command_for(agent: str) -> str:
     return cmd
 
 
-def run_agents(workspaces: str | Path, agents: list[str], *, dry_run: bool = False, timeout: int = 3600) -> dict[str, Any]:
+MODEL_FLAGS = {"claude-code": "--model", "codex": "--model", "gemini-cli": "--model"}
+
+
+def run_agents(
+    workspaces: str | Path, agents: list[str], *, dry_run: bool = False, timeout: int = 3600, model: str | None = None
+) -> dict[str, Any]:
     """Run (or, with ``dry_run``, list) every task of every agent. Raises ``ValueError`` before running anything on a bad setup."""
     root = Path(workspaces)
     if not root.is_dir():
@@ -39,6 +44,10 @@ def run_agents(workspaces: str | Path, agents: list[str], *, dry_run: bool = Fal
     plan: list[tuple[str, Path, str]] = []
     for agent in agents:
         cmd = command_for(agent)
+        if model:
+            if agent not in MODEL_FLAGS:
+                raise ValueError(f"--model is not known for agent {agent!r}: put the model into MN_CMD_{agent.replace('-', '_')}")
+            cmd = f"{cmd} {MODEL_FLAGS[agent]} {shlex.quote(model)}"
         first = shlex.split(cmd)[0]
         if shutil.which(first) is None:
             raise ValueError(f"agent {agent!r}: {first!r} is not installed or not on PATH (set MN_CMD_{agent.replace('-', '_')} to the right command)")

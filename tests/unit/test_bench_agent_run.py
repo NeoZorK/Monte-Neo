@@ -75,3 +75,13 @@ def test_a_failing_agent_shows_its_output_and_exits_4(tmp_path: Path, monkeypatc
     info = run_agents(ws, ["fake-agent"])
     assert len(info["failed"]) == 5 and "Not logged in" in info["failed"][0]
     assert main(["run", "--workspaces", str(ws), "--agents", "fake-agent"], Console(quiet=True)) == 4
+
+
+def test_a_pinned_model_is_appended_for_known_agents_only(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _, ws = _bench(tmp_path, "claude-code")
+    monkeypatch.setenv("MN_CMD_claude_code", "python3 -c pass")
+    info = run_agents(ws, ["claude-code"], dry_run=True, model="sonnet")
+    assert info["ran"][0].endswith("python3 -c pass --model sonnet")
+    monkeypatch.setenv("MN_CMD_odd", "python3 -c pass")
+    with pytest.raises(ValueError, match="--model is not known"):
+        run_agents(ws, ["odd"], dry_run=True, model="x")
