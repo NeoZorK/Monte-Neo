@@ -13,6 +13,7 @@
 # `<cli> --help` before a public run and override with MN_CMD_<AGENT> (dashes become underscores),
 # e.g. MN_CMD_claude_code='claude -p "$PROMPT" --permission-mode acceptEdits'.
 # The prompt text is available to the command as $PROMPT.
+# MN_DRY_RUN=1 prints what would run (and checks that each CLI is installed) without running anything.
 set -euo pipefail
 
 if [ "$#" -lt 2 ]; then
@@ -49,10 +50,20 @@ for agent in "$@"; do
     echo "no command for agent '$agent': set $var" >&2
     exit 2
   fi
+  # Fail before any run when the CLI is not installed (the first word of the command).
+  first="${cmd%% *}"
+  if ! command -v "$first" > /dev/null; then
+    echo "agent '$agent': '$first' is not installed or not on PATH (set $var to the right command)" >&2
+    exit 2
+  fi
   for task_dir in "$WS/$agent"/task-*; do
     [ -d "$task_dir" ] || continue
     if [ -f "$task_dir/strategy.py" ]; then
       echo "skip $task_dir (strategy.py exists; keep the first final answer)"
+      continue
+    fi
+    if [ "${MN_DRY_RUN:-0}" = "1" ]; then
+      echo "dry  $agent in $task_dir: $cmd"
       continue
     fi
     echo "run  $agent in $task_dir"

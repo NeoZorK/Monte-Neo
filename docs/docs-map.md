@@ -89,6 +89,9 @@ A simplified guide to the Monte-Neo file structure.
 - docs/guides/discover.md - monte-neo discover: verified indicator search (gate, effective trials, search null, lockbox)
 - scripts/mutation_check.py - Mutation check of the verifier core
 - tests/unit/test_mutation_pins.py - Exact values and boundaries pinned after the mutation check
+- docs/guides/real-data-and-wild-corpus.md - Honesty Bench run commands, discover on real markets, wild scan, why real Freqtrade and Lean runs
+- scripts/fetch_market_data.py, real_markets_run.py, wild_scan.py, wild_clone.sh - Real data and wild scan tools
+- src/monte_neo/__main__.py - python -m monte_neo
 - docs/guides/repaint.md - Repainting: history and forming-bar probes, lint rules, fixes
 - docs/guides/workflow-tools.md - history, register, oracle, portfolio, doctor
 - docs/guides/discover-calibration.md - Generated: discover on noise and the power to find a planted edge
