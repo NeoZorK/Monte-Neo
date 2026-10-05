@@ -79,6 +79,7 @@ A simplified guide to the Monte-Neo file structure.
 - packaging/conda-forge/meta.yaml - conda-forge recipe draft (not built)
 - .github/ISSUE_TEMPLATE/false_accusation.yml - Issue form for false accusations of honest strategies
 - docs/guides/discover.md - monte-neo discover: verified indicator search (gate, effective trials, search null, lockbox)
+- scripts/check_english_only.py - Language guard: fails on Cyrillic text or private working files in tracked files, PR titles, PR descriptions and commit messages
 - scripts/mutation_check.py - Mutation check of the verifier core
 - tests/unit/test_mutation_pins.py - Exact values and boundaries pinned after the mutation check
 - docs/guides/local-agents.md - Local agents: Qwen Code, a model served by Ollama, bench run with --base-url, failure messages
@@ -255,3 +256,5 @@ A simplified guide to the Monte-Neo file structure.
 - src/monte_neo/verify/report_latency.py - "Time and latency" section and chart of the HTML report
 - src/monte_neo/data/quote_recorder.py - Records Binance futures bookTicker quotes with latency for verify --quotes
 - src/monte_neo/cli/quotes_cmd.py - monte-neo verify --quotes and --demo-quotes
+- .github/workflows/language-guard.yml - CI: runs the language guard on pull requests and on main
+- tests/unit/test_language_guard.py - Tests of the language guard

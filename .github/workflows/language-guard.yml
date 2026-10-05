@@ -1,0 +1,43 @@
+name: Language guard
+
+# Public files, pull requests and commit messages are English only; private working files are never committed.
+# Add "language-guard" to the required status checks of the protected branches to make it block merges.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  language-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+
+      - name: Tracked files and paths
+        run: python scripts/check_english_only.py
+
+      - name: Pull request title and description
+        if: github.event_name == 'pull_request'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: python scripts/check_english_only.py --text "$PR_TITLE" --text "$PR_BODY"
+
+      - name: Commit messages of the pull request
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: git log "$BASE_SHA..$HEAD_SHA" --format=%B | python scripts/check_english_only.py --stdin
