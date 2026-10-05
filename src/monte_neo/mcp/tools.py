@@ -449,7 +449,7 @@ def suggest_fix(strategy_path: str) -> dict[str, Any]:
 
 def discover_indicator(
     ohlcv_path: str, budget: int = 2000, seed: int = 1, null_runs: int = 39, lockbox: float = 0.2,
-    cost_bps: float = 5.0, side: str = "long_short",
+    cost_bps: float = 5.0, side: str = "long_short", evolve: int = 0,
 ) -> dict[str, Any]:
     """Search causal indicator formulas on a price table and verify the winner.
 
@@ -460,7 +460,7 @@ def discover_indicator(
     from monte_neo.discover import Config, discover
     from monte_neo.verify import load_ohlcv
 
-    cfg = Config(budget=budget, seed=seed, null_runs=null_runs, lockbox=lockbox, cost_bps=cost_bps, side=side)
+    cfg = Config(budget=budget, seed=seed, null_runs=null_runs, lockbox=lockbox, cost_bps=cost_bps, side=side, evolve=evolve)
     result = discover(load_ohlcv(ohlcv_path), cfg)
     return {k: v for k, v in result.items() if k != "journal"}
 

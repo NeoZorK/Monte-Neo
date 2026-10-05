@@ -87,6 +87,13 @@ A simplified guide to the Monte-Neo file structure.
 - packaging/conda-forge/meta.yaml - conda-forge recipe draft (not built)
 - .github/ISSUE_TEMPLATE/false_accusation.yml - Issue form for false accusations of honest strategies
 - docs/guides/discover.md - monte-neo discover: verified indicator search (gate, effective trials, search null, lockbox)
+- docs/guides/repaint.md - Repainting: history and forming-bar probes, lint rules, fixes
+- docs/guides/workflow-tools.md - history, register, oracle, portfolio, doctor
+- docs/guides/discover-calibration.md - Generated: discover on noise and the power to find a planted edge
+- scripts/discover_calibration.py - Builds the discover calibration page
+- src/monte_neo/verify/repaint.py - Repaint probes (history, forming bar)
+- src/monte_neo/verify/chainlog.py, history.py, register.py, oracle.py, portfolio.py, doctor.py, returns.py - Project tools of stage 10
+- src/monte_neo/cli/tools_cmd.py - history, register, oracle, portfolio, doctor commands
 - docs/guides/ledger-and-fixes.md - Trial ledger (--ledger) and suggested causal rewrites (--suggest-fix)
 - docs/guides/honesty-scorecard.md - Generated scorecard of the hypothesis zoo (Wilson intervals, known gaps)
 - scripts/zoo_scorecard.py - Builds the honesty scorecard from the zoo

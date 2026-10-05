@@ -1,17 +1,1 @@
-{
- "hl_label_shifted_back/direct": "static lint fails shift(-1) even when the label is shifted back before use",
- "hl_label_shifted_back/helper": "static lint fails shift(-1) even when the label is shifted back before use",
- "hl_label_shifted_back/lambda": "static lint fails shift(-1) even when the label is shifted back before use",
- "hl_label_shifted_back/method": "static lint fails shift(-1) even when the label is shifted back before use",
- "hl_label_shifted_back/pipe": "static lint fails shift(-1) even when the label is shifted back before use",
- "hl_label_unused/direct": "static lint fails shift(-1) even when the shifted label never reaches the signal",
- "hl_label_unused/helper": "static lint fails shift(-1) even when the shifted label never reaches the signal",
- "hl_label_unused/lambda": "static lint fails shift(-1) even when the shifted label never reaches the signal",
- "hl_label_unused/method": "static lint fails shift(-1) even when the shifted label never reaches the signal",
- "hl_label_unused/pipe": "static lint fails shift(-1) even when the shifted label never reaches the signal",
- "hn_uniform_filter_causal/direct": "static lint fails scipy uniform_filter1d by name; it cannot see origin= makes the window causal",
- "hn_uniform_filter_causal/helper": "static lint fails scipy uniform_filter1d by name; it cannot see origin= makes the window causal",
- "hn_uniform_filter_causal/lambda": "static lint fails scipy uniform_filter1d by name; it cannot see origin= makes the window causal",
- "hn_uniform_filter_causal/method": "static lint fails scipy uniform_filter1d by name; it cannot see origin= makes the window causal",
- "hn_uniform_filter_causal/pipe": "static lint fails scipy uniform_filter1d by name; it cannot see origin= makes the window causal"
-}
+{}

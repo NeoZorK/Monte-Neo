@@ -174,8 +174,55 @@ def make(rng: np.random.Generator, n: int, max_depth: int = 3, columns: tuple[st
     return out
 
 
+def _positions_in(node: Node) -> list[tuple[int, ...]]:
+    """Paths to every node of a tree (the path is the list of child indices)."""
+    out: list[tuple[int, ...]] = [()]
+    if node[0] != "col":
+        for i, child in enumerate(node[2]):
+            out += [(i, *p) for p in _positions_in(child)]
+    return out
+
+
+def _at(node: Node, path: tuple[int, ...]) -> Node:
+    for i in path:
+        node = node[2][i]
+    return node
+
+
+def _replace(node: Node, path: tuple[int, ...], new: Node) -> Node:
+    if not path:
+        return new
+    name, params, children = node[0], node[1], list(node[2])
+    children[path[0]] = _replace(children[path[0]], path[1:], new)
+    return (name, params, tuple(children))
+
+
+def mutate(rng: np.random.Generator, node: Node, max_depth: int = 3, columns: tuple[str, ...] = COLUMNS) -> Node:
+    """A small causal change of ``node``: a neighbouring window, another column, another operation or a wrapped subtree."""
+    path = _positions_in(node)[int(rng.integers(0, len(_positions_in(node))))]
+    target = _at(node, path)
+    kind = float(rng.random())
+    if target[0] == "col":
+        new = leaf(str(rng.choice(columns))) if kind < 0.6 else op(str(rng.choice(sorted(WINDOWED))), (target,), (int(rng.choice(WINDOWS)),))
+    elif target[0] in WINDOWED:
+        if kind < 0.6:
+            j = WINDOWS.index(target[1][0]) if target[1][0] in WINDOWS else 0
+            j = int(np.clip(j + int(rng.choice((-2, -1, 1, 2))), 0, len(WINDOWS) - 1))
+            new = op(target[0], target[2], (WINDOWS[j],))
+        elif kind < 0.8:
+            new = op(str(rng.choice(sorted(WINDOWED))), target[2], target[1])
+        else:
+            new = target[2][0]  # drop the operation
+    elif target[0] in UNARY:
+        new = op(str(rng.choice(sorted(UNARY))), target[2]) if kind < 0.7 else target[2][0]
+    else:
+        new = op(str(rng.choice(sorted(BINARY))), target[2]) if kind < 0.7 else random_tree(rng, max(1, max_depth - 1), columns)
+    out = _replace(node, path, new)
+    return out if depth(out) <= max_depth + 1 and out[0] != "col" else node
+
+
 def describe(node: Node) -> dict[str, Any]:
     return {"key": key(node), "depth": depth(node), "lookback": lookback(node)}
 
 
-__all__ = ["COLUMNS", "describe", "environment", "evaluate", "key", "leaf", "lookback", "make", "op", "random_tree", "strategy_source", "to_source"]
+__all__ = ["COLUMNS", "describe", "environment", "evaluate", "key", "leaf", "lookback", "make", "mutate", "op", "random_tree", "strategy_source", "to_source"]

@@ -49,3 +49,26 @@ def test_the_entry_point_dispatches(tmp_path: Path, monkeypatch) -> None:
 
     monkeypatch.setattr(sys, "argv", ["monte-neo", "discover", "--ohlcv", str(tmp_path / "none.csv")])
     assert entry.main() == 3
+
+
+def test_a_recorded_search_is_reproduced_and_a_changed_journal_is_not(tmp_path: Path, capsys) -> None:
+    csv, out = _csv(tmp_path), tmp_path / "o"
+    assert main(["--ohlcv", str(csv), "--out", str(out), *SMALL]) in (0, 1)
+    capsys.readouterr()
+    assert main(["--ohlcv", str(csv), "--recheck", str(out)]) == 0
+    assert json.loads(capsys.readouterr().out)["reproduced"] is True
+    (out / "search.jsonl").write_text("{}\n" + (out / "search.jsonl").read_text())
+    assert main(["--ohlcv", str(csv), "--recheck", str(out)]) == 4
+    assert json.loads(capsys.readouterr().out)["journal_file"] is False
+
+
+def test_evolution_adds_counted_children_and_is_deterministic(tmp_path: Path) -> None:
+    from monte_neo.discover import Config, discover
+
+    df = synthetic_ohlcv(900, seed=3)
+    a = discover(df, Config(budget=60, null_runs=2, evolve=2))
+    b = discover(df, Config(budget=60, null_runs=2, evolve=2))
+    plain = discover(df, Config(budget=60, null_runs=2))
+    assert a["journal_sha256"] == b["journal_sha256"]
+    assert a["search"]["candidates"] > plain["search"]["candidates"]
+    assert a["search"]["effective_trials"] >= 1 and a["search"]["pbo"] is None or 0.0 <= a["search"]["pbo"] <= 1.0

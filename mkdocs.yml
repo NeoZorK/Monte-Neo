@@ -81,6 +81,9 @@ nav:
       - Frameworks and notebooks: guides/frameworks.md
       - Indicator search: guides/discover.md
       - Ledger and fixes: guides/ledger-and-fixes.md
+      - Repainting: guides/repaint.md
+      - Project tools: guides/workflow-tools.md
+      - Discover calibration: guides/discover-calibration.md
       - Honesty scorecard: guides/honesty-scorecard.md
       - Example reports: gallery.md
       - Verify a certificate: verify.md

@@ -23,6 +23,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--lockbox", type=float, default=0.2, help="Share of the last bars kept for one final look (default 0.2)")
     p.add_argument("--cost-bps", type=float, default=5.0, help="Round-trip cost per position change in bps (default 5)")
     p.add_argument("--side", choices=["long_short", "long_flat"], default="long_short")
+    p.add_argument("--evolve", type=int, default=0, help="Generations of mutating the best candidates (default 0: random search only)")
+    p.add_argument("--recheck", metavar="DIR", help="Re-run the search recorded in DIR/result.json on --ohlcv and compare the journal, the winner and the certificate id (exit 4 if different)")
     return p
 
 
@@ -39,6 +41,27 @@ def write_outputs(result: dict[str, Any], out: Path) -> None:
     (out / "result.json").write_text(json.dumps(slim, indent=2, sort_keys=True, default=str), encoding="utf-8")
 
 
+def recheck(df: Any, out: Path) -> int:
+    """Run the recorded search again; the journal hash, the winner's source and the certificate id must all match."""
+    from monte_neo.discover import Config, discover
+
+    recorded = json.loads((out / "result.json").read_text(encoding="utf-8"))
+    cfg = Config(**recorded["config"])
+    again = discover(df, cfg)
+    same = {
+        "journal": again["journal_sha256"] == recorded["journal_sha256"],
+        "winner": again["best"]["source"] == recorded["best"]["source"],
+        "certificate": again["certificate"]["certificate_id"] == recorded["certificate"]["certificate_id"],
+    }
+    on_disk = (out / "search.jsonl")
+    if on_disk.exists():
+        import hashlib
+
+        same["journal_file"] = hashlib.sha256(on_disk.read_bytes()).hexdigest() == recorded["journal_sha256"]
+    print(json.dumps({"reproduced": all(same.values()), **same}, indent=2))
+    return 0 if all(same.values()) else 4
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     from monte_neo.discover import Config, discover
@@ -46,7 +69,9 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         df = load_ohlcv(args.ohlcv)
-        cfg = Config(budget=args.budget, seed=args.seed, null_runs=args.null_runs, lockbox=args.lockbox, cost_bps=args.cost_bps, side=args.side)
+        if args.recheck:
+            return recheck(df, Path(args.recheck))
+        cfg = Config(budget=args.budget, seed=args.seed, null_runs=args.null_runs, lockbox=args.lockbox, cost_bps=args.cost_bps, side=args.side, evolve=args.evolve)
         result = discover(df, cfg)
     except (ValueError, RuntimeError, FileNotFoundError) as exc:
         print(f"discover: {exc}", file=sys.stderr)

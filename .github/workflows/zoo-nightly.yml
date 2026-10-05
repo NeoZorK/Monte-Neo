@@ -21,7 +21,8 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --python 3.11 --extra mcp --extra sign --group dev
-      - name: All disguises (1026 cases)
+      - name: All disguises (1026 cases) and 10000 fuzzed engine configurations
         env:
           ZOO_LEVEL: full
-        run: uv run pytest -W ignore tests/zoo -q
+          FUZZ_N: "10000"
+        run: uv run pytest -W ignore tests/zoo -q -n auto

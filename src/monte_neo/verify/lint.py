@@ -94,6 +94,36 @@ def _on_resample(node: ast.AST) -> bool:
     return isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "resample"
 
 
+# Rules about one future-reading value: harmless when that value is assigned and never read.
+_FUTURE_VALUE_RULES = {"negative_shift", "negative_period", "negative_roll", "centered_window", "centered_filter", "backward_fill", "forward_window", "central_difference"}
+_ORIGIN_FILTERS = {"uniform_filter1d", "minimum_filter1d", "maximum_filter1d"}
+
+
+def _trailing_ndimage_window(call: ast.Call, attr: str) -> bool:
+    """``uniform_filter1d(x, size, origin=o)`` with ``o >= (size - 1) // 2``: the window ends at the current bar."""
+    if attr not in _ORIGIN_FILTERS:
+        return False
+    size = _const_number(call.args[1] if len(call.args) > 1 else _kw(call, "size"))
+    origin = _const_number(_kw(call, "origin") if _kw(call, "origin") is not None else (call.args[3] if len(call.args) > 3 else None))
+    return size is not None and origin is not None and size >= 1 and origin >= (int(size) - 1) // 2
+
+
+def _dead_assignment_lines(tree: ast.AST) -> set[int]:
+    """Lines of ``name = <value>`` statements, and of private ``_helper`` functions, that nothing in the module reads."""
+    loaded = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load)}
+    loaded |= {n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)}
+    loaded |= {n.value for n in ast.walk(tree) if isinstance(n, ast.Constant) and isinstance(n.value, str)}  # getattr(x, "_name"), globals()["_name"]
+    dead: set[int] = set()
+    if isinstance(tree, ast.Module):
+        for node in tree.body:
+            if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef) and node.name.startswith("_") and not node.name.startswith("__") and node.name not in loaded:
+                dead.update(range(node.lineno, (node.end_lineno or node.lineno) + 1))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name) and node.targets[0].id not in loaded:
+            dead.update(range(node.lineno, (node.end_lineno or node.lineno) + 1))
+    return dead
+
+
 def _is_timestamp_column(node: ast.AST | None) -> bool:
     """``"timestamp"``, ``df["timestamp"]`` or ``df.timestamp``: the exact bar time, not a derived date."""
     if isinstance(node, ast.Constant):
@@ -402,7 +432,7 @@ class _Visitor(ast.NodeVisitor):
                 self._add(node, "central_difference", "fail", "np.gradient uses central differences: bar t reads bar t + 1")
             elif attr in _CONVOLVE and _is_str(_kw(node, "mode") or (node.args[2] if len(node.args) > 2 else None), {"same"}):
                 self._add(node, "centered_filter", "fail", f"{attr}(mode='same') centres the kernel on each bar and mixes in future bars")
-            elif attr in _CENTERED_FILTERS:
+            elif attr in _CENTERED_FILTERS and not _trailing_ndimage_window(node, attr):
                 self._add(node, "centered_filter", "fail", f"{attr} is centred or zero-phase: each output depends on later bars")
             elif attr in _TRANSFORMS:
                 self._add(node, "full_sample_transform", "warn", f"{attr} over the whole series mixes every bar with future bars")
@@ -493,6 +523,12 @@ def lint_source(source: str) -> dict[str, Any]:
     tree = _InlineConstants(tree).visit(tree)
     visitor = _Visitor(source.splitlines(), *_window_functions(tree))
     visitor.visit(tree)
+    dead = _dead_assignment_lines(tree)
+    for finding in visitor.findings:
+        if finding["severity"] == "fail" and finding["line"] in dead and finding["rule"] in _FUTURE_VALUE_RULES:
+            # A future value that is assigned and never read cannot reach the signal; the dynamic probes still judge the strategy.
+            finding["severity"] = "warn"
+            finding["message"] += " (the value is assigned to a name that is never read)"
     severities = {f["severity"] for f in visitor.findings}
     status = "fail" if "fail" in severities else ("warn" if severities else "pass")
     return {"status": status, "findings": visitor.findings}

@@ -144,3 +144,19 @@ def test_the_result_reports_repainting_and_the_repainting_canaries_are_in_the_li
     result = _run(_walk(), budget=40, null_runs=2)
     assert result["repaint"]["confirmation"] == "close" and result["repaint"]["history"] == "pass"
     assert result["repaint"]["flicker_rate"] is not None
+
+
+def test_mutation_gives_valid_causal_trees_and_is_deterministic() -> None:
+    import numpy as np
+
+    rng_a, rng_b = np.random.default_rng(5), np.random.default_rng(5)
+    base = dsl.random_tree(np.random.default_rng(1), 3)
+    kids_a = [dsl.mutate(rng_a, base) for _ in range(30)]
+    kids_b = [dsl.mutate(rng_b, base) for _ in range(30)]
+    assert [dsl.key(k) for k in kids_a] == [dsl.key(k) for k in kids_b]
+    assert len({dsl.key(k) for k in kids_a}) > 3
+    df = _walk(400)
+    for kid in kids_a[:10]:
+        source = dsl.strategy_source(kid, 30, "long_short")
+        if kid[0] != "col":
+            assert search_mod.causality_gate(source, df.iloc[:300].reset_index(drop=True))

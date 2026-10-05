@@ -107,14 +107,7 @@ DEFECTS = [
 ]
 
 # Defects the data checks are known to miss; a new miss fails the run, and so does a gap that closed.
-KNOWN_GAPS: dict[str, str] = {
-    f"{name}/{freq}": reason
-    for name, reason in (
-        ("sparse_missing_bars", "isolated missing bars (2.5 % of rows) are below the gap rule: the step must exceed 1.5 x the 95th percentile step"),
-        ("stale_repeated_bars", "a run of 40 repeated bars (1.6-2.7 % of the table) is below the frozen-share threshold"),
-    )
-    for freq in FREQS
-}
+KNOWN_GAPS: dict[str, str] = {}
 
 
 def _flag(df: pd.DataFrame) -> dict[str, bool]:

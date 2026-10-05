@@ -23,6 +23,7 @@ import pandas as pd
 
 from monte_neo.discover import dsl
 from monte_neo.verify import repaint
+from monte_neo.verify.pbo import pbo_cscv
 from monte_neo.verify.reality import reality_check
 from monte_neo.verify.stats import infer_periods_per_year
 
@@ -45,6 +46,7 @@ class Config:
     cluster_corr: float = 0.8
     rc_samples: int = 300
     periods_per_year: float | None = None
+    evolve: int = 0  # generations of mutating the best candidates (0: random search only); every child is a counted trial
 
 
 def _positions(f: pd.Series, m: int, side: str, memo: dict[str, pd.Series], k: str) -> np.ndarray:
@@ -87,6 +89,42 @@ def _evaluate_all(cands: list[tuple[dsl.Node, int]], df: pd.DataFrame, cfg: Conf
             mat[i] = 0.0  # mostly undefined or hardly trading: not a candidate (flat series have Sharpe -inf)
     sharpes = np.array([_sharpe(row, ppy) for row in mat])
     return mat, sharpes
+
+
+def _search(
+    df: pd.DataFrame, start: list[tuple[dsl.Node, int]], cfg: Config, ppy: float, warm: int, rng: np.random.Generator
+) -> tuple[list[tuple[dsl.Node, int]], np.ndarray, np.ndarray]:
+    """Random candidates plus ``cfg.evolve`` generations of mutated children of the best on the first part of ``df``.
+
+    Parents are picked on the first 65 % of the window only, exactly as the winner is, so the surrogate runs of the
+    search null repeat the same adaptive procedure.
+    """
+    cands = list(start)
+    mat, sharpes = _evaluate_all(cands, df, cfg, ppy, warm)
+    seen = {f"{dsl.key(t)}|{m}" for t, m in cands}
+    cut = int(mat.shape[1] * 0.65)
+    for _ in range(int(cfg.evolve)):
+        train = np.array([_sharpe(row[:cut], ppy) for row in mat])
+        elite = np.argsort(-train)[: max(2, len(start) // 20)]
+        kids: list[tuple[dsl.Node, int]] = []
+        for _try in range(30 * max(1, cfg.budget // 4)):
+            if len(kids) >= max(1, cfg.budget // 4):
+                break
+            tree, m = cands[int(rng.choice(elite))]
+            child = dsl.mutate(rng, tree, cfg.max_depth)
+            if rng.random() < 0.2:
+                m = int(rng.choice(dsl.RULE_WINDOWS))
+            ident = f"{dsl.key(child)}|{m}"
+            if child[0] != "col" and ident not in seen:
+                seen.add(ident)
+                kids.append((child, m))
+        if not kids:
+            break
+        kmat, ksharpes = _evaluate_all(kids, df, cfg, ppy, warm)
+        cands += kids
+        mat = np.vstack([mat, kmat])
+        sharpes = np.concatenate([sharpes, ksharpes])
+    return cands, mat, sharpes
 
 
 def surrogate(df: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
@@ -219,7 +257,8 @@ def discover(df: pd.DataFrame, config: Config | None = None) -> dict[str, Any]:
         raise RuntimeError("no candidates could be generated")
     check = selftest(search, cands, cfg, np.random.default_rng(cfg.seed + 1))
 
-    mat, sharpes = _evaluate_all(cands, search, cfg, ppy, warm)
+    start = list(cands)
+    cands, mat, sharpes = _search(search, start, cfg, ppy, warm, np.random.default_rng(cfg.seed + 7))
     # The winner is picked by train-then-validate (never by the lockbox): the top candidates on the first part of
     # the search window compete on its last part. The search null below tests the whole search, not this pick.
     cut = int(mat.shape[1] * 0.65)
@@ -233,11 +272,12 @@ def discover(df: pd.DataFrame, config: Config | None = None) -> dict[str, Any]:
     reps = _clusters(mat, sharpes, cfg.cluster_corr)
     n_eff = max(1, len(reps))
     rc = reality_check(mat[reps], samples=cfg.rc_samples) if len(reps) >= 2 else {}
+    pbo = pbo_cscv(mat[reps]) if len(reps) >= 2 else {}  # how often the pick on half of the periods ranks below the median on the other half
 
     null_best = []
     null_rng = np.random.default_rng(cfg.seed + 2)
     for _ in range(int(cfg.null_runs)):
-        _, s = _evaluate_all(cands, surrogate(search, null_rng), cfg, ppy, warm)
+        _, _, s = _search(surrogate(search, null_rng), start, cfg, ppy, warm, np.random.default_rng(cfg.seed + 7))
         null_best.append(float(np.max(s)))
     obs = float(np.max(sharpes))  # the statistic of the search: the best Sharpe anywhere in the list
     p_null = (1.0 + sum(b >= obs for b in null_best)) / (len(null_best) + 1.0) if null_best else None
@@ -259,6 +299,8 @@ def discover(df: pd.DataFrame, config: Config | None = None) -> dict[str, Any]:
         reasons.append(f"the best Sharpe of the search ({obs:.2f}) is not above what the same search finds on shuffled markets (p = {p_null})")
     if rc and rc["p_spa"] > cfg.alpha:
         reasons.append(f"Hansen's SPA does not reject luck (p = {rc['p_spa']})")
+    if pbo and pbo["pbo"] > 0.5:
+        reasons.append(f"the candidate picked on half of the periods usually ranks below the median on the other half (PBO = {pbo['pbo']})")
     if lock_sharpe <= 0 or lock_p > cfg.lockbox_alpha:
         reasons.append(f"the lockbox does not confirm it (Sharpe {lock_sharpe:.2f}, p = {lock_p:.3f})")
     if cert["verdict"] == "REJECT":
@@ -273,7 +315,7 @@ def discover(df: pd.DataFrame, config: Config | None = None) -> dict[str, Any]:
             "candidates": len(cands), "effective_trials": n_eff, "search_bars": split, "lockbox_bars": n - split,
             "best_sharpe": round(obs, 4), "selection": selection, "null_best_sharpe": _quantiles(null_best), "null_runs": len(null_best),
             "p_search_null": None if p_null is None else round(p_null, 4),
-            "p_reality_check": rc.get("p_reality_check"), "p_spa": rc.get("p_spa"),
+            "p_reality_check": rc.get("p_reality_check"), "p_spa": rc.get("p_spa"), "pbo": pbo.get("pbo"),
             "periods_per_year": ppy,
         },
         "lockbox": {"opened": 1, "sharpe": round(lock_sharpe, 4), "p": round(lock_p, 4), "bars": int(box.size)},

@@ -19,7 +19,13 @@ from monte_neo.backtest.model import ExecutionModel
 from monte_neo.verify import checks as rows
 from monte_neo.verify.breakdown import buy_and_hold, periods, regimes, series
 from monte_neo.verify.claim import claim_row, parse_claim
-from monte_neo.verify.confidence import bootstrap_ci, confidence_row, track_record, track_record_row
+from monte_neo.verify.confidence import (
+    bootstrap_ci,
+    confidence_row,
+    serial_correlation_row,
+    track_record,
+    track_record_row,
+)
 from monte_neo.verify.costs import breakeven_cost_bps, delay_scan
 from monte_neo.verify.engine import is_weights, simulate
 from monte_neo.verify.executor import ProcessRunner, resolve_jobs, split_spec
@@ -44,7 +50,13 @@ from monte_neo.verify.repaint import repaint_rows
 from monte_neo.verify.report_data import MAX_TRADES_FOR_STATS, build_charts, trade_stats
 from monte_neo.verify.schema import DISCLAIMER, VERDICT_SCHEMA_ID, aggregate_verdict, to_jsonable
 from monte_neo.verify.stability import rolling_stability, stability_row
-from monte_neo.verify.stats import bar_returns, deflated_sharpe, infer_periods_per_year, sharpe_per_bar
+from monte_neo.verify.stats import (
+    bar_returns,
+    deflated_sharpe,
+    infer_periods_per_year,
+    lo_adjusted_sharpe,
+    sharpe_per_bar,
+)
 from monte_neo.verify.symbol_costs import apply_symbol_costs
 from monte_neo.verify.timing import timing_significance
 
@@ -345,6 +357,7 @@ def _checks_and_report(
         rows.period_row(by_period, total_return),
         stability_row(windows),
         confidence_row(interval),
+        serial_correlation_row(lo_adjusted_sharpe(rets, ppy)),
         track_record_row(history),
         *([claim_row(settings["claim"], _verified(dsr, run, n_closed, journal_stats))] if "claim" in settings else []),
         rows.benchmark_row(total_return, dsr["sharpe_annualized"], bench),

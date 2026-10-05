@@ -42,7 +42,14 @@ monte-neo verify --ohlcv btc_1h.csv --strategy their_code.py --isolate          
 monte-neo verify --ohlcv btc_1h.csv --strategy my_strategy.py --badge badge.json     # shields.io endpoint file
 monte-neo verify --lint strategy.py other.py   # static lint only (pre-commit); exit 1 on a fail-level finding
 monte-neo verify --precompile      # compile and cache the engines once (Docker images, CI caches)
+monte-neo verify --ohlcv btc_1h.csv --strategy s.py --ledger          # count every variant tried on this data
+monte-neo verify --suggest-fix strategy.py                            # causal rewrites of leaking code, as a diff
+monte-neo verify --ohlcv btc_1h.csv --strategy s.py --repaint strict --signal-timing open
+monte-neo verify --ohlcv btc_1h.csv --strategy s.py --ledger --registration reg-1-1a2b3c4d
 ```
+
+More commands: [`discover`](../guides/discover.md) (verified indicator search), and the project tools
+[`history`, `register`, `oracle`, `portfolio`, `doctor`](../guides/workflow-tools.md).
 
 - **What the probes cannot prove.** The verifier runs your code, so it cannot prove there is no leak. A strategy that keeps its answer between calls or ignores its input is caught by `data_independence`; a model fitted on the whole file that still reacts to its input is not, and only the lint (`import_time_fit`, `cached_signal`, `global_state`) and `implausible_performance` point at it. Run strategy files with `--isolate` and a fresh process per run when you do not trust them.
 - A strategy file may import modules from its own folder (a helper file, a package) and read a parameter file next to it. Under `--isolate`, reads stay allowed and writes stay blocked. Do not read price data files from strategy code: the `external_data` check fails on that.
@@ -58,7 +65,7 @@ monte-neo verify --precompile      # compile and cache the engines once (Docker 
   ```json
   {"default": {"commission_bps": 5, "slippage_bps": 5}, "AAA": {"commission_bps": 2, "slippage_bps": 1}, "ZZZ": {"slippage_bps": 30}}
   ```
-- `--sl-pct X` / `--tp-pct X` / `--trail-pct X`: stop-loss, take-profit and trailing stop in percent of the entry price, tested inside each bar with the bar's high and low (0 = off). They work for signs, weights and universes and behave the same in every case: the levels come from the price a position is opened at, the stop is tested before the take-profit when a bar touches both, the position leaves at the level with slippage against it, and a held target re-enters at the next open. Adding to or trimming a position keeps its levels. The buy-and-hold benchmark never uses them. The stops are part of the certificate's cost model. MCP and the Action take the same three settings.
+- `--sl-pct X` / `--tp-pct X` / `--trail-pct X`: stop-loss, take-profit and trailing stop in percent of the entry price, tested inside each bar with the bar's high and low (0 = off). They work for signs, weights and universes and behave the same in every case: the levels come from the price a position is opened at, the stop is tested before the take-profit when a bar touches both, the position leaves at the level with slippage against it, and a held target re-enters at the next open. When a bar opens beyond the stop (a gap through it) the position leaves at the open, which is worse than the stop level; a take-profit keeps its own level. Adding to or trimming a position keeps its levels. The buy-and-hold benchmark never uses them. The stops are part of the certificate's cost model. MCP and the Action take the same three settings.
 - `--badge PATH`: also write a shields.io endpoint JSON with the verdict and certificate id.
 - `--lint FILE...`: run only the static look-ahead lint on the files and exit (0, or 1 on a fail-level finding).
 - `--precompile`: the first run in a new environment compiles the engines (about 4-5 s, then cached).
@@ -91,7 +98,7 @@ lines (`In short`, `Why`).
 | id | category | fails / warns when |
 |----|----------|--------------------|
 | `data_integrity` | integrity | NaN, non-positive prices, `high < low`, open or close outside high-low by more than 0.1% (smaller gaps are counted as vendor rounding), timestamps out of order (newest-first data) or duplicated, repeated (timestamp, symbol) rows in a universe (fail, stops the run early) |
-| `data_quality` | integrity | well-formed but suspicious prices: one-bar spikes (a move over max(20 x robust scale, 5%) that the next bar takes back by 75%), frozen prices (runs of 5+ flat bars over 2% of the data), split-like jumps (open / previous close near 2, 3, 4, 5, 10, 20 or the inverse), gaps in time (beyond the usual nights and weekends), more than 5% of bars without volume (warn); fail when more than half of the profit comes from spikes in instruments the strategy held |
+| `data_quality` | integrity | well-formed but suspicious data: 20 or more identical bars in a row (a feed that stopped updating), at least 1 % of the steps skipping a bar in a market that never closes, one-bar spikes (a move over max(20 x robust scale, 5%) that the next bar takes back by 75%), frozen prices (runs of 5+ flat bars over 2% of the data), split-like jumps (open / previous close near 2, 3, 4, 5, 10, 20 or the inverse), gaps in time (beyond the usual nights and weekends), more than 5% of bars without volume (warn); fail when more than half of the profit comes from spikes in instruments the strategy held |
 | `survivorship` | integrity | universe only: every symbol trades until the last bar, so delisted names are probably missing (warn) |
 | `determinism` | integrity | two runs of `signal(df)` on the same data disagree |
 | `lookahead_truncation` | lookahead | `signal(df[:t+1]) != signal(df)[:t+1]` at any checkpoint (the whole prefix is compared; checkpoints are spread evenly and also placed where the position changes) |
@@ -99,6 +106,10 @@ lines (`In short`, `Why`).
 | `external_data` | lookahead | strategy code (import or `signal()`) reads a data file (`.csv`, `.parquet`, `.npy`…, or the OHLCV file itself) or opens a network connection: the probes rewrite `df` and cannot see data loaded elsewhere |
 | `lookahead_static_lint` | lookahead | `shift(-k)`, `center=True`, `bfill`, windows over `x[::-1]`, data loaders (`read_csv`, `np.load`, `open`, network imports) outside `if __name__ == "__main__":` (fail); full-series `fit`/`polyfit`, `rank`, `mean`/`std`/`max`…, group `transform("last")`, `x[i + k]` (warn) |
 | `data_independence` | lookahead | the strategy is run on a random walk of the same volatility, then on that walk with every date shifted. Positions that stay the same on both ignore their input (a cache between calls, an array computed in advance, a model fitted on the whole file): warn, and fail when the strategy also earns an annualized Sharpe of 6 or more. Positions that change with the prices pass; positions that change only with the dates (a calendar rule) pass unless the Sharpe is implausible; constant positions are skipped. One instrument only; skipped without strategy code |
+| `repaint_history` | lookahead | the signal of a closed bar changes when more bars arrive: checked on prefixes that follow one another (the table as it grew), on the table extended by synthetic bars and on a small restatement of the last three bars. `--repaint off\|auto\|strict` sets the density (strict checks about four times as many prefixes). One instrument only; skipped without strategy code |
+| `repaint_live` | lookahead | the bar's high, low, close and volume are replaced by their state at 0, 25, 50 and 75 % of the bar. A signal that cannot change is known at the open (pass). One that changes is decided at the close (info: act on it only after the bar closed); with `--signal-timing open` it fails |
+| `serial_correlation` | statistics | info only: the annualized Sharpe corrected for serial correlation of the returns (Lo, 2002) next to the plain one; smoothed or lagged returns overstate the plain one |
+| `preregistration` | statistics | info only, with `--registration ID`: the hypothesis was registered before the first run of this code (with `--ledger`) and the verified code is the registered code |
 | `implausible_performance` | statistics | warn when the annualized Sharpe after costs is 6 or more over at least 100 bars: far above what honest strategies reach, so look for a leak the probes cannot see |
 | `implausible_accuracy` | lookahead | next-bar direction hit rate ≥ 0.70 over ≥ 100 active bars and binomial z ≥ 3.5 (fail); a high rate that is not significant is a warn |
 | `costs_modeled` | economics | zero commission and slippage (warn) |
