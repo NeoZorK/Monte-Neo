@@ -61,6 +61,17 @@ The agent's strategy used `shift(-1)`, so it knew the next close. Monte-Neo foun
 independent ways and named the line. After the fix, no look-ahead is left, and the verifier tells
 the truth: on a random walk, the strategy has no edge after costs.
 
+The same run as a report for people (`--html report.html`: one file, no scripts, no network):
+
+<p align="center">
+  <a href="https://neozork.github.io/Monte-Neo/gallery/">
+    <img src="https://raw.githubusercontent.com/NeoZorK/Monte-Neo/main/docs/assets/report-leak.png" alt="HTML report of a rejected strategy: the verdict in one sentence, a card per check family, the summary, the equity curve against buy and hold, the drawdown and the return distribution" width="620"/>
+  </a>
+</p>
+
+More reports, including an honest strategy and a parameter search, are in the
+[gallery](https://neozork.github.io/Monte-Neo/gallery/).
+
 <details>
 <summary>Text output of the first run</summary>
 
@@ -276,6 +287,17 @@ uvx monte-neo mcp
 
 It is also listed in the official MCP Registry as `io.github.NeoZorK/monte-neo`. Setup for each
 client: [Use from agents](https://neozork.github.io/Monte-Neo/guides/agents/).
+
+**Local agents** (Qwen Code, or any terminal agent on a model served from your machine through Ollama, LM Studio
+or llama.cpp):
+
+```bash
+qwen mcp add monte-neo uvx --from "monte-neo[mcp]>=0.52.0" monte-neo-mcp
+```
+
+`qwen-code` is also a built-in agent of `monte-neo bench run`, so you can measure how honest a local model is.
+A small model often fails the bench tasks; that is a result of the model, not of the verifier.
+Setup, `--base-url` and troubleshooting: [Local agents](https://neozork.github.io/Monte-Neo/guides/local-agents/).
 
 MCP tools: `verify_strategy`, `verify_grid`, `verify_quotes`, `probe_lookahead`, `cost_stress`,
 `recheck_certificate`, `check_signature`, `render_report`, `verdict_schema`, `verifier_manifest`.

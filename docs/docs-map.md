@@ -42,6 +42,7 @@ A simplified guide to the Monte-Neo file structure.
 - docs/assets/monteneo-logo.png - Project logo (original, with the old tagline)
 - docs/assets/logo-sphere.png - Logo mark without text (transparent)
 - docs/assets/social-preview.png - 1280×640 banner: README hero and GitHub social preview
+- docs/assets/report-leak.png - Screenshot of the HTML report of a rejected strategy (README, from `docs/assets/reports/leak.html`)
 - docs/assets/demo-verify.gif - Animated demo: leaky agent strategy → fix → honest verdict (scripts/make_demo_gif.py)
 - docs/assets/demo-arrival.gif - Animated demo: a strategy that lives on data it could not have seen, and an honest one (scripts/make_arrival_gif.py)
 - docs/guides/arrival-time.md - Latency audit guide: arrival look-ahead, the delay where the profit vanishes, latency Monte Carlo, recorder, limits
