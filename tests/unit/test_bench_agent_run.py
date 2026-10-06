@@ -157,3 +157,20 @@ def test_known_failure_texts_get_a_one_line_fix(tmp_path: Path, monkeypatch: pyt
     info = run_agents(ws, ["fake-agent"])
     assert "-> no model is configured" in info["failed"][0]
     assert main(["run", "--workspaces", str(ws), "--agents", "fake-agent", "--base-url", "ftp://x"], Console(quiet=True)) == 3
+
+
+def test_a_model_error_points_to_clean_env_and_the_flag_drops_the_overrides(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from monte_neo.bench.agent_run import hint_for
+
+    tip = hint_for("There's an issue with the selected model (claude-sonnet-5-5). It may not exist")
+    assert "--clean-env" in tip and "ANTHROPIC_AUTH_TOKEN" in tip
+    _, ws = _bench(tmp_path)
+    probe = tmp_path / "probe.py"
+    probe.write_text("import os\nopen('seen.txt', 'w').write(os.environ.get('ANTHROPIC_AUTH_TOKEN', 'none'))\n", encoding="utf-8")
+    monkeypatch.setenv("MN_CMD_fake_agent", f"python3 {probe}")
+    monkeypatch.setenv("ANTHROPIC_AUTH_TOKEN", "secret-from-shell")
+    run_agents(ws, ["fake-agent"])
+    assert (ws / "fake-agent" / "task-1" / "seen.txt").read_text(encoding="utf-8") == "secret-from-shell"
+    run_agents(ws, ["fake-agent"], clean_env=True)
+    assert (ws / "fake-agent" / "task-1" / "seen.txt").read_text(encoding="utf-8") == "none"
+    assert main(["run", "--workspaces", str(ws), "--agents", "fake-agent", "--clean-env", "--dry-run"], Console(quiet=True)) == 0

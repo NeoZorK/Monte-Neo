@@ -40,8 +40,12 @@ def command_for(agent: str) -> str:
 AGENT_ENV = {"qwen-code": {"QWEN_CODE_SUPPRESS_YOLO_WARNING": "1"}}
 MODEL_FLAGS = {"claude-code": "--model", "codex": "--model", "gemini-cli": "--model", "qwen-code": "--model"}
 
+# Variables that can override the agent's own login (a token or gateway from the shell wins over `/login`).
+CLAUDE_ENV_OVERRIDES = ("ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL", "ANTHROPIC_MODEL")
+
 # Known failure texts and what to do about them (shown under the agent's own output).
 HINTS = (
+    ("issue with the selected model", "the agent cannot use the selected model: a variable in your shell can override your login (ANTHROPIC_AUTH_TOKEN, ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL, ANTHROPIC_MODEL); run again with --clean-env"),
     ("No auth type is selected", "no model is configured: pass --base-url (a local server) or set OPENAI_BASE_URL, OPENAI_API_KEY and OPENAI_MODEL"),
     ("Connection error", "the agent could not reach its model server: is it running and is the address right (Ollama: `ollama serve`, http://localhost:11434/v1)?"),
     ("ECONNREFUSED", "the model server refused the connection: is it running (for Ollama: `ollama serve`)?"),
@@ -72,7 +76,7 @@ def check_endpoint(base_url: str, timeout: float = 5.0) -> None:
 
 def run_agents(
     workspaces: str | Path, agents: list[str], *, dry_run: bool = False, timeout: int = 3600, model: str | None = None,
-    base_url: str | None = None, api_key: str | None = None,
+    base_url: str | None = None, api_key: str | None = None, clean_env: bool = False,
 ) -> dict[str, Any]:
     """Run (or, with ``dry_run``, list) every task of every agent. Raises ``ValueError`` before running anything on a bad setup."""
     root = Path(workspaces)
@@ -107,6 +111,9 @@ def run_agents(
             continue
         env = {**os.environ, "PROMPT": (task / "PROMPT.md").read_text(encoding="utf-8")}
         env.update({k: v for k, v in AGENT_ENV.get(agent, {}).items() if k not in os.environ})
+        if clean_env:  # use the agent's own login: drop what could override it (names only are ever printed)
+            for name in CLAUDE_ENV_OVERRIDES:
+                env.pop(name, None)
         if base_url:  # a local OpenAI-compatible server (Ollama: http://localhost:11434/v1); the key is a placeholder there
             env.update({"OPENAI_BASE_URL": base_url, "OPENAI_API_KEY": api_key or env.get("OPENAI_API_KEY") or "local"})
             if model:

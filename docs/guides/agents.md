@@ -63,6 +63,30 @@ registers the MCP server and loads `GEMINI.md` as context.
 `qwen mcp add monte-neo uvx --from "monte-neo[mcp]>=0.52.0" monte-neo-mcp`, and copy `integrations/qwen/QWEN.md` into your
 project. Qwen Code can also drive a model served on your machine: see [Local agents](local-agents.md).
 
+## Claude Code: "There's an issue with the selected model"
+
+This message comes from Claude Code, not from Monte-Neo, and it appears even after a successful `/login` when a variable in
+your shell overrides the login: `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_API_KEY`, `ANTHROPIC_BASE_URL` or `ANTHROPIC_MODEL`
+(a token or a gateway from the shell wins over the login, and it may not serve the model you picked).
+
+Look at the **names** of the variables (never paste their values anywhere):
+
+```bash
+env | grep -i -E '^(ANTHROPIC|CLAUDE)' | cut -d= -f1
+```
+
+Start Claude Code without them, for this window only:
+
+```bash
+env -u ANTHROPIC_AUTH_TOKEN -u ANTHROPIC_API_KEY -u ANTHROPIC_BASE_URL -u ANTHROPIC_MODEL claude
+```
+
+If that works, remove the variables from your shell profile (`~/.zshrc`) or keep using the command above. Inside a
+session, `/status` shows the login method and the model in use.
+
+`monte-neo bench run` does the same for the agents it starts: add `--clean-env` to run them without these four variables,
+so each agent uses its own login. It is off by default, because some setups need a token or a gateway on purpose.
+
 ## Cursor
 
 1. Copy `integrations/cursor/mcp.json` to `.cursor/mcp.json` in your project, or merge it

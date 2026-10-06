@@ -76,6 +76,7 @@ remaining tasks of that agent (the cause is usually shared). A task without `str
 |---|---|
 | `No auth type is selected` | no model configured: pass `--base-url` (and `--model`) or set the three `OPENAI_*` variables |
 | `Connection error` / `ECONNREFUSED` | the model server is not running or the address is wrong (`ollama serve`) |
+| `issue with the selected model` (Claude Code) | a shell variable overrides the login: run with `--clean-env`, see [Use from agents](agents.md) |
 | `not reachable` (exit 3) | `--base-url` does not answer: start the server, check the port |
 | `model not found` | the server has no such model: `ollama list`, `ollama pull <name>` |
 
