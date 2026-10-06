@@ -6,6 +6,9 @@ Version source of truth: `src/monte_neo/_version.py`.
 ## [v0.52.0] — 2026-10-05
 
 ### Added
+- **`bench run --clean-env`** starts the agents without `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_API_KEY`, `ANTHROPIC_BASE_URL` and
+  `ANTHROPIC_MODEL`, so they use their own login; the Claude Code message "issue with the selected model" now gets a one-line fix.
+  A troubleshooting section in [guides/agents.md](../guides/agents.md) explains the variables.
 - **Local agents:** `qwen-code` is a built-in `bench run` agent; `bench run --base-url` points an agent at a model on your
   machine (Ollama, LM Studio) and checks the server before any task; known failure messages get a one-line fix, and an agent
   that failed is not run on its remaining tasks. `integrations/qwen/` (rules and MCP entry). See [guides/local-agents.md](../guides/local-agents.md).

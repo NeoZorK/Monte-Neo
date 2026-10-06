@@ -88,11 +88,12 @@ def _run(argv: list[str], console: Console) -> int:
     p.add_argument("--model", help="Model to pin for every agent that takes --model (claude-code: sonnet, opus or a full name); record it with the results")
     p.add_argument("--base-url", help="OpenAI-compatible server of a local model, e.g. http://localhost:11434/v1 (Ollama); checked before any task runs")
     p.add_argument("--api-key", help="Key for --base-url (default: a placeholder, local servers ignore it)")
+    p.add_argument("--clean-env", action="store_true", help="Start the agents without ANTHROPIC_AUTH_TOKEN, ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL and ANTHROPIC_MODEL, so they use their own login")
     args = p.parse_args(argv)
     try:
         info = run_agents(
             args.workspaces, [a.strip() for a in args.agents.split(",") if a.strip()], dry_run=args.dry_run, timeout=args.timeout,
-            model=args.model, base_url=args.base_url, api_key=args.api_key,
+            model=args.model, base_url=args.base_url, api_key=args.api_key, clean_env=args.clean_env,
         )
     except ValueError as exc:
         console.print(f"[red]run failed: {exc}[/]")
