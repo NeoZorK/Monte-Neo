@@ -12,6 +12,7 @@ import math
 from pathlib import Path
 from typing import Any
 
+from monte_neo import disclaimer
 from monte_neo.verify import report_charts as charts
 from monte_neo.verify.report_latency import latency_section
 
@@ -395,7 +396,7 @@ def render_html(report: dict[str, Any]) -> str:
         f"<meta http-equiv='Content-Security-Policy' content=\"{CSP}\">"
         "<meta name='referrer' content='no-referrer'>"
         f"<title>Monte-Neo verdict {_e(verdict)} · {_e(report.get('certificate_id', ''))}</title>"
-        f"<style>{_CSS}</style></head><body><main>"
+        f"<style>{_CSS}{disclaimer.HTML_CSS}</style></head><body><main>"
         f"<h1>Monte-Neo strategy verdict <span class='pill verdict {_VERDICT_TONE.get(verdict, 'mute')}'>{_e(verdict)}</span></h1>"
         f"<p class='muted'>Certificate <span class='mono'>{_e(report.get('certificate_id', ''))}</span> · "
         f"engine {_e(repro.get('engine_version', ''))} · {_e(report.get('generated_at', ''))}</p>"
@@ -423,7 +424,7 @@ def render_html(report: dict[str, Any]) -> str:
         f"<p class='mono'>data {_e(repro.get('data_sha256') or '—')}<br>signals {_e(repro.get('signals_sha256') or '—')}"
         f"<br>source {_e(repro.get('source_sha256') or '—')}</p>"
         f"<p>Re-run with the same data and code: <span class='mono'>{rerun}</span></p></div>"
-        f"<p class='muted'>{_e(report.get('disclaimer', ''))}</p>"
+        f"{disclaimer.html_footer()}"
         "</main></body></html>\n"
     )
 

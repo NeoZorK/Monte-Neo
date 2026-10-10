@@ -12,6 +12,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from monte_neo import disclaimer
+
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="monte-neo discover", description="Search for an indicator that survives the verifier.")
@@ -83,6 +85,7 @@ def main(argv: list[str] | None = None) -> int:
     for r in result["reasons"]:
         print(f"  - {r}")
     print(f"Files in {args.out}/")
+    print(disclaimer.SHORT)
     return 0 if result["found"] else 1
 
 

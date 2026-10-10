@@ -68,6 +68,11 @@ def _sha256(*parts: bytes) -> str:
     return h.hexdigest()
 
 
+def certificate_id(repro: dict[str, Any], verdict: str) -> str:
+    """The certificate id: a hash of everything that makes the test (inputs, model, settings, policy) and its verdict."""
+    return _sha256(json.dumps({"r": repro, "v": verdict}, sort_keys=True, default=str).encode())[:16]
+
+
 def _holdout(rets: np.ndarray, fraction: float) -> dict[str, Any]:
     cut = int(round(rets.size * (1.0 - float(fraction))))
     train, hold = rets[:cut], rets[cut:]
@@ -121,6 +126,8 @@ def verify_strategy(
     registration: str | None = None,
     repaint: str = "auto",
     signal_timing: str = "close",
+    policy: str | Path | dict[str, Any] | None = None,
+    model_cutoff: str | None = None,
 ) -> dict[str, Any]:
     """Verify one strategy and return a ``strategy-verdict/1`` report.
 
@@ -150,7 +157,31 @@ def verify_strategy(
     that needs the bar's own prices fails. See :mod:`monte_neo.verify.repaint`.
     ``symbol_costs`` (a dict, JSON text or a JSON file: ``{"AAA": {"commission_bps": 2, "slippage_bps": 1},
     "default": {...}}``) gives a universe different costs per symbol; see :mod:`monte_neo.verify.symbol_costs`.
+    ``policy`` (a TOML file, TOML text or dict) applies an institution's thresholds: its inputs before the run, its
+    rules to the result (check row ``policy``); the policy goes into the certificate. See :mod:`monte_neo.verify.policy`.
+    ``model_cutoff`` (``YYYY-MM`` or ``YYYY-MM-DD``) is the training-data cutoff of a language or foundation model the
+    strategy uses: the edge must survive that date (check row ``model_cutoff``). See :mod:`monte_neo.verify.cutoff`.
     """
+    if policy is not None:
+        from monte_neo.verify.policy import apply_policy, load_policy, run_inputs
+
+        rules = load_policy(policy)
+        fixed = run_inputs(rules)
+        min_trades = int(fixed.get("min_trades", min_trades))
+        frame = load_ohlcv(ohlcv)
+        if "cost_multiplier" in fixed:
+            base = model or _default_model(market_for(frame).n_bars)
+            k = float(fixed["cost_multiplier"])
+            model = replace(base, commission_bps=base.commission_bps * k, slippage_bps=base.slippage_bps * k)
+        report = verify_strategy(
+            frame, signals=signals, strategy=strategy, signal_fn=signal_fn, source=source, model=model,
+            n_trials=n_trials, trial_sharpes=trial_sharpes, periods_per_year=periods_per_year,
+            holdout_fraction=holdout_fraction, min_trades=min_trades, probe_checks=probe_checks, positions=positions,
+            extra_checks=extra_checks, extra=extra, io_watch=io_watch, jobs=jobs, timeout=timeout, isolate=isolate,
+            claim=claim, symbol_costs=symbol_costs, ledger=ledger, registration=registration, repaint=repaint,
+            signal_timing=signal_timing, model_cutoff=model_cutoff,
+        )
+        return apply_policy(report, rules)
     if n_trials is not None and int(n_trials) < 1:
         raise ValueError(f"n_trials must be >= 1 (the chosen variant counts), got {n_trials}")
     if int(min_trades) < 1:
@@ -179,6 +210,11 @@ def verify_strategy(
         "repaint": repaint,
         "signal_timing": signal_timing,
     }
+    if model_cutoff is not None:
+        from monte_neo.verify.cutoff import parse_cutoff
+
+        parse_cutoff(model_cutoff)  # fail early on a bad date
+        settings["model_cutoff"] = str(model_cutoff)  # only when set: older certificate ids stay the same
     if claim is not None:
         settings["claim"] = parse_claim(claim)  # part of the certificate: a recheck compares the same claim
     if io_watch is None:
@@ -365,6 +401,11 @@ def _checks_and_report(
         *([capacity_row(room)] if market.capacity_volume is not None else []),
         *(extra_checks or []),
     ]
+    if settings.get("model_cutoff"):
+        from monte_neo.verify.cutoff import cutoff_row
+
+        bench_rets = bar_returns(bench["equity"], start=model.warmup_bars)
+        checks.append(cutoff_row(rets, timestamps[-rets.size:], settings["model_cutoff"], ppy, bench_rets[-rets.size:]))
     active = np.abs(traded) if traded.ndim == 1 else np.abs(traded).sum(axis=1)
     metrics = {
         "bars": n,
@@ -463,7 +504,7 @@ def _report(
         repro["universe"] = {"symbols": len(market.symbols), "bars": market.n_bars}
     if extra:
         repro["extra_sha256"] = _sha256(json.dumps(to_jsonable(extra), sort_keys=True).encode())
-    cert_id = _sha256(json.dumps({"r": repro, "v": verdict}, sort_keys=True, default=str).encode())[:16]
+    cert_id = certificate_id(repro, verdict)
     reasons = [f"{c['id']}: {c['summary']}" for c in checks if c["status"] == "fail"]
     reasons += [f"{c['id']}: {c['summary']}" for c in checks if c["status"] == "warn"]
     return Certificate(to_jsonable(
@@ -519,4 +560,4 @@ def model_from_costs(
     )
 
 
-__all__ = ["model_from_costs", "verify_strategy"]
+__all__ = ["certificate_id", "model_from_costs", "verify_strategy"]

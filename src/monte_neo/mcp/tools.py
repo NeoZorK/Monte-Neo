@@ -22,7 +22,8 @@ SERVER_INSTRUCTIONS = (
     "If you already have numbers you plan to report, pass them as claim (sharpe, total_return, max_drawdown, "
     "n_trades): a claim better than the verified result fails the claim_consistency check. "
     "For intraday strategies on bid/ask quotes call verify_quotes: it checks whether the profit survives the "
-    "time the quotes really arrived (stamp + latency)."
+    "time the quotes really arrived (stamp + latency). "
+    "Every answer has a disclaimer field: when you present a result, tell the user it is not investment advice."
 )
 
 
@@ -102,6 +103,9 @@ def verify_strategy(
     repaint: str = "auto",
     signal_timing: str = "close",
     registration: str | None = None,
+    policy_path: str | None = None,
+    trials_from: str | None = None,
+    model_cutoff: str | None = None,
 ) -> dict[str, Any]:
     """Verify a strategy backtest and return a strategy-verdict/1 certificate.
 
@@ -136,6 +140,10 @@ def verify_strategy(
         signal_timing: 'close' (default) or 'open': 'open' declares the signal known at the bar's open; one that needs the
             bar's own prices fails.
         registration: Id of a pre-registered hypothesis (register_hypothesis); the certificate says whether it protects the result.
+        policy_path: TOML file with the institution's thresholds (monte-neo policy init); a breach shows in the policy row.
+        trials_from: Count variants already tried in a tracker, offline: mlflow:PATH[:EXPERIMENT],
+            optuna:sqlite:///study.db[:STUDY], wandb:export.csv, csv:trials.csv or ledger:PATH (the largest count is used).
+        model_cutoff: 'YYYY-MM' training cutoff of an LLM or foundation model the strategy uses: the edge must survive it.
         compact: Drop details of passing checks to keep the response short.
     """
     from monte_neo.verify import verify_strategy as _verify
@@ -147,9 +155,16 @@ def verify_strategy(
         sl_pct, tp_pct, trail_pct,
     )
     runs = {"timeout": timeout, "jobs": jobs, "isolate": isolate} if strategy_path else {}
+    extra_checks = None
+    if trials_from:
+        from monte_neo.verify.trials_import import trials_for_verify
+
+        n_trials, row = trials_for_verify(trials_from, n_trials)
+        extra_checks = [row]
     report = _verify(
         df, signals=signals_path, strategy=strategy_path, model=model, n_trials=n_trials, positions=positions, claim=claim,
-        symbol_costs=symbol_costs, ledger=ledger or None, repaint=repaint, signal_timing=signal_timing, registration=registration, **runs
+        symbol_costs=symbol_costs, ledger=ledger or None, repaint=repaint, signal_timing=signal_timing, registration=registration,
+        policy=policy_path, model_cutoff=model_cutoff, extra_checks=extra_checks, **runs
     )
     return _compact(report) if compact else report
 
@@ -514,6 +529,36 @@ def diagnose_data(table_path: str, provider: str = "auto") -> dict[str, Any]:
     return diagnose(table_path, provider)
 
 
+def validate_alpha(
+    prices_path: str,
+    scores_path: str,
+    horizon: int = 1,
+    quantiles: int = 5,
+    claimed_ir: float | None = None,
+    aum: float | None = None,
+    seed: int = 0,
+) -> dict[str, Any]:
+    """Does a cross-sectional score predict returns, and can its top-minus-bottom portfolio be traded? (alpha-report/1)
+
+    Call it before you call a ranking signal "alpha". Family A: rank IC with Newey-West t, IC decay, quantile
+    monotonicity, long and short legs, breadth, permuted-score placebos, selection against timing. Family D: market
+    impact and participation at ``aum``, capacity curve, short feasibility, holding period against signal decay,
+    dependence on the rebalance day.
+
+    Args:
+        prices_path: Universe prices (.csv / .parquet): timestamp, symbol, close[, volume].
+        scores_path: Scores (.csv / .parquet): timestamp (or date), symbol, score; the score at t ranks returns after t.
+        horizon: Forward-return horizon in bars.
+        quantiles: Quantile buckets.
+        claimed_ir: Claimed annual information ratio (checked against IC and breadth).
+        aum: Capital you plan to run, for market impact and participation.
+        seed: Seed for bootstraps and placebos.
+    """
+    from monte_neo.alpha import validate_alpha as _validate
+
+    return _validate(prices_path, scores_path, horizon=horizon, quantiles=quantiles, claimed_ir=claimed_ir, aum=aum, seed=seed)
+
+
 def verdict_schema() -> dict[str, Any]:
     """JSON schema of the strategy-verdict/1 certificate."""
     from monte_neo.verify import VERDICT_JSON_SCHEMA
@@ -564,6 +609,7 @@ TOOLS: tuple[Callable[..., dict[str, Any]], ...] = (
     holdout_query,
     verify_portfolio,
     diagnose_data,
+    validate_alpha,
     verdict_schema,
     verifier_manifest,
 )
@@ -582,6 +628,7 @@ __all__ = [
     "probe_lookahead",
     "render_report",
     "suggest_fix",
+    "validate_alpha",
     "verdict_schema",
     "verifier_manifest",
     "verify_grid",

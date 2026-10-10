@@ -64,7 +64,7 @@ def test_mcp_errors_reach_the_agent() -> None:
     out = wrapped("/no/such/file.csv", strategy_path="x.py")
     assert out["tool"] == "verify_strategy" and out["error"].startswith("FileNotFoundError")
     assert wrapped.__wrapped__ is tools.verify_strategy  # the SDK reads the signature through it
-    assert reporting_errors(lambda: {"ok": 1})() == {"ok": 1}
+    assert reporting_errors(lambda: {"ok": 1})()["ok"] == 1  # results pass through (plus the disclaimer)
 
 
 def test_entry_point_dispatch(monkeypatch, capsys) -> None:

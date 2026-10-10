@@ -3,6 +3,36 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.53.0] — unreleased
+
+Institutional stage, milestone 1. More checks follow before the release (see the roadmap).
+
+### Added
+- **`monte-neo alpha`** and MCP tool `validate_alpha` (`alpha-report/1`): does a cross-sectional score predict returns,
+  and can its long-short portfolio be traded? Family A: rank IC with a Newey-West t, IC decay and half-life, quantile
+  monotonicity, long and short legs, breadth against a claimed IR, permuted-score placebos, selection against timing.
+  Family D: square-root market impact and participation at `--aum`, capacity curve, short feasibility and borrow,
+  holding period against signal decay, dependence on the rebalance day. See [guides/alpha.md](../guides/alpha.md).
+- **`--policy`** and **`monte-neo policy init | show`**: an institution's thresholds in a TOML file (minimum trades,
+  cost multiplier, no warnings, minimum Deflated Sharpe and Sharpe, maximum drawdown, required checks, warnings treated
+  as breaches). The `policy` row lists every breach; the policy and its hash go into the certificate and `--recheck`.
+- **`--trials-from`**: the number of variants already tried, read offline from MLflow (file store or SQLite), Optuna,
+  a W&B CSV export, a CSV or a ledger; the largest count deflates the Sharpe.
+- **`--model-cutoff`** (check `model_cutoff`, look-ahead): the edge of a strategy that uses a language or foundation
+  model must survive the date its training data ends.
+- **Team ledger:** `--ledger PATH` on a shared drive locks every write and records who wrote the entry and from which host.
+- **The "not investment advice" notice** is one text (`monte_neo.disclaimer`) in every certificate, at the bottom of
+  every HTML report (12 px, readable, printed), in every MCP answer (`disclaimer`), at the end of CLI output, in the
+  README and in the docs footer. Agent rules ask agents to repeat it.
+- Agent compatibility table in [guides/agents.md](../guides/agents.md): tested with Claude Code and Qwen Code (local);
+  Codex, Gemini CLI, Cursor and other clients are not tested by the maintainer yet
+  ([issue #114](https://github.com/NeoZorK/Monte-Neo/issues/114)). An issue form for agent test reports.
+  Agent rules mention `trials_from`, `model_cutoff`, `policy_path` and `validate_alpha`.
+
+### Changed
+- The README badge says "tested with Claude Code · Qwen Code (local)" instead of naming agents nobody has tested.
+- The certificate's `disclaimer` text is longer (it is not part of the certificate id, so existing certificates recheck).
+
 ## [v0.52.0] — 2026-10-05
 
 ### Added

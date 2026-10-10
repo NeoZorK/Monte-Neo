@@ -7,6 +7,7 @@ from typing import Any
 
 from rich.console import Console
 
+from monte_neo import disclaimer
 from monte_neo.cli.verify_cmd import _VERDICT_STYLE, _finish, _render_summary
 
 
@@ -70,6 +71,7 @@ def run_quotes_demo(console: Console) -> int:
         _render_summary(report, console)
         console.print()
     console.print("Now try your own: [bold]monte-neo verify --quotes quotes.csv --strategy my_strategy.py --bar-ms 1000[/]")
+    console.print(f"[dim]{disclaimer.SHORT}[/]")
     return 0
 
 

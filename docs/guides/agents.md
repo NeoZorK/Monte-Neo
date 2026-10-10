@@ -6,12 +6,28 @@ The server runs locally over stdio and reads files from your project.
 
 Requirements: [uv](https://docs.astral.sh/uv/) (for `uvx`) and Python 3.11+.
 
+## What has been tested
+
+| Agent | Tested by the maintainer | Notes |
+|-------|--------------------------|-------|
+| Claude Code | Yes | MCP server, plugin and `monte-neo bench run` |
+| Qwen Code with a local model (Ollama) | Yes | MCP server and `bench run --base-url`; see [Local agents](local-agents.md) |
+| Codex CLI | No | config in `integrations/codex`, never run by the maintainer |
+| Gemini CLI | No | config in `integrations/gemini`, never run by the maintainer |
+| Cursor | No | config in `integrations/cursor`, never run by the maintainer |
+| Other MCP clients (Cline, Continue, Goose, Aider, OpenHands, Windsurf, Zed, VS Code agent mode, ...) | No | the same stdio MCP server; unverified |
+
+"No" means nobody has reported a run, not that it fails. If you have one of these agents installed, please run the
+10-minute test in [issue #114](https://github.com/NeoZorK/Monte-Neo/issues/114) and report the result, whatever it is.
+Each report with the agent's version gets a row here with a link.
+
 ## MCP tools
 
 | Tool | Purpose |
 |------|---------|
 | `verify_strategy` | Full verification, returns a `strategy-verdict/1` certificate |
 | `verify_grid` | Runs the parameter search inside the verifier (counts `n_trials`) and adds walk-forward, parameter-plateau and PBO checks |
+| `validate_alpha` | A cross-sectional score: does it predict returns (rank IC, decay, quantiles, placebos), and can its long-short portfolio be traded (impact, capacity, shorts, rebalance day)? `alpha-report/1` |
 | `verify_quotes` | Intraday strategies on bid/ask quotes: does the profit survive the time the quotes arrived (stamp + latency)? Arrival look-ahead, latency scan and latency Monte Carlo |
 | `probe_lookahead` | Look-ahead probes only (lint, outside data, truncation, perturbation, determinism); works on universes too |
 | `cost_stress` | Break-even cost and returns under 0, 1 and 2 bars of execution delay |
@@ -43,7 +59,7 @@ reporting results. It fires once per file per session and never blocks an edit.
 MCP server only:
 
 ```bash
-claude mcp add monte-neo -- uvx --from "monte-neo[mcp]>=0.52.0" monte-neo-mcp
+claude mcp add monte-neo -- uvx --from "monte-neo[mcp]>=0.53.0" monte-neo-mcp
 ```
 
 ## Codex (OpenAI)
@@ -60,7 +76,7 @@ registers the MCP server and loads `GEMINI.md` as context.
 
 ## Qwen Code (and local models)
 
-`qwen mcp add monte-neo uvx --from "monte-neo[mcp]>=0.52.0" monte-neo-mcp`, and copy `integrations/qwen/QWEN.md` into your
+`qwen mcp add monte-neo uvx --from "monte-neo[mcp]>=0.53.0" monte-neo-mcp`, and copy `integrations/qwen/QWEN.md` into your
 project. Qwen Code can also drive a model served on your machine: see [Local agents](local-agents.md).
 
 ## Claude Code: "There's an issue with the selected model"
@@ -117,7 +133,7 @@ a verdict comment on pull requests, the certificate uploaded as an artifact). Op
 verdict is still in the job summary. By hand:
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.52.0
+- uses: NeoZorK/Monte-Neo@v0.53.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py

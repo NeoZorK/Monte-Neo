@@ -16,6 +16,8 @@ from typing import Any
 from rich.console import Console
 from rich.table import Table
 
+from monte_neo import disclaimer
+
 EXIT_CODES = {"PASS": 0, "PASS_WITH_WARNINGS": 0, "NEEDS_MORE_EVIDENCE": 1, "REJECT": 2}
 _STATUS_STYLE = {"pass": "green", "warn": "yellow", "fail": "bold red", "skip": "dim", "info": "cyan"}
 _VERDICT_STYLE = {"PASS": "bold green", "PASS_WITH_WARNINGS": "bold yellow", "NEEDS_MORE_EVIDENCE": "bold magenta", "REJECT": "bold red"}
@@ -43,6 +45,19 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--ledger", nargs="?", const="1", default=None, metavar="PATH",
         help="Count the variants tried on this data in an append-only ledger (default .monte-neo/ledger.jsonl); the larger of the count and --n-trials is used",
+    )
+    p.add_argument(
+        "--trials-from", metavar="SPEC",
+        help="Count the variants already tried in an experiment tracker, offline: mlflow:PATH[:EXPERIMENT], "
+        "optuna:sqlite:///study.db[:STUDY], wandb:export.csv, csv:trials.csv or ledger:PATH; the largest count is used",
+    )
+    p.add_argument(
+        "--policy", metavar="FILE",
+        help="Your institution's thresholds as a TOML file (monte-neo policy init writes a template); recorded in the certificate",
+    )
+    p.add_argument(
+        "--model-cutoff", metavar="YYYY-MM",
+        help="Training-data cutoff of a language or foundation model the strategy uses: the edge must survive that date",
     )
     p.add_argument("--registration", metavar="ID", help="id of a pre-registered hypothesis (monte-neo register): the certificate says whether it protects this result")
     p.add_argument("--repaint", choices=["off", "auto", "strict"], default="auto", help="How densely to check that a signal never changes after it was shown (default auto; strict checks many more prefixes)")
@@ -150,6 +165,7 @@ def _run_demo(console: Console) -> int:
         "Monte-Neo separates 'the backtest lies' from 'the strategy does not earn'."
     )
     console.print("Now try your own: [bold]monte-neo verify --ohlcv data.csv --strategy my_strategy.py[/]")
+    console.print(f"[dim]{disclaimer.SHORT}[/]")
     return 0
 
 
@@ -370,8 +386,28 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
             tp_pct=args.tp_pct,
             trail_pct=args.trail_pct,
         )
+        rules = None
+        min_trades = args.min_trades
+        if args.policy:
+            from dataclasses import replace
+
+            from monte_neo.verify.policy import load_policy, run_inputs
+
+            rules = load_policy(args.policy)
+            fixed = run_inputs(rules)
+            min_trades = int(fixed.get("min_trades", min_trades))
+            k = float(fixed.get("cost_multiplier", 1.0))
+            model = replace(model, commission_bps=model.commission_bps * k, slippage_bps=model.slippage_bps * k)
+        n_trials, extra_checks = args.n_trials, []
+        if args.trials_from:
+            if args.grid:
+                raise ValueError("--trials-from is for one strategy; --grid counts its own variants")
+            from monte_neo.verify.trials_import import trials_for_verify
+
+            n_trials, row = trials_for_verify(args.trials_from, args.n_trials)
+            extra_checks.append(row)
         common = {
-            "model": model, "periods_per_year": args.periods_per_year, "min_trades": args.min_trades,
+            "model": model, "periods_per_year": args.periods_per_year, "min_trades": min_trades,
             "positions": args.positions,
             "jobs": args.jobs,
             "timeout": args.timeout,
@@ -383,10 +419,15 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
             report = verify_grid(df, _load_grid(args.grid), strategy=args.strategy, folds=args.folds, **common)
         else:
             report = verify_strategy(
-                df, signals=args.signals, strategy=args.strategy, n_trials=args.n_trials,
+                df, signals=args.signals, strategy=args.strategy, n_trials=n_trials,
                 ledger=(True if args.ledger == "1" else args.ledger) or None,
-                repaint=args.repaint, signal_timing=args.signal_timing, registration=args.registration, **common,
+                repaint=args.repaint, signal_timing=args.signal_timing, registration=args.registration,
+                model_cutoff=args.model_cutoff, extra_checks=extra_checks or None, **common,
             )
+        if rules is not None:
+            from monte_neo.verify.policy import apply_policy
+
+            report = apply_policy(report, rules)
     except Exception as exc:  # input errors must not look like a verdict
         console.print(f"[red]verify failed: {exc}[/]")
         return 3

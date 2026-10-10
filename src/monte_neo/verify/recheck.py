@@ -135,6 +135,10 @@ def _recheck(
             df, signals=sig if fn is None else None, signal_fn=fn, source=source,
             model=model, n_trials=repro.get("n_trials"), **settings,
         )
+    if repro.get("policy"):  # the policy's inputs are already in the settings and model: apply only its rules
+        from monte_neo.verify.policy import apply_policy
+
+        again = apply_policy(again, repro["policy"])
     same_verdict = again["verdict"] == cert.get("verdict")
     same_id = again["certificate_id"] == cert.get("certificate_id")
     report.update(

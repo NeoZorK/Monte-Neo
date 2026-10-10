@@ -36,6 +36,8 @@ NEXT_ACTIONS: dict[str, str] = {
     "holdout_consistency": "Recent (holdout) performance does not confirm the earlier sample: check for regime dependence or overfit.",
     "parameter_plateau": "The best parameters are an isolated peak: neighbouring values do much worse. Prefer a region where nearby parameters also work.",
     "claim_consistency": "The claimed numbers are better than the backtest reproduces: report the verified Sharpe, return, drawdown and trade count instead of the claimed ones.",
+    "model_cutoff": "The edge lives before the training cutoff of the model behind the signal: the model may have remembered that period. Judge the strategy only on dates after the cutoff, or use a model whose training data ends before the test starts.",
+    "policy": "The result breaches your institution's policy (see the policy row): fix the breached rule, or have the policy owner change the policy file; do not weaken the policy to pass one strategy.",
     "pbo": "The winner of the parameter search usually ranks below the median on unseen data: shrink the search space, prefer a parameter plateau, or confirm on new data before trusting the best combination.",
     "quote_quality": "Fix the quotes: drop crossed (bid > ask) and non-positive prices, find why latency is negative (clock offset between the exchange stamp and your receive time) and why rows do not parse.",
     "arrival_lookahead": "The profit exists only when quotes are binned by exchange time: the strategy acts on prices that had not reached you yet. Rebuild features from arrival time (exchange stamp + latency) and trade against later prices.",

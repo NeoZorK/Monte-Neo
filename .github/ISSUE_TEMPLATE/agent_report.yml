@@ -1,0 +1,59 @@
+name: Agent test report
+description: You ran Monte-Neo from a coding agent (Codex, Gemini CLI, Cursor, Cline, ...). Tell us how it went, good or bad.
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. A failure report is as useful as a success. Do not paste API keys, tokens or private strategy code.
+        The test takes about 10 minutes: see issue #114.
+  - type: input
+    id: agent
+    attributes:
+      label: Agent and version
+      placeholder: e.g. Codex CLI 0.40.1
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Model and provider (or local runtime)
+      placeholder: e.g. gpt-5 via OpenAI, or qwen3-coder via Ollama
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: OS and monte-neo version
+      placeholder: macOS 15.5, monte-neo 0.53.0
+    validations:
+      required: true
+  - type: dropdown
+    id: connected
+    attributes:
+      label: Did the MCP server connect and were the tools visible?
+      options: ["Yes, tools visible", "Connected, but no tools visible", "Did not connect"]
+    validations:
+      required: true
+  - type: dropdown
+    id: called
+    attributes:
+      label: When asked to check a strategy, did the agent call a Monte-Neo tool on its own?
+      options: ["Yes", "Only after I named the tool", "No"]
+    validations:
+      required: true
+  - type: textarea
+    id: verdict
+    attributes:
+      label: Verdict it reported, and was it the same as `monte-neo verify` from the shell?
+    validations:
+      required: true
+  - type: textarea
+    id: problems
+    attributes:
+      label: What went wrong or was confusing
+  - type: textarea
+    id: config
+    attributes:
+      label: Config you used (redact keys)
+      render: json

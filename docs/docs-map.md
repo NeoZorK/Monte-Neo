@@ -1,4 +1,4 @@
-# Monte-Neo v0.52.0
+# Monte-Neo v0.53.0
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -79,6 +79,8 @@ A simplified guide to the Monte-Neo file structure.
 - docs/marketing/trap-of-the-week.md - Twelve weekly post drafts built on Trap Suite strategies, with measured verdicts
 - packaging/conda-forge/meta.yaml - conda-forge recipe draft (not built)
 - .github/ISSUE_TEMPLATE/false_accusation.yml - Issue form for false accusations of honest strategies
+- docs/guides/alpha.md - monte-neo alpha: signal power (IC, decay, quantiles, placebos) and implementability (impact, capacity, shorts, rebalance day)
+- docs/guides/policy-trials-cutoff.md - verify --policy (TOML thresholds), --trials-from (MLflow, Optuna, W&B), team ledger, --model-cutoff
 - docs/guides/discover.md - monte-neo discover: verified indicator search (gate, effective trials, search null, lockbox)
 - scripts/check_english_only.py - Language guard: fails on Cyrillic text or private working files in tracked files, PR titles, PR descriptions and commit messages
 - scripts/mutation_check.py - Mutation check of the verifier core
@@ -100,6 +102,14 @@ A simplified guide to the Monte-Neo file structure.
 - tests/zoo/ - Hypothesis zoo: leak and honest mechanisms, disguises, independent oracle, data defects, claims, metamorphic relations, known gaps
 - src/monte_neo/discover/ - Verified indicator search (DSL, search, causality gate, canaries)
 - src/monte_neo/verify/ledger.py - Append-only trial ledger
+- src/monte_neo/verify/filelock.py - Cross-process file lock for the team ledger
+- src/monte_neo/verify/trials_import.py - --trials-from: trial counts from MLflow, Optuna, W&B, CSV, ledgers
+- src/monte_neo/verify/policy.py - --policy: an institution's thresholds as TOML, the policy row, apply_policy
+- src/monte_neo/verify/cutoff.py - --model-cutoff: does the edge survive a model's training cutoff
+- src/monte_neo/disclaimer.py - The one 'not investment advice' text for reports, CLI, MCP and docs
+- src/monte_neo/alpha/ - monte-neo alpha: panel alignment, signal power (family A), implementability (family D), alpha-report/1
+- src/monte_neo/cli/alpha_cmd.py, policy_cmd.py - monte-neo alpha and monte-neo policy commands
+- .github/ISSUE_TEMPLATE/agent_report.yml - Report form for running Monte-Neo from a coding agent
 - src/monte_neo/verify/fixes.py - Causal rewrites for suggest_fix
 - src/monte_neo/cli/discover_cmd.py - monte-neo discover command
 - docs/guides/frameworks.md - Adapters (vectorbt, Freqtrade, Lean, Zipline, fills), Jupyter display, pandas accessor, pre-commit, badge, Docker image

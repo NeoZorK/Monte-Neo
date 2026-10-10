@@ -28,3 +28,9 @@ Before reporting any trading strategy, signal or backtest result (returns, Sharp
    To search for an indicator, use `discover_indicator` (it counts and tests the search), not hundreds of manual tries.
 6. Report the verifier verdict, `certificate_id` and metrics, not your own backtest numbers.
    Never reduce `n_trials` or costs to obtain a better verdict.
+   If the runs are logged in MLflow, Optuna or W&B, pass `trials_from` (CLI `--trials-from`) so they are counted.
+   If the signal comes from a language or foundation model, pass `model_cutoff` (its training-data cutoff).
+   If the user has a policy file, pass `policy_path` (CLI `--policy`) and report a breach as it is.
+7. Before calling a ranking signal "alpha", call `validate_alpha` with the universe prices and the scores, and
+   report its verdict and what limits it (impact at the planned capital, a short leg that cannot be traded).
+8. Every answer carries a `disclaimer`: tell the user the result is not investment advice.

@@ -18,7 +18,7 @@
   <a href="https://github.com/NeoZorK/Monte-Neo/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license"/></a>
   <br/>
   <a href="https://registry.modelcontextprotocol.io/v0/servers?search=io.github.NeoZorK/monte-neo"><img src="https://img.shields.io/badge/MCP%20Registry-io.github.NeoZorK%2Fmonte--neo-6f42c1" alt="MCP Registry"/></a>
-  <a href="https://neozork.github.io/Monte-Neo/guides/agents/"><img src="https://img.shields.io/badge/works%20with-Claude%20Code%20%C2%B7%20Codex%20%C2%B7%20Gemini%20CLI%20%C2%B7%20Cursor-444" alt="Works with coding agents"/></a>
+  <a href="https://neozork.github.io/Monte-Neo/guides/agents/"><img src="https://img.shields.io/badge/tested%20with-Claude%20Code%20%C2%B7%20Qwen%20Code%20(local)-444" alt="Tested with Claude Code and Qwen Code (local)"/></a>
   <a href="https://github.com/NeoZorK/Monte-Neo/stargazers"><img src="https://img.shields.io/github/stars/NeoZorK/Monte-Neo?style=flat" alt="GitHub stars"/></a>
 </p>
 
@@ -288,25 +288,29 @@ uvx monte-neo mcp
 It is also listed in the official MCP Registry as `io.github.NeoZorK/monte-neo`. Setup for each
 client: [Use from agents](https://neozork.github.io/Monte-Neo/guides/agents/).
 
+**What was tested.** The maintainer has run the server with **Claude Code** and with **Qwen Code on a local model**.
+Codex, Gemini CLI, Cursor and other MCP clients get the same server and rules, but nobody has reported a run yet.
+If you use one of them, a 10-minute test helps: [issue #114](https://github.com/NeoZorK/Monte-Neo/issues/114).
+
 **Local agents** (Qwen Code, or any terminal agent on a model served from your machine through Ollama, LM Studio
 or llama.cpp):
 
 ```bash
-qwen mcp add monte-neo uvx --from "monte-neo[mcp]>=0.52.0" monte-neo-mcp
+qwen mcp add monte-neo uvx --from "monte-neo[mcp]>=0.53.0" monte-neo-mcp
 ```
 
 `qwen-code` is also a built-in agent of `monte-neo bench run`, so you can measure how honest a local model is.
 A small model often fails the bench tasks; that is a result of the model, not of the verifier.
 Setup, `--base-url` and troubleshooting: [Local agents](https://neozork.github.io/Monte-Neo/guides/local-agents/).
 
-MCP tools (17): `verify_strategy`, `verify_grid`, `verify_quotes`, `verify_portfolio`, `probe_lookahead`,
+MCP tools (18): `verify_strategy`, `verify_grid`, `verify_quotes`, `verify_portfolio`, `validate_alpha`, `probe_lookahead`,
 `cost_stress`, `recheck_certificate`, `check_signature`, `render_report`, `suggest_fix`, `discover_indicator`,
 `register_hypothesis`, `compare_certificates`, `holdout_query`, `diagnose_data`, `verdict_schema`, `verifier_manifest`.
 
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.52.0
+- uses: NeoZorK/Monte-Neo@v0.53.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py
@@ -389,8 +393,7 @@ Monte-Neo is in active development (beta). The verifier API and the `strategy-ve
 schema are stable across minor releases. See the
 [roadmap](https://github.com/NeoZorK/Monte-Neo/blob/main/docs/project/ROADMAP.md).
 
-**Not investment advice.** Monte-Neo checks backtest methodology. It does not predict future
-profit.
+**Not investment advice.** Monte-Neo is a research and verification tool. Its reports, examples and reference strategies illustrate a method; they are not a recommendation, an offer or a call to buy, sell or trade any instrument, and not a promise of profit. Simulated and past results do not predict future returns. Trading can lose money, including more than the initial capital when leverage is used. Decisions and their consequences are yours; consult a licensed adviser if you need advice.
 
 ## Contributing
 

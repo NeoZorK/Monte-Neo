@@ -83,7 +83,8 @@ def test_cli_text_without_metrics_and_errors(files, tmp_path) -> None:
     assert code == 3 and "verify failed" in text
     np.save(tmp_path / "s.npy", np.ones(100))
     code, text = _run(["--ohlcv", str(bad), "--signals", str(tmp_path / "s.npy")])
-    assert code == 2 and "data_integrity" in text and "return" not in text
+    body = text.split("Checks backtest methodology")[0]  # the closing notice mentions returns
+    assert code == 2 and "data_integrity" in body and "return" not in body
 
 
 def test_cli_main_and_app_dispatch(files, monkeypatch) -> None:
