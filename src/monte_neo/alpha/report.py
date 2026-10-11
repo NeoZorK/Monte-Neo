@@ -9,6 +9,8 @@ import numpy as np
 import pandas as pd
 
 from monte_neo._version import __version__
+from monte_neo.alpha.families_run import NEXT_ACTIONS as BCFI_ACTIONS
+from monte_neo.alpha.families_run import run_families
 from monte_neo.alpha.implementability_run import NEXT_ACTIONS as D_ACTIONS
 from monte_neo.alpha.implementability_run import run_implementability
 from monte_neo.alpha.panel import Panel, build_panel, data_sha256
@@ -65,7 +67,7 @@ def demo_panel(seed: int = 0, n_symbols: int = 40, n_days: int = 750) -> tuple[p
 
 
 def _next_actions(checks: list[dict[str, Any]]) -> list[str]:
-    actions = {**NEXT_ACTIONS, **D_ACTIONS}
+    actions = {**NEXT_ACTIONS, **D_ACTIONS, **BCFI_ACTIONS}
     return [actions[c["id"]] for s in ("fail", "warn") for c in checks if c["status"] == s and c["id"] in actions]
 
 
@@ -95,6 +97,10 @@ def validate_alpha(
     seed: int = 0,
     placebos: int = 200,
     aum: float | None = None,
+    factors: str | Path | None = None,
+    book: str | Path | pd.DataFrame | None = None,
+    n_trials: int = 1,
+    families: bool = True,
 ) -> dict[str, Any]:
     """Check whether a cross-sectional score has real predictive power and whether its portfolio can be traded.
 
@@ -107,6 +113,10 @@ def validate_alpha(
         seed: Seed for bootstraps and placebos.
         placebos: Number of permuted-score placebos.
         aum: Capital for the market-impact and participation checks (family D); ``None`` skips those two.
+        factors: Factor returns file for attribution (family B); default: factors built from the universe.
+        book: Returns of an existing book (family C); ``None`` skips the family.
+        n_trials: Variants tried before this one (family F).
+        families: Run families B, C, F and I on the score's long-short portfolio (default True).
 
     Returns:
         An ``alpha-report/1`` dict: verdict, checks, metrics, next_actions, reproducibility.
@@ -120,6 +130,8 @@ def validate_alpha(
     checks = run_checks(panel, horizon=horizon, quantiles=quantiles, claimed_ir=claimed_ir, seed=seed, placebos=placebos)
     half_life = next((c["details"].get("half_life") for c in checks if c["id"] == "ic_decay"), None)
     checks += run_implementability(panel, quantiles=quantiles, aum=aum, half_life=half_life)
+    if families:
+        checks += run_families(panel, quantiles=quantiles, factors=factors, book=book, n_trials=n_trials, seed=seed)
     by = {c["id"]: c["details"] for c in checks}
     metrics = {
         "n_dates": len(panel.dates), "n_symbols": len(panel.symbols),
@@ -138,7 +150,9 @@ def validate_alpha(
         "next_actions": _next_actions(checks),
         "reproducibility": {
             "data_sha256": {"prices": data_sha256(prices), "scores": data_sha256(scores)},
-            "settings": {"horizon": horizon, "quantiles": quantiles, "claimed_ir": claimed_ir, "seed": seed, "placebos": placebos, "aum": aum},
+            "settings": {"horizon": horizon, "quantiles": quantiles, "claimed_ir": claimed_ir, "seed": seed, "placebos": placebos, "aum": aum,
+                         "factors": data_sha256(factors) if factors else None,
+                         "book": data_sha256(book) if book is not None else None, "n_trials": n_trials, "families": families},
             "engine_version": __version__,
         },
         "disclaimer": f"{ALPHA_SCOPE} {SHORT}",

@@ -337,6 +337,14 @@ def statistics_rows(
     ]
 
 
+def _extra_actions() -> dict[str, str]:
+    """Fix-it hints of checks that live in their own modules (loaded lazily: they import this one)."""
+    from monte_neo.verify.events_checks import NEXT_ACTIONS as EVENT_ACTIONS
+    from monte_neo.verify.model_protocol import NEXT_ACTIONS as MODEL_ACTIONS
+
+    return {**EVENT_ACTIONS, **MODEL_ACTIONS}
+
+
 def next_actions(checks: list[dict[str, Any]]) -> list[str]:
     """Ordered fix-it list for failing then warning checks."""
     out: list[str] = []
@@ -344,7 +352,7 @@ def next_actions(checks: list[dict[str, Any]]) -> list[str]:
         for row in checks:
             if row["status"] != wanted:
                 continue
-            action = NEXT_ACTIONS.get(row["id"], "")
+            action = NEXT_ACTIONS.get(row["id"]) or _extra_actions().get(row["id"], "")
             if row["id"] == "lookahead_static_lint":
                 lines = sorted({f["line"] for f in row["details"].get("findings", [])})
                 action = f"{action} Lines: {', '.join(str(x) for x in lines)}."

@@ -5,7 +5,7 @@ Version source of truth: `src/monte_neo/_version.py`.
 
 ## [v0.53.0] — unreleased
 
-Institutional stage, milestone 1. More checks follow before the release (see the roadmap).
+Institutional stage, milestones 1 and 2. More checks follow before the release (see the roadmap).
 
 ### Added
 - **`monte-neo alpha`** and MCP tool `validate_alpha` (`alpha-report/1`): does a cross-sectional score predict returns,
@@ -29,9 +29,29 @@ Institutional stage, milestone 1. More checks follow before the release (see the
   ([issue #114](https://github.com/NeoZorK/Monte-Neo/issues/114)). An issue form for agent test reports.
   Agent rules mention `trials_from`, `model_cutoff`, `policy_path` and `validate_alpha`.
 
+- **`fit` / `predict` protocol** for machine-learning strategies: a strategy file may define `fit(train)` and
+  `predict(model, df)` (with `REFIT_EVERY`, `MIN_TRAIN`, `LABEL_HORIZON`, `EMBARGO`) instead of `signal(df)`. The
+  verifier runs the walk-forward, refitting only on rows that end before the label horizon and the embargo; the probes
+  test `predict`. Check `ml_refit_gap` (look-ahead) compares it with the whole-file fit; `ml_cv_overlap` finds training
+  rows of `cv_splits(df)` that reach into a test fold. See [guides/ml-and-events.md](../guides/ml-and-events.md).
+- **`--events`** (`--events-delay`, MCP `events_path`): news, earnings, alternative data or LLM outputs joined to the
+  bars by publication time as `ev_<column>` columns; checks `events_quality` and `pit_events` (what a join by event
+  time would earn). The events' hash is in the certificate and `--recheck --events` reproduces it.
+- **`verify --returns`** (`--benchmark`, `--n-strategies`, `--demo-returns`, MCP `verify_returns`): due diligence on a
+  track record given only as returns: smoothing, missing small losses, implausible consistency, round numbers, Deflated
+  Sharpe with the manager's number of strategies, drawdown depth, benchmark relation and claims.
+  See [guides/returns-due-diligence.md](../guides/returns-due-diligence.md).
+- **`monte-neo alpha`, families B, C, F and I** on the score's long-short portfolio: attribution to factors built from
+  the universe (or `--factors`), residual alpha against the t ≥ 3 hurdle, hidden short volatility, timing beta,
+  crowding; value to an existing book (`--book`: correlation, marginal Sharpe, residual alpha, drawdown overlap); the
+  Harvey-Liu-Zhu hurdle, minimum backtest length, drawdown plausibility and Sharpe haircut (`--n-trials`); neutrality,
+  concentration, leverage, named crises and tail risk. `--signal-only` keeps families A and D.
+
 ### Changed
 - The README badge says "tested with Claude Code · Qwen Code (local)" instead of naming agents nobody has tested.
 - The certificate's `disclaimer` text is longer (it is not part of the certificate id, so existing certificates recheck).
+- Known limit narrowed: a model fitted when the module loads is still not caught by the probes, but a model written with
+  the `fit` / `predict` protocol is fitted by the verifier, so its whole-file fit cannot hide.
 
 ## [v0.52.0] — 2026-10-05
 

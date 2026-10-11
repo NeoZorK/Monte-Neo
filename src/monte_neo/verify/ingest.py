@@ -193,8 +193,12 @@ def load_signal_fn(spec: str | Path) -> tuple[SignalFn, str]:
     finally:
         sys.modules.pop(mod_name, None)
     fn = getattr(module, func_name, None)
+    if not callable(fn) and func_name == "signal":
+        from monte_neo.verify.model_protocol import from_module
+
+        fn = from_module(module)  # fit(train) + predict(model, df): the verifier runs the walk-forward
     if not callable(fn):
-        raise AttributeError(f"{path} has no callable '{func_name}(df)'")
+        raise AttributeError(f"{path} has no callable '{func_name}(df)' (or fit(train) and predict(model, df))")
     return fn, source
 
 

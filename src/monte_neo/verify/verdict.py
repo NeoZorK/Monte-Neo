@@ -128,6 +128,9 @@ def verify_strategy(
     signal_timing: str = "close",
     policy: str | Path | dict[str, Any] | None = None,
     model_cutoff: str | None = None,
+    events: Any = None,
+    events_delay: float = 0.0,
+    events_sha256: str | None = None,
 ) -> dict[str, Any]:
     """Verify one strategy and return a ``strategy-verdict/1`` report.
 
@@ -161,6 +164,10 @@ def verify_strategy(
     rules to the result (check row ``policy``); the policy goes into the certificate. See :mod:`monte_neo.verify.policy`.
     ``model_cutoff`` (``YYYY-MM`` or ``YYYY-MM-DD``) is the training-data cutoff of a language or foundation model the
     strategy uses: the edge must survive that date (check row ``model_cutoff``). See :mod:`monte_neo.verify.cutoff`.
+    ``events`` (a table or file with ``published_at``, optional ``event_time`` and ``symbol``, and value columns) is joined
+    to the OHLCV by publication time plus ``events_delay`` seconds, as ``ev_<column>`` columns the strategy reads; with
+    ``event_time`` the strategy also runs on the leaky join (row ``pit_events``). ``events_sha256`` is set by a recheck
+    to make sure the same events are used. See :mod:`monte_neo.verify.events_run`.
     """
     if policy is not None:
         from monte_neo.verify.policy import apply_policy, load_policy, run_inputs
@@ -179,7 +186,8 @@ def verify_strategy(
             holdout_fraction=holdout_fraction, min_trades=min_trades, probe_checks=probe_checks, positions=positions,
             extra_checks=extra_checks, extra=extra, io_watch=io_watch, jobs=jobs, timeout=timeout, isolate=isolate,
             claim=claim, symbol_costs=symbol_costs, ledger=ledger, registration=registration, repaint=repaint,
-            signal_timing=signal_timing, model_cutoff=model_cutoff,
+            signal_timing=signal_timing, model_cutoff=model_cutoff, events=events, events_delay=events_delay,
+            events_sha256=events_sha256,
         )
         return apply_policy(report, rules)
     if n_trials is not None and int(n_trials) < 1:
@@ -195,6 +203,16 @@ def verify_strategy(
     if signal_timing not in SIGNAL_TIMINGS:
         raise ValueError(f"signal_timing must be one of {SIGNAL_TIMINGS}, got {signal_timing!r}")
     df = load_ohlcv(ohlcv)
+    joined_events = None
+    if events is not None:
+        from monte_neo.verify.events_run import prepare_events
+
+        df, leaky_df, event_table, event_hash = prepare_events(df, events, float(events_delay))
+        if events_sha256 is not None and events_sha256 != event_hash:
+            raise ValueError("the events differ from the ones the certificate was issued for")
+        joined_events = (leaky_df, event_table, event_hash)
+    elif events_sha256 is not None:
+        raise ValueError("this certificate was issued with events: pass the same events file")
     market = market_for(df)
     n = market.n_bars
     if symbol_costs is not None:
@@ -215,6 +233,9 @@ def verify_strategy(
 
         parse_cutoff(model_cutoff)  # fail early on a bad date
         settings["model_cutoff"] = str(model_cutoff)  # only when set: older certificate ids stay the same
+    if joined_events is not None:
+        settings["events_sha256"] = joined_events[2]  # only when set: older certificate ids stay the same
+        settings["events_delay"] = float(events_delay)
     if claim is not None:
         settings["claim"] = parse_claim(claim)  # part of the certificate: a recheck compares the same claim
     if io_watch is None:
@@ -228,6 +249,17 @@ def verify_strategy(
             raise ValueError("jobs, timeout and isolate need strategy code in a file (strategy='file.py')")
         with io_watch:
             fn, src = _resolve_strategy(strategy, signal_fn, source)
+    from monte_neo.verify.model_protocol import ModelSignal
+
+    local_fn = fn if runner is None else _local_strategy(strategy, src, isolate, joined_events is not None)
+    if joined_events is not None:
+        from monte_neo.verify.events_run import events_rows
+
+        extra_checks = [*(extra_checks or []), *events_rows(df, joined_events[0], joined_events[1], local_fn, model or _default_model(n), positions)]
+    if isinstance(local_fn, ModelSignal):
+        from monte_neo.verify.model_rows import model_rows
+
+        extra_checks = [*(extra_checks or []), *model_rows(df, local_fn, model or _default_model(n), positions)]
     book = None
     if ledger:
         from monte_neo.verify.ledger import Ledger, ledger_row, variant_id
@@ -270,6 +302,17 @@ def verify_strategy(
     finally:
         if runner is not None:
             runner.close()
+
+
+def _local_strategy(strategy: Any, src: str | None, isolate: bool, has_events: bool) -> Any:
+    """The strategy in this process, only when a check needs it here (events, fit/predict) and isolation allows it."""
+    looks_like_model = bool(src) and "def fit(" in src and "def predict(" in src and "def signal(" not in src
+    if isolate or strategy is None or not (has_events or looks_like_model):
+        return None
+    try:
+        return load_signal_fn(strategy)[0]
+    except Exception:  # it may import only in a worker; the check that needs it is skipped
+        return None
 
 
 def _signals_array(signals: Any) -> np.ndarray | None:

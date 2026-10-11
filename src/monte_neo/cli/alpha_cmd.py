@@ -28,6 +28,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--quantiles", type=int, default=5, help="Quantile buckets (default 5)")
     p.add_argument("--claim-ir", type=float, default=None, help="Claimed annual information ratio (enables the breadth check)")
     p.add_argument("--aum", type=float, default=None, help="Capital you plan to run (quote currency): enables the market-impact and participation checks")
+    p.add_argument("--factors", help="Factor returns (.csv / .parquet: date + one column per factor) for attribution; default: built from the universe")
+    p.add_argument("--book", help="Returns of your existing book (.csv / .parquet: date + one column per strategy): what does this signal add?")
+    p.add_argument("--n-trials", type=int, default=1, help="Variants tried before this one (default 1)")
+    p.add_argument("--signal-only", action="store_true", help="Only signal power and implementability (skip attribution, book, multiple testing, risk)")
     p.add_argument("--seed", type=int, default=0, help="Seed for bootstraps and placebos (default 0)")
     p.add_argument("--format", choices=["text", "json"], default="text", help="stdout format (default text)")
     p.add_argument("--out", help="Write the alpha-report/1 JSON to this path")
@@ -60,7 +64,8 @@ def main(argv: list[str]) -> int:
 
     args = build_parser().parse_args(argv)
     console = Console(file=sys.stdout, soft_wrap=True)
-    kw = {"horizon": args.horizon, "quantiles": args.quantiles, "claimed_ir": args.claim_ir, "seed": args.seed, "aum": args.aum}
+    kw = {"horizon": args.horizon, "quantiles": args.quantiles, "claimed_ir": args.claim_ir, "seed": args.seed, "aum": args.aum,
+          "factors": args.factors, "book": args.book, "n_trials": args.n_trials, "families": not args.signal_only}
     try:
         if args.demo:
             prices, real, noise = demo_panel(2)

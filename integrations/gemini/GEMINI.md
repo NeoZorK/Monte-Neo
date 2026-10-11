@@ -28,4 +28,8 @@ Before reporting any trading strategy, signal or backtest result (returns, Sharp
    If the user has a policy file, pass `policy_path` (CLI `--policy`) and report a breach as it is.
 7. Before calling a ranking signal "alpha", call `validate_alpha` with the universe prices and the scores, and
    report its verdict and what limits it (impact at the planned capital, a short leg that cannot be traded).
-8. Every answer carries a `disclaimer`: tell the user the result is not investment advice.
+8. For a machine-learning model, define `fit(train)` and `predict(model, df)` instead of fitting inside `signal(df)`:
+   the verifier refits only on the past and reports `ml_refit_gap`. Strategies that use news or other events take them
+   through `events_path` (joined by publication time), never joined by event time in your own code.
+9. To judge a manager's track record given only as returns, call `verify_returns`.
+10. Every answer carries a `disclaimer`: tell the user the result is not investment advice.

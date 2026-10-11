@@ -28,6 +28,7 @@ Each report with the agent's version gets a row here with a link.
 | `verify_strategy` | Full verification, returns a `strategy-verdict/1` certificate |
 | `verify_grid` | Runs the parameter search inside the verifier (counts `n_trials`) and adds walk-forward, parameter-plateau and PBO checks |
 | `validate_alpha` | A cross-sectional score: does it predict returns (rank IC, decay, quantiles, placebos), and can its long-short portfolio be traded (impact, capacity, shorts, rebalance day)? `alpha-report/1` |
+| `verify_returns` | A track record given only as returns: smoothing, missing small losses, implausible consistency, significance with the manager's number of strategies |
 | `verify_quotes` | Intraday strategies on bid/ask quotes: does the profit survive the time the quotes arrived (stamp + latency)? Arrival look-ahead, latency scan and latency Monte Carlo |
 | `probe_lookahead` | Look-ahead probes only (lint, outside data, truncation, perturbation, determinism); works on universes too |
 | `cost_stress` | Break-even cost and returns under 0, 1 and 2 bars of execution delay |

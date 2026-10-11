@@ -139,7 +139,7 @@ Product direction: verifier for agent-built strategies.
 ## v0.53.0 — institutional stage (in progress)
 - [x] M1: "not investment advice" notice everywhere, policy as code, `--trials-from`, team ledger, `--model-cutoff`,
   `monte-neo alpha` families A (signal power) and D (implementability), honest agent table and issue #114
-- [ ] M2: `fit/predict` protocol and ML checks, point-in-time events, allocator due diligence on returns, alpha
+- [x] M2: `fit/predict` protocol and ML checks, point-in-time events, allocator due diligence on returns, alpha
   families B (factor attribution), C (value to an existing book), F (multiple testing), I (risk)
 - [ ] M3: validation dossier, alpha families E (robustness), G (data and process), H (live), Alpha Readiness Level,
   reference alpha, zoo A15 and calibration

@@ -106,6 +106,8 @@ def verify_strategy(
     policy_path: str | None = None,
     trials_from: str | None = None,
     model_cutoff: str | None = None,
+    events_path: str | None = None,
+    events_delay: float = 0.0,
 ) -> dict[str, Any]:
     """Verify a strategy backtest and return a strategy-verdict/1 certificate.
 
@@ -144,6 +146,11 @@ def verify_strategy(
         trials_from: Count variants already tried in a tracker, offline: mlflow:PATH[:EXPERIMENT],
             optuna:sqlite:///study.db[:STUDY], wandb:export.csv, csv:trials.csv or ledger:PATH (the largest count is used).
         model_cutoff: 'YYYY-MM' training cutoff of an LLM or foundation model the strategy uses: the edge must survive it.
+        events_path: Events (published_at, optional event_time and symbol, value columns): joined by publication time
+            as ev_<column> columns the strategy reads; with event_time the leaky join is priced (pit_events).
+        events_delay: Seconds after publication before an event is usable.
+    A strategy file may define fit(train) and predict(model, df) instead of signal(df): the verifier then refits the
+    model only on the past (walk-forward) and compares with the whole-file fit (ml_refit_gap).
         compact: Drop details of passing checks to keep the response short.
     """
     from monte_neo.verify import verify_strategy as _verify
@@ -164,7 +171,8 @@ def verify_strategy(
     report = _verify(
         df, signals=signals_path, strategy=strategy_path, model=model, n_trials=n_trials, positions=positions, claim=claim,
         symbol_costs=symbol_costs, ledger=ledger or None, repaint=repaint, signal_timing=signal_timing, registration=registration,
-        policy=policy_path, model_cutoff=model_cutoff, extra_checks=extra_checks, **runs
+        policy=policy_path, model_cutoff=model_cutoff, extra_checks=extra_checks, events=events_path,
+        events_delay=events_delay, **runs
     )
     return _compact(report) if compact else report
 
@@ -537,6 +545,9 @@ def validate_alpha(
     claimed_ir: float | None = None,
     aum: float | None = None,
     seed: int = 0,
+    factors_path: str | None = None,
+    book_path: str | None = None,
+    n_trials: int = 1,
 ) -> dict[str, Any]:
     """Does a cross-sectional score predict returns, and can its top-minus-bottom portfolio be traded? (alpha-report/1)
 
@@ -553,10 +564,43 @@ def validate_alpha(
         claimed_ir: Claimed annual information ratio (checked against IC and breadth).
         aum: Capital you plan to run, for market impact and participation.
         seed: Seed for bootstraps and placebos.
+        factors_path: Factor returns file (date + factors); default: market, size, momentum, reversal and low-volatility factors built from the universe.
+        book_path: Returns of the user's existing book (date + one column per strategy): marginal Sharpe, overlap.
+        n_trials: Variants tried before this one (Harvey-Liu-Zhu hurdle, minimum backtest length, Sharpe haircut).
+
+    The report also covers attribution (is it a known factor, hidden short volatility), value to a book, multiple
+    testing and risk (neutrality, concentration, named crises, tail risk).
     """
     from monte_neo.alpha import validate_alpha as _validate
 
-    return _validate(prices_path, scores_path, horizon=horizon, quantiles=quantiles, claimed_ir=claimed_ir, aum=aum, seed=seed)
+    return _validate(
+        prices_path, scores_path, horizon=horizon, quantiles=quantiles, claimed_ir=claimed_ir, aum=aum, seed=seed,
+        factors=factors_path, book=book_path, n_trials=n_trials,
+    )
+
+
+def verify_returns(
+    returns_path: str,
+    benchmark_path: str | None = None,
+    n_strategies: int = 1,
+    claim: dict[str, Any] | str | None = None,
+) -> dict[str, Any]:
+    """Due diligence on a track record given only as returns (no code, no positions): strategy-verdict/1.
+
+    Smoothed returns (Getmansky-Lo-Makarov), missing small losses (a kink at zero), implausibly consistent gains, round
+    numbers, significance with the manager's number of strategies (Deflated Sharpe), a drawdown too shallow for the
+    volatility, the relation to a benchmark and a claim check. Look-ahead and costs cannot be checked from returns alone;
+    the report says so.
+
+    Args:
+        returns_path: CSV/Parquet with a date column and a return column (decimals or percent).
+        benchmark_path: Optional benchmark returns in the same format.
+        n_strategies: How many funds or strategies the manager runs (prices the selection of the best one).
+        claim: What the manager claims, e.g. {"annual_return": 0.18, "sharpe": 2.0, "max_drawdown": 0.06}.
+    """
+    from monte_neo.verify.returns_dd import verify_returns as _verify_returns
+
+    return _verify_returns(returns_path, benchmark=benchmark_path, n_strategies=n_strategies, claim=claim)
 
 
 def verdict_schema() -> dict[str, Any]:
@@ -610,6 +654,7 @@ TOOLS: tuple[Callable[..., dict[str, Any]], ...] = (
     verify_portfolio,
     diagnose_data,
     validate_alpha,
+    verify_returns,
     verdict_schema,
     verifier_manifest,
 )
@@ -634,5 +679,6 @@ __all__ = [
     "verify_grid",
     "verify_portfolio",
     "verify_quotes",
+    "verify_returns",
     "verify_strategy",
 ]

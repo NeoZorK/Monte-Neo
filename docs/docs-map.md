@@ -81,6 +81,8 @@ A simplified guide to the Monte-Neo file structure.
 - .github/ISSUE_TEMPLATE/false_accusation.yml - Issue form for false accusations of honest strategies
 - docs/guides/alpha.md - monte-neo alpha: signal power (IC, decay, quantiles, placebos) and implementability (impact, capacity, shorts, rebalance day)
 - docs/guides/policy-trials-cutoff.md - verify --policy (TOML thresholds), --trials-from (MLflow, Optuna, W&B), team ledger, --model-cutoff
+- docs/guides/ml-and-events.md - fit/predict protocol (walk-forward run by the verifier, ml_refit_gap, ml_cv_overlap) and --events joined by publication time
+- docs/guides/returns-due-diligence.md - verify --returns: smoothing, zero kink, implausible consistency, significance, benchmark
 - docs/guides/discover.md - monte-neo discover: verified indicator search (gate, effective trials, search null, lockbox)
 - scripts/check_english_only.py - Language guard: fails on Cyrillic text or private working files in tracked files, PR titles, PR descriptions and commit messages
 - scripts/mutation_check.py - Mutation check of the verifier core
@@ -106,8 +108,12 @@ A simplified guide to the Monte-Neo file structure.
 - src/monte_neo/verify/trials_import.py - --trials-from: trial counts from MLflow, Optuna, W&B, CSV, ledgers
 - src/monte_neo/verify/policy.py - --policy: an institution's thresholds as TOML, the policy row, apply_policy
 - src/monte_neo/verify/cutoff.py - --model-cutoff: does the edge survive a model's training cutoff
+- src/monte_neo/verify/model_protocol.py, model_rows.py - fit/predict protocol, ml_refit_gap, ml_cv_overlap
+- src/monte_neo/verify/events.py, events_checks.py, events_run.py - --events: load, join by publication time, quality, pit_events
+- src/monte_neo/verify/returns_dd.py, returns_dd_checks.py - verify --returns: due diligence on a return series
+- src/monte_neo/cli/returns_cmd.py - verify --returns and --demo-returns
 - src/monte_neo/disclaimer.py - The one 'not investment advice' text for reports, CLI, MCP and docs
-- src/monte_neo/alpha/ - monte-neo alpha: panel alignment, signal power (family A), implementability (family D), alpha-report/1
+- src/monte_neo/alpha/ - monte-neo alpha: panel alignment, signal power (A), attribution and self-built factors (B), value to a book (C), implementability (D), multiple testing (F), risk (I), alpha-report/1
 - src/monte_neo/cli/alpha_cmd.py, policy_cmd.py - monte-neo alpha and monte-neo policy commands
 - .github/ISSUE_TEMPLATE/agent_report.yml - Report form for running Monte-Neo from a coding agent
 - src/monte_neo/verify/fixes.py - Causal rewrites for suggest_fix

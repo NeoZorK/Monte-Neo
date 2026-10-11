@@ -59,6 +59,18 @@ def build_parser() -> argparse.ArgumentParser:
         "--model-cutoff", metavar="YYYY-MM",
         help="Training-data cutoff of a language or foundation model the strategy uses: the edge must survive that date",
     )
+    p.add_argument(
+        "--events", metavar="FILE",
+        help="Events table (published_at[, event_time, symbol], value columns): joined by publication time as ev_<column> columns",
+    )
+    p.add_argument("--events-delay", type=float, default=0.0, metavar="SECONDS", help="Extra delay after publication before an event is usable (default 0)")
+    p.add_argument(
+        "--returns", metavar="FILE",
+        help="Due diligence on a return series only (date, return): smoothing, missing small losses, implausible consistency, significance",
+    )
+    p.add_argument("--benchmark", metavar="FILE", help="Benchmark return series for --returns (date, return)")
+    p.add_argument("--n-strategies", type=int, default=1, help="For --returns: how many funds or strategies the manager runs (default 1)")
+    p.add_argument("--demo-returns", action="store_true", help="Try --returns without files: an honest, a smoothed and a too-good track record")
     p.add_argument("--registration", metavar="ID", help="id of a pre-registered hypothesis (monte-neo register): the certificate says whether it protects this result")
     p.add_argument("--repaint", choices=["off", "auto", "strict"], default="auto", help="How densely to check that a signal never changes after it was shown (default auto; strict checks many more prefixes)")
     p.add_argument("--signal-timing", choices=["close", "open"], default="close", help="'open': the signal is declared known at the bar's open, so a signal that needs the bar's own prices fails (default close)")
@@ -335,6 +347,14 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
         from monte_neo.cli.quotes_cmd import run_quotes
 
         return run_quotes(args, console)
+    if args.demo_returns:
+        from monte_neo.cli.returns_cmd import run_returns_demo
+
+        return run_returns_demo(console)
+    if args.returns:
+        from monte_neo.cli.returns_cmd import run_returns
+
+        return run_returns(args, console)
     if args.keygen or args.check_signature:
         return _run_signing(args, console)
     if args.lint:
@@ -362,7 +382,7 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
         try:
             result = recheck_certificate(
                 args.recheck, args.ohlcv, signals=args.signals, strategy=args.strategy,
-                jobs=args.jobs, timeout=args.timeout, isolate=args.isolate,
+                jobs=args.jobs, timeout=args.timeout, isolate=args.isolate, events=args.events,
             )
         except Exception as exc:
             console.print(f"[red]recheck failed: {exc}[/]")
@@ -422,7 +442,8 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
                 df, signals=args.signals, strategy=args.strategy, n_trials=n_trials,
                 ledger=(True if args.ledger == "1" else args.ledger) or None,
                 repaint=args.repaint, signal_timing=args.signal_timing, registration=args.registration,
-                model_cutoff=args.model_cutoff, extra_checks=extra_checks or None, **common,
+                model_cutoff=args.model_cutoff, extra_checks=extra_checks or None,
+                events=args.events, events_delay=args.events_delay, **common,
             )
         if rules is not None:
             from monte_neo.verify.policy import apply_policy

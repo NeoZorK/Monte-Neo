@@ -47,6 +47,20 @@ The portfolio is long the top quantile and short the bottom one, with equal weig
 
 Without `--aum`, market impact and participation are skipped and the report says why.
 
+## Families B, C, F and I: on the score's long-short portfolio
+
+These families judge the returns of the same top-minus-bottom portfolio, **before costs**. Costs and size are
+family D's job.
+
+| Family | Checks | Needs |
+|--------|--------|-------|
+| B, attribution | `factor_exposure`, `residual_alpha` (is it alpha after market, size, momentum, reversal and low-volatility factors? t ≥ 3 passes), `factor_spanning`, `hidden_short_volatility` (steady gains and rare crashes), `market_timing_beta`, `crowding`, `known_anomaly_match` | factors are built from your universe; `--factors file.csv` uses yours |
+| C, value to your book | `book_correlation` (also in the book's worst bars), `marginal_sharpe` (the book's Sharpe gain, with a bootstrap interval), `residual_vs_book`, `drawdown_overlap` | `--book book.csv` (date + one column per strategy); skipped without it |
+| F, all the attempts | `hlz_hurdle` (t ≥ 3), `min_backtest_length`, `drawdown_plausibility`, `haircut_sharpe` | `--n-trials` |
+| I, risk | `neutrality`, `concentration`, `leverage_gross_net`, `historical_stress_replay` (named crises found in your dates), `tail_risk` | — |
+
+`--signal-only` runs families A and D only.
+
 ## Reading the demo
 
 The demo's real score has a rank IC of about 0.05 with t ≈ 9 and beats the placebos. It still gets `REJECT`
@@ -55,8 +69,10 @@ fails the placebo test. That is the point of the command: **a significant IC is 
 
 ## Honest scope
 
-- Families A and D are the first part of the alpha checks. Factor attribution, the value added to an existing
-  portfolio, robustness, multiple testing across a team and live monitoring follow in later stages.
+- Robustness (subsamples, start dates, synthetic markets), data and process checks, live monitoring and the Alpha
+  Readiness Level follow in a later stage.
+- Self-built factors are proxies: size is ranked by traded value, and there is no value factor without fundamentals.
+  Pass `--factors` with academic or vendor factors for a stricter attribution.
 - Impact uses the square-root model with a coefficient of 1: a model, not a measurement.
 - The score is taken as given. To check the code that makes it for look-ahead, verify that code with `monte-neo verify`.
 

@@ -303,7 +303,7 @@ qwen mcp add monte-neo uvx --from "monte-neo[mcp]>=0.53.0" monte-neo-mcp
 A small model often fails the bench tasks; that is a result of the model, not of the verifier.
 Setup, `--base-url` and troubleshooting: [Local agents](https://neozork.github.io/Monte-Neo/guides/local-agents/).
 
-MCP tools (18): `verify_strategy`, `verify_grid`, `verify_quotes`, `verify_portfolio`, `validate_alpha`, `probe_lookahead`,
+MCP tools (19): `verify_strategy`, `verify_grid`, `verify_quotes`, `verify_portfolio`, `verify_returns`, `validate_alpha`, `probe_lookahead`,
 `cost_stress`, `recheck_certificate`, `check_signature`, `render_report`, `suggest_fix`, `discover_indicator`,
 `register_hypothesis`, `compare_certificates`, `holdout_query`, `diagnose_data`, `verdict_schema`, `verifier_manifest`.
 

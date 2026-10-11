@@ -86,6 +86,8 @@ nav:
       - Frameworks and notebooks: guides/frameworks.md
       - Alpha validation: guides/alpha.md
       - Policy, trials, model cutoff: guides/policy-trials-cutoff.md
+      - ML models and event data: guides/ml-and-events.md
+      - Track record due diligence: guides/returns-due-diligence.md
       - Indicator search: guides/discover.md
       - Ledger and fixes: guides/ledger-and-fixes.md
       - Repainting: guides/repaint.md
