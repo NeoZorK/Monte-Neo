@@ -83,6 +83,10 @@ A simplified guide to the Monte-Neo file structure.
 - docs/guides/policy-trials-cutoff.md - verify --policy (TOML thresholds), --trials-from (MLflow, Optuna, W&B), team ledger, --model-cutoff
 - docs/guides/ml-and-events.md - fit/predict protocol (walk-forward run by the verifier, ml_refit_gap, ml_cv_overlap) and --events joined by publication time
 - docs/guides/returns-due-diligence.md - verify --returns: smoothing, zero kink, implausible consistency, significance, benchmark
+- docs/guides/dossier-readiness-monitor.md - monte-neo dossier (frameworks SR 11-7, SS1/23, RTS 6), Alpha Readiness Level 1-9, monte-neo monitor
+- docs/guides/reference-alpha.md - Reference alpha 1 (trend following): rules, expectations, when it works and fails, measured verdicts
+- docs/guides/alpha-calibration.md - Generated: false alarms and power of the alpha checks on zoo A15 traps and honest twins
+- tests/zoo/test_zoo_alpha.py, alpha_cases.py; scripts/alpha_calibration.py - zoo A15 (alpha traps and twins) and its calibration
 - docs/guides/discover.md - monte-neo discover: verified indicator search (gate, effective trials, search null, lockbox)
 - scripts/check_english_only.py - Language guard: fails on Cyrillic text or private working files in tracked files, PR titles, PR descriptions and commit messages
 - scripts/mutation_check.py - Mutation check of the verifier core
@@ -112,8 +116,13 @@ A simplified guide to the Monte-Neo file structure.
 - src/monte_neo/verify/events.py, events_checks.py, events_run.py - --events: load, join by publication time, quality, pit_events
 - src/monte_neo/verify/returns_dd.py, returns_dd_checks.py - verify --returns: due diligence on a return series
 - src/monte_neo/cli/returns_cmd.py - verify --returns and --demo-returns
+- src/monte_neo/dossier/ - validation-dossier/1: framework maps, build, HTML
+- src/monte_neo/readiness.py - Alpha Readiness Level 1-9
+- src/monte_neo/verify/live.py, live_seq.py - live-monitor/1: live vs backtest, slippage, CUSUM/SPRT, track needed
+- src/monte_neo/cli/dossier_cmd.py, monitor_cmd.py - monte-neo dossier and monte-neo monitor
+- examples/reference_alpha/ - Reference alpha 1: trend_v1.py, make_data.py, README
 - src/monte_neo/disclaimer.py - The one 'not investment advice' text for reports, CLI, MCP and docs
-- src/monte_neo/alpha/ - monte-neo alpha: panel alignment, signal power (A), attribution and self-built factors (B), value to a book (C), implementability (D), multiple testing (F), risk (I), alpha-report/1
+- src/monte_neo/alpha/ - monte-neo alpha: panel alignment, signal power (A), attribution and self-built factors (B), value to a book (C), implementability (D), robustness (E), multiple testing (F), data and process (G), risk (I), alpha-report/1 with the readiness level
 - src/monte_neo/cli/alpha_cmd.py, policy_cmd.py - monte-neo alpha and monte-neo policy commands
 - .github/ISSUE_TEMPLATE/agent_report.yml - Report form for running Monte-Neo from a coding agent
 - src/monte_neo/verify/fixes.py - Causal rewrites for suggest_fix

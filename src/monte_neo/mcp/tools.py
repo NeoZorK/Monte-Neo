@@ -603,6 +603,70 @@ def verify_returns(
     return _verify_returns(returns_path, benchmark=benchmark_path, n_strategies=n_strategies, claim=claim)
 
 
+def build_dossier(
+    certificate_path: str,
+    out_dir: str,
+    framework: str = "generic",
+    name: str | None = None,
+    owner: str | None = None,
+    purpose: str | None = None,
+    alpha_path: str | None = None,
+) -> dict[str, Any]:
+    """Write a validation dossier folder from a certificate, for a model-risk committee, a validator or an auditor.
+
+    The folder holds dossier.html (one page: summary, checks, framework map, assumptions and limitations, how to
+    reproduce, blank sign-off fields), dossier.json, certificate.json, environment.json, REPRODUCE.md and limitations.md.
+    The framework map shows evidence per clause, not compliance.
+
+    Args:
+        certificate_path: A strategy-verdict/1 certificate (JSON).
+        out_dir: Folder to write.
+        framework: 'generic', 'sr11-7', 'ss1-23' or 'rts6'.
+        name: Model name. owner: Model owner. purpose: What the model is for.
+        alpha_path: Optional alpha-report/1 JSON of the strategy's signal.
+    """
+    import json as _json
+
+    from monte_neo.dossier import build_dossier as _build
+    from monte_neo.dossier import write_dossier
+    from monte_neo.verify.recheck import load_certificate
+
+    cert = load_certificate(certificate_path)
+    alpha = _json.loads(Path(alpha_path).read_text(encoding="utf-8")) if alpha_path else None
+    dossier = _build(cert, framework=framework, meta={"name": name, "owner": owner, "purpose": purpose}, alpha=alpha)
+    out = write_dossier(dossier, cert, out_dir)
+    clauses = dossier["framework"]["clauses"]
+    return {
+        "dossier_id": dossier["dossier_id"], "verdict": dossier["verdict"], "html": str(out / "dossier.html"),
+        "coverage": {c["clause"]: c["coverage"] for c in clauses}, "limitations": dossier["limitations"],
+    }
+
+
+def monitor_live(
+    certificate_or_backtest_path: str,
+    live_path: str,
+    fills_path: str | None = None,
+    slippage_bps: float | None = None,
+    haircut: float = 0.5,
+) -> dict[str, Any]:
+    """After launch: does the live (or paper) strategy behave like its backtest, and is the alpha dead? (live-monitor/1)
+
+    Live against backtest on the same dates (correlation, tracking error), realised slippage from fills against the
+    modelled one (with a recommended value), sequential alarms (CUSUM, SPRT) against the backtest edge shrunk by
+    ``haircut``, and the live history still needed to confirm the edge.
+
+    Args:
+        certificate_or_backtest_path: The strategy's certificate (.json) or a backtest returns file (date, return).
+        live_path: Live or paper returns (date, return) or fills (timestamp, symbol, side, quantity, price[, reference_price]).
+        fills_path: Optional fills file when live_path holds returns.
+        slippage_bps: Modelled slippage to compare with (default: the certificate's).
+        haircut: Share of the backtest edge expected live (default 0.5).
+    """
+    from monte_neo.verify.live import verify_live
+
+    return verify_live(certificate_or_backtest_path, live_path, fills=fills_path, modelled_slippage_bps=slippage_bps, haircut=haircut)
+
+
 def verdict_schema() -> dict[str, Any]:
     """JSON schema of the strategy-verdict/1 certificate."""
     from monte_neo.verify import VERDICT_JSON_SCHEMA
@@ -655,6 +719,8 @@ TOOLS: tuple[Callable[..., dict[str, Any]], ...] = (
     diagnose_data,
     validate_alpha,
     verify_returns,
+    build_dossier,
+    monitor_live,
     verdict_schema,
     verifier_manifest,
 )
@@ -663,12 +729,14 @@ __all__ = [
     "SERVER_INSTRUCTIONS",
     "recheck_certificate",
     "TOOLS",
+    "build_dossier",
     "check_signature",
     "cost_stress",
     "compare_certificates",
     "diagnose_data",
     "discover_indicator",
     "holdout_query",
+    "monitor_live",
     "register_hypothesis",
     "probe_lookahead",
     "render_report",

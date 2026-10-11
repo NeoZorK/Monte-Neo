@@ -37,7 +37,7 @@ class Panel:
         """Observations per year inferred from the median date spacing (daily bars count 252)."""
         if len(self.dates) < 2:
             return 252.0
-        step = float(np.median(np.diff(self.dates.asi8))) / 1e9
+        step = float(np.median(np.diff(self.dates.to_numpy().astype("datetime64[ns]").astype(np.int64)))) / 1e9  # unit-safe
         if step <= 0:
             return 252.0
         return 252.0 if step <= 1.5 * 86400 else 365.25 * 86400 / step

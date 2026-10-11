@@ -40,6 +40,13 @@ probes then test `predict`. Fitted models are cached by their exact training row
 | `ml_refit_gap` | The Sharpe with honest refitting against the Sharpe of `predict(fit(df), df)`, the usual whole-file backtest. `fail` (look-ahead) when the in-sample edge is real and the walk-forward loses money: the profit lived in the fit. `warn` when less than half the edge survives. |
 | `ml_cv_overlap` | If the file defines `cv_splits(df)` (a list of `(train_rows, test_rows)`): training rows whose labels reach into a test fold, or that sit inside the embargo after it. Purge them. |
 
+Two more checks are optional:
+
+- `ml_seed_stability`: set `SEEDS = 5` and give `fit` a `seed` argument. The walk-forward runs once per seed, and a
+  result whose sign or size depends on the seed is flagged.
+- `ml_feature_drift`: define `features(df)`. The population stability index of each feature between the first
+  training window and the predicted period is reported, with a warning above 0.25.
+
 The constants are part of the strategy source, so they are hashed into the certificate. Setting `LABEL_HORIZON` or
 `EMBARGO` lower than the truth weakens the test, and anyone who reads the source can see it.
 

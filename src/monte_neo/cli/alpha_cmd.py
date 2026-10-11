@@ -31,6 +31,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--factors", help="Factor returns (.csv / .parquet: date + one column per factor) for attribution; default: built from the universe")
     p.add_argument("--book", help="Returns of your existing book (.csv / .parquet: date + one column per strategy): what does this signal add?")
     p.add_argument("--n-trials", type=int, default=1, help="Variants tried before this one (default 1)")
+    p.add_argument("--membership", help="When each symbol was in the universe (.csv: symbol, start, end): catches today's members used for the past")
+    p.add_argument("--groups", help="Sector or country per symbol (.csv: symbol, group[, as_of]): robustness by group")
+    p.add_argument("--exchanges", help="Exchange per symbol (.csv: symbol, exchange such as XNYS, XLON, XTKS): closes of different markets")
+    p.add_argument("--discovery-date", help="When the anomaly was published or found (YYYY-MM): how much of the edge is left after it")
+    p.add_argument("--existing-scores", help="Scores of signals you already run (.csv: timestamp, symbol, one column per signal): is the new score new?")
     p.add_argument("--signal-only", action="store_true", help="Only signal power and implementability (skip attribution, book, multiple testing, risk)")
     p.add_argument("--seed", type=int, default=0, help="Seed for bootstraps and placebos (default 0)")
     p.add_argument("--format", choices=["text", "json"], default="text", help="stdout format (default text)")
@@ -65,7 +70,9 @@ def main(argv: list[str]) -> int:
     args = build_parser().parse_args(argv)
     console = Console(file=sys.stdout, soft_wrap=True)
     kw = {"horizon": args.horizon, "quantiles": args.quantiles, "claimed_ir": args.claim_ir, "seed": args.seed, "aum": args.aum,
-          "factors": args.factors, "book": args.book, "n_trials": args.n_trials, "families": not args.signal_only}
+          "factors": args.factors, "book": args.book, "n_trials": args.n_trials, "families": not args.signal_only,
+          "membership": args.membership, "groups": args.groups, "exchanges": args.exchanges, "discovery_date": args.discovery_date,
+          "existing": args.existing_scores}
     try:
         if args.demo:
             prices, real, noise = demo_panel(2)
@@ -102,6 +109,7 @@ def _demo_summary(reports: dict[str, dict[str, Any]], console: Console) -> None:
         warned = [c["id"] for c in rep["checks"] if c["status"] == "warn"]
         why = f"failed {', '.join(failed)}" if failed else (f"warnings {', '.join(warned)}" if warned else "every check passed")
         console.print(f"  {name}: [{_VERDICT_STYLE.get(rep['verdict'], 'bold')}]{rep['verdict']}[/] ({why})")
+        console.print(f"    {rep['readiness']['summary']}")
     console.print(
         "  The real score predicts returns and beats random scores; the noise score does not. "
         "With --aum, impact and participation show whether the predicting score is also tradable at that size."

@@ -101,6 +101,11 @@ def validate_alpha(
     book: str | Path | pd.DataFrame | None = None,
     n_trials: int = 1,
     families: bool = True,
+    membership: str | Path | pd.DataFrame | None = None,
+    groups: str | Path | pd.DataFrame | None = None,
+    exchanges: str | Path | dict[str, str] | None = None,
+    discovery_date: str | None = None,
+    existing: str | Path | pd.DataFrame | None = None,
 ) -> dict[str, Any]:
     """Check whether a cross-sectional score has real predictive power and whether its portfolio can be traded.
 
@@ -116,7 +121,12 @@ def validate_alpha(
         factors: Factor returns file for attribution (family B); default: factors built from the universe.
         book: Returns of an existing book (family C); ``None`` skips the family.
         n_trials: Variants tried before this one (family F).
-        families: Run families B, C, F and I on the score's long-short portfolio (default True).
+        families: Run families B, C, E, F, G and I on the score's long-short portfolio (default True).
+        membership: When each symbol was in the universe (symbol, start, end): look-ahead through today's members.
+        groups: Sector or country per symbol (symbol, group[, as_of]): robustness by group, classification look-ahead.
+        exchanges: Exchange per symbol (a dict, or a file with symbol, exchange): closes of different markets.
+        discovery_date: When the anomaly was published or found (``YYYY-MM``): decay after discovery.
+        existing: Scores of signals already run (timestamp, symbol, one column per signal): partial IC of the new one.
 
     Returns:
         An ``alpha-report/1`` dict: verdict, checks, metrics, next_actions, reproducibility.
@@ -131,7 +141,11 @@ def validate_alpha(
     half_life = next((c["details"].get("half_life") for c in checks if c["id"] == "ic_decay"), None)
     checks += run_implementability(panel, quantiles=quantiles, aum=aum, half_life=half_life)
     if families:
-        checks += run_families(panel, quantiles=quantiles, factors=factors, book=book, n_trials=n_trials, seed=seed)
+        from monte_neo.alpha.families_inputs import process_inputs
+
+        process, group_map = process_inputs(membership, groups, exchanges, discovery_date)
+        checks += run_families(panel, quantiles=quantiles, factors=factors, book=book, n_trials=n_trials, seed=seed,
+                               process=process, groups=group_map, existing=existing)
     by = {c["id"]: c["details"] for c in checks}
     metrics = {
         "n_dates": len(panel.dates), "n_symbols": len(panel.symbols),
@@ -142,7 +156,7 @@ def validate_alpha(
         "score_rows_not_on_price_dates": panel.n_unmatched_score_rows,
         "aum_where_sharpe_halves": by["capacity_curve"].get("aum_half"),
     }
-    return to_jsonable({
+    report = to_jsonable({
         "schema": ALPHA_SCHEMA_ID,
         "verdict": aggregate_verdict(checks),
         "checks": checks,
@@ -152,8 +166,17 @@ def validate_alpha(
             "data_sha256": {"prices": data_sha256(prices), "scores": data_sha256(scores)},
             "settings": {"horizon": horizon, "quantiles": quantiles, "claimed_ir": claimed_ir, "seed": seed, "placebos": placebos, "aum": aum,
                          "factors": data_sha256(factors) if factors else None,
-                         "book": data_sha256(book) if book is not None else None, "n_trials": n_trials, "families": families},
+                         "book": data_sha256(book) if book is not None else None, "n_trials": n_trials, "families": families,
+                         "membership": data_sha256(membership) if membership is not None else None,
+                         "groups": data_sha256(groups) if groups is not None else None,
+                         "exchanges": exchanges if isinstance(exchanges, dict) else (data_sha256(exchanges) if exchanges else None),
+                         "discovery_date": discovery_date,
+                         "existing": data_sha256(existing) if existing is not None else None},
             "engine_version": __version__,
         },
         "disclaimer": f"{ALPHA_SCOPE} {SHORT}",
     })
+    from monte_neo.readiness import readiness
+
+    report["readiness"] = readiness(alpha=report)
+    return report

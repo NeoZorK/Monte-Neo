@@ -88,6 +88,9 @@ nav:
       - Policy, trials, model cutoff: guides/policy-trials-cutoff.md
       - ML models and event data: guides/ml-and-events.md
       - Track record due diligence: guides/returns-due-diligence.md
+      - Dossier, readiness, live monitor: guides/dossier-readiness-monitor.md
+      - Reference alpha: guides/reference-alpha.md
+      - Alpha calibration: guides/alpha-calibration.md
       - Indicator search: guides/discover.md
       - Ledger and fixes: guides/ledger-and-fixes.md
       - Repainting: guides/repaint.md

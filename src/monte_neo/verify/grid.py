@@ -154,6 +154,24 @@ def walk_forward_row(wf: dict[str, Any], in_sample_sharpe: float) -> dict[str, A
     return check("walk_forward_oos", "statistics", status, summary, wf)
 
 
+def romano_wolf_row(returns: np.ndarray, best: int) -> dict[str, Any]:
+    """Info row ``romano_wolf``: how many combinations stay significant after the stepdown, and is the chosen best one of them.
+
+    Uses the per-bar return matrix the grid already computed (combos x bars); never changes the verdict.
+    """
+    from monte_neo.alpha.multiple_testing import romano_wolf
+
+    if returns.shape[0] < 2 or returns.shape[1] < 30 or not np.isfinite(returns).all():
+        return check("romano_wolf", "statistics", "skip", "Romano-Wolf needs at least two combinations and 30 finite bars")
+    res = romano_wolf(returns.T)
+    sig = [int(i) for i in res["details"]["significant"]]
+    chosen = best in sig
+    summary = (f"{len(sig)} of {returns.shape[0]} combinations are significant after Romano-Wolf stepdown; "
+               f"the chosen best is {'among them' if chosen else 'not among them'}")
+    details = {**res["details"], "n_combos": int(returns.shape[0]), "best_index": int(best), "best_is_significant": chosen}
+    return check("romano_wolf", "statistics", "info", summary, details)
+
+
 def verify_grid(
     ohlcv: pd.DataFrame | str | Path,
     grid: dict[str, list[Any]],
@@ -241,7 +259,8 @@ def _search_and_verify(
         model=model,
         n_trials=len(combos),
         trial_sharpes=sharpes if len(combos) >= 2 else None,
-        extra_checks=[walk_forward_row(wf, float(sharpes[order[0]])), plateau_row(peak), pbo_row(overfit), reality_row(reality)],
+        extra_checks=[walk_forward_row(wf, float(sharpes[order[0]])), plateau_row(peak), pbo_row(overfit), reality_row(reality),
+                       romano_wolf_row(returns, int(order[0]))],
         extra=section,
         io_watch=io_watch,
         positions=mode,
@@ -249,4 +268,4 @@ def _search_and_verify(
     )
 
 
-__all__ = ["MAX_COMBOS", "expand_grid", "plateau", "plateau_row", "verify_grid", "walk_forward", "walk_forward_row"]
+__all__ = ["MAX_COMBOS", "expand_grid", "plateau", "plateau_row", "romano_wolf_row", "verify_grid", "walk_forward", "walk_forward_row"]

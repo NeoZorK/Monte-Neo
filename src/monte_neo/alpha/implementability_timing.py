@@ -95,9 +95,13 @@ def rebalance_timing_luck(
     vals = [ann_return(_net(held_weights(w, k, o), ret, cost_bps), ppy) for o in range(k)]
     lo, med, hi = float(np.min(vals)), float(np.median(vals)), float(np.max(vals))
     spread = hi - lo
-    status = "warn" if spread > max(abs(med), TIMING_EPS) else "pass"
+    # Offsets differ by noise too: the spread must also exceed two standard errors of one offset's annual return.
+    base = _net(held_weights(w, k, 0), ret, cost_bps)
+    se = float(np.std(base) * ppy / np.sqrt(max(len(base), 1)))
+    # Zoo A15: honest twins stay below 1.3x the median, traps above 6.9x; noise also has to be beaten.
+    status = "warn" if spread > max(2.0 * abs(med), TIMING_EPS) and spread > 2.0 * se else "pass"
     summary = f"annual net return by rebalance day: min {lo:.2%}, median {med:.2%}, max {hi:.2%} (k={k})"
-    details = {"k": k, "cost_bps": cost_bps, "values": vals, "min": lo, "median": med, "max": hi, "spread": spread, "std": float(np.std(vals))}
+    details = {"k": k, "cost_bps": cost_bps, "values": vals, "min": lo, "median": med, "max": hi, "spread": spread, "std": float(np.std(vals)), "noise_se": se}
     return check("rebalance_timing_luck", CATEGORY, status, summary, details)
 
 

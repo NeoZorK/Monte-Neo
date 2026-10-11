@@ -5,7 +5,7 @@ Version source of truth: `src/monte_neo/_version.py`.
 
 ## [v0.53.0] — unreleased
 
-Institutional stage, milestones 1 and 2. More checks follow before the release (see the roadmap).
+Institutional stage, milestones 1 to 3. More follows before the release (see the roadmap).
 
 ### Added
 - **`monte-neo alpha`** and MCP tool `validate_alpha` (`alpha-report/1`): does a cross-sectional score predict returns,
@@ -47,9 +47,45 @@ Institutional stage, milestones 1 and 2. More checks follow before the release (
   Harvey-Liu-Zhu hurdle, minimum backtest length, drawdown plausibility and Sharpe haircut (`--n-trials`); neutrality,
   concentration, leverage, named crises and tail risk. `--signal-only` keeps families A and D.
 
+- **`monte-neo dossier`** and MCP tool `build_dossier` (`validation-dossier/1`): a certificate turned into one folder
+  for a model-risk committee, a validator or an auditor: a printable HTML page (verdict, purpose and scope, checks,
+  readiness level, a clause map to SR 11-7, PRA SS1/23 or MiFID II RTS 6, assumptions and limitations, reproduction,
+  blank sign-off fields), the certificate, the environment, `REPRODUCE.md` and `limitations.md`. The map shows evidence,
+  never compliance; clauses that need a person are never shown as fully covered.
+  See [guides/dossier-readiness-monitor.md](../guides/dossier-readiness-monitor.md).
+- **Alpha Readiness Level (ARL 1-9)** in every `alpha` report and dossier: the highest level met together with all
+  levels below it; missing evidence is "not assessed", never passed, and the report names the run that would assess it.
+- **`monte-neo monitor`** and MCP tool `monitor_live` (`live-monitor/1`): live or paper returns against the backtest,
+  realised slippage from fills against the modelled one, CUSUM and SPRT alarms against the backtest edge after a
+  haircut, and the live history still needed. Exit code 2 on a warning, for cron and CI.
+- **`monte-neo alpha`, families E and G**: robustness (70 % universe subsets and the top-5 share, groups, start dates,
+  combinatorial purged paths, bootstrapped markets without the score's link, noise in the score, a second data source,
+  bar grid) and data and process (today's index members, classification look-ahead, closes of different exchanges,
+  decay after a discovery date, research hygiene). Options `--membership`, `--groups`, `--exchanges`,
+  `--discovery-date`.
+- `signal_orthogonality` (`alpha --existing-scores`): the partial IC of a new score after the signals a fund already runs.
+  `romano_wolf` (info) in grid searches: which parameter combinations stay significant after the Romano-Wolf stepdown.
+  `ml_seed_stability` (`SEEDS = k` and `fit(train, seed)`) and `ml_feature_drift` (`features(df)`, population stability
+  index) for the `fit` / `predict` protocol.
+- **Zoo A15 (alpha):** 13 traps with honest twins (repackaged momentum, short volatility, three symbols, first day of
+  the month, illiquid shorts, today's members, same-date New York closes, decay after discovery, noise, a book clone,
+  exact score values, an inflated IR claim) and `scripts/alpha_calibration.py`, which measures false alarms and power
+  with Wilson intervals ([guides/alpha-calibration.md](../guides/alpha-calibration.md)). Lite in CI, 20 seeds nightly.
+- **Reference alpha 1** (`examples/reference_alpha/`): diversified trend following with volatility targeting, rules
+  fixed in advance, when it works and when it fails, how to retrain without overfitting, and the verdicts measured on
+  synthetic trending, random and choppy markets. See [guides/reference-alpha.md](../guides/reference-alpha.md).
+
 ### Changed
 - The README badge says "tested with Claude Code · Qwen Code (local)" instead of naming agents nobody has tested.
 - The certificate's `disclaimer` text is longer (it is not part of the certificate id, so existing certificates recheck).
+- Alpha families B, C, E, F and I judge the score's portfolio before costs (is the signal real?); family D judges costs
+  and size.
+- From the zoo calibration: `residual_alpha` fails a return that is exactly a mix of factors (R² ≥ 0.999) instead of
+  reading a meaningless t-statistic; `rebalance_timing_luck` warns only when the spread between rebalance days exceeds
+  twice the median result and two standard errors (15 % false alarms before, none on the twins now); the top-5 profit
+  share of `universe_subsampling` warns
+  above 70 % (symbol noise alone gives about half on an honest edge).
+- `Panel.periods_per_year` is unit-safe (intraday panels were annualised as daily ones).
 - Known limit narrowed: a model fitted when the module loads is still not caught by the probes, but a model written with
   the `fit` / `predict` protocol is fitted by the verifier, so its whole-file fit cannot hide.
 

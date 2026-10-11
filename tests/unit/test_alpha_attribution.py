@@ -102,3 +102,13 @@ def test_too_few_rows_skip() -> None:
     f = _fake_factors(t=1000).iloc[:40]
     rows = run_attribution(np.zeros(40), f, 252.0)
     assert all(r["status"] == "skip" for r in rows)
+
+
+def test_exact_factor_combination_is_not_alpha() -> None:
+    """A return that is exactly a mix of factors has no residual: its alpha t-statistic means nothing."""
+    from monte_neo.alpha.attribution import check_residual_alpha
+
+    rng = np.random.default_rng(5)
+    f = pd.DataFrame({"market": rng.normal(0.0004, 0.01, 500), "momentum": rng.normal(0.0006, 0.008, 500)})
+    row = check_residual_alpha((0.5 * f["market"] + f["momentum"]).to_numpy(), f, 252.0)
+    assert row["status"] == "fail" and "no residual" in row["summary"]

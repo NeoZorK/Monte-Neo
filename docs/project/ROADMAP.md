@@ -141,7 +141,7 @@ Product direction: verifier for agent-built strategies.
   `monte-neo alpha` families A (signal power) and D (implementability), honest agent table and issue #114
 - [x] M2: `fit/predict` protocol and ML checks, point-in-time events, allocator due diligence on returns, alpha
   families B (factor attribution), C (value to an existing book), F (multiple testing), I (risk)
-- [ ] M3: validation dossier, alpha families E (robustness), G (data and process), H (live), Alpha Readiness Level,
+- [x] M3: validation dossier, alpha families E (robustness), G (data and process), H (live), Alpha Readiness Level,
   reference alpha, zoo A15 and calibration
 - [ ] M4: `monte-neo repair` (repairs defects without overfitting: catalogue of repairs, counted trials, one-time lockbox)
 - [ ] M5: documentation, demos, final audit

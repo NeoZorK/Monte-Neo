@@ -74,6 +74,9 @@ def check_residual_alpha(r: np.ndarray, f: pd.DataFrame, ppy: float) -> dict[str
         "r2": round(r2, 4),
         "explained_return_share": round(explained, 4),
     }
+    if r2 >= 0.999:  # the residual is numerically zero: its t-statistic means nothing
+        return check("residual_alpha", "statistics", "fail",
+                     f"the return is a combination of known factors (R² {r2:.4f}): there is no residual to call alpha", details)
     if abs(t_raw) >= 2 and ta < 2 and r2 >= 0.3:
         who = " and ".join(names) if names else "the factors"
         msg = f"{explained:.0%} of the return is explained by {who}: repackaged factors (alpha t {ta:.1f})"

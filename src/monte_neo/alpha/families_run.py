@@ -24,12 +24,20 @@ from monte_neo.alpha.implementability_run import portfolio_weights
 from monte_neo.alpha.multiple_testing import NEXT_ACTIONS as F_ACTIONS
 from monte_neo.alpha.multiple_testing import run_multiple_testing
 from monte_neo.alpha.panel import Panel
+from monte_neo.alpha.process import NEXT_ACTIONS as G_ACTIONS
+from monte_neo.alpha.process import run_process
 from monte_neo.alpha.risk import NEXT_ACTIONS as I_ACTIONS
 from monte_neo.alpha.risk import run_risk
+from monte_neo.alpha.robustness import NEXT_ACTIONS as E_ACTIONS
+from monte_neo.alpha.robustness import run_robustness
 from monte_neo.verify.checks import check
 from monte_neo.verify.ingest import _read_table
 
-NEXT_ACTIONS: dict[str, str] = {**B_ACTIONS, **C_ACTIONS, **F_ACTIONS, **I_ACTIONS}
+NEXT_ACTIONS: dict[str, str] = {
+    **B_ACTIONS, **C_ACTIONS, **E_ACTIONS, **F_ACTIONS, **G_ACTIONS, **I_ACTIONS,
+    "signal_orthogonality": "The new score mostly repeats signals you already run: residualise it on them and test what is left, "
+                            "or drop it.",
+}
 TIME_COLUMNS = ("date", "timestamp", "time", "datetime")
 
 
@@ -61,8 +69,11 @@ def run_families(
     n_trials: int = 1,
     declared_neutral: bool = True,
     seed: int = 0,
+    process: dict[str, Any] | None = None,
+    groups: dict[str, str] | None = None,
+    existing: str | Path | pd.DataFrame | None = None,
 ) -> list[dict[str, Any]]:
-    """Run families B, C, F and I on the portfolio returns of the score.
+    """Run families B, C, E, F, G and I on the portfolio returns of the score.
 
     Args:
         panel: The aligned panel.
@@ -72,6 +83,10 @@ def run_families(
         n_trials: Variants tried before this one (family F).
         declared_neutral: The portfolio is meant to be market neutral (true for top-minus-bottom).
         seed: Seed for bootstraps and simulations.
+        process: Inputs of family G: ``membership``, ``groups`` (with ``as_of``), ``exchanges``, ``discovery_date``,
+            ``hygiene`` (see :func:`monte_neo.alpha.process.run_process`).
+        groups: ``symbol -> sector or country`` for the robustness split by group.
+        existing: Scores of signals the fund already runs (timestamp, symbol, one column per signal): is the new one new?
 
     Returns:
         Check rows.
@@ -87,9 +102,15 @@ def run_families(
         rows.append(check("book_correlation", "statistics", "skip", "no book given (--book): the value to an existing book was not assessed", {}))
     else:
         rows += run_book(pd.Series(r, index=dates), read_book(book), ppy, seed=seed)
+    if existing is not None:
+        from monte_neo.alpha.orthogonality import load_existing_scores, signal_orthogonality
+
+        rows.append(signal_orthogonality(panel, load_existing_scores(existing, panel)))
     rows += run_multiple_testing(r, ppy, int(n_trials), timestamps=dates, seed=seed)
     market = built["market"].reindex(dates).fillna(0.0).to_numpy() if "market" in built else np.zeros_like(r)
     rows += run_risk(r, market, dates, ppy, weights=w, declared_neutral=declared_neutral)
+    rows += run_robustness(panel, quantiles=quantiles, seed=seed, groups=groups, cost_bps=0.0)  # costs are family D's job
+    rows += run_process(panel, w, **(process or {}))
     return rows
 
 

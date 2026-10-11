@@ -14,6 +14,8 @@ Commands:
   verify   verify a trading-strategy backtest (monte-neo verify --help)
   alpha    does a cross-sectional signal predict returns, and can it be traded? (monte-neo alpha --help)
   policy   write or check your institution's thresholds (monte-neo policy init)
+  dossier  turn a certificate into a validation dossier for a committee (monte-neo dossier --demo)
+  monitor  compare live or paper returns with the backtest; is the alpha dead? (monte-neo monitor --help)
   history  certificate history and diffs; blocks a verdict regression
   register write the hypothesis down before the test
   oracle   hold-out oracle for adaptive search (Thresholdout)
@@ -50,6 +52,10 @@ def main() -> int:
         from monte_neo.cli.alpha_cmd import main as alpha_main
 
         return alpha_main(sys.argv[2:])
+    if command in ("dossier", "monitor"):
+        from importlib import import_module
+
+        return import_module(f"monte_neo.cli.{command}_cmd").main(sys.argv[2:])
     if command == "policy":
         from monte_neo.cli.policy_cmd import main as policy_main
 
@@ -81,7 +87,7 @@ def main() -> int:
         print(
             f"{what}The interactive research CLI needs extra packages ({exc.name or exc}): "
             "pip install 'monte-neo[research]'.\n"
-            "Commands in the base install: monte-neo verify | alpha | policy | discover | history | register | oracle | portfolio | doctor | init-ci | bench | mcp | --version (monte-neo --help lists them)",
+            "Commands in the base install: monte-neo verify | alpha | policy | dossier | monitor | discover | history | register | oracle | portfolio | doctor | init-ci | bench | mcp | --version (monte-neo --help lists them)",
             file=sys.stderr,
         )
         return 2
