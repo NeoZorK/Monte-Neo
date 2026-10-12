@@ -26,6 +26,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--out", default="dossier", help="Folder to write (default ./dossier)")
     for field in ("name", "owner", "purpose", "scope", "developer", "tier"):
         p.add_argument(f"--{field}", help=f"Model {field} shown in 'Purpose and scope'")
+    p.add_argument("--lite", action="store_true", help="Also write dossier-lite.html: one plain-language page for a non-quant reader")
     p.add_argument("--demo", action="store_true", help="Build a dossier from a synthetic certificate (no files needed)")
     return p
 
@@ -66,12 +67,14 @@ def main(argv: list[str] | None = None) -> int:
             print("dossier: give --certificate cert.json, or --demo", file=sys.stderr)
             return 3
         dossier = build_dossier(cert, framework=args.framework, meta=meta, alpha=_read(args.alpha), live=_read(args.live))
-        out = write_dossier(dossier, cert, args.out)
+        out = write_dossier(dossier, cert, args.out, lite=args.lite)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"dossier: {exc}", file=sys.stderr)
         return 3
     covered = sum(1 for c in dossier["framework"]["clauses"] if c["coverage"] == "covered")
     print(f"wrote {out}/dossier.html (+ dossier.json, certificate.json, environment.json, REPRODUCE.md, limitations.md)")
+    if args.lite:
+        print(f"wrote {out}/dossier-lite.html (plain-language page)")
     print(f"verdict {dossier['verdict']} · {dossier['framework']['title']}: {covered} of {len(dossier['framework']['clauses'])} clauses covered by evidence")
     print(disclaimer.SHORT)
     return 0

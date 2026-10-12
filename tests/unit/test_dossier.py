@@ -76,3 +76,14 @@ def test_mcp_tool(cert: dict, tmp_path: Path) -> None:
     path.write_text(json.dumps(cert), encoding="utf-8")
     out = tools.build_dossier(str(path), str(tmp_path / "m"), framework="generic", name="Y")
     assert out["dossier_id"] and Path(out["html"]).exists()
+
+
+def test_crypto_and_academic_frameworks(cert: dict) -> None:
+    assert {"crypto", "academic"} <= set(FRAMEWORKS)
+    crypto = {c["clause"]: c for c in framework_map(cert, "crypto")["clauses"]}
+    assert crypto["Custody, counterparty and exchange risk"]["human_judgement"]
+    assert crypto["Custody, counterparty and exchange risk"]["coverage"] != "covered"
+    academic = {c["clause"]: c for c in framework_map(cert, "academic")["clauses"]}
+    for name in ("Data availability", "Code availability"):
+        assert academic[name]["human_judgement"] and academic[name]["coverage"] != "covered"
+    assert "preregistration" in FRAMEWORKS["academic"]["clauses"][0][2]

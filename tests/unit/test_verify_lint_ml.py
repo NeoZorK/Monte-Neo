@@ -63,3 +63,58 @@ def test_a_fit_on_a_chosen_slice_is_not_warned(line: str) -> None:
 def test_a_fit_on_a_whole_array_still_warns(line: str) -> None:
     result = lint_source(f"def signal(df):\n    {line}\n    return 0\n")
     assert result["status"] == "warn" and result["findings"][0]["rule"] == "full_sample_fit"
+
+
+def _wrap(body: str) -> str:
+    return "import numpy as np\n\ndef signal(df):\n" + "".join(f"    {line}\n" for line in body.splitlines()) + "    return np.zeros(len(df))\n"
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "X = df[['a', 'b']].to_numpy()\nZ = StandardScaler().fit_transform(X)",
+        "scaler = MinMaxScaler()\nscaler.fit(X)",
+        "pca = PCA(n_components=3)\nZ = pca.fit_transform(X)",
+        "sel = SelectKBest(f_regression, k=5).fit(X, y)",
+        "s = preprocessing.RobustScaler()\ns.fit(df[cols])",
+    ],
+)
+def test_full_sample_transform_flagged(body: str) -> None:
+    assert _rules(_wrap(body)).get("full_sample_transform") == "warn"
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "scaler = StandardScaler()\nscaler.fit(X[:split])",
+        "scaler = StandardScaler()\nscaler.fit(df.iloc[:split])",
+        "Z = StandardScaler().fit_transform(X_train)",
+        "model = Ridge()\nmodel.fit(Xs, ys)",
+    ],
+)
+def test_full_sample_transform_not_flagged(body: str) -> None:
+    assert "full_sample_transform" not in _rules(_wrap(body))
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "df['enc'] = df.groupby('sector')['fwd_ret'].transform('mean')",
+        "df['enc'] = df['sector'].map(df.groupby('sector')['target'].mean())",
+        "df['enc'] = df.groupby('k')['future_move'].transform('mean')",
+    ],
+)
+def test_target_encoding_full_flagged(body: str) -> None:
+    assert _rules(_wrap(body)).get("target_encoding_full") == "warn"
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "df['m'] = df.groupby('sector')['volume'].transform('mean')",
+        "means = df.groupby('sector')['target'].mean()",
+        "df['enc'] = df.groupby('k')['fwd_ret'].transform('std')",
+    ],
+)
+def test_target_encoding_full_not_flagged(body: str) -> None:
+    assert "target_encoding_full" not in _rules(_wrap(body))

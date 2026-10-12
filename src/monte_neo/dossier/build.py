@@ -123,9 +123,9 @@ def build_dossier(
     return body
 
 
-def write_dossier(dossier: dict[str, Any], cert: dict[str, Any], out_dir: str | Path) -> Path:
+def write_dossier(dossier: dict[str, Any], cert: dict[str, Any], out_dir: str | Path, lite: bool = False) -> Path:
     """Write the folder: ``dossier.html``, ``dossier.json``, ``certificate.json``, ``environment.json``,
-    ``REPRODUCE.md``, ``limitations.md``. Returns the folder."""
+    ``REPRODUCE.md``, ``limitations.md`` (and ``dossier-lite.html`` with ``lite``). Returns the folder."""
     from monte_neo.dossier.html import render_dossier
 
     out = Path(out_dir)
@@ -134,6 +134,10 @@ def write_dossier(dossier: dict[str, Any], cert: dict[str, Any], out_dir: str | 
     (out / "certificate.json").write_text(json.dumps(cert, indent=2, default=str), encoding="utf-8")
     (out / "environment.json").write_text(json.dumps(dossier["environment"], indent=2), encoding="utf-8")
     (out / "dossier.html").write_text(render_dossier(dossier), encoding="utf-8")
+    if lite:
+        from monte_neo.dossier.lite import render_lite
+
+        (out / "dossier-lite.html").write_text(render_lite(dossier), encoding="utf-8")
     (out / "limitations.md").write_text("# Limitations\n\n" + "\n".join(f"- {x}" for x in dossier["limitations"]) + "\n", encoding="utf-8")
     (out / "REPRODUCE.md").write_text(
         "# Reproduce\n\nWith the same data and strategy, and monte-neo "

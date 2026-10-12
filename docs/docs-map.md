@@ -10,6 +10,9 @@ A simplified guide to the Monte-Neo file structure.
 - docs/stylesheets/extra.css - MkDocs Material extras (compact badges/logo)
 - docs/assets/logo-mark.png - Compact theme logo / favicon (96px)
 - docs/assets/logo-header.png - Compact header logo (128px)
+- docs/assets/demo-repair.gif, demo-alpha.gif, demo-dossier.gif - v0.53 demos (scripts/make_repair_gif.py, make_alpha_gif.py, make_dossier_gif.py; lines copied from real runs)
+- docs/assets/reports/dossier-sr11-7.html, repair-flicker.html - Example institutional reports (scripts/make_institutional_gallery.py)
+- examples/reference_alpha/, examples/ml_fit_predict.py, llm_news_signal.py, allocator_dd.py - v0.53 examples
 - README.md - Main project documentation
 - CLAUDE.md - Agent instructions (authorship rule: NeoZorK only, no AI attribution)
 - .claude/settings.json - Claude Code project settings (built-in attribution disabled)

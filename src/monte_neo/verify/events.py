@@ -73,6 +73,9 @@ def load_events(source: pd.DataFrame | str | Path) -> pd.DataFrame:
         ValueError: missing ``published_at``, unparseable times, no numeric value column,
             or a duplicate (symbol, published_at) row (reports the first).
     """
+    from monte_neo.verify.ingest import as_pandas
+
+    source = as_pandas(source)  # a polars table is accepted like a pandas one
     df = source.copy() if isinstance(source, pd.DataFrame) else _read_table(Path(source))
     df.columns = [str(c).strip().lower() for c in df.columns]
     df = _rename_first(df, "published_at", TIME_ALIASES)

@@ -63,14 +63,23 @@ def _is_number(text: Any) -> bool:
     return True
 
 
+def as_pandas(source: Any) -> Any:
+    """Convert a ``polars.DataFrame`` to pandas (polars is not imported); any other object is returned unchanged."""
+    module = str(getattr(type(source), "__module__", ""))
+    if module.startswith("polars") and hasattr(source, "to_pandas"):
+        return source.to_pandas()
+    return source
+
+
 def load_ohlcv(source: pd.DataFrame | str | Path) -> pd.DataFrame:
     """Return a DataFrame with lower-case float ``open/high/low/close`` columns.
 
     A ``timestamp`` / ``time`` / ``date`` column (or DatetimeIndex) is kept as
     ``timestamp`` when present; it sets bars per year and must run oldest-first.
     A ``symbol`` (or ``ticker`` / ``asset`` / ``instrument``) column makes the table
-    a universe: one row per timestamp and symbol.
+    a universe: one row per timestamp and symbol. A ``polars.DataFrame`` and a ``.parquet`` path are accepted.
     """
+    source = as_pandas(source)
     df = source.copy() if isinstance(source, pd.DataFrame) else _read_table(Path(source))
     if not isinstance(source, pd.DataFrame):
         # Lets the outside-data watch recognise this file under any name or suffix.

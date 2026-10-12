@@ -17,6 +17,12 @@ from PIL import Image, ImageDraw, ImageFont
 OUT = Path(__file__).resolve().parents[1] / "docs" / "assets" / "demo-verify.gif"
 W, H = 960, 600
 FONT_DIR = "/usr/share/fonts/truetype/dejavu/"
+# Fallback chain: (regular, bold, TrueType-collection index of bold); the first existing one wins.
+FONT_CHAIN = [
+    (FONT_DIR + "DejaVuSansMono.ttf", FONT_DIR + "DejaVuSansMono-Bold.ttf", 0),
+    ("/System/Library/Fonts/Menlo.ttc", "/System/Library/Fonts/Menlo.ttc", 1),
+    ("/System/Library/Fonts/SFNSMono.ttf", "/System/Library/Fonts/SFNSMono.ttf", 0),
+]
 BG, PANEL, BORDER = (13, 17, 23), (22, 27, 34), (48, 54, 61)
 FG, DIM = (201, 209, 217), (125, 133, 144)
 RED, GRN, YEL, BLU = (248, 81, 73), (63, 185, 80), (210, 153, 34), (121, 192, 255)
@@ -63,15 +69,22 @@ SCENES: list[list[list[Part]]] = [
 PAUSES = {2: 1600, 5: 1600}
 
 
-def render(lines: list[list[Part]]) -> Image.Image:
-    regular = ImageFont.truetype(FONT_DIR + "DejaVuSansMono.ttf", 16)
-    bold = ImageFont.truetype(FONT_DIR + "DejaVuSansMono-Bold.ttf", 16)
+def load_fonts() -> tuple[ImageFont.FreeTypeFont, ImageFont.FreeTypeFont]:
+    """Regular and bold terminal fonts: DejaVu Sans Mono on Linux, Menlo or SF Mono on macOS."""
+    for regular_path, bold_path, bold_index in FONT_CHAIN:
+        if Path(regular_path).exists() and Path(bold_path).exists():
+            return ImageFont.truetype(regular_path, 16), ImageFont.truetype(bold_path, 16, index=bold_index)
+    raise SystemExit("no monospace font found: add one to FONT_CHAIN")
+
+
+def render(lines: list[list[Part]], title: str = "monte-neo verify") -> Image.Image:
+    regular, bold = load_fonts()
     img = Image.new("RGB", (W, H), BG)
     d = ImageDraw.Draw(img)
     d.rounded_rectangle([12, 12, W - 12, H - 12], radius=12, fill=PANEL, outline=BORDER, width=2)
     for i, c in enumerate(((255, 95, 86), (255, 189, 46), (39, 201, 63))):
         d.ellipse([30 + i * 22, 28, 42 + i * 22, 40], fill=c)
-    d.text((W // 2 - 60, 25), "monte-neo verify", font=regular, fill=DIM)
+    d.text((W // 2 - 60, 25), title, font=regular, fill=DIM)
     y = 62
     for line in lines:
         x = 32.0
@@ -83,20 +96,25 @@ def render(lines: list[list[Part]]) -> Image.Image:
     return img
 
 
-def main() -> None:
+def build(scenes: list[list[list[Part]]], pauses: dict[int, int], out: Path, title: str, colors: int = 32) -> None:
+    """Show the lines of every scene one by one, pause after the scenes in `pauses`, save a GIF."""
     frames: list[Image.Image] = []
     durations: list[int] = []
     shown: list[list[Part]] = []
-    for index, scene in enumerate(SCENES):
+    for index, scene in enumerate(scenes):
         for line in scene:
             shown.append(line)
-            frames.append(render(shown))
+            frames.append(render(shown, title))
             durations.append(250)
-        durations[-1] = PAUSES.get(index, 900)
+        durations[-1] = pauses.get(index, 900)
     durations[-1] = 4000
-    palette = [f.convert("P", palette=Image.Palette.ADAPTIVE, colors=32) for f in frames]
-    palette[0].save(OUT, save_all=True, append_images=palette[1:], duration=durations, loop=0, optimize=True)
-    print(f"wrote {OUT} ({len(frames)} frames)")
+    palette = [f.convert("P", palette=Image.Palette.ADAPTIVE, colors=colors) for f in frames]
+    palette[0].save(out, save_all=True, append_images=palette[1:], duration=durations, loop=0, optimize=True)
+    print(f"wrote {out} ({len(frames)} frames)")
+
+
+def main() -> None:
+    build(SCENES, PAUSES, OUT, "monte-neo verify")
 
 
 if __name__ == "__main__":

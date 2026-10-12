@@ -7,6 +7,8 @@ capital:
 1. **Does the score predict anything?** (family A, signal power)
 2. **Can its portfolio be traded at the size you plan?** (family D, implementability)
 
+![monte-neo alpha --demo --aum 2e5: a weak real edge reaches ARL 6, the noise score stops at ARL 2](../assets/demo-alpha.gif)
+
 ```bash
 monte-neo alpha --demo                                              # no files: a weak real edge and a noise score
 monte-neo alpha --ohlcv universe.csv --scores scores.csv --aum 5e7  # your data and the capital you plan to run

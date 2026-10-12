@@ -103,7 +103,92 @@ The run used a synthetic random walk; output shortened.
 | `NEEDS_MORE_EVIDENCE` | Too few trades, or the Sharpe does not survive the number of variants tried | 1 |
 | `REJECT` | The backtest is broken or loses money after costs | 2 |
 
-## New: catch look-ahead that hides in milliseconds
+## New in v0.53: from a rejected backtest to a committee
+
+### Repair the strategy, without overfitting it
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/NeoZorK/Monte-Neo/main/docs/assets/demo-repair.gif" alt="monte-neo repair: a leak is repaired and no edge is left; a noisy trend signal is smoothed and confirmed once on a lockbox; an unseeded strategy is not repairable" width="820"/>
+</p>
+
+```bash
+monte-neo repair --demo
+monte-neo repair --ohlcv data.csv --strategy my_strategy.py --out repair/
+```
+
+Optimisers maximise the return, so they overfit. `repair` minimises **defects** instead. It first corrects
+look-ahead and repainting. Then it picks from a short list of declared repairs (smoothing, holding period,
+no-trade band, tranches, neutralisation, caps, volatility target) on the first 70 % of the history, by the number of
+defects left and never by return, and counts every candidate as a trial. The last 30 % is a lockbox, opened once.
+
+There are four outcomes:
+
+- `REPAIRED`: the edge is confirmed on data the choice never saw.
+- `REPAIRED_NO_EDGE`: the defects are gone and so is the profit, because **the profit was in the defect**.
+- `NOT_REPAIRABLE`: what you have to do yourself.
+- `NOTHING_TO_REPAIR`: there was nothing in the catalogue to fix.
+
+The original file is never touched. On a random walk, none of the 68 leaking strategies of the Trap Suite comes out
+as `REPAIRED`. [Guide](https://neozork.github.io/Monte-Neo/guides/repair/).
+
+### Is it alpha? An Alpha Readiness Level for the committee
+
+```bash
+monte-neo alpha --demo --aum 2e5
+monte-neo alpha --ohlcv universe.csv --scores scores.csv --aum 5e7 --book book.csv --n-trials 40
+```
+
+A ranking signal gets the checks a fund's research committee runs before it gives capital:
+
+- signal power: rank IC, decay, quantiles, placebo scores;
+- attribution: is it alpha, or momentum and short volatility under a new name?
+- value to your book: the marginal Sharpe;
+- implementability: square-root impact at your capital, capacity, short leg, rebalance day;
+- robustness: subsets, start dates, bootstrapped markets;
+- data and process: today's index members, mismatched exchange closes, decay after publication;
+- multiple testing: the t ≥ 3 hurdle, the minimum backtest length;
+- risk: named crises, tails.
+
+Everything ends in one line, for example `ARL 6/9 — blocked at 7: tradable and robust (rebalance_timing_luck)`.
+Missing evidence is "not assessed", never passed. [Guide](https://neozork.github.io/Monte-Neo/guides/alpha/).
+
+### Evidence a model-risk committee can file
+
+```bash
+monte-neo dossier --certificate cert.json --framework sr11-7 --name "Momentum 20" --owner "Desk A"
+monte-neo monitor --certificate cert.json --live live.csv        # after launch: is the alpha dead?
+```
+
+A **validation dossier** is one folder with:
+
+- one printable page: summary, checks, readiness level, assumptions and limitations, how to reproduce, sign-off fields;
+- a clause map to SR 11-7, PRA SS1/23, MiFID II RTS 6, a crypto checklist or an academic appendix;
+- the certificate and the environment.
+
+The map shows evidence, never compliance. **`monitor`** compares live returns with the backtest, measures realised
+slippage and raises sequential alarms when the edge dies.
+[Guide](https://neozork.github.io/Monte-Neo/guides/dossier-readiness-monitor/).
+
+### Machine learning, LLM signals, events and track records
+
+- **`fit` / `predict`.** Define `fit(train)` and `predict(model, df)` instead of `signal(df)`. The verifier refits only
+  on the past, and `ml_refit_gap` rejects a model whose profit lived in fitting on the whole file.
+- **`--model-cutoff 2024-06`.** An edge that exists only before a language model's training cutoff is look-ahead
+  through the model's memory.
+- **`--events events.csv`.** News, earnings or LLM outputs are joined by publication time. The report shows what a
+  join by event time would have earned.
+- **`verify --returns manager.csv`.** Due diligence from returns alone: smoothing, missing small losses, implausible
+  consistency, significance given the manager's number of funds.
+- **Your institution's rules and history.** `--policy policy.toml` applies your thresholds and records them in the
+  certificate. `--trials-from mlflow:./mlruns` (Optuna, W&B, Ray Tune too) counts the runs you already logged.
+  `--ledger` on a shared drive counts the whole team's attempts.
+
+Guides: [ML and events](https://neozork.github.io/Monte-Neo/guides/ml-and-events/) ·
+[track records](https://neozork.github.io/Monte-Neo/guides/returns-due-diligence/) ·
+[policy, trials, model cutoff](https://neozork.github.io/Monte-Neo/guides/policy-trials-cutoff/) ·
+[reference alpha](https://neozork.github.io/Monte-Neo/guides/reference-alpha/).
+
+## Catch look-ahead that hides in milliseconds
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/NeoZorK/Monte-Neo/main/docs/assets/demo-arrival.gif" alt="monte-neo verify --quotes: a fast strategy earns +191% on exchange time and loses 23% on arrival time; a slow honest strategy keeps its profit" width="820"/>
@@ -200,17 +285,21 @@ verifier cannot silently stop catching a leak or start accusing honest code.
 
 | You are… | Use Monte-Neo to… |
 |----------|-------------------|
-| **Building strategies with Claude Code, Codex, Gemini CLI or Cursor** | Make the agent verify its own backtest before it reports results. The MCP server and the Claude Code plugin do this automatically. |
+| **Building strategies with a coding agent** (tested with Claude Code and local Qwen Code) | Make the agent verify its own backtest before it reports results, and repair what it can. The MCP server and the Claude Code plugin do this automatically. |
 | **Running a strategy repository** | Add the [GitHub Action](#github-action). A pull request whose backtest leaks or loses money after costs fails CI, and the verdict is posted as a PR comment. |
 | **A quant, reviewer or allocator** | Check a strategy someone else sends you, with their data and code, in one command. Re-check or verify the signature of the certificate they hand over. |
 | **A prop firm, strategy marketplace or trading course** | Screen submissions before a human looks at them. Publish signed certificates next to listed strategies. |
+| **A fund's research committee or a model-risk team** | Ask for an alpha report and a validation dossier: factor attribution, capacity, the readiness level, a clause map to SR 11-7, SS1/23 or RTS 6, and a reproducible certificate. |
+| **An allocator or a fund of funds** | Screen managers' track records from returns alone, one folder at a time (`verify --returns-dir`). |
 | **A researcher comparing agents** | Run the [Honesty Bench](https://neozork.github.io/Monte-Neo/guides/honesty-bench/): the same tasks for every agent, scored by how often each one claims profit that is not there. |
 
 ## Why Monte-Neo
 
 - **Independent.** It checks code it did not write, with probes that do not trust the strategy's own numbers.
 - **Careful with accusations.** 35 honest strategies (loops, windows, resampling, fits inside rolling windows, a real edge with a high hit rate) must never be flagged for look-ahead, on every build.
-- **Built for agents.** An MCP server, a Claude Code plugin with a skill, a slash command and a reminder hook, plus rules for Codex, Gemini CLI and Cursor. Every failed check returns a `next_action` the agent can act on.
+- **Repairs without overfitting.** `repair` fixes defects chosen by the number of defects, counts every attempt and lets a lockbox decide, and says so when the profit was the defect.
+- **Built for agents.** An MCP server with 22 tools, a Claude Code plugin with a skill, a slash command and a reminder hook, plus rules for Codex, Gemini CLI, Cursor and Qwen Code. Every failed check returns a `next_action` the agent can act on.
+- **Institutional evidence.** Alpha reports with a readiness level, validation dossiers mapped to model-risk frameworks, live monitoring, your own policy recorded in every certificate.
 - **Time-aware.** It checks whether the profit survives the time the quotes really arrived, not only the time the exchange stamped them.
 - **Reproducible.** The same data, code and `n_trials` always give the same `certificate_id`. Anyone can reproduce a certificate with `--recheck`.
 - **Signed.** Ed25519 signatures show who issued a certificate and that nobody edited it.

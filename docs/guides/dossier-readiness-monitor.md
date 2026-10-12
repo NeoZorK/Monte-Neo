@@ -5,6 +5,8 @@ way to capital, and watching it once it trades.
 
 ## `monte-neo dossier`: one folder for a committee, a validator or an auditor
 
+![monte-neo verify then monte-neo dossier --framework sr11-7: the folder a committee can file](../assets/demo-dossier.gif)
+
 ```bash
 monte-neo dossier --demo --framework sr11-7                 # no files
 monte-neo verify --ohlcv data.csv --strategy s.py --out cert.json
@@ -28,6 +30,11 @@ Frameworks (`--framework`):
 | `sr11-7` | Federal Reserve SR 11-7 / OCC 2011-12, model risk management |
 | `ss1-23` | PRA SS1/23, model risk management principles for banks |
 | `rts6` | MiFID II RTS 6 (Delegated Regulation 2017/589), testing of algorithms |
+| `crypto` | A checklist for crypto funds and desks: 24/7 data, funding, venue latency, delisted tokens, crash stress |
+| `academic` | A paper's appendix: pre-registration, trials disclosed, out-of-sample, the t ≥ 3 hurdle, reproducibility |
+
+`--lite` also writes `dossier-lite.html`, one plain-language page for a reader who is not a quant (a family office, a
+board), with the notice in a box at the top.
 
 The map shows, per clause, whether the dossier holds **evidence** for it (`covered`, `partial`, `not covered`) and what
 that evidence says. Clauses that need a person, such as conceptual soundness or governance, are never shown as fully

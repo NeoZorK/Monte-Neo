@@ -114,3 +114,30 @@ def test_row_and_effective() -> None:
     assert trials_row(imp, None, 100)["status"] == "warn"
     assert effective_n_trials(12, 30, 412) == 412
     assert effective_n_trials(None, None, None) == 1
+
+
+def test_raytune_counts_trial_directories(tmp_path: Path) -> None:
+    root = tmp_path / "exp"
+    for i in range(4):
+        (root / f"trainable_{i}").mkdir(parents=True)
+        (root / f"trainable_{i}" / ("params.json" if i % 2 else "result.json")).write_text("{}")
+    (root / "driver_artifacts").mkdir()
+    out = count_trials(f"raytune:{root}")
+    assert out["source"] == "raytune" and out["count"] == 4
+
+
+def test_raytune_experiment_state_file(tmp_path: Path) -> None:
+    import json
+
+    root = tmp_path / "exp"
+    root.mkdir()
+    (root / "experiment_state-2026-01-01_00-00-00.json").write_text(json.dumps({"trial_data": [["a", "b"]] * 7}))
+    assert count_trials(f"raytune:{root}")["count"] == 7
+
+
+def test_raytune_errors(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="not found"):
+        count_trials(f"raytune:{tmp_path / 'missing'}")
+    (tmp_path / "empty").mkdir()
+    with pytest.raises(ValueError, match="no Ray Tune trials"):
+        count_trials(f"raytune:{tmp_path / 'empty'}")

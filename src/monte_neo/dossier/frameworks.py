@@ -61,6 +61,30 @@ FRAMEWORKS: dict[str, dict[str, Any]] = {
             ("Art. 9: annual self-assessment", "Yearly review of algorithmic trading", ("live",), True),
         ],
     },
+    "crypto": {
+        "title": "Crypto fund and desk checklist (a self-check list, not a regulation)",
+        "clauses": [
+            ("24/7 data gaps", "Outages and missing bars in a market that never closes are found", ("data_quality", "quote_quality"), False),
+            ("Funding and carry costs", "Perpetual funding, borrow and fees are in the cost model and the result survives more", ("cost_margin", "spread_cost"), False),
+            ("Exchange and venue latency", "Profit survives the real arrival time of quotes", ("latency_tolerance", "latency_monte_carlo", "delay_sensitivity"), False),
+            ("Liquidity and capacity", "Size can be traded without moving the price", ("capacity", "market_impact", "participation_limit"), False),
+            ("Survivorship of delisted tokens", "Dead and delisted tokens are in the test universe", ("survivorship",), False),
+            ("Stablecoin and market-wide crash stress", "The strategy is replayed through depegs and crashes", ("historical_stress_replay", "tail_risk"), False),
+            ("Custody, counterparty and exchange risk", "Who holds the assets and what happens if a venue fails", ("policy",), True),
+        ],
+    },
+    "academic": {
+        "title": "Academic appendix checklist for a backtest-based paper (a self-check list, not a journal rule)",
+        "clauses": [
+            ("Pre-registration", "The hypothesis was fixed before the data were looked at", ("preregistration",), False),
+            ("Trials disclosed and Sharpe deflated", "The number of variants tried is stated and the Sharpe is deflated for it", ("trial_ledger", "deflated_sharpe"), False),
+            ("Out-of-sample or holdout", "Results are shown on data that did not choose the strategy", ("walk_forward_oos",), False),
+            ("Multiple-testing hurdle", "The t-statistic clears a hurdle for the whole search", ("hlz_hurdle",), False),
+            ("Reproducibility", "A certificate and a recheck let a reader rerun the test", ("repro",), False),
+            ("Data availability", "Readers can obtain the data or a faithful substitute", ("limitations",), True),
+            ("Code availability", "Readers can obtain the code that produced the signals", ("limitations",), True),
+        ],
+    },
 }
 
 

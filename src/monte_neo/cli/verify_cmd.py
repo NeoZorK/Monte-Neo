@@ -68,6 +68,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--returns", metavar="FILE",
         help="Due diligence on a return series only (date, return): smoothing, missing small losses, implausible consistency, significance",
     )
+    p.add_argument("--returns-dir", metavar="DIR", help="Due diligence on every return file (csv/parquet) in a folder: one table for an allocator")
     p.add_argument("--benchmark", metavar="FILE", help="Benchmark return series for --returns (date, return)")
     p.add_argument("--n-strategies", type=int, default=1, help="For --returns: how many funds or strategies the manager runs (default 1)")
     p.add_argument("--demo-returns", action="store_true", help="Try --returns without files: an honest, a smoothed and a too-good track record")
@@ -351,6 +352,10 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
         from monte_neo.cli.returns_cmd import run_returns_demo
 
         return run_returns_demo(console)
+    if args.returns_dir:
+        from monte_neo.cli.returns_cmd import run_returns_batch
+
+        return run_returns_batch(args, console)
     if args.returns:
         from monte_neo.cli.returns_cmd import run_returns
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from monte_neo import disclaimer
-from monte_neo.verify.report_html import _CSS, _VERDICT_TONE, _checks_table, _e
+from monte_neo.verify.report_html import _CSS, _VERDICT_TONE, CSP, _checks_table, _e
 
 _TONE = {"covered": "good", "partial": "warn", "not covered": "mute", "pass": "good", "warn": "warn", "fail": "bad", "—": "mute"}
 _NEEDS_PERSON = " <span class='muted small'>needs a person</span>"
@@ -72,6 +72,7 @@ def render_dossier(d: dict[str, Any], checks: list[dict[str, Any]] | None = None
     sign = "".join(f"<tr><td>{_e(s['role'])}</td><td></td><td></td><td></td></tr>" for s in d.get("sign_off", []))
     return (
         "<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
+        f"<meta http-equiv='Content-Security-Policy' content=\"{CSP}\">"
         f"<title>Validation dossier {_e(d.get('dossier_id'))}</title><style>{_CSS}{_EXTRA_CSS}{disclaimer.HTML_CSS}</style></head><body><main>"
         f"<h1>Validation dossier: {_e(meta.get('name', 'strategy'))}</h1>"
         f"<p class='muted'>Dossier <span class='mono'>{_e(d.get('dossier_id'))}</span> · certificate "

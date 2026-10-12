@@ -3,6 +3,8 @@
 Every other command says what is wrong. `repair` fixes it, and shows that the fix is not a new curve fit. It also says so
 when there is nothing left to fix.
 
+![monte-neo repair --demo: the leak is repaired and no edge is left; the noisy trend is smoothed and confirmed on the lockbox; the unseeded strategy is not repairable](../assets/demo-repair.gif)
+
 ```bash
 monte-neo repair --demo                                    # three strategies, three honest outcomes
 monte-neo repair --ohlcv data.csv --strategy s.py --out repair/ [--commission-bps 10] [--rebalance-every 21]

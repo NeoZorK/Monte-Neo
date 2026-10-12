@@ -6,6 +6,7 @@ tracker, so the count is read from its files instead of being declared. Supporte
 * ``mlflow:<mlruns dir>[:<experiment>]`` or ``mlflow:sqlite:///<db>[:<experiment>]``
 * ``optuna:sqlite:///<db>[:<study>]``
 * ``wandb:<export.csv>``, ``csv:<file.csv>`` (or a bare ``*.csv`` path)
+* ``raytune:<experiment dir>``: trial subdirectories (``params.json`` / ``result.json``) or ``experiment_state-*.json``
 * ``ledger:<path>``: distinct variants in a Monte-Neo ledger
 
 Deleted runs were still tried: they are counted and reported separately.
@@ -14,6 +15,7 @@ Deleted runs were still tried: they are counted and reported separately.
 from __future__ import annotations
 
 import csv
+import os
 import sqlite3
 from collections import Counter
 from contextlib import closing
@@ -135,6 +137,27 @@ def _csv(source: str, path_str: str) -> dict[str, Any]:
     return _result(source, str(path), len(body), details)
 
 
+def _raytune(path_str: str) -> dict[str, Any]:
+    root = Path(path_str)
+    if not root.is_dir():
+        raise ValueError(f"Ray Tune experiment directory not found: {root}")
+    trials = [d for d in root.iterdir() if d.is_dir() and ((d / "params.json").is_file() or (d / "result.json").is_file())]
+    states = sorted(root.glob("experiment_state-*.json"))
+    from_state = 0
+    if states:
+        import json
+
+        try:
+            data = json.loads(states[-1].read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            data = {}
+        entries = data.get("trial_data", []) if isinstance(data, dict) else []
+        from_state = len(entries) if isinstance(entries, list) else 0
+    if not trials and not from_state:
+        raise ValueError(f"no Ray Tune trials found in {root} (expected trial folders with params.json or result.json)")
+    return _result("raytune", str(root), max(len(trials), from_state), {"trial_dirs": len(trials), "state_entries": from_state})
+
+
 def _ledger(path_str: str) -> dict[str, Any]:
     from monte_neo.verify.ledger import Ledger
 
@@ -163,13 +186,15 @@ def count_trials(spec: str) -> dict[str, Any]:
     spec = spec.strip()
     kind, sep, rest = spec.partition(":")
     kind = kind.lower()
-    if not sep or kind not in {"mlflow", "optuna", "wandb", "csv", "ledger"}:
+    if not sep or kind not in {"mlflow", "optuna", "wandb", "csv", "ledger", "raytune"}:
         if spec.lower().endswith(".csv"):
             return _csv("csv", spec)
         raise ValueError(f"unknown --trials-from spec {spec!r}: use mlflow:<mlruns>[:<experiment>], mlflow:sqlite:///<db>[:<experiment>], "
-                         "optuna:sqlite:///<db>[:<study>], wandb:<export.csv>, csv:<file.csv> or ledger:<path>")
+                         "optuna:sqlite:///<db>[:<study>], wandb:<export.csv>, csv:<file.csv>, raytune:<dir> or ledger:<path>")
     if not rest:
         raise ValueError(f"empty location in {spec!r}")
+    if rest.startswith("~"):  # the shell does not expand ~ after "kind:"
+        rest = os.path.expanduser(rest)
     if kind == "mlflow":
         if rest.startswith("sqlite:///"):
             return _mlflow_sqlite(rest)
@@ -179,6 +204,8 @@ def count_trials(spec: str) -> dict[str, Any]:
         return _optuna(rest)
     if kind == "ledger":
         return _ledger(rest)
+    if kind == "raytune":
+        return _raytune(rest)
     return _csv(kind, rest)
 
 

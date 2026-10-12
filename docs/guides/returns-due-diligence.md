@@ -25,6 +25,9 @@ required. The MCP tool is `verify_returns`.
 
 A certificate can be reproduced with `monte-neo verify --returns manager.csv --recheck cert.json`.
 
+Many managers at once: `monte-neo verify --returns-dir managers/ --n-strategies 3 --html managers.html` writes one row
+per file, with REJECT and NEEDS_MORE_EVIDENCE first, and exits with 1 when any manager fails.
+
 Honest scope: these are signs, not proof. Arbitrage and lending strategies can be smooth and honest. Read a warning as a
 question to ask the manager, not as a verdict on the manager.
 

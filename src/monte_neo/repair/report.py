@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from monte_neo import disclaimer
-from monte_neo.verify.report_html import _CSS, _e
+from monte_neo.verify.report_html import _CSS, CSP, _e
 
 _TONE = {"REPAIRED": "good", "REPAIRED_NO_EDGE": "warn", "NOT_REPAIRABLE": "bad", "NOTHING_TO_REPAIR": "mute"}
 
@@ -35,6 +35,7 @@ def render(rep: dict[str, Any]) -> str:
     dev = rep.get("dev") or {}
     return (
         "<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
+        f"<meta http-equiv='Content-Security-Policy' content=\"{CSP}\">"
         f"<title>Repair report</title><style>{_CSS}{disclaimer.HTML_CSS}</style></head><body><main>"
         f"<h1>Repair: {_e(rep.get('strategy'))}</h1>"
         f"<div class='card headline {_TONE[o]}'><b>{_e(o)}</b> — {_e(rep['headline'])}</div>"

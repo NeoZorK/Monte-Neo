@@ -47,6 +47,10 @@ Two more checks are optional:
 - `ml_feature_drift`: define `features(df)`. The population stability index of each feature between the first
   training window and the predicted period is reported, with a warning above 0.25.
 
+Two lint rules flag the classic leaks of machine-learning code written inside `signal(df)`: `full_sample_transform` (a
+scaler, PCA or feature selector fitted on all rows before any split) and `target_encoding_full` (a mean of the target
+over all rows mapped back to the features). Both are warnings: the protocol above is the real fix.
+
 The constants are part of the strategy source, so they are hashed into the certificate. Setting `LABEL_HORIZON` or
 `EMBARGO` lower than the truth weakens the test, and anyone who reads the source can see it.
 

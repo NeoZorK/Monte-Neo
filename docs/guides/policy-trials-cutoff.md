@@ -48,6 +48,7 @@ Nothing goes over the network, and no keys are needed.
 | `mlflow:sqlite:///mlflow.db[:EXPERIMENT]` | An MLflow SQLite tracking database, opened read-only |
 | `optuna:sqlite:///study.db[:STUDY]` | An Optuna study, opened read-only; pruned and failed trials count |
 | `wandb:runs.csv` | A W&B runs table exported as CSV |
+| `raytune:~/ray_results/EXPERIMENT` | A Ray Tune experiment folder (trial folders and the experiment state) |
 | `csv:trials.csv` | One row per trial |
 | `ledger:PATH` | A Monte-Neo ledger |
 

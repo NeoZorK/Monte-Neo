@@ -144,7 +144,8 @@ Product direction: verifier for agent-built strategies.
 - [x] M3: validation dossier, alpha families E (robustness), G (data and process), H (live), Alpha Readiness Level,
   reference alpha, zoo A15 and calibration
 - [x] M4: `monte-neo repair` (repairs defects without overfitting: catalogue of repairs, counted trials, one-time lockbox)
-- [ ] M5: documentation, demos, final audit
+- [x] M5: also-in-scope items (batch due diligence, dossier lite, crypto and academic maps, Jupyter magic, Polars, Ray Tune,
+  two ML lint rules, examples), documentation, README, GIF demos, gallery; release pending the owner's approval
 
 ## v0.52.0 — stages 8–10: zoo, ledger, fixes, discover, repainting, project tools
 

@@ -5,7 +5,15 @@ Version source of truth: `src/monte_neo/_version.py`.
 
 ## [v0.53.0] — unreleased
 
-Institutional stage, milestones 1 to 4. Documentation and demos follow before the release (see the roadmap).
+**From a rejected backtest to a committee.** `monte-neo repair` fixes a strategy's defects without overfitting it,
+and says so when the profit was the defect. `monte-neo alpha` asks whether a signal is real alpha and tradable, and
+gives an Alpha Readiness Level. `monte-neo dossier` turns a certificate into evidence a model-risk committee can
+file, and `monte-neo monitor` watches the strategy after launch. Machine-learning models are refitted only on the
+past, LLM signals are checked against their training cutoff, events are joined by publication time, and track records
+can be screened from returns alone. Every report says it is not investment advice.
+
+Agents: tested with Claude Code and Qwen Code (local); reports for other agents are welcome in
+[issue #114](https://github.com/NeoZorK/Monte-Neo/issues/114).
 
 ### Added
 - **`monte-neo repair`** and MCP tool `repair_strategy` (`repair-report/1`): repairs a strategy's defects without
@@ -48,7 +56,8 @@ Institutional stage, milestones 1 to 4. Documentation and demos follow before th
 - **`verify --returns`** (`--benchmark`, `--n-strategies`, `--demo-returns`, MCP `verify_returns`): due diligence on a
   track record given only as returns: smoothing, missing small losses, implausible consistency, round numbers, Deflated
   Sharpe with the manager's number of strategies, drawdown depth, benchmark relation and claims.
-  See [guides/returns-due-diligence.md](../guides/returns-due-diligence.md).
+  See [guides/returns-due-diligence.md](../guides/returns-due-diligence.md). `verify --returns-dir DIR` screens every
+  manager in a folder in one table (`--out`, `--html`).
 - **`monte-neo alpha`, families B, C, F and I** on the score's long-short portfolio: attribution to factors built from
   the universe (or `--factors`), residual alpha against the t ≥ 3 hurdle, hidden short volatility, timing beta,
   crowding; value to an existing book (`--book`: correlation, marginal Sharpe, residual alpha, drawdown overlap); the
@@ -61,6 +70,10 @@ Institutional stage, milestones 1 to 4. Documentation and demos follow before th
   blank sign-off fields), the certificate, the environment, `REPRODUCE.md` and `limitations.md`. The map shows evidence,
   never compliance; clauses that need a person are never shown as fully covered.
   See [guides/dossier-readiness-monitor.md](../guides/dossier-readiness-monitor.md).
+- `monte-neo dossier --lite` writes a one-page plain-language version for a non-quant reader (the full notice in a
+  box at the top); frameworks `crypto` (24/7 data, funding, venue latency, delisted tokens, crash stress; custody and
+  counterparty risk need a person) and `academic` (pre-registration, trials, out-of-sample, the t ≥ 3 hurdle,
+  reproducibility; data and code availability need a person).
 - **Alpha Readiness Level (ARL 1-9)** in every `alpha` report and dossier: the highest level met together with all
   levels below it; missing evidence is "not assessed", never passed, and the report names the run that would assess it.
 - **`monte-neo monitor`** and MCP tool `monitor_live` (`live-monitor/1`): live or paper returns against the backtest,
@@ -79,6 +92,14 @@ Institutional stage, milestones 1 to 4. Documentation and demos follow before th
   the month, illiquid shorts, today's members, same-date New York closes, decay after discovery, noise, a book clone,
   exact score values, an inflated IR claim) and `scripts/alpha_calibration.py`, which measures false alarms and power
   with Wilson intervals ([guides/alpha-calibration.md](../guides/alpha-calibration.md)). Lite in CI, 20 seeds nightly.
+- Jupyter cell magic `%%verify --ohlcv data.csv` (`%load_ext monte_neo.verify.magic`): the cell is the strategy, the
+  answer is the HTML report. Polars tables are accepted wherever a pandas table is. `--trials-from raytune:DIR` counts
+  Ray Tune trials. Lint rules `full_sample_transform` (a scaler, PCA or feature selector fitted on all rows) and
+  `target_encoding_full` (a target mean over all rows), both warnings. Examples `ml_fit_predict.py`,
+  `llm_news_signal.py` and `allocator_dd.py`.
+- Every HTML page (report, dossier, dossier lite, repair report, batch due diligence) carries a Content-Security-Policy
+  and no scripts; a test checks all renderers.
+- Demos: `docs/assets/demo-repair.gif`, `demo-alpha.gif`, `demo-dossier.gif` and two example institutional reports in the gallery.
 - **Reference alpha 1** (`examples/reference_alpha/`): diversified trend following with volatility targeting, rules
   fixed in advance, when it works and when it fails, how to retrain without overfitting, and the verdicts measured on
   synthetic trending, random and choppy markets. See [guides/reference-alpha.md](../guides/reference-alpha.md).
