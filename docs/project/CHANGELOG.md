@@ -3,7 +3,7 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
-## [v0.53.0] — unreleased
+## [v0.53.0] — 2026-10-12
 
 **From a rejected backtest to a committee.** `monte-neo repair` fixes a strategy's defects without overfitting it,
 and says so when the profit was the defect. `monte-neo alpha` asks whether a signal is real alpha and tradable, and
