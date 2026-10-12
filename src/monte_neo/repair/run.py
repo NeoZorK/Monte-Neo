@@ -46,10 +46,11 @@ def _bad(report: dict[str, Any], status: str = "fail") -> list[str]:
     return [c["id"] for c in report["checks"] if c["status"] == status]
 
 
-def _fn_from_source(source: str, func: str, name: str) -> Any:
-    namespace: dict[str, Any] = {"__name__": f"_mn_repair_{name}"}
-    exec(compile(source, f"<{name}>", "exec"), namespace)  # noqa: S102 - the user's own strategy, as verify runs it
-    return namespace[func]
+def _fn_from_source(source: str, func: str, out: Path) -> Any:
+    """Write the corrected source next to the results and load it the way ``verify`` loads a strategy file."""
+    path = out / "strategy.corrected.py"
+    path.write_text(source, encoding="utf-8")
+    return load_signal_fn(f"{path}:{func}")[0]
 
 
 def _split(df: pd.DataFrame, fraction: float) -> pd.Timestamp:
@@ -120,7 +121,7 @@ def repair_strategy(
     if set(_bad(base)) & plan.REPAINT:
         base_steps = [("delay", {"bars": 1})]
         report["corrections"].append({"id": "R2", "rule": "delay", "why": "the signal changed after it was shown: act one bar later"})
-    fn = plan.apply_steps(_fn_from_source(source, func, "corrected"), base_steps)
+    fn = plan.apply_steps(_fn_from_source(source, func, out), base_steps)
 
     if report["corrections"]:
         corrected = verify_strategy(df, signal_fn=fn, source=source, model=model, n_trials=n_trials, probe_checks=12)

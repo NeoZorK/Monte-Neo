@@ -55,6 +55,8 @@ Pairs of repairs from different families are tried too, up to `--budget` (24 by 
 
 - `strategy.repaired.py`: the corrected original, renamed, the repair functions it uses, and a new `signal(df)`. It is
   self-contained and runs without Monte-Neo.
+- `strategy.corrected.py`: the original after the look-ahead rewrite, before any economic repair (the repair loads it
+  the way `verify` loads a strategy file).
 - `repair.diff`, `certificate.json` (the repaired strategy on all the data, with the trials counted).
 - `repair-report.json` and `repair-report.html`: before and after, the lockbox, every candidate and its defect count.
 

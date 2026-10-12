@@ -49,7 +49,7 @@ class ModelSignal:
         self._cache: dict[tuple[int, str], Any] = {}
 
     def _model(self, train: pd.DataFrame) -> Any:
-        key = (len(train), hashlib.sha1(pd.util.hash_pandas_object(train, index=False).to_numpy().tobytes()).hexdigest())
+        key = (len(train), hashlib.sha256(pd.util.hash_pandas_object(train, index=False).to_numpy().tobytes()).hexdigest())
         if key not in self._cache:
             if len(self._cache) > 256:
                 self._cache.clear()
