@@ -85,7 +85,7 @@ Safe rehearsal:
 # download the wheel only from TestPyPI, install without resolving deps there
 pip download --no-deps -d /tmp/mn-wheels \
   --index-url https://test.pypi.org/simple/ \
-  monte-neo==0.52.0
+  monte-neo==0.53.0
 pip install --no-deps /tmp/mn-wheels/monte_neo-*.whl
 # runtime deps still come from real PyPI:
 pip install numpy pandas pyarrow numba rich questionary prompt-toolkit pyyaml python-dotenv pybind11

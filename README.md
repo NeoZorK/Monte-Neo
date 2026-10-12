@@ -182,6 +182,10 @@ slippage and raises sequential alarms when the edge dies.
 - **Your institution's rules and history.** `--policy policy.toml` applies your thresholds and records them in the
   certificate. `--trials-from mlflow:./mlruns` (Optuna, W&B, Ray Tune too) counts the runs you already logged.
   `--ledger` on a shared drive counts the whole team's attempts.
+- **Where you already work.** `%%verify` in Jupyter, Polars frames as input, and `monte-neo dossier --lite` for a
+  one-page plain-language summary for people who do not read Sharpe ratios.
+- **Two more lint rules for ML code.** `full_sample_transform` (a scaler or PCA fitted on all rows) and
+  `target_encoding_full` (a target mean over all rows mapped back to features).
 
 Guides: [ML and events](https://neozork.github.io/Monte-Neo/guides/ml-and-events/) ·
 [track records](https://neozork.github.io/Monte-Neo/guides/returns-due-diligence/) ·
