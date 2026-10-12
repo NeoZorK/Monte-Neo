@@ -53,8 +53,8 @@ def universe_subsampling(panel: Panel, quantiles: int, seed: int, cost_bps: floa
         "n_subsets": N_SUBSETS, "subset_symbols": k, "share_positive": rnd(pos), "median_sharpe": rnd(med),
         "top5_profit_share": rnd(top), "top_symbols": [panel.symbols[i] for i in np.argsort(-contrib)[:TOP_N]],
     }
-    top_txt = "n/a (no gross profit)" if not np.isfinite(top) else f"{top:.0%}"
-    summary = f"{pos:.0%} of {N_SUBSETS} random {SUBSET_SHARE:.0%} subsets earn a positive net return (median Sharpe {med:.2f}); top-5 symbols give {top_txt} of the profit"
+    top_txt = "no share of the profit (there is no gross profit)" if not np.isfinite(top) else f"{top:.0%} of the profit"
+    summary = f"{pos:.0%} of {N_SUBSETS} random {SUBSET_SHARE:.0%} subsets earn a positive net return (median Sharpe {med:.2f}); top-5 symbols give {top_txt}"
     if pos < 0.5:
         return check("universe_subsampling", "statistics", "fail", summary + ": the result does not hold on most subsets", details)
     if pos < 0.8 or (np.isfinite(top) and top > TOP_SHARE_WARN):

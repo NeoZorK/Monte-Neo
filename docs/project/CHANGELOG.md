@@ -3,6 +3,22 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.53.1] — 2026-10-13
+
+Wording and demo fixes found after the v0.53.0 release. No change to any verdict or threshold.
+
+### Changed
+- `monte-neo alpha --demo` uses a demo capital of 200,000 (override with `--aum`), so the tradability checks run and the
+  two demo scores no longer both end at ARL 2. The first demo score is called "a planted edge" and the summary says it
+  is idealised (40 independent names, a daily rebalance): real alpha is far weaker.
+- `repair`: the `REPAIRED` headline now says what is measured: the lockbox still earns after costs and is not rejected.
+  It can still ask for more evidence, so read its failed checks.
+- `min_backtest_length` no longer prints "about 0.0 needed": it says "less than a month", and for a Sharpe that is not
+  positive it says no history separates it from luck. `haircut_sharpe` writes "1 trial". `universe_subsampling` no
+  longer prints "n/a" for the profit share when there is no gross profit.
+- README: Jupyter `%%verify`, Polars input, `dossier --lite` and the two ML lint rules are listed; stale version
+  examples in the docs and the Docker pin text point to the current release.
+
 ## [v0.53.0] — 2026-10-12
 
 **From a rejected backtest to a committee.** `monte-neo repair` fixes a strategy's defects without overfitting it,

@@ -108,7 +108,7 @@ The run used a synthetic random walk; output shortened.
 ### Repair the strategy, without overfitting it
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/NeoZorK/Monte-Neo/main/docs/assets/demo-repair.gif" alt="monte-neo repair: a leak is repaired and no edge is left; a noisy trend signal is smoothed and confirmed once on a lockbox; an unseeded strategy is not repairable" width="820"/>
+  <img src="https://raw.githubusercontent.com/NeoZorK/Monte-Neo/main/docs/assets/demo-repair.gif" alt="monte-neo repair: a leak is repaired and no edge is left; a noisy trend signal is smoothed and still earns on a lockbox opened once; an unseeded strategy is not repairable" width="820"/>
 </p>
 
 ```bash
@@ -123,7 +123,8 @@ defects left and never by return, and counts every candidate as a trial. The las
 
 There are four outcomes:
 
-- `REPAIRED`: the edge is confirmed on data the choice never saw.
+- `REPAIRED`: on data the choice never saw, the strategy still earns after costs and is not rejected (the lockbox can
+  still ask for more evidence, such as more trades).
 - `REPAIRED_NO_EDGE`: the defects are gone and so is the profit, because **the profit was in the defect**.
 - `NOT_REPAIRABLE`: what you have to do yourself.
 - `NOTHING_TO_REPAIR`: there was nothing in the catalogue to fix.
@@ -403,7 +404,7 @@ MCP tools (22): `verify_strategy`, `verify_grid`, `verify_quotes`, `verify_portf
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.53.0
+- uses: NeoZorK/Monte-Neo@v0.53.1
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py

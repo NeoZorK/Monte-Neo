@@ -58,6 +58,9 @@ def _render(report: dict[str, Any], console: Console, title: str | None = None) 
         console.print(f"[bold]Next:[/] {report['next_actions'][0]}")
 
 
+DEMO_AUM = 2e5
+
+
 def _write(path: str | None, payload: Any) -> None:
     if path:
         Path(path).write_text(json.dumps(payload, indent=2, allow_nan=False) + "\n", encoding="utf-8")
@@ -76,7 +79,9 @@ def main(argv: list[str]) -> int:
     try:
         if args.demo:
             prices, real, noise = demo_panel(2)
-            reports = {"signal with a real weak edge": validate_alpha(prices, real, **kw), "pure noise score": validate_alpha(prices, noise, **kw)}
+            if kw["aum"] is None:
+                kw["aum"] = DEMO_AUM  # without a capital the tradability checks are skipped and both scores look alike
+            reports = {"signal with a planted edge": validate_alpha(prices, real, **kw), "pure noise score": validate_alpha(prices, noise, **kw)}
         elif args.ohlcv and args.scores:
             reports = {"": validate_alpha(args.ohlcv, args.scores, **kw)}
         else:
@@ -96,6 +101,7 @@ def main(argv: list[str]) -> int:
     code = max(EXIT_CODES[r["verdict"]] for r in reports.values())
     if args.format == "text":
         if args.demo:
+            console.print(f"[dim]Demo capital: {DEMO_AUM:,.0f} (change it with --aum).[/]")
             _demo_summary(reports, console)
         console.print(f"[dim]{next(iter(reports.values()))['disclaimer']}[/]")
     return code
@@ -111,7 +117,8 @@ def _demo_summary(reports: dict[str, dict[str, Any]], console: Console) -> None:
         console.print(f"  {name}: [{_VERDICT_STYLE.get(rep['verdict'], 'bold')}]{rep['verdict']}[/] ({why})")
         console.print(f"    {rep['readiness']['summary']}")
     console.print(
-        "  The real score predicts returns and beats random scores; the noise score does not. "
+        "  The planted score predicts returns and beats random scores; the noise score does not. "
+        "It is idealised (40 independent names, a daily rebalance): real alpha is far weaker. "
         "With --aum, impact and participation show whether the predicting score is also tradable at that size."
     )
     console.print()

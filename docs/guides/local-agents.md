@@ -19,7 +19,7 @@ qwen --version
 ### Connect Monte-Neo (MCP and rules)
 
 ```bash
-# the released package (v0.53.0 or later)
+# the released package (v0.53.1 or later)
 qwen mcp add monte-neo uvx --from "monte-neo[mcp]>=0.53.0" monte-neo-mcp
 # or an installed Monte-Neo (a clone, `uv sync`, virtual environment activated)
 qwen mcp add monte-neo monte-neo mcp

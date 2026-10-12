@@ -25,7 +25,7 @@ body:
     id: versions
     attributes:
       label: OS and monte-neo version
-      placeholder: macOS 15.5, monte-neo 0.53.0
+      placeholder: macOS 15.5, monte-neo 0.53.1
     validations:
       required: true
   - type: dropdown

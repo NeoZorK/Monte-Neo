@@ -141,7 +141,11 @@ def min_backtest_length(sharpe_annual: float, n_trials: int, years: float) -> di
     n = max(1, int(n_trials))
     needed = 2.0 * math.log(n) / (sharpe_annual**2) if sharpe_annual != 0 else float("inf")
     details = {"years_needed": needed, "years_available": years, "n_trials": n, "sharpe_annual": sharpe_annual}
-    s = f"{years:.1f} years of history; about {needed:.1f} needed to separate Sharpe {sharpe_annual:.2f} from the best of {n} luck-only variants"
+    if sharpe_annual <= 0:
+        s = f"{years:.1f} years of history; Sharpe {sharpe_annual:.2f} is not positive, so no length of history separates it from luck"
+    else:
+        need_txt = "less than a month" if needed < 1 / 12 else f"about {needed:.1f} years"
+        s = f"{years:.1f} years of history; {need_txt} needed to separate Sharpe {sharpe_annual:.2f} from the best of {n} luck-only variants"
     if years >= needed:
         return check("min_backtest_length", "statistics", "pass", s, details)
     status = "fail" if (years < needed / 2 and n >= 10) else "warn"
@@ -181,7 +185,8 @@ def haircut_sharpe(sharpe_annual: float, n_obs: int, n_trials: int, ppy: float) 
         sr_h = math.copysign(t_adj, sharpe_annual) * math.sqrt(ppy / n_obs)
         out[name] = {"p_adj": pa, "sharpe_haircut": sr_h, "haircut_pct": (1.0 - sr_h / sharpe_annual) * 100.0 if sharpe_annual else 0.0}
     b = out["bonferroni"]
-    s = f"Sharpe {sharpe_annual:.2f} becomes {b['sharpe_haircut']:.2f} after Bonferroni for {n} trials (haircut {b['haircut_pct']:.0f}%)"
+    noun = "trial" if n == 1 else "trials"
+    s = f"Sharpe {sharpe_annual:.2f} becomes {b['sharpe_haircut']:.2f} after Bonferroni for {n} {noun} (haircut {b['haircut_pct']:.0f}%)"
     return check("haircut_sharpe", "statistics", "info", s, out)
 
 

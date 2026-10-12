@@ -13,8 +13,9 @@ from monte_neo.cli.alpha_cmd import main
 def test_demo_runs(capsys: pytest.CaptureFixture[str]) -> None:
     code = main(["--demo"])
     out = capsys.readouterr().out
-    assert code == 1  # the noise score needs more evidence
-    assert "pure noise score" in out and "Not investment advice" in out
+    assert code == 2  # with the demo capital the noise score loses money after impact: REJECT
+    assert "planted edge" in out and "pure noise score" in out and "Demo capital: 200,000" in out
+    assert "Not investment advice" in out
     assert out.strip().splitlines()[-1].startswith("Checks whether a score predicts returns")
 
 
