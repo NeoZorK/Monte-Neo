@@ -30,7 +30,7 @@ and lets a part of the history it has never seen decide.
 
 | Outcome | Exit code | Meaning |
 |---------|-----------|---------|
-| `REPAIRED` | 0 | Defects removed; the edge is confirmed once on data the choice never saw |
+| `REPAIRED` | 0 | Defects removed; the lockbox (data the choice never saw) still earns after costs and is not rejected. It can still be `NEEDS_MORE_EVIDENCE`: read its failed checks |
 | `REPAIRED_NO_EDGE` | 1 | Defects removed, and no edge is left: **the profit was in the defect** |
 | `NOT_REPAIRABLE` | 2 | What blocks it and what you need to do |
 | `NOTHING_TO_REPAIR` | 4 | No defect the catalogue addresses; the strategy is not touched |

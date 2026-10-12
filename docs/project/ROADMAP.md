@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.53.0)
+# Monte-Neo Roadmap (v0.53.1)
 
 Product direction: verifier for agent-built strategies.
 

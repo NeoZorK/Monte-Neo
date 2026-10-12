@@ -174,7 +174,7 @@ def _finish(report: dict[str, Any], outcome: str, out: Path, blocked: list[str] 
     report["outcome"] = outcome
     report["not_repairable"] = blocked or []
     report["headline"] = {
-        "REPAIRED": "Defects repaired; the edge is confirmed once on the lockbox.",
+        "REPAIRED": "Defects repaired; the lockbox, opened once, still earns after costs and is not rejected.",
         "REPAIRED_NO_EDGE": "Defects repaired, and no edge is left: the profit was in the defect.",
         "NOT_REPAIRABLE": "Not repairable automatically: see what is needed from you.",
         "NOTHING_TO_REPAIR": "No defect the repair catalogue addresses: the strategy is left as it is.",

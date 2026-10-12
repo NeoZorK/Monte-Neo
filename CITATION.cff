@@ -11,8 +11,8 @@ abstract: >-
 authors:
   - name: "NeoZorK"
     website: "https://github.com/NeoZorK"
-version: "0.53.0"
-date-released: "2026-10-01"
+version: "0.53.1"
+date-released: "2026-10-13"
 license: MIT
 repository-code: "https://github.com/NeoZorK/Monte-Neo"
 url: "https://neozork.github.io/Monte-Neo/"

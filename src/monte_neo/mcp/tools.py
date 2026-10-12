@@ -681,7 +681,7 @@ def repair_strategy(
     Look-ahead and repainting are corrected first (causal rewrites, one-bar delay). Then a few declared repairs
     (smoothing, holding period, no-trade band, volatility targeting, neutralisation, caps, liquidity filter) are chosen
     on the first 70 % of the history by the number of defects, never by return, each counted as a trial. The rest of
-    the history is a lockbox opened once. Outcomes: REPAIRED (the edge is confirmed on the lockbox), REPAIRED_NO_EDGE
+    the history is a lockbox opened once. Outcomes: REPAIRED (the lockbox still earns after costs and is not rejected; read its failed checks), REPAIRED_NO_EDGE
     (the profit was in the defect), NOT_REPAIRABLE (what the user must do), NOTHING_TO_REPAIR. The original file is never
     changed; out_dir gets strategy.repaired.py, repair.diff, certificate.json and repair-report.json/html. Do not call it
     again on the same data to look for a better outcome: report the outcome as it is.

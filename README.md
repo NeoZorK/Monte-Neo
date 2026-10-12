@@ -108,7 +108,7 @@ The run used a synthetic random walk; output shortened.
 ### Repair the strategy, without overfitting it
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/NeoZorK/Monte-Neo/main/docs/assets/demo-repair.gif" alt="monte-neo repair: a leak is repaired and no edge is left; a noisy trend signal is smoothed and confirmed once on a lockbox; an unseeded strategy is not repairable" width="820"/>
+  <img src="https://raw.githubusercontent.com/NeoZorK/Monte-Neo/main/docs/assets/demo-repair.gif" alt="monte-neo repair: a leak is repaired and no edge is left; a noisy trend signal is smoothed and still earns on a lockbox opened once; an unseeded strategy is not repairable" width="820"/>
 </p>
 
 ```bash
@@ -123,7 +123,8 @@ defects left and never by return, and counts every candidate as a trial. The las
 
 There are four outcomes:
 
-- `REPAIRED`: the edge is confirmed on data the choice never saw.
+- `REPAIRED`: on data the choice never saw, the strategy still earns after costs and is not rejected (the lockbox can
+  still ask for more evidence, such as more trades).
 - `REPAIRED_NO_EDGE`: the defects are gone and so is the profit, because **the profit was in the defect**.
 - `NOT_REPAIRABLE`: what you have to do yourself.
 - `NOTHING_TO_REPAIR`: there was nothing in the catalogue to fix.
@@ -182,6 +183,10 @@ slippage and raises sequential alarms when the edge dies.
 - **Your institution's rules and history.** `--policy policy.toml` applies your thresholds and records them in the
   certificate. `--trials-from mlflow:./mlruns` (Optuna, W&B, Ray Tune too) counts the runs you already logged.
   `--ledger` on a shared drive counts the whole team's attempts.
+- **Where you already work.** `%%verify` in Jupyter, Polars frames as input, and `monte-neo dossier --lite` for a
+  one-page plain-language summary for people who do not read Sharpe ratios.
+- **Two more lint rules for ML code.** `full_sample_transform` (a scaler or PCA fitted on all rows) and
+  `target_encoding_full` (a target mean over all rows mapped back to features).
 
 Guides: [ML and events](https://neozork.github.io/Monte-Neo/guides/ml-and-events/) ·
 [track records](https://neozork.github.io/Monte-Neo/guides/returns-due-diligence/) ·
@@ -399,7 +404,7 @@ MCP tools (22): `verify_strategy`, `verify_grid`, `verify_quotes`, `verify_portf
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.53.0
+- uses: NeoZorK/Monte-Neo@v0.53.1
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py

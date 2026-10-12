@@ -32,7 +32,7 @@ SCENES: list[list[list[Part]]] = [
     ],
     [
         [p("")],
-        head("flicker", "REPAIRED", GRN, "Defects repaired; the edge is confirmed once on the lockbox."),
+        head("flicker", "REPAIRED", GRN, "Defects repaired; the lockbox, opened once, still earns after costs and is not rejected."),
         [p("  before: "), p("REJECT", RED, True), p(", net -85.4%")],
         [p("  chosen on the first part of the history: R5 [('smooth', {'span': 20})]")],
         [p("  defects on the development part: 6 -> 1; trials counted: 10")],

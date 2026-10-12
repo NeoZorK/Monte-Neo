@@ -1,4 +1,4 @@
-"""Render docs/assets/demo-alpha.gif: `monte-neo alpha --demo --aum 2e5`, a real weak edge.
+"""Render docs/assets/demo-alpha.gif: `monte-neo alpha --demo --aum 2e5`, a planted edge.
 
 The terminal lines are copied from a real `monte-neo alpha --demo --aum 2e5` run (the check
 table is cut to the rows that tell the story). Re-copy them when the alpha output changes.
@@ -24,7 +24,7 @@ def row(name: str, status: str, summary: str) -> list[Part]:
 SCENES: list[list[list[Part]]] = [
     [[p("$ ", GRN), p("monte-neo alpha --demo --aum 2e5")]],
     [
-        [p("signal with a real weak edge  "), p("PASS_WITH_WARNINGS", YEL, True)],
+        [p("signal with a planted edge  "), p("PASS_WITH_WARNINGS", YEL, True)],
         row("ic", "info", "mean rank IC 0.0565 (t=9.5, ICIR 0.35)"),
         row("signal_placebo", "pass", "beats permuted-score placebos (p=0.005)"),
         row("market_impact", "pass", "at AUM 2e+05: net 39.26% per year"),
