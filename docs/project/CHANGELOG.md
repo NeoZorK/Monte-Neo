@@ -5,9 +5,17 @@ Version source of truth: `src/monte_neo/_version.py`.
 
 ## [v0.53.0] — unreleased
 
-Institutional stage, milestones 1 to 3. More follows before the release (see the roadmap).
+Institutional stage, milestones 1 to 4. Documentation and demos follow before the release (see the roadmap).
 
 ### Added
+- **`monte-neo repair`** and MCP tool `repair_strategy` (`repair-report/1`): repairs a strategy's defects without
+  overfitting it. Look-ahead and repainting are corrected first (causal rewrites, a one-bar delay); then a few declared
+  repairs (smoothing, holding period, no-trade band, tranches, neutralisation, caps, liquidity filter, volatility
+  target) are chosen on the first 70 % of the history by the number of defects, never by return, each counted as a
+  trial; the last 30 % is a lockbox opened once. Outcomes `REPAIRED`, `REPAIRED_NO_EDGE` (the profit was in the
+  defect), `NOT_REPAIRABLE` (with what to do) and `NOTHING_TO_REPAIR`. The original file is never changed; the
+  repaired file is self-contained. Zoo A16: no leaking trap of the Trap Suite is ever reported as `REPAIRED` on a
+  random walk. See [guides/repair.md](../guides/repair.md).
 - **`monte-neo alpha`** and MCP tool `validate_alpha` (`alpha-report/1`): does a cross-sectional score predict returns,
   and can its long-short portfolio be traded? Family A: rank IC with a Newey-West t, IC decay and half-life, quantile
   monotonicity, long and short legs, breadth against a claimed IR, permuted-score placebos, selection against timing.

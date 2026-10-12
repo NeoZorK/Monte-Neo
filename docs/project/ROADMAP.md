@@ -143,7 +143,7 @@ Product direction: verifier for agent-built strategies.
   families B (factor attribution), C (value to an existing book), F (multiple testing), I (risk)
 - [x] M3: validation dossier, alpha families E (robustness), G (data and process), H (live), Alpha Readiness Level,
   reference alpha, zoo A15 and calibration
-- [ ] M4: `monte-neo repair` (repairs defects without overfitting: catalogue of repairs, counted trials, one-time lockbox)
+- [x] M4: `monte-neo repair` (repairs defects without overfitting: catalogue of repairs, counted trials, one-time lockbox)
 - [ ] M5: documentation, demos, final audit
 
 ## v0.52.0 — stages 8–10: zoo, ledger, fixes, discover, repainting, project tools

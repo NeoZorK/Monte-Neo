@@ -84,6 +84,7 @@ nav:
       - Trap Suite: guides/trap-suite.md
       - Latency audit (quotes): guides/arrival-time.md
       - Frameworks and notebooks: guides/frameworks.md
+      - Repair without overfitting: guides/repair.md
       - Alpha validation: guides/alpha.md
       - Policy, trials, model cutoff: guides/policy-trials-cutoff.md
       - ML models and event data: guides/ml-and-events.md

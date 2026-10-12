@@ -87,6 +87,7 @@ A simplified guide to the Monte-Neo file structure.
 - docs/guides/reference-alpha.md - Reference alpha 1 (trend following): rules, expectations, when it works and fails, measured verdicts
 - docs/guides/alpha-calibration.md - Generated: false alarms and power of the alpha checks on zoo A15 traps and honest twins
 - tests/zoo/test_zoo_alpha.py, alpha_cases.py; scripts/alpha_calibration.py - zoo A15 (alpha traps and twins) and its calibration
+- docs/guides/repair.md - monte-neo repair: protocol, catalogue R1-R11, outcomes, zoo A16
 - docs/guides/discover.md - monte-neo discover: verified indicator search (gate, effective trials, search null, lockbox)
 - scripts/check_english_only.py - Language guard: fails on Cyrillic text or private working files in tracked files, PR titles, PR descriptions and commit messages
 - scripts/mutation_check.py - Mutation check of the verifier core
@@ -121,6 +122,9 @@ A simplified guide to the Monte-Neo file structure.
 - src/monte_neo/verify/live.py, live_seq.py - live-monitor/1: live vs backtest, slippage, CUSUM/SPRT, track needed
 - src/monte_neo/cli/dossier_cmd.py, monitor_cmd.py - monte-neo dossier and monte-neo monitor
 - examples/reference_alpha/ - Reference alpha 1: trend_v1.py, make_data.py, README
+- src/monte_neo/repair/ - repair-report/1: runtime transforms, catalogue and repaired file, protocol, report, demo
+- src/monte_neo/cli/repair_cmd.py - monte-neo repair
+- tests/zoo/test_zoo_repair.py - zoo A16: repair never reports REPAIRED on a leaking trap over a random walk
 - src/monte_neo/disclaimer.py - The one 'not investment advice' text for reports, CLI, MCP and docs
 - src/monte_neo/alpha/ - monte-neo alpha: panel alignment, signal power (A), attribution and self-built factors (B), value to a book (C), implementability (D), robustness (E), multiple testing (F), data and process (G), risk (I), alpha-report/1 with the readiness level
 - src/monte_neo/cli/alpha_cmd.py, policy_cmd.py - monte-neo alpha and monte-neo policy commands

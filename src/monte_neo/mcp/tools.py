@@ -667,6 +667,43 @@ def monitor_live(
     return verify_live(certificate_or_backtest_path, live_path, fills=fills_path, modelled_slippage_bps=slippage_bps, haircut=haircut)
 
 
+def repair_strategy(
+    ohlcv_path: str,
+    strategy_path: str,
+    out_dir: str = "repair",
+    commission_bps: float = 5.0,
+    slippage_bps: float = 5.0,
+    n_trials: int | None = None,
+    budget: int = 24,
+) -> dict[str, Any]:
+    """Repair a strategy's defects without overfitting it, or say why it cannot be repaired (repair-report/1).
+
+    Look-ahead and repainting are corrected first (causal rewrites, one-bar delay). Then a few declared repairs
+    (smoothing, holding period, no-trade band, volatility targeting, neutralisation, caps, liquidity filter) are chosen
+    on the first 70 % of the history by the number of defects, never by return, each counted as a trial. The rest of
+    the history is a lockbox opened once. Outcomes: REPAIRED (the edge is confirmed on the lockbox), REPAIRED_NO_EDGE
+    (the profit was in the defect), NOT_REPAIRABLE (what the user must do), NOTHING_TO_REPAIR. The original file is never
+    changed; out_dir gets strategy.repaired.py, repair.diff, certificate.json and repair-report.json/html. Do not call it
+    again on the same data to look for a better outcome: report the outcome as it is.
+
+    Args:
+        ohlcv_path: Prices (.csv / .parquet).
+        strategy_path: Strategy file 'path.py[:func]'.
+        out_dir: Folder for the results.
+        commission_bps: Commission per side. slippage_bps: Slippage per side.
+        n_trials: Variants tried before the repair. budget: At most this many candidate repairs.
+    """
+    from monte_neo.repair import repair_strategy as _repair
+    from monte_neo.repair.report import write_html
+    from monte_neo.verify.market import bar_count
+
+    df, model = _model(ohlcv_path, commission_bps, slippage_bps, None, None, None, 0.0, 0.0, 0.0, 0.0, 0.0)
+    rep = _repair(df, strategy_path, out_dir=out_dir, model=model, n_trials=n_trials, budget=budget)
+    write_html(rep, out_dir)
+    return {k: rep.get(k) for k in ("outcome", "headline", "original", "corrections", "chosen", "final", "lockbox", "not_repairable", "dev")} | {
+        "files": [str(p) for p in sorted(Path(out_dir).iterdir())], "n_bars": bar_count(df)}
+
+
 def verdict_schema() -> dict[str, Any]:
     """JSON schema of the strategy-verdict/1 certificate."""
     from monte_neo.verify import VERDICT_JSON_SCHEMA
@@ -721,6 +758,7 @@ TOOLS: tuple[Callable[..., dict[str, Any]], ...] = (
     verify_returns,
     build_dossier,
     monitor_live,
+    repair_strategy,
     verdict_schema,
     verifier_manifest,
 )
@@ -740,6 +778,7 @@ __all__ = [
     "register_hypothesis",
     "probe_lookahead",
     "render_report",
+    "repair_strategy",
     "suggest_fix",
     "validate_alpha",
     "verdict_schema",

@@ -29,6 +29,7 @@ Each report with the agent's version gets a row here with a link.
 | `verify_grid` | Runs the parameter search inside the verifier (counts `n_trials`) and adds walk-forward, parameter-plateau and PBO checks |
 | `validate_alpha` | A cross-sectional score: does it predict returns (rank IC, decay, quantiles, placebos), and can its long-short portfolio be traded (impact, capacity, shorts, rebalance day)? `alpha-report/1` |
 | `verify_returns` | A track record given only as returns: smoothing, missing small losses, implausible consistency, significance with the manager's number of strategies |
+| `repair_strategy` | Repairs defects without overfitting (choice by defects on 70 % of the history, lockbox opened once): REPAIRED, REPAIRED_NO_EDGE, NOT_REPAIRABLE or NOTHING_TO_REPAIR |
 | `build_dossier` | A certificate as a validation dossier folder for a committee: framework map (SR 11-7, SS1/23, RTS 6), limitations, reproduction, sign-off |
 | `monitor_live` | After launch: live against backtest, realised slippage, alpha-death alarms |
 | `verify_quotes` | Intraday strategies on bid/ask quotes: does the profit survive the time the quotes arrived (stamp + latency)? Arrival look-ahead, latency scan and latency Monte Carlo |

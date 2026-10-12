@@ -33,6 +33,8 @@ Before reporting any trading strategy, signal or backtest result (returns, Sharp
    through `events_path` (joined by publication time), never joined by event time in your own code.
 9. To judge a manager's track record given only as returns, call `verify_returns`.
    For a committee or an auditor, call `build_dossier` on the certificate. After launch, call `monitor_live`.
+   To fix a rejected strategy, call `repair_strategy` once and report its outcome as it is: REPAIRED_NO_EDGE means the
+   profit was in the defect. Never call it repeatedly on the same data to get a better outcome.
    Report the Alpha Readiness Level as it is (for example "ARL 6/9, blocked at 7 by rebalance_timing_luck").
    It rates the evidence, not the investment.
 10. Every answer carries a `disclaimer`: tell the user the result is not investment advice.
