@@ -16,6 +16,8 @@ from typing import Any
 from rich.console import Console
 from rich.table import Table
 
+from monte_neo import disclaimer
+
 EXIT_CODES = {"PASS": 0, "PASS_WITH_WARNINGS": 0, "NEEDS_MORE_EVIDENCE": 1, "REJECT": 2}
 _STATUS_STYLE = {"pass": "green", "warn": "yellow", "fail": "bold red", "skip": "dim", "info": "cyan"}
 _VERDICT_STYLE = {"PASS": "bold green", "PASS_WITH_WARNINGS": "bold yellow", "NEEDS_MORE_EVIDENCE": "bold magenta", "REJECT": "bold red"}
@@ -44,6 +46,32 @@ def build_parser() -> argparse.ArgumentParser:
         "--ledger", nargs="?", const="1", default=None, metavar="PATH",
         help="Count the variants tried on this data in an append-only ledger (default .monte-neo/ledger.jsonl); the larger of the count and --n-trials is used",
     )
+    p.add_argument(
+        "--trials-from", metavar="SPEC",
+        help="Count the variants already tried in an experiment tracker, offline: mlflow:PATH[:EXPERIMENT], "
+        "optuna:sqlite:///study.db[:STUDY], wandb:export.csv, csv:trials.csv or ledger:PATH; the largest count is used",
+    )
+    p.add_argument(
+        "--policy", metavar="FILE",
+        help="Your institution's thresholds as a TOML file (monte-neo policy init writes a template); recorded in the certificate",
+    )
+    p.add_argument(
+        "--model-cutoff", metavar="YYYY-MM",
+        help="Training-data cutoff of a language or foundation model the strategy uses: the edge must survive that date",
+    )
+    p.add_argument(
+        "--events", metavar="FILE",
+        help="Events table (published_at[, event_time, symbol], value columns): joined by publication time as ev_<column> columns",
+    )
+    p.add_argument("--events-delay", type=float, default=0.0, metavar="SECONDS", help="Extra delay after publication before an event is usable (default 0)")
+    p.add_argument(
+        "--returns", metavar="FILE",
+        help="Due diligence on a return series only (date, return): smoothing, missing small losses, implausible consistency, significance",
+    )
+    p.add_argument("--returns-dir", metavar="DIR", help="Due diligence on every return file (csv/parquet) in a folder: one table for an allocator")
+    p.add_argument("--benchmark", metavar="FILE", help="Benchmark return series for --returns (date, return)")
+    p.add_argument("--n-strategies", type=int, default=1, help="For --returns: how many funds or strategies the manager runs (default 1)")
+    p.add_argument("--demo-returns", action="store_true", help="Try --returns without files: an honest, a smoothed and a too-good track record")
     p.add_argument("--registration", metavar="ID", help="id of a pre-registered hypothesis (monte-neo register): the certificate says whether it protects this result")
     p.add_argument("--repaint", choices=["off", "auto", "strict"], default="auto", help="How densely to check that a signal never changes after it was shown (default auto; strict checks many more prefixes)")
     p.add_argument("--signal-timing", choices=["close", "open"], default="close", help="'open': the signal is declared known at the bar's open, so a signal that needs the bar's own prices fails (default close)")
@@ -150,6 +178,7 @@ def _run_demo(console: Console) -> int:
         "Monte-Neo separates 'the backtest lies' from 'the strategy does not earn'."
     )
     console.print("Now try your own: [bold]monte-neo verify --ohlcv data.csv --strategy my_strategy.py[/]")
+    console.print(f"[dim]{disclaimer.SHORT}[/]")
     return 0
 
 
@@ -319,6 +348,18 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
         from monte_neo.cli.quotes_cmd import run_quotes
 
         return run_quotes(args, console)
+    if args.demo_returns:
+        from monte_neo.cli.returns_cmd import run_returns_demo
+
+        return run_returns_demo(console)
+    if args.returns_dir:
+        from monte_neo.cli.returns_cmd import run_returns_batch
+
+        return run_returns_batch(args, console)
+    if args.returns:
+        from monte_neo.cli.returns_cmd import run_returns
+
+        return run_returns(args, console)
     if args.keygen or args.check_signature:
         return _run_signing(args, console)
     if args.lint:
@@ -346,7 +387,7 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
         try:
             result = recheck_certificate(
                 args.recheck, args.ohlcv, signals=args.signals, strategy=args.strategy,
-                jobs=args.jobs, timeout=args.timeout, isolate=args.isolate,
+                jobs=args.jobs, timeout=args.timeout, isolate=args.isolate, events=args.events,
             )
         except Exception as exc:
             console.print(f"[red]recheck failed: {exc}[/]")
@@ -370,8 +411,28 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
             tp_pct=args.tp_pct,
             trail_pct=args.trail_pct,
         )
+        rules = None
+        min_trades = args.min_trades
+        if args.policy:
+            from dataclasses import replace
+
+            from monte_neo.verify.policy import load_policy, run_inputs
+
+            rules = load_policy(args.policy)
+            fixed = run_inputs(rules)
+            min_trades = int(fixed.get("min_trades", min_trades))
+            k = float(fixed.get("cost_multiplier", 1.0))
+            model = replace(model, commission_bps=model.commission_bps * k, slippage_bps=model.slippage_bps * k)
+        n_trials, extra_checks = args.n_trials, []
+        if args.trials_from:
+            if args.grid:
+                raise ValueError("--trials-from is for one strategy; --grid counts its own variants")
+            from monte_neo.verify.trials_import import trials_for_verify
+
+            n_trials, row = trials_for_verify(args.trials_from, args.n_trials)
+            extra_checks.append(row)
         common = {
-            "model": model, "periods_per_year": args.periods_per_year, "min_trades": args.min_trades,
+            "model": model, "periods_per_year": args.periods_per_year, "min_trades": min_trades,
             "positions": args.positions,
             "jobs": args.jobs,
             "timeout": args.timeout,
@@ -383,10 +444,16 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
             report = verify_grid(df, _load_grid(args.grid), strategy=args.strategy, folds=args.folds, **common)
         else:
             report = verify_strategy(
-                df, signals=args.signals, strategy=args.strategy, n_trials=args.n_trials,
+                df, signals=args.signals, strategy=args.strategy, n_trials=n_trials,
                 ledger=(True if args.ledger == "1" else args.ledger) or None,
-                repaint=args.repaint, signal_timing=args.signal_timing, registration=args.registration, **common,
+                repaint=args.repaint, signal_timing=args.signal_timing, registration=args.registration,
+                model_cutoff=args.model_cutoff, extra_checks=extra_checks or None,
+                events=args.events, events_delay=args.events_delay, **common,
             )
+        if rules is not None:
+            from monte_neo.verify.policy import apply_policy
+
+            report = apply_policy(report, rules)
     except Exception as exc:  # input errors must not look like a verdict
         console.print(f"[red]verify failed: {exc}[/]")
         return 3

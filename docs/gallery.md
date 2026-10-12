@@ -14,6 +14,15 @@ network, and it prints to PDF from the browser.
 | [A universe](assets/reports/universe.html) | Cross-sectional momentum on several symbols, with the survivorship check | REJECT |
 | [Bad ticks](assets/reports/bad-ticks.html) | Honest code whose profit is one-bar price spikes: the data, not the strategy, makes the money | REJECT |
 
+## Institutional reports
+
+Two more pages come from the demo commands. They are research examples, not advice.
+
+- [A validation dossier](assets/reports/dossier-sr11-7.html): the evidence of one verdict laid out against the clauses of SR 11-7, with what is covered, what is not, and how to reproduce it. It is evidence for a validation, not a statement of compliance.
+- [A repair that flickers](assets/reports/repair-flicker.html): a strategy whose signal flickers is smoothed on the first part of the history, and the lockbox is opened once to confirm the edge.
+
+These two pages are regenerated with `uv run python scripts/make_institutional_gallery.py`.
+
 ## How to read a report
 
 - **The line under the title** says why the verdict is what it is.

@@ -35,6 +35,8 @@ CLASSES = {
     "test_zoo_claims": "A7 claims", "test_zoo_metamorphic": "A9 metamorphic relations", "test_zoo_universe": "A10 universes",
     "test_zoo_ml": "A11 machine learning", "test_zoo_quotes": "A12 quotes", "test_zoo_fuzz": "A13 engine fuzzing",
     "test_zoo_fixes": "suggest_fix", "test_zoo_labels": "labels checked by the independent oracle",
+    "test_zoo_alpha": "A15 alpha (traps and honest twins)",
+    "test_zoo_repair": "A16 repair never reports REPAIRED on a leaking trap",
 }
 
 

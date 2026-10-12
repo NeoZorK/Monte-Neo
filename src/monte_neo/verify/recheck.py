@@ -52,16 +52,23 @@ def recheck_certificate(
     jobs: int | str | None = 1,
     timeout: float | None = None,
     isolate: bool = False,
+    events: Any = None,
 ) -> dict[str, Any]:
     """Reproduce a certificate; ``reproduced`` is True only if everything matches.
 
     Grid certificates are reproduced by re-running the recorded grid search.
     ``jobs`` / ``timeout`` / ``isolate`` run the strategy file in worker processes,
-    as in :func:`~monte_neo.verify.verify_strategy`.
+    as in :func:`~monte_neo.verify.verify_strategy`. ``events`` is the events file of a certificate issued with events.
     """
     cert = load_certificate(certificate)
     repro = cert["reproducibility"]
-    df = load_ohlcv(ohlcv)
+    raw = df = load_ohlcv(ohlcv)
+    if events is None and (cert["reproducibility"].get("settings") or {}).get("events_sha256"):
+        raise ValueError("this certificate was issued with events: pass the same events file (events=...)")
+    if events is not None:  # the strategy reads the events: give it the same joined table as the original run
+        from monte_neo.verify.events_run import prepare_events
+
+        df = prepare_events(raw, events, float((cert["reproducibility"].get("settings") or {}).get("events_delay", 0.0)))[0]
     market = market_for(df)
     data_bytes = market.data_bytes()
     grid = cert.get("grid")
@@ -71,7 +78,7 @@ def recheck_certificate(
         mode = "sign"
     runner = _runner_for(strategy, market, df, jobs, timeout, isolate)
     try:
-        return _recheck(cert, repro, df, market, data_bytes, grid, settings, mode, strategy, signals, runner)
+        return _recheck(cert, repro, df, market, data_bytes, grid, settings, mode, strategy, signals, runner, events, raw)
     finally:
         if runner is not None:
             runner.close()
@@ -89,6 +96,8 @@ def _recheck(
     strategy: str | Path | None,
     signals: Any,
     runner: ProcessRunner | None,
+    events: Any = None,
+    raw: pd.DataFrame | None = None,
 ) -> dict[str, Any]:
     fn: Any = None
     source = None
@@ -132,9 +141,13 @@ def _recheck(
         again = verify_grid(df, grid["spec"], signal_fn=fn, source=source, model=model, folds=grid["folds"], **settings)
     else:
         again = verify_strategy(
-            df, signals=sig if fn is None else None, signal_fn=fn, source=source,
-            model=model, n_trials=repro.get("n_trials"), **settings,
+            df if raw is None else raw, signals=sig if fn is None else None, signal_fn=fn, source=source,
+            model=model, n_trials=repro.get("n_trials"), events=events, **settings,
         )
+    if repro.get("policy"):  # the policy's inputs are already in the settings and model: apply only its rules
+        from monte_neo.verify.policy import apply_policy
+
+        again = apply_policy(again, repro["policy"])
     same_verdict = again["verdict"] == cert.get("verdict")
     same_id = again["certificate_id"] == cert.get("certificate_id")
     report.update(

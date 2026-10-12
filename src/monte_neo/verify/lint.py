@@ -6,6 +6,8 @@ import ast
 import copy
 from typing import Any
 
+from monte_neo.verify.lint_ml import ml_findings
+
 _BFILL_METHODS = {"bfill", "backfill"}
 _FIT_METHODS = {"fit", "fit_transform", "polyfit"}
 _GROUP_AGGS = {"last", "max", "min", "mean", "sum", "std", "median", "size", "count", "nunique", "agg", "aggregate"}
@@ -523,6 +525,7 @@ def lint_source(source: str) -> dict[str, Any]:
     tree = _InlineConstants(tree).visit(tree)
     visitor = _Visitor(source.splitlines(), *_window_functions(tree))
     visitor.visit(tree)
+    visitor.findings.extend(f for f in ml_findings(tree, source.splitlines()) if not any(g["rule"] == f["rule"] and g["line"] == f["line"] for g in visitor.findings))
     dead = _dead_assignment_lines(tree)
     for finding in visitor.findings:
         if finding["severity"] == "fail" and finding["line"] in dead and finding["rule"] in _FUTURE_VALUE_RULES:

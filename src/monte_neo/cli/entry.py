@@ -1,6 +1,6 @@
 """``monte-neo`` entry point: dispatch before importing anything heavy.
 
-``verify``, ``init-ci``, ``bench`` and ``mcp`` load only what they need; ``--version`` loads
+``verify``, ``alpha``, ``policy``, ``init-ci``, ``bench`` and ``mcp`` load only what they need; ``--version`` loads
 nothing. Everything else opens the interactive research CLI (extra ``research``).
 """
 
@@ -12,6 +12,11 @@ HELP = """usage: monte-neo <command> [options]
 
 Commands:
   verify   verify a trading-strategy backtest (monte-neo verify --help)
+  alpha    does a cross-sectional signal predict returns, and can it be traded? (monte-neo alpha --help)
+  policy   write or check your institution's thresholds (monte-neo policy init)
+  dossier  turn a certificate into a validation dossier for a committee (monte-neo dossier --demo)
+  repair   repair a strategy's defects without overfitting it, or say why not (monte-neo repair --demo)
+  monitor  compare live or paper returns with the backtest; is the alpha dead? (monte-neo monitor --help)
   history  certificate history and diffs; blocks a verdict regression
   register write the hypothesis down before the test
   oracle   hold-out oracle for adaptive search (Thresholdout)
@@ -44,6 +49,18 @@ def main() -> int:
         from monte_neo.cli.verify_cmd import main as verify_main
 
         return verify_main(sys.argv[2:])
+    if command == "alpha":
+        from monte_neo.cli.alpha_cmd import main as alpha_main
+
+        return alpha_main(sys.argv[2:])
+    if command in ("dossier", "monitor", "repair"):
+        from importlib import import_module
+
+        return import_module(f"monte_neo.cli.{command}_cmd").main(sys.argv[2:])
+    if command == "policy":
+        from monte_neo.cli.policy_cmd import main as policy_main
+
+        return policy_main(sys.argv[2:])
     if command == "discover":
         from monte_neo.cli.discover_cmd import main as discover_main
 
@@ -71,7 +88,7 @@ def main() -> int:
         print(
             f"{what}The interactive research CLI needs extra packages ({exc.name or exc}): "
             "pip install 'monte-neo[research]'.\n"
-            "Commands in the base install: monte-neo verify | discover | history | register | oracle | portfolio | doctor | init-ci | bench | mcp | --version (monte-neo --help lists them)",
+            "Commands in the base install: monte-neo verify | alpha | policy | repair | dossier | monitor | discover | history | register | oracle | portfolio | doctor | init-ci | bench | mcp | --version (monte-neo --help lists them)",
             file=sys.stderr,
         )
         return 2

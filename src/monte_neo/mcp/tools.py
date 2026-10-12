@@ -22,7 +22,8 @@ SERVER_INSTRUCTIONS = (
     "If you already have numbers you plan to report, pass them as claim (sharpe, total_return, max_drawdown, "
     "n_trades): a claim better than the verified result fails the claim_consistency check. "
     "For intraday strategies on bid/ask quotes call verify_quotes: it checks whether the profit survives the "
-    "time the quotes really arrived (stamp + latency)."
+    "time the quotes really arrived (stamp + latency). "
+    "Every answer has a disclaimer field: when you present a result, tell the user it is not investment advice."
 )
 
 
@@ -102,6 +103,11 @@ def verify_strategy(
     repaint: str = "auto",
     signal_timing: str = "close",
     registration: str | None = None,
+    policy_path: str | None = None,
+    trials_from: str | None = None,
+    model_cutoff: str | None = None,
+    events_path: str | None = None,
+    events_delay: float = 0.0,
 ) -> dict[str, Any]:
     """Verify a strategy backtest and return a strategy-verdict/1 certificate.
 
@@ -136,6 +142,15 @@ def verify_strategy(
         signal_timing: 'close' (default) or 'open': 'open' declares the signal known at the bar's open; one that needs the
             bar's own prices fails.
         registration: Id of a pre-registered hypothesis (register_hypothesis); the certificate says whether it protects the result.
+        policy_path: TOML file with the institution's thresholds (monte-neo policy init); a breach shows in the policy row.
+        trials_from: Count variants already tried in a tracker, offline: mlflow:PATH[:EXPERIMENT],
+            optuna:sqlite:///study.db[:STUDY], wandb:export.csv, csv:trials.csv or ledger:PATH (the largest count is used).
+        model_cutoff: 'YYYY-MM' training cutoff of an LLM or foundation model the strategy uses: the edge must survive it.
+        events_path: Events (published_at, optional event_time and symbol, value columns): joined by publication time
+            as ev_<column> columns the strategy reads; with event_time the leaky join is priced (pit_events).
+        events_delay: Seconds after publication before an event is usable.
+    A strategy file may define fit(train) and predict(model, df) instead of signal(df): the verifier then refits the
+    model only on the past (walk-forward) and compares with the whole-file fit (ml_refit_gap).
         compact: Drop details of passing checks to keep the response short.
     """
     from monte_neo.verify import verify_strategy as _verify
@@ -147,9 +162,17 @@ def verify_strategy(
         sl_pct, tp_pct, trail_pct,
     )
     runs = {"timeout": timeout, "jobs": jobs, "isolate": isolate} if strategy_path else {}
+    extra_checks = None
+    if trials_from:
+        from monte_neo.verify.trials_import import trials_for_verify
+
+        n_trials, row = trials_for_verify(trials_from, n_trials)
+        extra_checks = [row]
     report = _verify(
         df, signals=signals_path, strategy=strategy_path, model=model, n_trials=n_trials, positions=positions, claim=claim,
-        symbol_costs=symbol_costs, ledger=ledger or None, repaint=repaint, signal_timing=signal_timing, registration=registration, **runs
+        symbol_costs=symbol_costs, ledger=ledger or None, repaint=repaint, signal_timing=signal_timing, registration=registration,
+        policy=policy_path, model_cutoff=model_cutoff, extra_checks=extra_checks, events=events_path,
+        events_delay=events_delay, **runs
     )
     return _compact(report) if compact else report
 
@@ -514,6 +537,173 @@ def diagnose_data(table_path: str, provider: str = "auto") -> dict[str, Any]:
     return diagnose(table_path, provider)
 
 
+def validate_alpha(
+    prices_path: str,
+    scores_path: str,
+    horizon: int = 1,
+    quantiles: int = 5,
+    claimed_ir: float | None = None,
+    aum: float | None = None,
+    seed: int = 0,
+    factors_path: str | None = None,
+    book_path: str | None = None,
+    n_trials: int = 1,
+) -> dict[str, Any]:
+    """Does a cross-sectional score predict returns, and can its top-minus-bottom portfolio be traded? (alpha-report/1)
+
+    Call it before you call a ranking signal "alpha". Family A: rank IC with Newey-West t, IC decay, quantile
+    monotonicity, long and short legs, breadth, permuted-score placebos, selection against timing. Family D: market
+    impact and participation at ``aum``, capacity curve, short feasibility, holding period against signal decay,
+    dependence on the rebalance day.
+
+    Args:
+        prices_path: Universe prices (.csv / .parquet): timestamp, symbol, close[, volume].
+        scores_path: Scores (.csv / .parquet): timestamp (or date), symbol, score; the score at t ranks returns after t.
+        horizon: Forward-return horizon in bars.
+        quantiles: Quantile buckets.
+        claimed_ir: Claimed annual information ratio (checked against IC and breadth).
+        aum: Capital you plan to run, for market impact and participation.
+        seed: Seed for bootstraps and placebos.
+        factors_path: Factor returns file (date + factors); default: market, size, momentum, reversal and low-volatility factors built from the universe.
+        book_path: Returns of the user's existing book (date + one column per strategy): marginal Sharpe, overlap.
+        n_trials: Variants tried before this one (Harvey-Liu-Zhu hurdle, minimum backtest length, Sharpe haircut).
+
+    The report also covers attribution (is it a known factor, hidden short volatility), value to a book, multiple
+    testing and risk (neutrality, concentration, named crises, tail risk).
+    """
+    from monte_neo.alpha import validate_alpha as _validate
+
+    return _validate(
+        prices_path, scores_path, horizon=horizon, quantiles=quantiles, claimed_ir=claimed_ir, aum=aum, seed=seed,
+        factors=factors_path, book=book_path, n_trials=n_trials,
+    )
+
+
+def verify_returns(
+    returns_path: str,
+    benchmark_path: str | None = None,
+    n_strategies: int = 1,
+    claim: dict[str, Any] | str | None = None,
+) -> dict[str, Any]:
+    """Due diligence on a track record given only as returns (no code, no positions): strategy-verdict/1.
+
+    Smoothed returns (Getmansky-Lo-Makarov), missing small losses (a kink at zero), implausibly consistent gains, round
+    numbers, significance with the manager's number of strategies (Deflated Sharpe), a drawdown too shallow for the
+    volatility, the relation to a benchmark and a claim check. Look-ahead and costs cannot be checked from returns alone;
+    the report says so.
+
+    Args:
+        returns_path: CSV/Parquet with a date column and a return column (decimals or percent).
+        benchmark_path: Optional benchmark returns in the same format.
+        n_strategies: How many funds or strategies the manager runs (prices the selection of the best one).
+        claim: What the manager claims, e.g. {"annual_return": 0.18, "sharpe": 2.0, "max_drawdown": 0.06}.
+    """
+    from monte_neo.verify.returns_dd import verify_returns as _verify_returns
+
+    return _verify_returns(returns_path, benchmark=benchmark_path, n_strategies=n_strategies, claim=claim)
+
+
+def build_dossier(
+    certificate_path: str,
+    out_dir: str,
+    framework: str = "generic",
+    name: str | None = None,
+    owner: str | None = None,
+    purpose: str | None = None,
+    alpha_path: str | None = None,
+) -> dict[str, Any]:
+    """Write a validation dossier folder from a certificate, for a model-risk committee, a validator or an auditor.
+
+    The folder holds dossier.html (one page: summary, checks, framework map, assumptions and limitations, how to
+    reproduce, blank sign-off fields), dossier.json, certificate.json, environment.json, REPRODUCE.md and limitations.md.
+    The framework map shows evidence per clause, not compliance.
+
+    Args:
+        certificate_path: A strategy-verdict/1 certificate (JSON).
+        out_dir: Folder to write.
+        framework: 'generic', 'sr11-7', 'ss1-23' or 'rts6'.
+        name: Model name. owner: Model owner. purpose: What the model is for.
+        alpha_path: Optional alpha-report/1 JSON of the strategy's signal.
+    """
+    import json as _json
+
+    from monte_neo.dossier import build_dossier as _build
+    from monte_neo.dossier import write_dossier
+    from monte_neo.verify.recheck import load_certificate
+
+    cert = load_certificate(certificate_path)
+    alpha = _json.loads(Path(alpha_path).read_text(encoding="utf-8")) if alpha_path else None
+    dossier = _build(cert, framework=framework, meta={"name": name, "owner": owner, "purpose": purpose}, alpha=alpha)
+    out = write_dossier(dossier, cert, out_dir)
+    clauses = dossier["framework"]["clauses"]
+    return {
+        "dossier_id": dossier["dossier_id"], "verdict": dossier["verdict"], "html": str(out / "dossier.html"),
+        "coverage": {c["clause"]: c["coverage"] for c in clauses}, "limitations": dossier["limitations"],
+    }
+
+
+def monitor_live(
+    certificate_or_backtest_path: str,
+    live_path: str,
+    fills_path: str | None = None,
+    slippage_bps: float | None = None,
+    haircut: float = 0.5,
+) -> dict[str, Any]:
+    """After launch: does the live (or paper) strategy behave like its backtest, and is the alpha dead? (live-monitor/1)
+
+    Live against backtest on the same dates (correlation, tracking error), realised slippage from fills against the
+    modelled one (with a recommended value), sequential alarms (CUSUM, SPRT) against the backtest edge shrunk by
+    ``haircut``, and the live history still needed to confirm the edge.
+
+    Args:
+        certificate_or_backtest_path: The strategy's certificate (.json) or a backtest returns file (date, return).
+        live_path: Live or paper returns (date, return) or fills (timestamp, symbol, side, quantity, price[, reference_price]).
+        fills_path: Optional fills file when live_path holds returns.
+        slippage_bps: Modelled slippage to compare with (default: the certificate's).
+        haircut: Share of the backtest edge expected live (default 0.5).
+    """
+    from monte_neo.verify.live import verify_live
+
+    return verify_live(certificate_or_backtest_path, live_path, fills=fills_path, modelled_slippage_bps=slippage_bps, haircut=haircut)
+
+
+def repair_strategy(
+    ohlcv_path: str,
+    strategy_path: str,
+    out_dir: str = "repair",
+    commission_bps: float = 5.0,
+    slippage_bps: float = 5.0,
+    n_trials: int | None = None,
+    budget: int = 24,
+) -> dict[str, Any]:
+    """Repair a strategy's defects without overfitting it, or say why it cannot be repaired (repair-report/1).
+
+    Look-ahead and repainting are corrected first (causal rewrites, one-bar delay). Then a few declared repairs
+    (smoothing, holding period, no-trade band, volatility targeting, neutralisation, caps, liquidity filter) are chosen
+    on the first 70 % of the history by the number of defects, never by return, each counted as a trial. The rest of
+    the history is a lockbox opened once. Outcomes: REPAIRED (the edge is confirmed on the lockbox), REPAIRED_NO_EDGE
+    (the profit was in the defect), NOT_REPAIRABLE (what the user must do), NOTHING_TO_REPAIR. The original file is never
+    changed; out_dir gets strategy.repaired.py, repair.diff, certificate.json and repair-report.json/html. Do not call it
+    again on the same data to look for a better outcome: report the outcome as it is.
+
+    Args:
+        ohlcv_path: Prices (.csv / .parquet).
+        strategy_path: Strategy file 'path.py[:func]'.
+        out_dir: Folder for the results.
+        commission_bps: Commission per side. slippage_bps: Slippage per side.
+        n_trials: Variants tried before the repair. budget: At most this many candidate repairs.
+    """
+    from monte_neo.repair import repair_strategy as _repair
+    from monte_neo.repair.report import write_html
+    from monte_neo.verify.market import bar_count
+
+    df, model = _model(ohlcv_path, commission_bps, slippage_bps, None, None, None, 0.0, 0.0, 0.0, 0.0, 0.0)
+    rep = _repair(df, strategy_path, out_dir=out_dir, model=model, n_trials=n_trials, budget=budget)
+    write_html(rep, out_dir)
+    return {k: rep.get(k) for k in ("outcome", "headline", "original", "corrections", "chosen", "final", "lockbox", "not_repairable", "dev")} | {
+        "files": [str(p) for p in sorted(Path(out_dir).iterdir())], "n_bars": bar_count(df)}
+
+
 def verdict_schema() -> dict[str, Any]:
     """JSON schema of the strategy-verdict/1 certificate."""
     from monte_neo.verify import VERDICT_JSON_SCHEMA
@@ -564,6 +754,11 @@ TOOLS: tuple[Callable[..., dict[str, Any]], ...] = (
     holdout_query,
     verify_portfolio,
     diagnose_data,
+    validate_alpha,
+    verify_returns,
+    build_dossier,
+    monitor_live,
+    repair_strategy,
     verdict_schema,
     verifier_manifest,
 )
@@ -572,20 +767,25 @@ __all__ = [
     "SERVER_INSTRUCTIONS",
     "recheck_certificate",
     "TOOLS",
+    "build_dossier",
     "check_signature",
     "cost_stress",
     "compare_certificates",
     "diagnose_data",
     "discover_indicator",
     "holdout_query",
+    "monitor_live",
     "register_hypothesis",
     "probe_lookahead",
     "render_report",
+    "repair_strategy",
     "suggest_fix",
+    "validate_alpha",
     "verdict_schema",
     "verifier_manifest",
     "verify_grid",
     "verify_portfolio",
     "verify_quotes",
+    "verify_returns",
     "verify_strategy",
 ]

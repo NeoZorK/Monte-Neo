@@ -11,6 +11,7 @@ import sys
 from collections.abc import Callable
 from typing import Any
 
+from monte_neo import disclaimer
 from monte_neo._version import __version__
 from monte_neo.mcp.tools import SERVER_INSTRUCTIONS, TOOLS
 
@@ -38,15 +39,19 @@ def reporting_errors(fn: Callable[..., dict[str, Any]]) -> Callable[..., dict[st
 
     The SDK answers an exception with "Error executing tool <name>" and drops the reason,
     so an agent cannot tell a wrong path from a broken strategy. ``functools.wraps`` keeps
-    the signature and annotations the SDK builds the tool schema from.
+    the signature and annotations the SDK builds the tool schema from. Every answer carries
+    the "not investment advice" notice (``disclaimer``), so an agent can repeat it to the user.
     """
 
     @functools.wraps(fn)
     def wrapper(*args: Any, **kwargs: Any) -> dict[str, Any]:
         try:
-            return fn(*args, **kwargs)
+            result = fn(*args, **kwargs)
         except Exception as exc:
             return {"error": f"{type(exc).__name__}: {exc}", "tool": fn.__name__}
+        if isinstance(result, dict) and "disclaimer" not in result:
+            result = {**result, "disclaimer": disclaimer.SHORT}
+        return result
 
     return wrapper
 

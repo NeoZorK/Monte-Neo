@@ -3,6 +3,121 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.53.0] — 2026-10-12
+
+**From a rejected backtest to a committee.** `monte-neo repair` fixes a strategy's defects without overfitting it,
+and says so when the profit was the defect. `monte-neo alpha` asks whether a signal is real alpha and tradable, and
+gives an Alpha Readiness Level. `monte-neo dossier` turns a certificate into evidence a model-risk committee can
+file, and `monte-neo monitor` watches the strategy after launch. Machine-learning models are refitted only on the
+past, LLM signals are checked against their training cutoff, events are joined by publication time, and track records
+can be screened from returns alone. Every report says it is not investment advice.
+
+Agents: tested with Claude Code and Qwen Code (local); reports for other agents are welcome in
+[issue #114](https://github.com/NeoZorK/Monte-Neo/issues/114).
+
+### Added
+- **`monte-neo repair`** and MCP tool `repair_strategy` (`repair-report/1`): repairs a strategy's defects without
+  overfitting it. Look-ahead and repainting are corrected first (causal rewrites, a one-bar delay); then a few declared
+  repairs (smoothing, holding period, no-trade band, tranches, neutralisation, caps, liquidity filter, volatility
+  target) are chosen on the first 70 % of the history by the number of defects, never by return, each counted as a
+  trial; the last 30 % is a lockbox opened once. Outcomes `REPAIRED`, `REPAIRED_NO_EDGE` (the profit was in the
+  defect), `NOT_REPAIRABLE` (with what to do) and `NOTHING_TO_REPAIR`. The original file is never changed; the
+  repaired file is self-contained. Zoo A16: no leaking trap of the Trap Suite is ever reported as `REPAIRED` on a
+  random walk. See [guides/repair.md](../guides/repair.md).
+- **`monte-neo alpha`** and MCP tool `validate_alpha` (`alpha-report/1`): does a cross-sectional score predict returns,
+  and can its long-short portfolio be traded? Family A: rank IC with a Newey-West t, IC decay and half-life, quantile
+  monotonicity, long and short legs, breadth against a claimed IR, permuted-score placebos, selection against timing.
+  Family D: square-root market impact and participation at `--aum`, capacity curve, short feasibility and borrow,
+  holding period against signal decay, dependence on the rebalance day. See [guides/alpha.md](../guides/alpha.md).
+- **`--policy`** and **`monte-neo policy init | show`**: an institution's thresholds in a TOML file (minimum trades,
+  cost multiplier, no warnings, minimum Deflated Sharpe and Sharpe, maximum drawdown, required checks, warnings treated
+  as breaches). The `policy` row lists every breach; the policy and its hash go into the certificate and `--recheck`.
+- **`--trials-from`**: the number of variants already tried, read offline from MLflow (file store or SQLite), Optuna,
+  a W&B CSV export, a CSV or a ledger; the largest count deflates the Sharpe.
+- **`--model-cutoff`** (check `model_cutoff`, look-ahead): the edge of a strategy that uses a language or foundation
+  model must survive the date its training data ends.
+- **Team ledger:** `--ledger PATH` on a shared drive locks every write and records who wrote the entry and from which host.
+- **The "not investment advice" notice** is one text (`monte_neo.disclaimer`) in every certificate, at the bottom of
+  every HTML report (12 px, readable, printed), in every MCP answer (`disclaimer`), at the end of CLI output, in the
+  README and in the docs footer. Agent rules ask agents to repeat it.
+- Agent compatibility table in [guides/agents.md](../guides/agents.md): tested with Claude Code and Qwen Code (local);
+  Codex, Gemini CLI, Cursor and other clients are not tested by the maintainer yet
+  ([issue #114](https://github.com/NeoZorK/Monte-Neo/issues/114)). An issue form for agent test reports.
+  Agent rules mention `trials_from`, `model_cutoff`, `policy_path` and `validate_alpha`.
+
+- **`fit` / `predict` protocol** for machine-learning strategies: a strategy file may define `fit(train)` and
+  `predict(model, df)` (with `REFIT_EVERY`, `MIN_TRAIN`, `LABEL_HORIZON`, `EMBARGO`) instead of `signal(df)`. The
+  verifier runs the walk-forward, refitting only on rows that end before the label horizon and the embargo; the probes
+  test `predict`. Check `ml_refit_gap` (look-ahead) compares it with the whole-file fit; `ml_cv_overlap` finds training
+  rows of `cv_splits(df)` that reach into a test fold. See [guides/ml-and-events.md](../guides/ml-and-events.md).
+- **`--events`** (`--events-delay`, MCP `events_path`): news, earnings, alternative data or LLM outputs joined to the
+  bars by publication time as `ev_<column>` columns; checks `events_quality` and `pit_events` (what a join by event
+  time would earn). The events' hash is in the certificate and `--recheck --events` reproduces it.
+- **`verify --returns`** (`--benchmark`, `--n-strategies`, `--demo-returns`, MCP `verify_returns`): due diligence on a
+  track record given only as returns: smoothing, missing small losses, implausible consistency, round numbers, Deflated
+  Sharpe with the manager's number of strategies, drawdown depth, benchmark relation and claims.
+  See [guides/returns-due-diligence.md](../guides/returns-due-diligence.md). `verify --returns-dir DIR` screens every
+  manager in a folder in one table (`--out`, `--html`).
+- **`monte-neo alpha`, families B, C, F and I** on the score's long-short portfolio: attribution to factors built from
+  the universe (or `--factors`), residual alpha against the t ≥ 3 hurdle, hidden short volatility, timing beta,
+  crowding; value to an existing book (`--book`: correlation, marginal Sharpe, residual alpha, drawdown overlap); the
+  Harvey-Liu-Zhu hurdle, minimum backtest length, drawdown plausibility and Sharpe haircut (`--n-trials`); neutrality,
+  concentration, leverage, named crises and tail risk. `--signal-only` keeps families A and D.
+
+- **`monte-neo dossier`** and MCP tool `build_dossier` (`validation-dossier/1`): a certificate turned into one folder
+  for a model-risk committee, a validator or an auditor: a printable HTML page (verdict, purpose and scope, checks,
+  readiness level, a clause map to SR 11-7, PRA SS1/23 or MiFID II RTS 6, assumptions and limitations, reproduction,
+  blank sign-off fields), the certificate, the environment, `REPRODUCE.md` and `limitations.md`. The map shows evidence,
+  never compliance; clauses that need a person are never shown as fully covered.
+  See [guides/dossier-readiness-monitor.md](../guides/dossier-readiness-monitor.md).
+- `monte-neo dossier --lite` writes a one-page plain-language version for a non-quant reader (the full notice in a
+  box at the top); frameworks `crypto` (24/7 data, funding, venue latency, delisted tokens, crash stress; custody and
+  counterparty risk need a person) and `academic` (pre-registration, trials, out-of-sample, the t ≥ 3 hurdle,
+  reproducibility; data and code availability need a person).
+- **Alpha Readiness Level (ARL 1-9)** in every `alpha` report and dossier: the highest level met together with all
+  levels below it; missing evidence is "not assessed", never passed, and the report names the run that would assess it.
+- **`monte-neo monitor`** and MCP tool `monitor_live` (`live-monitor/1`): live or paper returns against the backtest,
+  realised slippage from fills against the modelled one, CUSUM and SPRT alarms against the backtest edge after a
+  haircut, and the live history still needed. Exit code 2 on a warning, for cron and CI.
+- **`monte-neo alpha`, families E and G**: robustness (70 % universe subsets and the top-5 share, groups, start dates,
+  combinatorial purged paths, bootstrapped markets without the score's link, noise in the score, a second data source,
+  bar grid) and data and process (today's index members, classification look-ahead, closes of different exchanges,
+  decay after a discovery date, research hygiene). Options `--membership`, `--groups`, `--exchanges`,
+  `--discovery-date`.
+- `signal_orthogonality` (`alpha --existing-scores`): the partial IC of a new score after the signals a fund already runs.
+  `romano_wolf` (info) in grid searches: which parameter combinations stay significant after the Romano-Wolf stepdown.
+  `ml_seed_stability` (`SEEDS = k` and `fit(train, seed)`) and `ml_feature_drift` (`features(df)`, population stability
+  index) for the `fit` / `predict` protocol.
+- **Zoo A15 (alpha):** 13 traps with honest twins (repackaged momentum, short volatility, three symbols, first day of
+  the month, illiquid shorts, today's members, same-date New York closes, decay after discovery, noise, a book clone,
+  exact score values, an inflated IR claim) and `scripts/alpha_calibration.py`, which measures false alarms and power
+  with Wilson intervals ([guides/alpha-calibration.md](../guides/alpha-calibration.md)). Lite in CI, 20 seeds nightly.
+- Jupyter cell magic `%%verify --ohlcv data.csv` (`%load_ext monte_neo.verify.magic`): the cell is the strategy, the
+  answer is the HTML report. Polars tables are accepted wherever a pandas table is. `--trials-from raytune:DIR` counts
+  Ray Tune trials. Lint rules `full_sample_transform` (a scaler, PCA or feature selector fitted on all rows) and
+  `target_encoding_full` (a target mean over all rows), both warnings. Examples `ml_fit_predict.py`,
+  `llm_news_signal.py` and `allocator_dd.py`.
+- Every HTML page (report, dossier, dossier lite, repair report, batch due diligence) carries a Content-Security-Policy
+  and no scripts; a test checks all renderers.
+- Demos: `docs/assets/demo-repair.gif`, `demo-alpha.gif`, `demo-dossier.gif` and two example institutional reports in the gallery.
+- **Reference alpha 1** (`examples/reference_alpha/`): diversified trend following with volatility targeting, rules
+  fixed in advance, when it works and when it fails, how to retrain without overfitting, and the verdicts measured on
+  synthetic trending, random and choppy markets. See [guides/reference-alpha.md](../guides/reference-alpha.md).
+
+### Changed
+- The README badge says "tested with Claude Code · Qwen Code (local)" instead of naming agents nobody has tested.
+- The certificate's `disclaimer` text is longer (it is not part of the certificate id, so existing certificates recheck).
+- Alpha families B, C, E, F and I judge the score's portfolio before costs (is the signal real?); family D judges costs
+  and size.
+- From the zoo calibration: `residual_alpha` fails a return that is exactly a mix of factors (R² ≥ 0.999) instead of
+  reading a meaningless t-statistic; `rebalance_timing_luck` warns only when the spread between rebalance days exceeds
+  twice the median result and two standard errors (15 % false alarms before, none on the twins now); the top-5 profit
+  share of `universe_subsampling` warns
+  above 70 % (symbol noise alone gives about half on an honest edge).
+- `Panel.periods_per_year` is unit-safe (intraday panels were annualised as daily ones).
+- Known limit narrowed: a model fitted when the module loads is still not caught by the probes, but a model written with
+  the `fit` / `predict` protocol is fitted by the verifier, so its whole-file fit cannot hide.
+
 ## [v0.52.0] — 2026-10-05
 
 ### Added

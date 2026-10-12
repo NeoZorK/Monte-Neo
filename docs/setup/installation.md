@@ -16,7 +16,7 @@ monte-neo --version
 python -c "import monte_neo; print(monte_neo.__version__)"
 ```
 
-Current release: **v0.52.0** on [PyPI](https://pypi.org/project/monte-neo/).
+Current release: **v0.53.0** on [PyPI](https://pypi.org/project/monte-neo/).
 
 Docs site: [neozork.github.io/Monte-Neo](https://neozork.github.io/Monte-Neo/).
 

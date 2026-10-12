@@ -7,6 +7,8 @@ from typing import Any
 
 import numpy as np
 
+from monte_neo.disclaimer import SCOPE, SHORT
+
 VERDICT_SCHEMA_ID = "strategy-verdict/1"
 
 VERDICTS = ("PASS", "PASS_WITH_WARNINGS", "NEEDS_MORE_EVIDENCE", "REJECT")
@@ -15,10 +17,7 @@ CATEGORIES = ("integrity", "lookahead", "economics", "statistics", "claim")
 # A fail in these categories means the backtest itself is not trustworthy.
 HARD_CATEGORIES = ("integrity", "lookahead", "economics")
 
-DISCLAIMER = (
-    "Checks backtest methodology (look-ahead, costs, selection bias), not future profit. "
-    "Not investment advice."
-)
+DISCLAIMER = f"{SCOPE} {SHORT}"
 
 VERDICT_JSON_SCHEMA: dict[str, Any] = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",

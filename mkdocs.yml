@@ -4,7 +4,11 @@ site_url: https://neozork.github.io/Monte-Neo/
 repo_url: https://github.com/NeoZorK/Monte-Neo
 repo_name: NeoZorK/Monte-Neo
 edit_uri: edit/main/docs/
-copyright: Copyright &copy; NeoZorK — MIT License
+copyright: >-
+  Copyright &copy; NeoZorK — MIT License.
+  <br>Not investment advice. Monte-Neo is a research and verification tool: its reports, examples and
+  reference strategies illustrate a method, not a recommendation or a call to trade, and not a promise of profit.
+  Simulated and past results do not predict future returns. Trading can lose money.
 
 theme:
   name: material
@@ -80,6 +84,14 @@ nav:
       - Trap Suite: guides/trap-suite.md
       - Latency audit (quotes): guides/arrival-time.md
       - Frameworks and notebooks: guides/frameworks.md
+      - Repair without overfitting: guides/repair.md
+      - Alpha validation: guides/alpha.md
+      - Policy, trials, model cutoff: guides/policy-trials-cutoff.md
+      - ML models and event data: guides/ml-and-events.md
+      - Track record due diligence: guides/returns-due-diligence.md
+      - Dossier, readiness, live monitor: guides/dossier-readiness-monitor.md
+      - Reference alpha: guides/reference-alpha.md
+      - Alpha calibration: guides/alpha-calibration.md
       - Indicator search: guides/discover.md
       - Ledger and fixes: guides/ledger-and-fixes.md
       - Repainting: guides/repaint.md

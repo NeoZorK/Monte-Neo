@@ -14,13 +14,18 @@ distinct variants on the same data is the ``n_trials`` the Deflated Sharpe needs
 from __future__ import annotations
 
 import ast
+import getpass
 import hashlib
 import json
+import os
+import socket
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import numpy as np
+
+from monte_neo.verify.filelock import file_lock
 
 DEFAULT_PATH = Path(".monte-neo") / "ledger.jsonl"
 GENESIS = "0" * 64
@@ -105,24 +110,52 @@ class Ledger:
             known = known | {variant}
         return max(1, len(known))
 
-    def record(self, *, variant: str | None, data_id: str, sharpe: float, verdict: str, certificate_id: str) -> dict[str, Any]:
-        """Append one entry and return it."""
-        entries = self.entries()
-        prev = entries[-1].get("hash", GENESIS) if entries and "_broken" not in entries[-1] else GENESIS
-        body = {
-            "seq": len(entries) + 1,
-            "prev": prev,
-            "at": datetime.now(UTC).isoformat(timespec="microseconds"),
-            "variant": variant,
-            "data": data_id,
-            "sharpe": round(float(sharpe), 6) if np.isfinite(sharpe) else None,
-            "verdict": verdict,
-            "certificate": certificate_id,
-        }
-        entry = {**body, "hash": self._hash(prev, body)}
+    def record(
+        self, *, variant: str | None, data_id: str, sharpe: float, verdict: str, certificate_id: str,
+        who: str | None = None, lock_timeout: float = 30.0,
+    ) -> dict[str, Any]:
+        """Append one entry under an exclusive file lock (safe for several writers) and return it.
+
+        Args:
+            variant: Variant id, or None.
+            data_id: Id of the data the variant was verified on.
+            sharpe: Verified Sharpe ratio.
+            verdict: Verdict string.
+            certificate_id: Id of the certificate.
+            who: Author; defaults to the OS user name (best effort).
+            lock_timeout: Seconds to wait for the lock before raising ``LockTimeout``.
+        """
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        with self.path.open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(entry, sort_keys=True) + "\n")
+        if who is None:
+            try:
+                who = getpass.getuser()
+            except Exception:  # noqa: BLE001 - best effort only
+                who = None
+        try:
+            host: str | None = socket.gethostname()
+        except OSError:
+            host = None
+        lock = self.path.with_name(self.path.name + ".lock")
+        with file_lock(lock, lock_timeout):
+            entries = self.entries()
+            prev = entries[-1].get("hash", GENESIS) if entries and "_broken" not in entries[-1] else GENESIS
+            body = {
+                "seq": len(entries) + 1,
+                "prev": prev,
+                "at": datetime.now(UTC).isoformat(timespec="microseconds"),
+                "variant": variant,
+                "data": data_id,
+                "sharpe": round(float(sharpe), 6) if np.isfinite(sharpe) else None,
+                "verdict": verdict,
+                "certificate": certificate_id,
+                "who": who,
+                "host": host,
+            }
+            entry = {**body, "hash": self._hash(prev, body)}
+            with self.path.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(entry, sort_keys=True) + "\n")
+                handle.flush()
+                os.fsync(handle.fileno())
         return entry
 
 

@@ -284,12 +284,14 @@ def test_gallery_reports_are_static_and_linked() -> None:
     root = Path(__file__).parents[2]
     pages = sorted((root / "docs" / "assets" / "reports").glob("*.html"))
     gallery = (root / "docs" / "gallery.md").read_text(encoding="utf-8")
-    assert {p.stem for p in pages} == {"leak", "no-edge", "honest", "grid", "universe", "bad-ticks"}
+    verify_pages = {"leak", "no-edge", "honest", "grid", "universe", "bad-ticks"}
+    assert {p.stem for p in pages} == verify_pages | {"dossier-sr11-7", "repair-flicker"}
     for path in pages:
         page = path.read_text(encoding="utf-8")
         assert "<script" not in page.lower() and "Content-Security-Policy" in page
         assert f"assets/reports/{path.name}" in gallery
-        assert ("Evidence" in page) == (path.stem in {"leak", "bad-ticks"})  # only leaks and bad data have evidence
+        if path.stem in verify_pages:
+            assert ("Evidence" in page) == (path.stem in {"leak", "bad-ticks"})  # only leaks and bad data have evidence
 
 
 def test_pbo_chart_and_grid_section(grid_report: dict) -> None:

@@ -48,6 +48,17 @@ certificate that can be signed.
 | **Statistics** | Probabilistic and Deflated Sharpe priced by `n_trials`, Monte Carlo timing test, sample size, holdout; walk-forward and parameter plateau for grids |
 | **Integrity** | Broken OHLCV (NaN, bad prices, bars out of time order), non-deterministic signals |
 
+
+!!! info "New in v0.53: from a rejected backtest to a committee"
+    - [Repair without overfitting](guides/repair.md): defects fixed, choices made by the number of defects on 70 % of
+      the history, a lockbox opened once, and an honest `REPAIRED_NO_EDGE` when the profit was the defect.
+    - [Alpha validation](guides/alpha.md) with an [Alpha Readiness Level](guides/dossier-readiness-monitor.md):
+      signal power, factor attribution, capacity, robustness, value to your book.
+    - [Validation dossier and live monitor](guides/dossier-readiness-monitor.md): evidence mapped to SR 11-7,
+      PRA SS1/23 and MiFID II RTS 6; alarms when the edge dies after launch.
+    - [ML models and event data](guides/ml-and-events.md), [track records from returns](guides/returns-due-diligence.md),
+      [policy, tracker trials and LLM cutoffs](guides/policy-trials-cutoff.md), [a reference alpha](guides/reference-alpha.md).
+
 ## New: catch look-ahead that hides in milliseconds
 
 ![monte-neo verify --quotes](assets/demo-arrival.gif){ width="820" }

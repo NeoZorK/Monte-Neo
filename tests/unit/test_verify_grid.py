@@ -243,3 +243,34 @@ def signal(df, fast=-1):
     assert by_rule["full_sample_rank"] == [16]
     assert by_rule["reversed_cumulative"] == [17]
     assert by_rule["interpolate"] == [18]
+
+
+def test_romano_wolf_row_counts_significant_combinations() -> None:
+    from monte_neo.verify.grid import romano_wolf_row
+
+    rng = np.random.default_rng(1)
+    rets = rng.normal(0.0, 0.01, size=(6, 800))
+    rets[2] += 0.004  # one truly strong combination out of six
+    row = romano_wolf_row(rets, 2)
+    assert row["id"] == "romano_wolf" and row["status"] == "info"
+    assert row["details"]["significant"] == [2] and row["details"]["best_is_significant"]
+    assert not romano_wolf_row(rets, 0)["details"]["best_is_significant"]
+    assert romano_wolf_row(rets[:1], 0)["status"] == "skip"
+
+
+def test_grid_report_has_romano_wolf_info_and_still_rechecks(df, tmp_path) -> None:
+    import json
+
+    from monte_neo.verify import recheck_certificate
+
+    strat = tmp_path / "sma.py"
+    strat.write_text(
+        "import numpy as np\n\ndef signal(d, fast=10, slow=40):\n"
+        "    return (d['close'].rolling(fast).mean() > d['close'].rolling(slow).mean()).astype(int).to_numpy()\n",
+        encoding="utf-8",
+    )
+    grid = {"fast": [3, 5, 8], "slow": [30, 60]}
+    report = json.loads(json.dumps(verify_grid(df, grid, strategy=str(strat))))
+    rows = {c["id"]: c for c in report["checks"]}
+    assert rows["romano_wolf"]["status"] == "info" and rows["romano_wolf"]["details"]["n_combos"] == 6
+    assert recheck_certificate(report, df, strategy=str(strat))["reproduced"]

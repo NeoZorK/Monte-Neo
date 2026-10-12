@@ -64,6 +64,18 @@ transaction with the session close time, so the adapter uses its date; the Nauti
 it is the last value of a notebook cell. Printed on its own it shows one summary line (`<Certificate REJECT aaa517d7cfc1ec16: 24 checks, 3 failed>`); the data is unchanged (`report["checks"]`, `dict(report)`, `json.dumps(report)`). The report sits in a sandboxed frame, so notebook and report styles do
 not mix. A certificate loaded from a JSON file is shown with `monte_neo.verify.show(cert)`.
 
+The cell magic verifies the strategy written in the cell itself (IPython is needed only in the notebook):
+
+```python
+%load_ext monte_neo.verify.magic
+```
+
+```python
+%%verify --ohlcv prices.csv --n-trials 12 --commission-bps 5 --slippage-bps 5
+def signal(df):
+    return (df["close"].rolling(20).mean() > df["close"].rolling(50).mean()).astype(int)
+```
+
 ```python
 report = from_vectorbt(pf["BTC"]).verify()
 report            # the report appears in the cell
@@ -87,7 +99,7 @@ fits, shuffled splits, ...):
 ```yaml
 repos:
   - repo: https://github.com/NeoZorK/Monte-Neo
-    rev: v0.52.0
+    rev: v0.53.0
     hooks:
       - id: monte-neo-lint
 ```

@@ -1,24 +1,24 @@
 # Honesty scorecard
 
-Generated from the hypothesis zoo (level `full`). A *leak* counts as caught when the truncation or perturbation probe fails it;
+Generated from the hypothesis zoo (level `lite`). A *leak* counts as caught when the truncation or perturbation probe fails it;
 an *honest* strategy counts as correct when no accusing check fails it. Intervals are Wilson 95 %.
 
 | Class | Correct | Cases | Rate | 95 % interval |
 |---|---|---|---|---|
-| Honest: arrays | 48 | 48 | 100.0% | 92.6% – 100.0% |
-| Honest: indicators | 30 | 30 | 100.0% | 88.6% – 100.0% |
-| Honest: lookalike | 36 | 36 | 100.0% | 90.4% – 100.0% |
-| Honest: time | 54 | 54 | 100.0% | 93.4% – 100.0% |
-| Honest: wholesample | 42 | 42 | 100.0% | 91.6% – 100.0% |
-| Honest: windows | 210 | 210 | 100.0% | 98.2% – 100.0% |
-| Leak: arrays | 120 | 120 | 100.0% | 96.9% – 100.0% |
-| Leak: fits | 36 | 36 | 100.0% | 90.4% – 100.0% |
-| Leak: indicators | 36 | 36 | 100.0% | 90.4% – 100.0% |
-| Leak: labels | 36 | 36 | 100.0% | 90.4% – 100.0% |
-| Leak: pit | 12 | 12 | 100.0% | 75.7% – 100.0% |
-| Leak: time | 84 | 84 | 100.0% | 95.6% – 100.0% |
-| Leak: wholesample | 138 | 138 | 100.0% | 97.3% – 100.0% |
-| Leak: windows | 144 | 144 | 100.0% | 97.4% – 100.0% |
+| Honest: arrays | 8 | 8 | 100.0% | 67.6% – 100.0% |
+| Honest: indicators | 5 | 5 | 100.0% | 56.6% – 100.0% |
+| Honest: lookalike | 6 | 6 | 100.0% | 61.0% – 100.0% |
+| Honest: time | 9 | 9 | 100.0% | 70.1% – 100.0% |
+| Honest: wholesample | 7 | 7 | 100.0% | 64.6% – 100.0% |
+| Honest: windows | 35 | 35 | 100.0% | 90.1% – 100.0% |
+| Leak: arrays | 20 | 20 | 100.0% | 83.9% – 100.0% |
+| Leak: fits | 6 | 6 | 100.0% | 61.0% – 100.0% |
+| Leak: indicators | 6 | 6 | 100.0% | 61.0% – 100.0% |
+| Leak: labels | 6 | 6 | 100.0% | 61.0% – 100.0% |
+| Leak: pit | 2 | 2 | 100.0% | 34.2% – 100.0% |
+| Leak: time | 14 | 14 | 100.0% | 78.5% – 100.0% |
+| Leak: wholesample | 23 | 23 | 100.0% | 85.7% – 100.0% |
+| Leak: windows | 24 | 24 | 100.0% | 86.2% – 100.0% |
 
 ## The other classes
 
@@ -29,6 +29,8 @@ an *honest* strategy counts as correct when no accusing check fails it. Interval
 | A12 quotes | 10 | 10 |
 | A13 engine fuzzing | 361 | 361 |
 | A14 repainting (history and forming bar) | 27 | 27 |
+| A15 alpha (traps and honest twins) | 29 | 29 |
+| A16 repair never reports REPAIRED on a leaking trap | 6 | 6 |
 | A4 data defects (21 x 3 frequencies) | 75 | 75 |
 | A5 execution and economics | 21 | 21 |
 | A6 statistics and method | 18 | 18 |
