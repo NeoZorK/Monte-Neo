@@ -1,0 +1,40 @@
+title: "[Feedback] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for trying Monte-Neo. Honest feedback, good or bad, is the most useful thing you can send.
+  - type: dropdown
+    id: role
+    attributes:
+      label: What do you use it for?
+      options:
+        - Checking backtests written by an AI agent
+        - Checking my own strategies
+        - Research / evaluation of the method
+        - CI gate on pull requests
+        - Just looking around
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: How did the verdict compare with what you expected?
+      options:
+        - It caught a real problem
+        - It agreed with me
+        - It disagreed and I think it was wrong
+        - I could not get it to run
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What happened?
+      description: What worked, what was confusing, what was missing. Redact anything private.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version (`monte-neo --version`)

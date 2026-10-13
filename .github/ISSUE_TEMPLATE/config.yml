@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Questions, ideas and feedback
+    url: https://github.com/NeoZorK/Monte-Neo/discussions
+    about: Ask a question, share what the verifier caught, or tell us what is missing
   - name: Docs site
     url: https://neozork.github.io/Monte-Neo/
     about: Install, quickstart, export / policy / holdout API
