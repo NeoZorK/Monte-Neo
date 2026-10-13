@@ -12,8 +12,8 @@ copyright: >-
 
 theme:
   name: material
-  logo: assets/logo-mark.png
-  favicon: assets/logo-mark.png
+  logo: assets/logo-icon.svg
+  favicon: assets/logo-icon.svg
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default

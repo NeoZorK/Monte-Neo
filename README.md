@@ -1,5 +1,9 @@
 <!-- mcp-name: io.github.NeoZorK/monte-neo -->
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/NeoZorK/Monte-Neo/main/docs/assets/logo-icon.svg" alt="Monte-Neo logo" width="96" height="96"/>
+</p>
+
 <h1 align="center">
   <img src="https://raw.githubusercontent.com/NeoZorK/Monte-Neo/main/docs/assets/social-preview.png" alt="Monte-Neo: the independent verifier for trading strategies written by AI agents and humans" width="860"/>
 </h1>
@@ -29,6 +33,12 @@
   <a href="https://neozork.github.io/Monte-Neo/api/verify/">Verifier API</a> ·
   <a href="https://neozork.github.io/Monte-Neo/guides/trap-suite/">Trap Suite</a> ·
   <a href="https://github.com/NeoZorK/Monte-Neo/blob/main/docs/project/CHANGELOG.md">Changelog</a>
+</p>
+
+<p align="center">
+  <strong>Did it catch a leak in your backtest?</strong>
+  <a href="https://github.com/NeoZorK/Monte-Neo">Star the repository</a> so other quants and agent builders can find it,
+  or <a href="https://github.com/NeoZorK/Monte-Neo/issues/new/choose">tell us what it missed</a>.
 </p>
 
 ---
@@ -480,6 +490,16 @@ Docs: [quick start](https://neozork.github.io/Monte-Neo/guides/quick-start/) ·
 [backtest engine](https://github.com/NeoZorK/Monte-Neo/blob/main/docs/project/backtest_engine.md)
 
 </details>
+
+## Help the project
+
+Monte-Neo is free and MIT-licensed, and it is built in the open. If it saved you from a bad backtest, three things help most:
+
+- **Star the repository** on [GitHub](https://github.com/NeoZorK/Monte-Neo). Stars are how quants and agent builders find a verifier.
+- **Tell us about a case it caught or missed**: share it in [Discussions](https://github.com/NeoZorK/Monte-Neo/discussions),
+  or [open an issue](https://github.com/NeoZorK/Monte-Neo/issues/new/choose) with a minimal strategy file.
+  Missed leaks become new Trap Suite cases.
+- **Add the badge** to your strategy repository (see the certificate badge section above), so readers know the result was verified.
 
 ## Project status
 

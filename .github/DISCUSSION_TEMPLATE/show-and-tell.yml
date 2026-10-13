@@ -1,0 +1,21 @@
+title: ""
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Show what Monte-Neo caught (or missed) in your strategy. A minimal file that reproduces it is worth more than a screenshot.
+  - type: textarea
+    id: story
+    attributes:
+      label: What did you verify and what came out?
+      description: The verdict, the check that fired, what you changed afterwards.
+    validations:
+      required: true
+  - type: checkboxes
+    id: share
+    attributes:
+      label: Sharing
+      options:
+        - label: The example contains no private data or proprietary strategy code.
+          required: true
+        - label: You may turn it into a Trap Suite case with credit to me.
