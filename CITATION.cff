@@ -13,8 +13,8 @@ authors:
     given-names: "Rostyslav"
     orcid: "https://orcid.org/0009-0000-3773-5789"
     website: "https://github.com/NeoZorK"
-version: "0.53.1"
-date-released: "2026-10-13"
+version: "0.53.2"
+date-released: "2026-10-19"
 license: MIT
 repository-code: "https://github.com/NeoZorK/Monte-Neo"
 url: "https://neozork.github.io/Monte-Neo/"

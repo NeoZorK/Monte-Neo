@@ -414,7 +414,7 @@ MCP tools (22): `verify_strategy`, `verify_grid`, `verify_quotes`, `verify_portf
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.53.1
+- uses: NeoZorK/Monte-Neo@v0.53.2
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py

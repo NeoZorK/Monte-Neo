@@ -3,6 +3,14 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.53.2] — 2026-10-19
+
+Metadata-only patch. No change to any verdict, threshold or behaviour.
+
+### Changed
+- `CITATION.cff` names the author (Rostyslav Shcherbyna, with ORCID) instead of the project handle, so that archived
+  copies and citations carry the author's name.
+
 ## [v0.53.1] — 2026-10-13
 
 Wording and demo fixes found after the v0.53.0 release. No change to any verdict or threshold.

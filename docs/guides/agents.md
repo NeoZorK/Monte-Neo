@@ -137,7 +137,7 @@ a verdict comment on pull requests, the certificate uploaded as an artifact). Op
 verdict is still in the job summary. By hand:
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.53.1
+- uses: NeoZorK/Monte-Neo@v0.53.2
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py
