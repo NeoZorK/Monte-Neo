@@ -9,7 +9,9 @@ abstract: >-
   of variants tried. It returns a reproducible, optionally signed strategy-verdict/1
   certificate, and ships an MCP server for coding agents.
 authors:
-  - name: "NeoZorK"
+  - family-names: "Shcherbyna"
+    given-names: "Rostyslav"
+    orcid: "https://orcid.org/0009-0000-3773-5789"
     website: "https://github.com/NeoZorK"
 version: "0.53.1"
 date-released: "2026-10-13"
