@@ -89,6 +89,7 @@ nav:
       - Policy, trials, model cutoff: guides/policy-trials-cutoff.md
       - ML models and event data: guides/ml-and-events.md
       - Track record due diligence: guides/returns-due-diligence.md
+      - Phantom profit in pairs strategies: guides/phantom-profit.md
       - Dossier, readiness, live monitor: guides/dossier-readiness-monitor.md
       - Reference alpha: guides/reference-alpha.md
       - Alpha calibration: guides/alpha-calibration.md

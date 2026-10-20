@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.53.2)
+# Monte-Neo Roadmap (v0.54.0)
 
 Product direction: verifier for agent-built strategies.
 
@@ -135,6 +135,11 @@ Product direction: verifier for agent-built strategies.
 
 ## v0.45.0 — per-symbol costs
 - [x] `--costs-file` / `symbol_costs` / `costs-file`: commission and slippage by symbol, resolved into the certificate
+
+## v0.54.0 — phantom profit in pairs strategies
+- [x] `verify --legs` / MCP `verify_legs`: P&L re-derived from leg positions, `accounting_mismatch`, corrected returns
+- [x] `verify --null-test`: strategy on independent random walks, `edge_on_noise`; `--demo-phantom`
+- [x] `verify --returns` summary no longer ends in `KeyError`
 
 ## v0.53.0 — institutional stage (in progress)
 - [x] M1: "not investment advice" notice everywhere, policy as code, `--trials-from`, team ledger, `--model-cutoff`,

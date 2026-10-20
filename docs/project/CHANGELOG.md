@@ -3,6 +3,30 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [v0.54.0] — 2026-10-20
+
+Phantom profit in pairs and spread strategies: the verifier can now find a profit that the legs never earned, and fix it.
+
+### Added
+- **`verify --legs FILE`** (MCP `verify_legs`): re-derives a spread, pairs or stat-arb strategy's P&L from the quantity
+  held in each leg (`date`, `px_<leg>`, `qty_<leg>`, `reported_return`) and compares it with the reported return. The new
+  integrity check `accounting_mismatch` fails (verdict `REJECT`) when more than 5 % of the P&L is not what the legs earned
+  (`--legs-tol`); `derived_significance` warns when the legs earn too little to tell from luck. `--legs-fixed-out` writes the
+  corrected returns, `--legs-pnl simple` reads quantities as fractions of equity, and an optional `cost` column is added
+  back. This is the check for "phantom mean reversion": a rolling hedge ratio booked as position times the change of the
+  spread, whose profit comes from re-fitting the hedge.
+- **`verify --null-test PATH.py[:FUNC]`**: runs a pairs strategy unchanged on independent random walks of your length and
+  volatility (`--null-like`, `--null-paths`, `--null-bars`, `--null-vol`, `--null-legs`, `--null-seed`). The economics check
+  `edge_on_noise` fails when more than 75 % of the paths are profitable and the median t-statistic exceeds 1.
+- **`verify --demo-phantom`**: the same z-score pairs rule booked wrongly and correctly, with both checks, no files needed.
+- `monte_neo.verify.phantom`: the small reference model (rolling OLS, z-score rule, booked and tradable P&L, phantom term).
+- `paper/phantom-mean-reversion/`: sources and reproduction code of the preprint "Phantom Mean Reversion" (the simulation, EWMA and Kalman hedges, a cointegrated pair).
+- `examples/phantom_pairs/` and `docs/guides/phantom-profit.md`; integration rules for agents mention `verify_legs`.
+
+### Fixed
+- `verify --returns` (and every certificate that is not a single-strategy backtest) no longer ends in
+  `KeyError: 'total_return'` after printing the verdict: the summary line prints the metrics the certificate has.
+
 ## [v0.53.2] — 2026-10-19
 
 Metadata-only patch. No change to any verdict, threshold or behaviour.

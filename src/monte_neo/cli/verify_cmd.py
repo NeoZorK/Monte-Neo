@@ -69,6 +69,24 @@ def build_parser() -> argparse.ArgumentParser:
         help="Due diligence on a return series only (date, return): smoothing, missing small losses, implausible consistency, significance",
     )
     p.add_argument("--returns-dir", metavar="DIR", help="Due diligence on every return file (csv/parquet) in a folder: one table for an allocator")
+    p.add_argument(
+        "--legs", metavar="FILE",
+        help="Re-derive a spread or pairs strategy's P&L from its leg positions (date, px_<leg>, qty_<leg>, reported_return) and compare it with the reported return",
+    )
+    p.add_argument("--legs-tol", type=float, default=0.05, metavar="SHARE", help="For --legs: largest unexplained share of the P&L (default 0.05)")
+    p.add_argument("--legs-pnl", choices=["log", "simple"], default="log", help="For --legs: quantities are log-notional (P&L = qty * change of log price, default) or fractions of equity (simple returns)")
+    p.add_argument("--legs-fixed-out", metavar="CSV", help="For --legs: write the returns the legs really earn (date,return) for verify --returns")
+    p.add_argument(
+        "--null-test", metavar="PATH.py[:FUNC]",
+        help="Run a pairs strategy (func(prices DataFrame leg1, leg2...) -> per-bar returns, default func pnl) on independent random walks: it must not earn there",
+    )
+    p.add_argument("--null-paths", type=int, default=100, help="For --null-test: random-walk sets (default 100)")
+    p.add_argument("--null-bars", type=int, default=3000, help="For --null-test: bars per walk (default 3000)")
+    p.add_argument("--null-vol", type=float, default=0.01, help="For --null-test: per-bar standard deviation of the log price (default 0.01)")
+    p.add_argument("--null-legs", type=int, default=2, help="For --null-test: number of assets (default 2)")
+    p.add_argument("--null-seed", type=int, default=7, help="For --null-test: seed (default 7)")
+    p.add_argument("--null-like", metavar="LEGS_CSV", help="For --null-test: take the length and volatility from this legs file")
+    p.add_argument("--demo-phantom", action="store_true", help="Try the phantom-profit check with no files: one pairs rule booked wrongly and correctly")
     p.add_argument("--benchmark", metavar="FILE", help="Benchmark return series for --returns (date, return)")
     p.add_argument("--n-strategies", type=int, default=1, help="For --returns: how many funds or strategies the manager runs (default 1)")
     p.add_argument("--demo-returns", action="store_true", help="Try --returns without files: an honest, a smoothed and a too-good track record")
@@ -210,12 +228,14 @@ def _render_text(report: dict[str, Any], console: Console) -> None:
             f"exchange clock {m['return_exchange_clock']:+.2%} · arrival clock {m['return_arrival_clock']:+.2%}"
             f" · latency p50 {m['latency_p50_ms']:.0f} ms, p95 {m['latency_p95_ms']:.0f} ms · bars {m['bar_ms']:g} ms"
         )
-    elif m:
+    elif "total_return" in m and "n_closed_trades" in m:
         console.print(
             f"return {m['total_return']:+.2%} · maxDD {m['max_drawdown']:.2%} · trades {m['n_closed_trades']}"
             f" · Sharpe(ann) {m['sharpe_annualized']:.2f} · DSR {m['deflated_sharpe']:.3f}"
             f" · break-even {m['breakeven_cost_bps']:.1f} bps"
         )
+    elif m:  # a certificate of another kind (returns, legs, null test): print the numbers it has
+        console.print(" · ".join(f"{k} {v:.4g}" if isinstance(v, float) else f"{k} {v}" for k, v in m.items() if isinstance(v, int | float)))
     for note in report.get("assumptions") or []:  # a quote certificate: what the run does and does not model
         console.print(f"[dim]assumes: {note}[/]")
     by_period = (report.get("breakdown") or {}).get("periods") or []
@@ -352,6 +372,18 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
         from monte_neo.cli.returns_cmd import run_returns_demo
 
         return run_returns_demo(console)
+    if args.demo_phantom:
+        from monte_neo.cli.legs_cmd import run_phantom_demo
+
+        return run_phantom_demo(console)
+    if args.legs:
+        from monte_neo.cli.legs_cmd import run_legs
+
+        return run_legs(args, console)
+    if args.null_test:
+        from monte_neo.cli.legs_cmd import run_null_test
+
+        return run_null_test(args, console)
     if args.returns_dir:
         from monte_neo.cli.returns_cmd import run_returns_batch
 

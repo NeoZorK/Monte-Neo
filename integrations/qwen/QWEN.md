@@ -32,6 +32,9 @@ Before reporting any trading strategy, signal or backtest result (returns, Sharp
    the verifier refits only on the past and reports `ml_refit_gap`. Strategies that use news or other events take them
    through `events_path` (joined by publication time), never joined by event time in your own code.
 9. To judge a manager's track record given only as returns, call `verify_returns`.
+   For a pairs, spread or stat-arb strategy, export the quantity held in each leg and call `verify_legs`: a rolling hedge
+   ratio booked as position * change of the spread earns a "phantom" profit that no trader could. Fix a REJECT by booking
+   position.shift(1) * (d_y - beta.shift(1) * d_x) and verify again.
    For a committee or an auditor, call `build_dossier` on the certificate. After launch, call `monitor_live`.
    To fix a rejected strategy, call `repair_strategy` once and report its outcome as it is: REPAIRED_NO_EDGE means the
    profit was in the defect. Never call it repeatedly on the same data to get a better outcome.

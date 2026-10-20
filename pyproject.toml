@@ -216,6 +216,7 @@ disable_error_code = ["no-any-return", "arg-type", "var-annotated", "operator"]
 [tool.ruff]
 target-version = "py311"
 line-length = 120
+extend-exclude = ["paper"]  # standalone reproduction scripts of the preprint, not part of the package
 lint.select = ["E", "F", "I", "N", "W", "UP"]
 lint.ignore = ["E501", "E701", "F841", "E741", "W293"]
 
