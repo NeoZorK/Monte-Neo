@@ -1,4 +1,4 @@
-# Monte-Neo v0.53.2
+# Monte-Neo v0.54.0
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -85,6 +85,12 @@ A simplified guide to the Monte-Neo file structure.
 - docs/guides/alpha.md - monte-neo alpha: signal power (IC, decay, quantiles, placebos) and implementability (impact, capacity, shorts, rebalance day)
 - docs/guides/policy-trials-cutoff.md - verify --policy (TOML thresholds), --trials-from (MLflow, Optuna, W&B), team ledger, --model-cutoff
 - docs/guides/ml-and-events.md - fit/predict protocol (walk-forward run by the verifier, ml_refit_gap, ml_cv_overlap) and --events joined by publication time
+- docs/guides/phantom-profit.md - verify --legs, --null-test, --demo-phantom: phantom mean reversion in pairs and spread strategies
+- examples/phantom_pairs/ - pairs_buggy.py, pairs_fixed.py, make_legs.py: the wrong and the right booking of a rolling hedge
+- src/monte_neo/verify/legs.py, nulltest.py, phantom.py - legs accounting check, random-walk null test, reference pairs model
+- src/monte_neo/cli/legs_cmd.py - CLI for --legs, --null-test, --demo-phantom
+- tests/unit/test_phantom_legs.py - phantom-profit tests
+- paper/phantom-mean-reversion/ - preprint "Phantom Mean Reversion": main.tex, figures, code (phantom_mr_sim.py, other_hedges.py, make_figures.py), results, build_arxiv.sh
 - docs/guides/returns-due-diligence.md - verify --returns: smoothing, zero kink, implausible consistency, significance, benchmark
 - docs/guides/dossier-readiness-monitor.md - monte-neo dossier (frameworks SR 11-7, SS1/23, RTS 6), Alpha Readiness Level 1-9, monte-neo monitor
 - docs/guides/reference-alpha.md - Reference alpha 1 (trend following): rules, expectations, when it works and fails, measured verdicts

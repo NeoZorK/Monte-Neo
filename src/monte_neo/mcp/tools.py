@@ -603,6 +603,26 @@ def verify_returns(
     return _verify_returns(returns_path, benchmark=benchmark_path, n_strategies=n_strategies, claim=claim)
 
 
+def verify_legs(legs_path: str, tolerance: float = 0.05, pnl: str = "log", periods_per_year: float | None = None) -> dict[str, Any]:
+    """Re-derive a spread / pairs / stat-arb strategy's P&L from its leg positions and compare it with the reported return.
+
+    Catches "phantom mean reversion": a rolling hedge ratio booked as position * change of the spread earns a profit that
+    no trader could (it even earns on independent random walks). The check fails (verdict REJECT, check
+    ``accounting_mismatch``) when more than ``tolerance`` of the reported P&L is not what the legs earned. The fix is in
+    ``next_actions``: book position.shift(1) * (d_y - beta.shift(1) * d_x).
+
+    Args:
+        legs_path: CSV/Parquet with date, px_<leg> and qty_<leg> for every leg, and reported_return. The quantity is held
+            over the bar that ends at date (decided at the previous bar); optional ``cost`` column.
+        tolerance: Largest unexplained share of the P&L (default 0.05).
+        pnl: "log" (P&L = quantity * change of the log price) or "simple" (quantity = fraction of equity).
+        periods_per_year: Bars per year; inferred from the dates when omitted.
+    """
+    from monte_neo.verify.legs import verify_legs as _verify_legs
+
+    return _verify_legs(legs_path, tolerance=tolerance, pnl=pnl, periods_per_year=periods_per_year)
+
+
 def build_dossier(
     certificate_path: str,
     out_dir: str,
@@ -756,6 +776,7 @@ TOOLS: tuple[Callable[..., dict[str, Any]], ...] = (
     diagnose_data,
     validate_alpha,
     verify_returns,
+    verify_legs,
     build_dossier,
     monitor_live,
     repair_strategy,
@@ -786,6 +807,7 @@ __all__ = [
     "verify_grid",
     "verify_portfolio",
     "verify_quotes",
+    "verify_legs",
     "verify_returns",
     "verify_strategy",
 ]

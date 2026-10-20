@@ -190,6 +190,11 @@ slippage and raises sequential alarms when the edge dies.
   join by event time would have earned.
 - **`verify --returns manager.csv`.** Due diligence from returns alone: smoothing, missing small losses, implausible
   consistency, significance given the manager's number of funds.
+- **`verify --legs legs.csv` and `--null-test pairs.py:pnl`.** Phantom profit in pairs and stat-arb strategies: a rolling
+  hedge ratio booked as position times the change of the spread earns a profit that no trader could, even on independent
+  random walks. `--legs` re-derives the P&L from the quantity held in each leg and rejects a reported return the legs never
+  earned (and writes the corrected series); `--null-test` runs the strategy on random walks, where it must earn nothing.
+  Try `monte-neo verify --demo-phantom`.
 - **Your institution's rules and history.** `--policy policy.toml` applies your thresholds and records them in the
   certificate. `--trials-from mlflow:./mlruns` (Optuna, W&B, Ray Tune too) counts the runs you already logged.
   `--ledger` on a shared drive counts the whole team's attempts.
@@ -200,6 +205,7 @@ slippage and raises sequential alarms when the edge dies.
 
 Guides: [ML and events](https://neozork.github.io/Monte-Neo/guides/ml-and-events/) ·
 [track records](https://neozork.github.io/Monte-Neo/guides/returns-due-diligence/) ·
+[phantom profit in pairs strategies](https://neozork.github.io/Monte-Neo/guides/phantom-profit/) ·
 [policy, trials, model cutoff](https://neozork.github.io/Monte-Neo/guides/policy-trials-cutoff/) ·
 [reference alpha](https://neozork.github.io/Monte-Neo/guides/reference-alpha/).
 
@@ -313,7 +319,7 @@ verifier cannot silently stop catching a leak or start accusing honest code.
 - **Independent.** It checks code it did not write, with probes that do not trust the strategy's own numbers.
 - **Careful with accusations.** 35 honest strategies (loops, windows, resampling, fits inside rolling windows, a real edge with a high hit rate) must never be flagged for look-ahead, on every build.
 - **Repairs without overfitting.** `repair` fixes defects chosen by the number of defects, counts every attempt and lets a lockbox decide, and says so when the profit was the defect.
-- **Built for agents.** An MCP server with 22 tools, a Claude Code plugin with a skill, a slash command and a reminder hook, plus rules for Codex, Gemini CLI, Cursor and Qwen Code. Every failed check returns a `next_action` the agent can act on.
+- **Built for agents.** An MCP server with 23 tools, a Claude Code plugin with a skill, a slash command and a reminder hook, plus rules for Codex, Gemini CLI, Cursor and Qwen Code. Every failed check returns a `next_action` the agent can act on.
 - **Institutional evidence.** Alpha reports with a readiness level, validation dossiers mapped to model-risk frameworks, live monitoring, your own policy recorded in every certificate.
 - **Time-aware.** It checks whether the profit survives the time the quotes really arrived, not only the time the exchange stamped them.
 - **Reproducible.** The same data, code and `n_trials` always give the same `certificate_id`. Anyone can reproduce a certificate with `--recheck`.
@@ -407,14 +413,14 @@ qwen mcp add monte-neo uvx --from "monte-neo[mcp]>=0.53.0" monte-neo-mcp
 A small model often fails the bench tasks; that is a result of the model, not of the verifier.
 Setup, `--base-url` and troubleshooting: [Local agents](https://neozork.github.io/Monte-Neo/guides/local-agents/).
 
-MCP tools (22): `verify_strategy`, `verify_grid`, `verify_quotes`, `verify_portfolio`, `verify_returns`, `validate_alpha`, `repair_strategy`, `build_dossier`, `monitor_live`, `probe_lookahead`,
+MCP tools (23): `verify_strategy`, `verify_grid`, `verify_quotes`, `verify_portfolio`, `verify_returns`, `verify_legs`, `validate_alpha`, `repair_strategy`, `build_dossier`, `monitor_live`, `probe_lookahead`,
 `cost_stress`, `recheck_certificate`, `check_signature`, `render_report`, `suggest_fix`, `discover_indicator`,
 `register_hypothesis`, `compare_certificates`, `holdout_query`, `diagnose_data`, `verdict_schema`, `verifier_manifest`.
 
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.53.2
+- uses: NeoZorK/Monte-Neo@v0.54.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py

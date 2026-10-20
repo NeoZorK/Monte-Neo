@@ -35,7 +35,7 @@ def test_verify_returns_cli_and_recheck(tmp_path: Path) -> None:
 def test_mcp_verify_returns_and_tool_count(tmp_path: Path) -> None:
     report = tools.verify_returns(str(_returns_file(tmp_path, "smoothed")))
     assert {c["id"]: c["status"] for c in report["checks"]}["return_smoothing"] == "warn"
-    assert len(tools.TOOLS) == 22
+    assert len(tools.TOOLS) == 23
 
 
 def test_verify_events_cli(tmp_path: Path) -> None:
