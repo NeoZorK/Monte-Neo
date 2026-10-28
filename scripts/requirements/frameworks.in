@@ -8,6 +8,7 @@ backtesting
 bt
 vectorbt
 nautilus_trader
+fsspec>=2026.6.0
 zipline-reloaded
 pandas<3
 plotly<6  # vectorbt uses figure paths that plotly 6 removed
