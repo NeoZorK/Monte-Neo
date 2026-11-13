@@ -20,6 +20,9 @@ _POSITIONAL = {"iloc", "iat", "values"}
 _PERIOD_METHODS = {"diff", "pct_change"}
 _SAFE_INTERPOLATE = {"pad", "ffill"}
 _FORWARD_ASOF = {"forward", "nearest"}
+_POLARS_CUM = {"cum_max", "cum_min", "cum_sum", "cum_prod"}
+# Methods whose ``axis`` argument can make them cross-sectional (across columns, one row at a time).
+_PERCENTILES = {"percentile", "quantile", "nanpercentile", "nanquantile"}
 _MODULES = {"np", "numpy", "math", "statistics", "pd", "pandas"}
 # Filters that centre the window (or run forwards and backwards) by default.
 _CENTERED_FILTERS = {"filtfilt", "sosfiltfilt", "savgol_filter", "gaussian_filter1d", "uniform_filter1d", "medfilt"}
@@ -33,6 +36,7 @@ _SHUFFLE_SPLITTERS = {"ShuffleSplit", "StratifiedShuffleSplit", "GroupShuffleSpl
 # Whole-series methods reported even when called on a derived series (e.g. close.round(-1).mode()).
 _WHOLE_STATS = {"describe", "agg", "aggregate", "mode", "value_counts"}
 _WHOLE_RANKS = {"nlargest", "nsmallest"}
+_AXIS_RULES = _STAT_METHODS | _NUMPY_STATS | _WHOLE_STATS | _WHOLE_RANKS | _FULL_RANKS | {"rank", "sort"}
 _CHAIN_BREAKERS = _WINDOW_METHODS | {"groupby", "resample"}
 _CONVOLVE = {"convolve", "correlate"}
 # Reading data outside df: the probes rewrite df, so data loaded here keeps its future.
@@ -61,6 +65,19 @@ def _kw(call: ast.Call, name: str) -> ast.AST | None:
         if kw.arg == name:
             return kw.value
     return None
+
+
+def _cross_sectional(node: ast.Call, attr: str) -> bool:
+    """``axis=1`` / ``axis="columns"``: one row at a time across columns, so no later row is read."""
+    receiver = node.func.value if isinstance(node.func, ast.Attribute) else None
+    if isinstance(receiver, ast.Subscript) and not isinstance(receiver.slice, ast.Constant | ast.Slice | ast.List | ast.Tuple):
+        return False  # arr[index_array].mean(axis=1) gathers rows picked from the whole sample
+    axis = _kw(node, "axis")
+    if axis is None:
+        numpy_fn = isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name) and node.func.value.id in ("np", "numpy")
+        pos = 2 if numpy_fn and attr in _PERCENTILES else 1 if numpy_fn or attr in _PERCENTILES else 0
+        axis = node.args[pos] if len(node.args) > pos else None
+    return isinstance(axis, ast.Constant) and (axis.value == "columns" or (axis.value == 1 and not isinstance(axis.value, bool)))
 
 
 def _is_reversed(node: ast.AST) -> bool:
@@ -411,7 +428,9 @@ class _Visitor(ast.NodeVisitor):
             )
         if isinstance(node.func, ast.Attribute):
             attr = node.func.attr
-            if attr == "shift":
+            if attr in _AXIS_RULES and not _on_groupby(node.func.value) and _cross_sectional(node, attr):
+                pass
+            elif attr == "shift":
                 if self._negative_arg(node, 0, "periods"):
                     self._add(node, "negative_shift", "fail", "shift with a negative period reads future bars")
                 elif isinstance(node.func.value, ast.Call):
@@ -424,6 +443,12 @@ class _Visitor(ast.NodeVisitor):
                     self._add(node, "negative_roll", "fail", "roll with a negative shift pulls future values into the past")
             elif attr == "merge_asof" and _is_str(_kw(node, "direction"), _FORWARD_ASOF):
                 self._add(node, "forward_asof", "fail", "merge_asof direction forward/nearest joins future rows")
+            elif attr == "join_asof" and _is_str(_kw(node, "strategy"), _FORWARD_ASOF):
+                self._add(node, "forward_asof", "fail", "join_asof strategy forward/nearest joins future rows")
+            elif attr == "fill_null" and _is_str(_kw(node, "strategy"), {"backward"}):
+                self._add(node, "backward_fill", "fail", "fill_null(strategy='backward') copies future values into the past")
+            elif attr in _POLARS_CUM and _is_true(_kw(node, "reverse")):
+                self._add(node, "reversed_cumulative", "fail", f"{attr}(reverse=True) accumulates future values")
             elif attr == "interpolate" and not _is_str(_kw(node, "method"), _SAFE_INTERPOLATE):
                 self._add(node, "interpolate", "fail", "interpolate uses the next known value (future) unless method='ffill'")
             elif attr in _BFILL_METHODS:

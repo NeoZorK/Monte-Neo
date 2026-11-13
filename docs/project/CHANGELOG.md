@@ -3,6 +3,16 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [Unreleased]
+
+### Fixed
+- **Static lint, Polars forms (#124).** `lookahead_static_lint` now flags `fill_null(strategy="backward")` (`backward_fill`),
+  `join_asof(strategy="forward"|"nearest")` (`forward_asof`) and `cum_max/cum_min/cum_sum/cum_prod(reverse=True)`
+  (`reversed_cumulative`), all at fail level. The clean forms (`strategy="forward"`, `join_asof` backward or default, plain `cum_*`) stay silent.
+- **Static lint, cross-sectional operations (#125).** `full_sample_rank` and `full_sample_stat` no longer warn on `axis=1` or
+  `axis="columns"` (`df.rank(axis=1, pct=True)`, `np.nanmean(x, 1)`): they work one row at a time. `axis=0`, `axis=None`, no axis,
+  and a gather from the whole sample such as `arr[index_array].mean(axis=1)` still warn.
+
 ## [v0.54.0] — 2026-10-20
 
 Phantom profit in pairs and spread strategies: the verifier can now find a profit that the legs never earned, and fix it.
