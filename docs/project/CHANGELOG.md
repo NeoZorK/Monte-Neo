@@ -12,6 +12,7 @@ Version source of truth: `src/monte_neo/_version.py`.
 - **Static lint, cross-sectional operations (#125).** `full_sample_rank` and `full_sample_stat` no longer warn on `axis=1` or
   `axis="columns"` (`df.rank(axis=1, pct=True)`, `np.nanmean(x, 1)`): they work one row at a time. `axis=0`, `axis=None`, no axis,
   and a gather from the whole sample such as `arr[index_array].mean(axis=1)` still warn.
+- **Security.** `soupsieve` 2.10 to 4.0 in `scripts/requirements/frameworks.txt` (hash-locked; polynomial-time DoS advisory).
 
 ## [v0.54.0] — 2026-10-20
 
