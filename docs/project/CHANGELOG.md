@@ -13,6 +13,9 @@ Version source of truth: `src/monte_neo/_version.py`.
   `axis="columns"` (`df.rank(axis=1, pct=True)`, `np.nanmean(x, 1)`): they work one row at a time. `axis=0`, `axis=None`, no axis,
   and a gather from the whole sample such as `arr[index_array].mean(axis=1)` still warn.
 - **Security.** `soupsieve` 2.10 to 4.0 in `scripts/requirements/frameworks.txt` (hash-locked; polynomial-time DoS advisory).
+- **Security.** `opentelemetry-api` 1.45.1 to 1.45.2 (`uv.lock`, `docker/verify/requirements.txt`, `scripts/requirements/runtime.txt`,
+  `scripts/requirements/frameworks.txt`) and `tornado` 6.5.10 to 6.6.1 (`scripts/requirements/frameworks.txt`), hash-locked; floors for
+  `opentelemetry-api`, `soupsieve` and `tornado` added to `scripts/requirements/frameworks.in`. Supersedes #126 and #127.
 
 ## [v0.54.0] — 2026-10-20
 
