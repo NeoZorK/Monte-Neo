@@ -50,6 +50,7 @@ Planned for v0.55.0.
 - **CI.** The `frameworks` job (adapters against real third-party backtesting frameworks) is removed from `.github/workflows/ci.yml`: CI installs no third-party frameworks. The adapter code, `tests/frameworks` and the optional extras stay; run the tests locally when needed.
 
 ### Fixed
+- Windows: `monte-neo` no longer crashes with `UnicodeEncodeError` on a legacy console code page (cp1252); characters the console cannot show are replaced.
 - `suggest-fix` names the real file in the diff header (`<name>.py` -> `<name>.causal.py`) instead of always `strategy.py`.
 - `monte-neo <unknown>` names the unknown command and suggests the closest one (exit 2) instead of an argparse error from the interactive CLI.
 - `research promote --top K` with no candidate above `--min-sharpe` returns an empty, explained result (exit 0) instead of failing with exit 3.

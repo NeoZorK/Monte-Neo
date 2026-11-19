@@ -39,6 +39,9 @@ Run `monte-neo` without a command to open the interactive research CLI
 
 def main() -> int:
     """Run ``monte-neo``."""
+    from monte_neo._console import ensure_safe_stdio
+
+    ensure_safe_stdio()
     command = sys.argv[1] if len(sys.argv) > 1 else ""
     if command in ("--version", "-V"):
         from monte_neo._version import __version__

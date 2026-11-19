@@ -136,7 +136,7 @@ def signal(df, fast=10, slow=40):
     $null = Test-Step 'verify --check-signature' $mn @('verify', '--check-signature', 'signed.json', '--public-key', 'k.pub')
 
     # 6. Console encoding: non-ASCII output must not crash on a legacy code page ---------------
-    $r = Invoke-Step $py @('-c', "from rich.console import Console; Console().print('check \u2713 \u2014 \u2192 \u00e9')")
+    $r = Invoke-Step $py @('-c', "from monte_neo._console import ensure_safe_stdio; ensure_safe_stdio(); from rich.console import Console; Console().print('check \u2713 \u2014 \u2192 \u00e9')")
     Add-Result 'console non-ASCII output' ($r.Code -eq 0) $(if ($r.Code -ne 0) { ($r.Out.Trim() -split "`r?`n" | Select-Object -Last 2) -join ' | ' } else { '' })
 
     # 7. MCP ----------------------------------------------------------------------------------
