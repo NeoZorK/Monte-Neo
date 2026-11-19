@@ -23,11 +23,31 @@ _STATUS_STYLE = {"pass": "green", "warn": "yellow", "fail": "bold red", "skip": 
 _VERDICT_STYLE = {"PASS": "bold green", "PASS_WITH_WARNINGS": "bold yellow", "NEEDS_MORE_EVIDENCE": "bold magenta", "REJECT": "bold red"}
 
 
+_EPILOG = """\
+examples:
+  one strategy file on prices     monte-neo verify --ohlcv data.csv --strategy my_strategy.py --out cert.json
+  positions you already have      monte-neo verify --ohlcv data.csv --signals positions.csv
+  a grid you searched             monte-neo verify --ohlcv data.csv --strategy s.py --grid grid.json
+  strategy type coverage          monte-neo verify --list-profiles ; ... --profile trend_cta
+  net returns only (no code)      monte-neo verify --returns returns.csv        (track record checks)
+  pairs / legs accounting         monte-neo verify --legs legs.csv --pairs-checks
+  delta-neutral carry             monte-neo verify --carry table.csv --strategy rule.py
+  option trades                   monte-neo verify --options trades.csv
+  a score per symbol and date     monte-neo alpha --ohlcv universe.csv --scores scores.csv
+  several strategy files together monte-neo portfolio --ohlcv data.csv a.py b.py
+
+execution: a signal on bar t fills at the open of bar t+1; costs default to 5+5 bps per side.
+Guide: docs/api/verify.md. Not investment advice.
+"""
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Argument parser for ``monte-neo verify``."""
     p = argparse.ArgumentParser(
         prog="monte-neo verify",
         description="Verify a trading strategy backtest: look-ahead, costs, selection bias.",
+        epilog=_EPILOG,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p.add_argument("--ohlcv", help="OHLCV table (.csv / .parquet) with open, high, low, close[, timestamp]")
     src = p.add_mutually_exclusive_group()
@@ -42,6 +62,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--order-latency-ms", type=float, default=0.0, help="Delay from the decision to the fill in ms for --quotes (default 0: only the data latency counts)")
     p.add_argument("--latency-samples", type=int, default=200, help="Latency draws for the --quotes Monte Carlo (default 200)")
     p.add_argument("--n-trials", type=int, default=None, help="How many variants were tried before this one")
+    p.add_argument("--profile", metavar="ID", help="Strategy type (trend_cta, mean_reversion, pairs_stat_arb, carry, cross_sectional, buy_and_hold, allocation_risk_parity, market_neutral, short_volatility, event_driven, options): adds a coverage block to the certificate; it never changes the verdict")
+    p.add_argument("--options", metavar="FILE", help="Verify a table of option trades (date, expiry, right, strike, qty, fill_price; optional bid, ask, underlying_price, iv_used, iv_asof, exit_price, exit_date, ex_div_date, dividend, underlying_at_expiry): fills against the spread, as-of volatility, tail stress, assignment, margin, dividends")
+    p.add_argument("--equity", type=float, metavar="USD", help="For --options: account equity, to size the stress loss and the margin")
+    p.add_argument("--rate", type=float, default=0.0, help="For --options: risk-free rate of the stress model (default 0)")
+    p.add_argument("--dividend-yield", type=float, default=0.0, help="For --options: dividend yield of the stress model (default 0)")
+    p.add_argument("--list-profiles", action="store_true", help="List the strategy-type profiles and exit")
     p.add_argument(
         "--ledger", nargs="?", const="1", default=None, metavar="PATH",
         help="Count the variants tried on this data in an append-only ledger (default .monte-neo/ledger.jsonl); the larger of the count and --n-trials is used",
@@ -73,9 +99,29 @@ def build_parser() -> argparse.ArgumentParser:
         "--legs", metavar="FILE",
         help="Re-derive a spread or pairs strategy's P&L from its leg positions (date, px_<leg>, qty_<leg>, reported_return) and compare it with the reported return",
     )
+    p.add_argument(
+        "--carry", metavar="FILE",
+        help="Delta-neutral carry (spot long, perpetual short) in the full verifier: table of timestamp, spot_close, perp_close, funding_rate (or funding_bps); needs --strategy",
+    )
+    p.add_argument("--carry-costs", default="10,5", metavar="SPOT,PERP", help="For --carry: all-in cost of one spot and one perpetual fill in bps (default 10,5); entry and exit pay both")
+    p.add_argument("--carry-capital-apr", type=float, default=0.0, metavar="RATE", help="For --carry: yearly cost of the capital tied up while the pair is held, for example 0.05")
+    p.add_argument("--carry-leverage", type=float, default=3.0, metavar="X", help="For --carry: leverage of the short perpetual for the margin check (the spot leg is not collateral; default 3)")
+    p.add_argument("--carry-margin-policy", metavar="JSON", help='For --carry: declared collateral policy, for example \'{"trigger": 0.15, "delay_bars": 3, "cost_bps": 10}\': top up to 1/leverage when equity falls below trigger of the notional; the transfer arrives delay_bars later')
+    p.add_argument("--carry-universe-rule", metavar="JSON", help='For --carry with a symbol column: ex-ante composition the verifier recomputes, for example \'{"top_n": 10, "lookback_bars": 90, "rebalance_every": 90, "on": "perp_quote_volume"}\'')
+    p.add_argument("--carry-reference", metavar="COIN", help="For --carry with a symbol column: the coin used as the market for the attribution (default: equal-weight spot)")
+    p.add_argument("--carry-spread-bars", type=int, default=1, metavar="N", help="For --carry: bars an order may be spread over in the capacity estimate (default 1: the fill bar only)")
     p.add_argument("--legs-tol", type=float, default=0.05, metavar="SHARE", help="For --legs: largest unexplained share of the P&L (default 0.05)")
     p.add_argument("--legs-pnl", choices=["log", "simple"], default="log", help="For --legs: quantities are log-notional (P&L = qty * change of log price, default) or fractions of equity (simple returns)")
     p.add_argument("--legs-fixed-out", metavar="CSV", help="For --legs: write the returns the legs really earn (date,return) for verify --returns")
+    p.add_argument("--pairs-checks", action="store_true", help="For --legs: add the econometric checks (cointegration, structural breaks, hedge-ratio stability, pair-selection bias, legging and borrow risk)")
+    p.add_argument("--pairs-tested", type=int, metavar="N", help="For --pairs-checks: how many pairs were screened before this one was chosen (deflates the Sharpe ratio)")
+    p.add_argument("--pair-variants", type=int, default=1, metavar="N", help="For --pairs-checks: parameter variants tried per pair (default 1)")
+    p.add_argument("--legging-delay", type=float, metavar="BARS", help="For --pairs-checks: delay of the second leg in bars (default: scan 0 to 2 bars, headline 1 bar)")
+    p.add_argument("--legging-delay-ms", type=float, metavar="MS", help="For --pairs-checks: delay of the second leg in milliseconds (the bar length is read from the dates)")
+    p.add_argument("--borrow-bps", type=float, default=0.0, metavar="BPS", help="For --pairs-checks: annual borrow fee on the short side in bps")
+    p.add_argument("--borrow-unavailable", type=float, default=0.0, metavar="SHARE", help="For --pairs-checks: share of bars (0-1) where no short can be borrowed")
+    p.add_argument("--break-date", metavar="DATE", help="For --pairs-checks: also run a Chow test of the spread level at this date")
+    p.add_argument("--pairs-window", type=int, metavar="BARS", help="For --pairs-checks: window of the rolling hedge-ratio and cointegration checks (default a quarter of the sample, at least 250)")
     p.add_argument(
         "--null-test", metavar="PATH.py[:FUNC]",
         help="Run a pairs strategy (func(prices DataFrame leg1, leg2...) -> per-bar returns, default func pnl) on independent random walks: it must not earn there",
@@ -211,6 +257,14 @@ def _render_text(report: dict[str, Any], console: Console) -> None:
         table.add_row(c["id"], c["category"], f"[{style}]{c['status']}[/]", c["summary"])
     console.print(table)
     _render_summary(report, console, with_next=False)
+    prof = report.get("profile")
+    if prof:
+        done = len(prof["ran"])
+        console.print(f"[bold]Profile {prof['id']}:[/] {done}/{len(prof['required'])} required checks ran"
+                      + (f"; [dim]not run (no result, not a failure): {', '.join(n['check'] for n in prof['not_run'])}[/]" if prof["not_run"] else "")
+                      + (f"; [red]failed: {', '.join(prof['failed'])}[/]" if prof.get("failed") else ""))
+    if report.get("arl"):
+        console.print(f"[bold]Readiness:[/] {report['arl']['headline']} — {report['arl']['summary']}")
     if report.get("ledger"):
         led = report["ledger"]
         note = "" if led["chain_ok"] else " [red](the ledger was changed)[/]"
@@ -287,7 +341,7 @@ def _run_suggest_fix(name: str, console: Console) -> int:
     from monte_neo.verify.fixes import suggest_fixes
 
     try:
-        result = suggest_fixes(Path(name).read_text(encoding="utf-8"))
+        result = suggest_fixes(Path(name).read_text(encoding="utf-8"), filename=Path(name).name)
     except (OSError, UnicodeDecodeError) as exc:
         console.print(f"[red]{name}: cannot read: {exc}[/]", markup=True, highlight=False)
         return 3
@@ -355,6 +409,12 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
     if args.schema:
         console.print_json(data=VERDICT_JSON_SCHEMA)
         return 0
+    if args.list_profiles:
+        from monte_neo.profiles import load_profiles
+
+        for prof in load_profiles()["profiles"]:
+            console.print(f"{prof['id']:<24} {prof['title']}", markup=False, highlight=False)
+        return 0
     if args.precompile:
         console.print(f"engines compiled and cached in {precompile():.1f} s")
         return 0
@@ -376,6 +436,14 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
         from monte_neo.cli.legs_cmd import run_phantom_demo
 
         return run_phantom_demo(console)
+    if args.carry:
+        from monte_neo.cli.legs_cmd import run_carry
+
+        return run_carry(args, console)
+    if args.options:
+        from monte_neo.cli.options_cmd import run_options
+
+        return run_options(args, console)
     if args.legs:
         from monte_neo.cli.legs_cmd import run_legs
 
@@ -471,6 +539,7 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
             "isolate": args.isolate,
             "claim": args.claim,
             "symbol_costs": args.costs_file,
+            "profile": args.profile,
         }
         if args.grid:
             report = verify_grid(df, _load_grid(args.grid), strategy=args.strategy, folds=args.folds, **common)
@@ -489,11 +558,34 @@ def run(args: argparse.Namespace, console: Console | None = None) -> int:
     except Exception as exc:  # input errors must not look like a verdict
         console.print(f"[red]verify failed: {exc}[/]")
         return 3
+    _profile_hint(df, args, console)
     return _finish(report, args, console)
+
+
+def _profile_hint(df: Any, args: argparse.Namespace, console: Console) -> None:
+    """Without --profile, mention the best-matching profile once; it is a hint, never applied."""
+    if args.profile or args.format == "json":
+        return
+    from monte_neo.profiles import suggest_profiles
+
+    try:
+        hint = suggest_profiles(list(getattr(df, "columns", [])), top=1)
+    except Exception:  # a hint must never fail a run
+        return
+    if hint and hint[0]["score"] >= 7:
+        console.print(f"[dim]Hint: {hint[0]['why']}; this may be a {hint[0]['title']} strategy: add --profile {hint[0]['id']}[/]")
 
 
 def _finish(report: dict[str, Any], args: argparse.Namespace, console: Console) -> int:
     """Sign, write the outputs, print, and return the verdict's exit code."""
+    if getattr(args, "profile", None) and "profile" not in report and report.get("checks"):
+        from monte_neo.profiles import profile_block
+
+        try:  # the other input kinds (carry, legs, quotes, returns) honour --profile too: coverage only
+            report = {**report, "profile": profile_block(args.profile, report["checks"])}
+        except (KeyError, ValueError) as exc:
+            console.print(f"[red]verify failed: {exc}[/]")
+            return 3
     if args.sign:
         from monte_neo.verify.signing import sign_certificate
 

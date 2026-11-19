@@ -46,6 +46,11 @@ class ModelSignal:
         self.fit, self.predict, self.params, self.cv_splits, self.seed = fit, predict, params, cv_splits, seed
         self.seeds: int = 0
         self.features: Any = None
+        self.labels: Any = None
+        self.feature_times: Any = None
+        self.label_spans: Any = None
+        self.predict_proba: Any = None
+        self.n_configs: int = 0
         self._cache: dict[tuple[int, str], Any] = {}
 
     def _model(self, train: pd.DataFrame) -> Any:
@@ -77,7 +82,25 @@ class ModelSignal:
         """The same model with ``fit(train, seed=seed)`` and its own cache (used by ``ml_seed_stability``)."""
         other = ModelSignal(self.fit, self.predict, self.params, self.cv_splits, seed=int(seed))
         other.seeds, other.features = self.seeds, self.features
+        other.labels, other.feature_times, other.label_spans = self.labels, self.feature_times, self.label_spans
+        other.predict_proba, other.n_configs = self.predict_proba, self.n_configs
         return other
+
+    def proba(self, df: pd.DataFrame) -> np.ndarray:
+        """Walk-forward probabilities of ``predict_proba(model, df)``: NaN before the first prediction, else the same schedule as ``__call__``."""
+        p = self.params
+        n = len(df)
+        out = np.full(n, np.nan, dtype=np.float64)
+        gap = p["LABEL_HORIZON"] + p["EMBARGO"]
+        for start in range(p["MIN_TRAIN"], n, p["REFIT_EVERY"]):
+            end = min(start + p["REFIT_EVERY"], n)
+            if start - gap < 2:
+                continue
+            pred = np.asarray(self.predict_proba(self._model(df.iloc[: start - gap]), df.iloc[:end].copy()), dtype=np.float64).reshape(-1)
+            if pred.size != end:
+                raise ValueError(f"predict_proba(model, df) must return one value per row of df: got {pred.size} for {end} rows")
+            out[start:end] = pred[start:end]
+        return out
 
     def in_sample(self, df: pd.DataFrame) -> np.ndarray:
         """The author's usual backtest: one model fitted on every row, predicting the same rows."""
@@ -96,6 +119,10 @@ def from_module(module: Any) -> ModelSignal | None:
     seeds = getattr(module, "SEEDS", 0)
     sig.seeds = int(seeds) if isinstance(seeds, int | np.integer) and not isinstance(seeds, bool) and _takes_seed(fit) else 0
     sig.features = getattr(module, "features", None) if callable(getattr(module, "features", None)) else None
+    for hook in ("labels", "feature_times", "label_spans", "predict_proba"):
+        setattr(sig, hook, getattr(module, hook, None) if callable(getattr(module, hook, None)) else None)
+    configs = getattr(module, "N_CONFIGS", 0)
+    sig.n_configs = int(configs) if isinstance(configs, int | np.integer) and not isinstance(configs, bool) and configs > 0 else 0
     return sig
 
 
@@ -130,19 +157,22 @@ def refit_gap_row(walk_forward: dict[str, float], in_sample: dict[str, float], p
 def cv_overlap_row(splits: list[tuple[Any, Any]], label_horizon: int, embargo: int) -> dict[str, Any]:
     """Row ``ml_cv_overlap`` (category ``lookahead``): training rows whose labels reach into a test fold.
 
-    A training row ``i`` before a test fold starting at ``s`` leaks when ``i + label_horizon >= s``; a training row after
-    the fold ending at ``e`` leaks when ``i <= e + embargo`` (serial correlation carries the test period into it).
+    A training row ``i`` leaks when it is a test row, when a test row lies within ``label_horizon`` bars after it (its label
+    reaches the test), or when a test row lies within ``embargo`` bars before it (serial correlation carries the test period
+    into it). A test set made of several blocks (CPCV) is judged block by block.
     """
     leaks = total = 0
     for train, test in splits:
-        tr, te = np.asarray(train, dtype=np.int64), np.asarray(test, dtype=np.int64)
+        tr, te = np.asarray(train, dtype=np.int64), np.unique(np.asarray(test, dtype=np.int64))
         if tr.size == 0 or te.size == 0:
             continue
-        s, e = int(te.min()), int(te.max())
-        before = tr[tr < s]
-        after = tr[tr > e]
-        inside = tr[(tr >= s) & (tr <= e)]
-        leaks += int(np.sum(before + label_horizon >= s) + np.sum(after <= e + embargo) + inside.size)
+        pos = np.searchsorted(te, tr, side="left")  # first test row at or after each training row
+        inside = (pos < te.size) & (te[np.minimum(pos, te.size - 1)] == tr)
+        nxt = te[np.minimum(pos, te.size - 1)]
+        before = (pos < te.size) & (nxt > tr) & (nxt - tr <= label_horizon)
+        prev = te[np.maximum(pos - 1, 0)]
+        after = (pos > 0) & (prev < tr) & (tr - prev <= embargo)
+        leaks += int(np.sum(inside | before | after))
         total += int(tr.size)
     details = {"splits": len(splits), "leaking_training_rows": leaks, "training_rows": total,
                "label_horizon": label_horizon, "embargo": embargo}
@@ -190,18 +220,21 @@ def psi(train: np.ndarray, test: np.ndarray, bins: int = PSI_BINS) -> float:
     return float(np.sum((pb - pa) * np.log(pb / pa)))
 
 
-def feature_drift_row(values: dict[str, float], min_train: int, n_rows: int) -> dict[str, Any]:
+def feature_drift_row(values: dict[str, float], min_train: int, n_rows: int, ks: dict[str, float] | None = None) -> dict[str, Any]:
     """Row ``ml_feature_drift`` (category ``statistics``): PSI of each feature, training part against out-of-sample rows.
 
     Args:
         values: PSI per feature name.
         min_train: Rows of the reference (training) part.
         n_rows: Total rows.
+        ks: Optional two-sample Kolmogorov-Smirnov statistic per feature, reported next to the PSI.
     """
     ranked = sorted(values.items(), key=lambda kv: -kv[1])
     top = [{"feature": k, "psi": round(v, 4)} for k, v in ranked[:3]]
     details = {"psi": {k: round(v, 4) for k, v in values.items()}, "top": top, "bins": PSI_BINS, "warn_above": PSI_WARN,
                "reference_rows": min_train, "oos_rows": n_rows - min_train}
+    if ks:
+        details["ks"] = {k: round(v, 4) for k, v in ks.items()}
     shown = ", ".join(f"{t['feature']} {t['psi']:.2f}" for t in top)
     if ranked and ranked[0][1] > PSI_WARN:
         return check("ml_feature_drift", "statistics", "warn", f"feature drift (PSI > {PSI_WARN}): {shown}: the model meets inputs it was not trained on", details)

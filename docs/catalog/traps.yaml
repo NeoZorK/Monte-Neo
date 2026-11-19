@@ -1,0 +1,31 @@
+# Controlled vocabulary of failure modes ("traps"). Strategies and types reference these codes.
+# `check` = Monte-Neo check that addresses it today (existing) or "PLAN:<name>" (proposed profile check).
+lookahead: {title: Look-ahead bias, text: "Signal uses information not available at decision time (same-bar close, restated data, future-dated fundamentals).", check: "lookahead (existing), data_integrity"}
+survivorship: {title: Survivorship bias, text: "Universe contains only assets that survived to today; delisted losers are missing.", check: "PLAN:universe_pit (needs point-in-time membership list)"}
+hidden_beta: {title: Hidden market beta, text: "Reported return is mostly exposure to the market or a known factor, not skill.", check: "benchmark (existing, info only); PLAN:alpha_after_beta gate"}
+short_vol_tail: {title: Short-volatility tail / negative skew, text: "Steady small gains with rare large losses; Sharpe ratio and short samples hide the tail.", check: "PLAN:tail_skew_profile (skew, CVaR, worst-k, stress replay)"}
+smoothing: {title: Return smoothing / stale marks, text: "Serial correlation or stale prices understate volatility and inflate Sharpe.", check: "smoothing (existing, returns path)"}
+rebalance: {title: Rebalancing convention, text: "Result depends on rebalance frequency, thresholds and whether drift or costs are modelled.", check: "PLAN:rebalance_sensitivity"}
+costs: {title: Costs, slippage, spread, fees, text: "Edge disappears under realistic transaction costs, spread, borrow and funding.", check: "cost_margin, costs_modeled (existing)"}
+capacity: {title: Capacity / liquidity, text: "Strategy cannot be traded at size without moving the price.", check: "PLAN:capacity_estimate (volume participation)"}
+data_snooping: {title: Data snooping / multiple testing, text: "Many variants tried; the best one looks significant by chance.", check: "dsr, pbo (existing); n_trials = catalog size"}
+overfit_params: {title: Parameter overfitting, text: "Parameters tuned on the same sample used to report performance.", check: "pbo, holdout (existing)"}
+regime_dependence: {title: Regime dependence, text: "Works only in one market regime (e.g. a bull market) in the sample.", check: "PLAN:regime_split (sub-period / regime stability)"}
+crash_risk: {title: Crash / momentum-crash risk, text: "Large drawdown clustered in market rebounds or crises.", check: "PLAN:tail_skew_profile"}
+leverage: {title: Leverage and margin, text: "Reported return relies on leverage that is unavailable or can trigger liquidation.", check: "PLAN:leverage_audit"}
+shorting_cost: {title: Short-sale cost and availability, text: "Borrow fees, locates and recalls are ignored for the short leg.", check: "PLAN:borrow_model"}
+pit_fundamentals: {title: Point-in-time fundamentals, text: "Fundamentals used with their period-end date instead of their publication date, or restated.", check: "PLAN:pit_contract (data validator)"}
+corporate_actions: {title: Corporate actions, text: "Splits, dividends and spin-offs not handled; adjusted vs unadjusted prices mixed.", check: "data_integrity (partly)"}
+execution_timing: {title: Execution timing, text: "Trade assumed at the close/open that generated the signal.", check: "lookahead, timing (existing)"}
+funding_basis: {title: Funding rate and basis risk, text: "Perpetual funding changes sign; basis can widen; exchange/margin risk is not a price series.", check: "PLAN:carry_decomposition"}
+roll_yield: {title: Futures roll yield, text: "Continuous contract built by naive stitching hides roll cost or gain.", check: "PLAN:roll_audit"}
+coint_break: {title: Cointegration breakdown, text: "Spread stops mean-reverting; the relation was selected in-sample.", check: "PLAN:cointegration_suite (ADF, KPSS, Johansen, half-life, break test)"}
+selection_pairs: {title: Pair / universe selection bias, text: "Pairs chosen by looking at the full sample are guaranteed to look cointegrated.", check: "PLAN:pair_selection_bias"}
+stale_price: {title: Stale prices / illiquid quotes, text: "Last trade used as executable price in thin markets.", check: "data_integrity (partly)"}
+small_sample: {title: Small sample / few independent bets, text: "Too few trades or independent observations for a significance claim.", check: "trade-count gate, dsr (existing)"}
+post_publication: {title: Post-publication decay, text: "Anomaly weakened after academic publication or crowding.", check: "PLAN:pre_post_publication_split"}
+tax: {title: Taxes, text: "After-tax return differs materially (turnover, short-term gains, withholding).", check: "not verifiable (out of scope)"}
+execution_model: {title: Unrealistic execution model, text: "Fills at mid, no queue position, no partial fills, no latency.", check: "verify_quotes (existing, intraday quotes)"}
+discretion: {title: Discretionary / non-rule-based, text: "No reproducible rule; cannot be backtested honestly.", check: "not verifiable"}
+ruin_risk: {title: Risk of ruin, text: "Position sizing can lose the whole account (martingale, averaging down).", check: "PLAN:ruin_probability"}
+data_vendor: {title: Vendor / index construction effects, text: "Result depends on a proprietary index methodology or vendor-specific adjustment.", check: "not verifiable"}

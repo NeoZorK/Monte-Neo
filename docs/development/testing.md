@@ -43,3 +43,15 @@ This script executes:
 ## Tips
 - Use `-n auto` to utilize all CPU cores for testing.
 - Use `-W ignore` to suppress deprecation warnings from third-party libraries (like `websockets`).
+
+## Fuzzing and property tests
+
+- `tests/fuzz/` holds Hypothesis tests of the file-facing code: certificate parsing, table loaders (CSV and parquet), signal
+  arrays, strategy lint, certificate signatures. The contract is a result or a `ValueError`, never another exception.
+- `tests/unit/test_core_properties.py` states invariants of the statistics (the Deflated Sharpe never rises with more
+  trials, PSR ignores the scale of returns, PBO and the Reality Check ignore row order) and of the look-ahead probes
+  (price scaling and column order do not change the verdict).
+- `tests/stress/test_core_stress.py` has size and damage tests with generous time limits (marker `performance`); set
+  `MONTE_NEO_STRESS_1M=1` to also verify a million bars (several minutes).
+- `.clusterfuzzlite/` has coverage-guided atheris targets. They are not run by CI yet: copy
+  `.github/cflite-workflow.yml.example` to `.github/workflows/cflite.yml` after pinning the two actions to commit SHAs.

@@ -1,0 +1,332 @@
+{
+ "batch": 4,
+ "created": "2026-11-09",
+ "screened_variants": 2016,
+ "passed_filters": 56,
+ "ledger_head": "86c5ad0119c84fc860c1a23836f2b00f584f76cd98186c38ba174668648ba05e",
+ "rule": "both discovery halves net Sharpe > 0, costs x2 Sharpe > 0, alpha t vs BTC >= 2, pairwise return corr < 0.6, max 10",
+ "candidates": [
+  {
+   "id": "c3f413c5f973e966",
+   "spec": {
+    "family": "comp_LHZ",
+    "params": {
+     "parts": [
+      "L",
+      "H",
+      "Z"
+     ]
+    },
+    "sign": 1,
+    "composite": [
+     {
+      "family": "lowvol2",
+      "params": {
+       "window": 45
+      },
+      "sign": -1
+     },
+     {
+      "family": "hi52",
+      "params": {
+       "window": 365,
+       "skip": 0
+      },
+      "sign": 1
+     },
+     {
+      "family": "size",
+      "params": {
+       "window": 30
+      },
+      "sign": -1
+     }
+    ],
+    "horizon": 14,
+    "top_k": 30
+   },
+   "discovery": {
+    "sharpe_all": 2.2609764098701155,
+    "sharpe_A": 2.473112433199929,
+    "sharpe_B": 2.1267533069782596,
+    "sharpe_x2": 2.1827502239377137,
+    "alpha_t": 3.088907409177285,
+    "bars": 869,
+    "ann_return": 0.5201290655915206
+   }
+  },
+  {
+   "id": "18bcb0d137bdfc27",
+   "spec": {
+    "family": "comp_LHI",
+    "params": {
+     "parts": [
+      "L",
+      "H",
+      "I"
+     ]
+    },
+    "sign": 1,
+    "composite": [
+     {
+      "family": "lowvol2",
+      "params": {
+       "window": 45
+      },
+      "sign": -1
+     },
+     {
+      "family": "hi52",
+      "params": {
+       "window": 365,
+       "skip": 0
+      },
+      "sign": 1
+     },
+     {
+      "family": "illiq2",
+      "params": {
+       "window": 45,
+       "agg": "mean"
+      },
+      "sign": 1
+     }
+    ],
+    "horizon": 3,
+    "top_k": 60
+   },
+   "discovery": {
+    "sharpe_all": 2.0496181820448447,
+    "sharpe_A": 2.055898126458415,
+    "sharpe_B": 2.0502782449565946,
+    "sharpe_x2": 1.8951178370502761,
+    "alpha_t": 3.0472612368288745,
+    "bars": 869,
+    "ann_return": 0.45214673789973636
+   }
+  },
+  {
+   "id": "3decb49b86e13cd2",
+   "spec": {
+    "family": "vsmom",
+    "params": {
+     "lookback": 30,
+     "vol_window": 30
+    },
+    "sign": 1,
+    "horizon": 3,
+    "top_k": 60
+   },
+   "discovery": {
+    "sharpe_all": 2.0066385363858723,
+    "sharpe_A": 2.4298007333683107,
+    "sharpe_B": 1.3651533541878824,
+    "sharpe_x2": 1.776180028279143,
+    "alpha_t": 3.339387163050193,
+    "bars": 1189,
+    "ann_return": 0.6410811519695394
+   }
+  },
+  {
+   "id": "f02299eebaba6959",
+   "spec": {
+    "family": "comp_VH",
+    "params": {
+     "parts": [
+      "V",
+      "H"
+     ]
+    },
+    "sign": 1,
+    "composite": [
+     {
+      "family": "tstrend",
+      "params": {
+       "lookback": 60,
+       "vol_window": 30
+      },
+      "sign": 1
+     },
+     {
+      "family": "hi52",
+      "params": {
+       "window": 365,
+       "skip": 0
+      },
+      "sign": 1
+     }
+    ],
+    "horizon": 3,
+    "top_k": 30
+   },
+   "discovery": {
+    "sharpe_all": 1.36456340944463,
+    "sharpe_A": 1.7156589617423568,
+    "sharpe_B": 1.1152309175249906,
+    "sharpe_x2": 1.1257439315335702,
+    "alpha_t": 2.130999024240183,
+    "bars": 869,
+    "ann_return": 0.31768694673046394
+   }
+  },
+  {
+   "id": "8b00f1523f841f94",
+   "spec": {
+    "family": "resmom",
+    "params": {
+     "lookback": 30,
+     "beta_window": 90
+    },
+    "sign": 1,
+    "horizon": 3,
+    "top_k": 60
+   },
+   "discovery": {
+    "sharpe_all": 1.1696030773780959,
+    "sharpe_A": 1.3188759344283036,
+    "sharpe_B": 0.9974541760582234,
+    "sharpe_x2": 0.8399878339046599,
+    "alpha_t": 2.0413428078009437,
+    "bars": 1114,
+    "ann_return": 0.24909882526796975
+   }
+  },
+  {
+   "id": "747d0bb38a2cbe31",
+   "spec": {
+    "family": "voltrend",
+    "params": {
+     "lookback": 14,
+     "volume_window": 60
+    },
+    "sign": 1,
+    "horizon": 7,
+    "top_k": 30
+   },
+   "discovery": {
+    "sharpe_all": 1.2300687226537552,
+    "sharpe_A": 1.4255747777555314,
+    "sharpe_B": 0.9752330661984726,
+    "sharpe_x2": 1.0424043741964848,
+    "alpha_t": 2.1395733049967727,
+    "bars": 1174,
+    "ann_return": 0.4407596611378683
+   }
+  },
+  {
+   "id": "0ea5fa197d001dc2",
+   "spec": {
+    "family": "comp_VHZ",
+    "params": {
+     "parts": [
+      "V",
+      "H",
+      "Z"
+     ]
+    },
+    "sign": 1,
+    "composite": [
+     {
+      "family": "tstrend",
+      "params": {
+       "lookback": 60,
+       "vol_window": 30
+      },
+      "sign": 1
+     },
+     {
+      "family": "hi52",
+      "params": {
+       "window": 365,
+       "skip": 0
+      },
+      "sign": 1
+     },
+     {
+      "family": "size",
+      "params": {
+       "window": 30
+      },
+      "sign": -1
+     }
+    ],
+    "horizon": 3,
+    "top_k": 30
+   },
+   "discovery": {
+    "sharpe_all": 1.5006916273660251,
+    "sharpe_A": 2.327022728173667,
+    "sharpe_B": 0.9501052470004765,
+    "sharpe_x2": 1.2321842940787884,
+    "alpha_t": 2.243883920234685,
+    "bars": 869,
+    "ann_return": 0.3186750371096306
+   }
+  },
+  {
+   "id": "c36c6b3e7f5e37ed",
+   "spec": {
+    "family": "bab",
+    "params": {
+     "window": 30
+    },
+    "sign": -1,
+    "horizon": 7,
+    "top_k": 60
+   },
+   "discovery": {
+    "sharpe_all": 1.221848800364032,
+    "sharpe_A": 1.455978049630602,
+    "sharpe_B": 0.8844797374160193,
+    "sharpe_x2": 1.0745097148731233,
+    "alpha_t": 2.073058334989338,
+    "bars": 1189,
+    "ann_return": 0.3329605853397037
+   }
+  },
+  {
+   "id": "43d226ce76a492e1",
+   "spec": {
+    "family": "hi52",
+    "params": {
+     "window": 200,
+     "skip": 0
+    },
+    "sign": 1,
+    "horizon": 14,
+    "top_k": 60
+   },
+   "discovery": {
+    "sharpe_all": 1.2731268154388615,
+    "sharpe_A": 0.7761778405348154,
+    "sharpe_B": 1.706225012246355,
+    "sharpe_x2": 1.201082717152568,
+    "alpha_t": 2.1699626957611184,
+    "bars": 1034,
+    "ann_return": 0.2956827722963062
+   }
+  },
+  {
+   "id": "d17472fd66e4f66a",
+   "spec": {
+    "family": "strev",
+    "params": {
+     "lookback": 5,
+     "mode": "volnorm"
+    },
+    "sign": 1,
+    "horizon": 14,
+    "top_k": 60
+   },
+   "discovery": {
+    "sharpe_all": 1.13166108521281,
+    "sharpe_A": 1.3675065793425587,
+    "sharpe_B": 0.7744065472734528,
+    "sharpe_x2": 0.9589040370408258,
+    "alpha_t": 2.0233644474197177,
+    "bars": 1189,
+    "ann_return": 0.3037158131963988
+   }
+  }
+ ]
+}

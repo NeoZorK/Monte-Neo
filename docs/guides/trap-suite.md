@@ -11,7 +11,7 @@ statuses that must appear.
 
 ## Catalogue
 
-80 traps, 35 honest controls, 2 parameterized strategies for `verify_grid` and a data-snooping test.
+83 traps, 36 honest controls, 2 parameterized strategies for `verify_grid` and a data-snooping test.
 "Caught by" lists the checks that flag each trap on the random-walk dataset. "lint (warn)" is a
 warning only; the dynamic probes produce the `REJECT`.
 
@@ -100,6 +100,9 @@ choosing a start date by its result: the leak is in the workflow, not in one cal
 | `best_start_date` | The start date is picked by the buy-and-hold return from it to the end of the sample | truncation, perturbation |
 | `feature_select_future_corr` | Picks the lag most correlated with the next return over the whole sample | truncation, perturbation |
 | `hyperparam_fit_full` | The moving-average length is tuned on the whole sample, then tested on it | truncation, perturbation |
+| `fit_on_test_scaler` | A scaler is fitted on the test half of the file and applied to every bar | truncation, lint |
+| `tune_on_test_best_window` | The lookback is chosen by its score on the test half | truncation, lint |
+| `cv_integer_folds` | Out-of-fold predictions from a helper called with `cv=5`: every fold trains on later bars | truncation, lint |
 | `kfold_no_gap` | 5-fold cross-fitting on a time series: the training folds contain the future | truncation, perturbation |
 | `shuffled_split_fit` | Least squares fitted on a random 70% of all bars, used on every bar | truncation |
 | `knn_random_neighbors` | Nearest-neighbour vote over all bars, later ones included | truncation, perturbation, lint (warn) |
@@ -222,6 +225,7 @@ leaks.
 | `daily_close_shifted` | Previous day's close (`groupby(date).last().shift(1)`) broadcast to the day |
 | `day_vwap_running` | The day's running VWAP from cumulative sums within the day |
 | `expanding_fit_gap` | Model refitted every 300 bars on all earlier bars, with a gap |
+| `tune_on_validation_gap` | The lookback is picked on a validation block that ends before the prediction |
 | `walk_forward_lstsq_gap` | Least squares refitted every 250 bars on the previous 500, with a 5-bar gap |
 | `expanding_winsorize` | Returns clipped at expanding (past-only) percentiles |
 | `vol_target_expanding` | Position size from the expanding volatility |

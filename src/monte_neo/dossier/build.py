@@ -81,6 +81,7 @@ def build_dossier(
     meta: dict[str, Any] | None = None,
     alpha: dict[str, Any] | None = None,
     live: dict[str, Any] | None = None,
+    holdout: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Assemble a ``validation-dossier/1`` from a certificate.
 
@@ -108,7 +109,7 @@ def build_dossier(
         },
         "checks": cert.get("checks", []),
         "framework": framework_map(cert, framework, live=live is not None),
-        "readiness": readiness(certificate=cert, alpha=alpha, live=live),
+        "readiness": readiness(certificate=cert, alpha=alpha, live=live, holdout=holdout),
         "limitations": limitations(cert),
         "reproduce": {"command": reproduce_command(cert), "reproducibility": cert.get("reproducibility", {})},
         "environment": environment(),

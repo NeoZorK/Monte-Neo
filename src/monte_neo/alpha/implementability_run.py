@@ -23,6 +23,8 @@ NEXT_ACTIONS: dict[str, str] = {
     "short_feasibility": "The short leg sits in illiquid names or pays too much borrow: price borrow from your broker, or drop the short leg and re-test.",
     "participation_limit": "Your trades are a large share of the volume: lower the AUM, add a liquidity filter on past volume, or spread trades over several bars.",
     "turnover_vs_decay": "Trade at the speed of the signal: rebalance less often than the IC half-life, or smooth the score.",
+    "funding_drag": "Real funding eats the edge: trade the legs with cheaper funding, hedge or drop the perpetual short legs, or run it only when funding is low.",
+    "capacity_grid": "The net return is not positive at the AUM you need: lower the AUM, cut turnover, or add a liquidity filter.",
     "rebalance_timing_luck": "The result depends on the day you rebalance: split the portfolio into staggered tranches and judge the average.",
 }
 
@@ -34,7 +36,8 @@ def portfolio_weights(panel: Panel, quantiles: int) -> np.ndarray:
 
 
 def run_implementability(
-    panel: Panel, *, quantiles: int, aum: float | None, half_life: float | None, rebalance_every: int = 21
+    panel: Panel, *, quantiles: int, aum: float | None, half_life: float | None, rebalance_every: int = 21,
+    funding_bps: Any = None, aum_grid: list[float] | None = None, min_capacity: float | None = None,
 ) -> list[dict[str, Any]]:
     """Run family D on the score's long-short portfolio.
 
@@ -44,6 +47,8 @@ def run_implementability(
         aum: Capital in the quote currency for impact and participation; ``None`` skips those two.
         half_life: IC half-life in bars from ``ic_decay`` (optional context for the holding period).
         rebalance_every: Rebalance period for the rebalance-day check.
+        funding_bps: Funding a long pays per bar, aligned to the panel (dates x symbols); adds ``funding_drag``.
+        aum_grid: AUMs to test in one run; adds ``capacity_grid`` (with ``min_capacity`` as the gate).
 
     Returns:
         Check rows (category ``economics``).
@@ -62,6 +67,13 @@ def run_implementability(
         turnover_vs_decay(w, half_life),
         rebalance_timing_luck(w, close, stamps, k=rebalance_every),
     ]
+    if funding_bps is not None or aum_grid:
+        from monte_neo.alpha.funding_cost import capacity_grid_row, funding_drag_row
+
+        if funding_bps is not None:
+            rows.append(funding_drag_row(w, close, stamps, funding_bps))
+        if aum_grid:
+            rows.append(capacity_grid_row(w, close, vol, stamps, aum_grid, min_capacity, funding_bps))
     return rows
 
 

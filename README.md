@@ -43,6 +43,30 @@
 
 ---
 
+## 60 seconds to your first REJECT
+
+```bash
+pip install monte-neo
+monte-neo verify --demo
+```
+
+No files needed. Two strategies run on synthetic prices: one peeks at tomorrow's close and is **rejected**, the other does not and is
+judged on its merits. Then try your own:
+
+```bash
+monte-neo verify --ohlcv data.csv --strategy my_strategy.py --n-trials 20 --out cert.json
+monte-neo repair --explain cert.json     # what each finding means and what to do
+```
+
+Where to go next:
+
+- **Your kind of strategy:** [profiles](https://neozork.github.io/Monte-Neo/guides/profiles/) for trend, mean reversion, pairs, carry, long-short, allocation, short volatility, event-driven and [options](https://neozork.github.io/Monte-Neo/guides/options/).
+- **How ready is the evidence:** the [Alpha Readiness Level](https://neozork.github.io/Monte-Neo/guides/arl/) (ARL 1 to 9 and depth 0 to 4), devised by Rostyslav Shcherbyna, author of Monte-Neo; provisional rules.
+- **Search without fooling yourself:** [`monte-neo research`](https://neozork.github.io/Monte-Neo/guides/research/).
+- **See what was verified, and what failed:** the [Hall of Fame](https://neozork.github.io/Monte-Neo/hall-of-fame/) and the [catalog results](https://github.com/NeoZorK/Monte-Neo/blob/main/docs/catalog/RESULTS.md).
+- **Limits:** [what is not covered](https://neozork.github.io/Monte-Neo/guides/coverage-limits/). Not investment advice.
+
+
 ## The problem
 
 A coding agent can turn a trading idea into a backtest in minutes. It will then tell you the
@@ -160,8 +184,11 @@ A ranking signal gets the checks a fund's research committee runs before it give
 - multiple testing: the t ≥ 3 hurdle, the minimum backtest length;
 - risk: named crises, tails.
 
-Everything ends in one line, for example `ARL 6/9 — blocked at 7: tradable and robust (rebalance_timing_luck)`.
-Missing evidence is "not assessed", never passed. [Guide](https://neozork.github.io/Monte-Neo/guides/alpha/).
+Everything ends in one line, for example `ARL 6, depth 3/4 (arl-rules/1, provisional)` and
+`ARL 6/9 — blocked at 7: tradable and robust (rebalance_timing_luck)`.
+Missing evidence is "not assessed", never passed. [Guide](https://neozork.github.io/Monte-Neo/guides/alpha/), [ARL rules](https://neozork.github.io/Monte-Neo/guides/arl/).
+
+The Alpha Readiness Level (ARL) was devised by Rostyslav Shcherbyna, author of Monte-Neo; it is modelled on the idea of a technology readiness level and is a Monte-Neo scale, not an industry standard.
 
 ### Evidence a model-risk committee can file
 
@@ -319,7 +346,7 @@ verifier cannot silently stop catching a leak or start accusing honest code.
 - **Independent.** It checks code it did not write, with probes that do not trust the strategy's own numbers.
 - **Careful with accusations.** 35 honest strategies (loops, windows, resampling, fits inside rolling windows, a real edge with a high hit rate) must never be flagged for look-ahead, on every build.
 - **Repairs without overfitting.** `repair` fixes defects chosen by the number of defects, counts every attempt and lets a lockbox decide, and says so when the profit was the defect.
-- **Built for agents.** An MCP server with 23 tools, a Claude Code plugin with a skill, a slash command and a reminder hook, plus rules for Codex, Gemini CLI, Cursor and Qwen Code. Every failed check returns a `next_action` the agent can act on.
+- **Built for agents.** An MCP server with 27 tools, a Claude Code plugin with a skill, a slash command and a reminder hook, plus rules for Codex, Gemini CLI, Cursor and Qwen Code. Every failed check returns a `next_action` the agent can act on.
 - **Institutional evidence.** Alpha reports with a readiness level, validation dossiers mapped to model-risk frameworks, live monitoring, your own policy recorded in every certificate.
 - **Time-aware.** It checks whether the profit survives the time the quotes really arrived, not only the time the exchange stamped them.
 - **Reproducible.** The same data, code and `n_trials` always give the same `certificate_id`. Anyone can reproduce a certificate with `--recheck`.
@@ -413,7 +440,7 @@ qwen mcp add monte-neo uvx --from "monte-neo[mcp]>=0.53.0" monte-neo-mcp
 A small model often fails the bench tasks; that is a result of the model, not of the verifier.
 Setup, `--base-url` and troubleshooting: [Local agents](https://neozork.github.io/Monte-Neo/guides/local-agents/).
 
-MCP tools (23): `verify_strategy`, `verify_grid`, `verify_quotes`, `verify_portfolio`, `verify_returns`, `verify_legs`, `validate_alpha`, `repair_strategy`, `build_dossier`, `monitor_live`, `probe_lookahead`,
+MCP tools (27): `verify_strategy`, `verify_grid`, `verify_quotes`, `verify_portfolio`, `verify_returns`, `verify_legs`, `verify_pairs`, `verify_carry`, `validate_alpha`, `readiness_level`, `research_search`, `repair_strategy`, `build_dossier`, `monitor_live`, `probe_lookahead`,
 `cost_stress`, `recheck_certificate`, `check_signature`, `render_report`, `suggest_fix`, `discover_indicator`,
 `register_hypothesis`, `compare_certificates`, `holdout_query`, `diagnose_data`, `verdict_schema`, `verifier_manifest`.
 
@@ -469,7 +496,7 @@ pip install "monte-neo[apple]"     # + Metal / MLX research engine (Apple Silico
 pip install "monte-neo[full]"      # everything
 ```
 
-Python 3.11+ on macOS or Linux.
+Python 3.11 to 3.15 on macOS or Linux (3.15 is beta-supported). Windows: see [Platforms](docs/setup/platforms.md) (prepared, not yet verified).
 
 <details>
 <summary><strong>Research engine</strong> (fee-aware bar backtests, sweeps, Monte Carlo)</summary>
@@ -496,6 +523,26 @@ Docs: [quick start](https://neozork.github.io/Monte-Neo/guides/quick-start/) ·
 [backtest engine](https://github.com/NeoZorK/Monte-Neo/blob/main/docs/project/backtest_engine.md)
 
 </details>
+
+## Hall of Fame
+
+Share a strategy **without sharing its code** and get a medal for the *evidence*, not for the return: the ranking uses the ARL, its depth and
+the Deflated Sharpe after paying for every trial. The three seed entries are worked examples with low ARL (provisional rules), not
+recommendations. Join with `monte-neo hall submit` ([guide](docs/guides/hall-of-fame.md)).
+
+<!-- hall:top10:start -->
+Not investment advice: a research example, not a call to trade or a promise of profit. Simulated results do not predict future returns.
+
+| Rank | Strategy | Author | Category | ARL / depth | Deflated Sharpe | Tier | Holds this rank | Certificate SHA-256 |
+|---|---|---|---|---|---|---|---|---|
+| 🥇 1 | Donchian breakout BTC | Rostyslav Shcherbyna (process), idea: Claude Sonnet 5.5 | trend | ARL 4, depth 2/4 (provisional) | 0.856 | B privately verified | 2026-11 – 2026-11 | `c371160bb31fd49f…` |
+| 🥈 2 | Time-series momentum BTC | Rostyslav Shcherbyna (process), idea: Claude Sonnet 5.5 | trend | ARL 3, depth 2/4 (provisional) | 0.474 | B privately verified | 2026-11 – 2026-11 | `dce45d55c6a01706…` |
+| 🥉 3 | Turn-of-month BTC | Rostyslav Shcherbyna (process), idea: Claude Sonnet 5.5 | seasonality | ARL 3, depth 0/4 (provisional) | 0.153 | B privately verified | 2026-11 – 2026-11 | `07eb3481c117c632…` |
+
+Not investment advice: a research example, not a call to trade or a promise of profit. Simulated results do not predict future returns.
+
+Ranked by evidence (ARL, depth, Deflated Sharpe), not by return; rules `hall-of-fame/1`, provisional. [All categories, medals and how to join](https://github.com/NeoZorK/Monte-Neo/blob/main/docs/hall-of-fame.md).
+<!-- hall:top10:end -->
 
 ## Help the project
 

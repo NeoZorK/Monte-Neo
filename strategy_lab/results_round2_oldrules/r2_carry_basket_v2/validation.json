@@ -1,0 +1,132 @@
+{
+ "verdict": "PASS_WITH_WARNINGS",
+ "certificate_id": "f3fbff786b3722f8",
+ "arl": 1,
+ "arl_summary": "ARL 1/9 \u2014 not assessed beyond 1: the backtest is not broken (lookahead_truncation (not run), universe_lookahead (not run))",
+ "sharpe": 7.157252584424728,
+ "deflated_sharpe": 1.0,
+ "ic_t_stat": null,
+ "mean_ic": null,
+ "total_return": null,
+ "max_drawdown": 0.010839978963879449,
+ "bars": null,
+ "timing_p": null,
+ "benchmark_sharpe": null,
+ "benchmark_total_return": null,
+ "checks": [
+  {
+   "id": "returns_only_scope",
+   "status": "info",
+   "summary": "Return series only: smoothing, distribution and significance were checked; look-ahead, costs and data quality behind the returns cannot be checked without the strategy or positions."
+  },
+  {
+   "id": "return_smoothing",
+   "status": "warn",
+   "summary": "returns look smoothed (lag-1 autocorrelation 0.61, t=26.2): illiquid marks or stale pricing; the unsmoothed Sharpe is 4.21 (reported 7.16)"
+  },
+  {
+   "id": "zero_kink",
+   "status": "warn",
+   "summary": "small losses are missing: 323 small losses vs 716 small gains (expected about 495.3 losses, z=-10.7); losses may be deferred or rounded up"
+  },
+  {
+   "id": "implausible_consistency",
+   "status": "pass",
+   "summary": "58% positive periods vs 65% expected (z=-5.5)"
+  },
+  {
+   "id": "round_numbers",
+   "status": "warn",
+   "summary": "15% of returns are exact multiples of 5 bps vs 0.0% expected: figures may be typed or rounded by hand"
+  },
+  {
+   "id": "track_record_significance",
+   "status": "pass",
+   "summary": "probabilistic Sharpe 1.00, deflated for 83 strategies 1.00; track record 5.0 years, 0.1 needed"
+  },
+  {
+   "id": "drawdown_consistency",
+   "status": "pass",
+   "summary": "max drawdown 1.1% within the simulated range (5th percentile 0.4%)"
+  },
+  {
+   "id": "data_integrity",
+   "status": "pass",
+   "summary": "input prices are clean"
+  }
+ ],
+ "reasons": [
+  "return_smoothing: returns look smoothed (lag-1 autocorrelation 0.61, t=26.2): illiquid marks or stale pricing; the unsmoothed Sharpe is 4.21 (reported 7.16)",
+  "zero_kink: small losses are missing: 323 small losses vs 716 small gains (expected about 495.3 losses, z=-10.7); losses may be deferred or rounded up",
+  "round_numbers: 15% of returns are exact multiples of 5 bps vs 0.0% expected: figures may be typed or rounded by hand"
+ ],
+ "evidence_added": [
+  "data_integrity"
+ ],
+ "arl_scope": "returns-only evidence: the Lab added data_integrity of the input prices; signal-level checks (ic, timing, placebo) cannot run on a return series, so the ARL is capped by construction and is not comparable with signal certificates",
+ "slice": "pre",
+ "n_trials": 83,
+ "exit_code": 0,
+ "report_sha256": "a9ef9c8edffee74957e4007a24a1651203b6827beee44b5c0635838c93ff3feb",
+ "economics": {
+  "validation": {
+   "bars": 1461,
+   "sharpe": 6.669,
+   "total_return": 0.4351,
+   "max_drawdown": -0.0108,
+   "corr_btc": -0.021,
+   "beta_btc": -0.0,
+   "beta_share": 0.0,
+   "alpha_t_vs_btc": 13.38,
+   "deflated_sharpe": 1.0,
+   "btc_buyhold_sharpe": 0.782
+  },
+  "discovery": {
+   "bars": 366,
+   "sharpe": 9.018,
+   "total_return": 0.1441,
+   "max_drawdown": -0.0102,
+   "corr_btc": -0.317,
+   "beta_btc": -0.006,
+   "beta_share": 0.1,
+   "alpha_t_vs_btc": 10.27,
+   "deflated_sharpe": 1.0,
+   "btc_buyhold_sharpe": 2.253
+  },
+  "cost_x2_sharpe_validation": 4.999,
+  "cost_x2_sharpe_discovery": 7.635,
+  "by_year": {
+   "2020": {
+    "sharpe": 9.018,
+    "return": 0.144,
+    "btc_return": 3.02
+   },
+   "2021": {
+    "sharpe": 12.551,
+    "return": 0.327,
+    "btc_return": 0.598
+   },
+   "2022": {
+    "sharpe": -2.402,
+    "return": -0.006,
+    "btc_return": -0.642
+   },
+   "2023": {
+    "sharpe": 3.741,
+    "return": 0.017,
+    "btc_return": 1.556
+   },
+   "2024": {
+    "sharpe": 8.913,
+    "return": 0.069,
+    "btc_return": 1.213
+   }
+  },
+  "notes": [
+   "daily bars, fills at the next close, per-coin Binance fees + spread (VIP0), no funding on perpetual shorts, survivors-only universe"
+  ]
+ },
+ "gate_open": true,
+ "finished_at": "2026-11-08T12:04:33+00:00",
+ "seconds": 1.2
+}

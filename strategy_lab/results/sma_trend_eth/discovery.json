@@ -1,0 +1,229 @@
+{
+ "verdict": "PASS_WITH_WARNINGS",
+ "certificate_id": "c52c574273b9a3ed",
+ "arl": 4,
+ "arl_depth": 1,
+ "arl_headline": "ARL 4, depth 1/4 (arl-rules/1, provisional)",
+ "arl_provisional": true,
+ "arl_summary": "ARL 4/9 \u2014 blocked at 5: it is new alpha (alpha_after_beta)",
+ "sharpe": 1.1792986582628115,
+ "deflated_sharpe": 0.9085703216515766,
+ "ic_t_stat": null,
+ "mean_ic": null,
+ "total_return": 5.359169305572836,
+ "max_drawdown": 0.6473380800395395,
+ "bars": 1233,
+ "timing_p": 0.01990049751243781,
+ "benchmark_sharpe": 0.7554584509171727,
+ "benchmark_total_return": 1.191697249471809,
+ "checks": [
+  {
+   "id": "data_integrity",
+   "status": "pass",
+   "summary": "OHLCV is clean"
+  },
+  {
+   "id": "data_quality",
+   "status": "pass",
+   "summary": "no spikes, frozen prices, split jumps or gaps"
+  },
+  {
+   "id": "determinism",
+   "status": "pass",
+   "summary": "signal() is deterministic"
+  },
+  {
+   "id": "lookahead_truncation",
+   "status": "pass",
+   "summary": "truncation probe: no leak detected"
+  },
+  {
+   "id": "lookahead_perturbation",
+   "status": "pass",
+   "summary": "future-perturbation probe: no leak detected"
+  },
+  {
+   "id": "external_data",
+   "status": "pass",
+   "summary": "outside data: none read (df only)"
+  },
+  {
+   "id": "repaint_history",
+   "status": "pass",
+   "summary": "repaint (history): the signal of a closed bar never changed (19 prefixes, +50 bars, revised tail)"
+  },
+  {
+   "id": "repaint_live",
+   "status": "info",
+   "summary": "repaint (forming bar): decided at the close, flickers while the bar forms (19% of snapshots): act on it only after the bar closes"
+  },
+  {
+   "id": "lookahead_static_lint",
+   "status": "pass",
+   "summary": "static lint: clean"
+  },
+  {
+   "id": "implausible_accuracy",
+   "status": "pass",
+   "summary": "next-bar hit rate 0.517 over 611 bars (z 0.8)"
+  },
+  {
+   "id": "data_independence",
+   "status": "pass",
+   "summary": "data independence: positions follow the prices"
+  },
+  {
+   "id": "implausible_performance",
+   "status": "pass",
+   "summary": "annualized Sharpe 1.2 is within the usual range"
+  },
+  {
+   "id": "costs_modeled",
+   "status": "pass",
+   "summary": "15.00 bps per side modeled"
+  },
+  {
+   "id": "net_profitability",
+   "status": "pass",
+   "summary": "net total return +535.92% after costs"
+  },
+  {
+   "id": "cost_margin",
+   "status": "pass",
+   "summary": "break-even cost 200.00 bps per side vs 15.00 modeled"
+  },
+  {
+   "id": "delay_sensitivity",
+   "status": "pass",
+   "summary": "survives 1 bar execution delay"
+  },
+  {
+   "id": "timing_significance",
+   "status": "pass",
+   "summary": "beats 98% of 200 shifted copies of its positions (p 0.020)"
+  },
+  {
+   "id": "sample_size",
+   "status": "pass",
+   "summary": "33 closed trades (min 30)"
+  },
+  {
+   "id": "deflated_sharpe",
+   "status": "warn",
+   "summary": "deflated Sharpe 0.909 over 4 trial(s)"
+  },
+  {
+   "id": "trials_disclosed",
+   "status": "pass",
+   "summary": "n_trials declared"
+  },
+  {
+   "id": "holdout_consistency",
+   "status": "pass",
+   "summary": "Sharpe/bar train +0.0384 vs holdout +0.1132"
+  },
+  {
+   "id": "period_consistency",
+   "status": "pass",
+   "summary": "profitable in 3 of 4 periods"
+  },
+  {
+   "id": "walk_forward_stability",
+   "status": "info",
+   "summary": "4 of 6 equal windows (196 bars each) made money; worst -32.3%, best +120.0%"
+  },
+  {
+   "id": "sharpe_confidence",
+   "status": "info",
+   "summary": "Sharpe 95% interval +0.00 to +2.31 (return -52.9% to +8554.2%); 98% of resamples have a positive Sharpe"
+  },
+  {
+   "id": "serial_correlation",
+   "status": "info",
+   "summary": "serial correlation of returns is small (lag-1 +0.05): Sharpe 1.18, corrected 0.95"
+  },
+  {
+   "id": "track_record",
+   "status": "info",
+   "summary": "needs 711 bars (about 1.95 years) to be positive at 95%; has 1,172"
+  },
+  {
+   "id": "benchmark",
+   "status": "info",
+   "summary": "buy & hold +119.17% (Sharpe 0.76) vs strategy +535.92% (Sharpe 1.18)"
+  },
+  {
+   "id": "alpha_after_beta",
+   "status": "warn",
+   "summary": "alpha is not significant after beta: beta 0.49 to buy & hold, annual alpha +45.0% (95% interval -11.2% to +101.2%, t=1.6), 45% of the average return is market exposure"
+  },
+  {
+   "id": "regime_stability",
+   "status": "warn",
+   "summary": "the evidence rests on one regime: 98% of the profit comes from rising markets; 97% of the profit comes from calm markets"
+  },
+  {
+   "id": "rebalance_timing_luck",
+   "status": "skip",
+   "summary": "no regular rebalance cadence found (pass rebalance_every to set it)"
+  },
+  {
+   "id": "cost_sensitivity",
+   "status": "pass",
+   "summary": "total return +535.9% at modeled costs, +476.4% at doubled costs"
+  },
+  {
+   "id": "cost_realism",
+   "status": "warn",
+   "summary": "costs look optimistic: the high-low half-spread is 55.5 bps per side against 5.0 bps modeled: total return +535.9% -> +355.5% at the realistic cost"
+  },
+  {
+   "id": "spread_estimate",
+   "status": "info",
+   "summary": "rough spread estimate from high and low: about 111.01 bps (55.51 bps per side); the model charges only 5 bps slippage per side, well below it: costs may be optimistic"
+  },
+  {
+   "id": "capacity",
+   "status": "info",
+   "summary": "capital that keeps 90% of 64 fills within a share of the bar's volume: 1%: 28.3K, 5%: 142K, 10%: 283K (median bar trades 76.6M)"
+  },
+  {
+   "id": "walk_forward_oos",
+   "status": "pass",
+   "summary": "walk-forward OOS Sharpe/bar +0.0485 vs in-sample best +0.0617"
+  },
+  {
+   "id": "parameter_plateau",
+   "status": "pass",
+   "summary": "neighbouring parameters keep 89% of the best Sharpe (median of 1)"
+  },
+  {
+   "id": "pbo",
+   "status": "pass",
+   "summary": "probability of backtest overfitting 0.190: the best combination in training ranks below the median in testing in 19% of 12,870 splits; its testing return is a loss in 6%"
+  },
+  {
+   "id": "reality_check",
+   "status": "pass",
+   "summary": "SPA p = 0.080 (Reality Check 0.069): the best of 4 combinations beats cash by more than the search explains"
+  },
+  {
+   "id": "romano_wolf",
+   "status": "info",
+   "summary": "0 of 4 combinations are significant after Romano-Wolf stepdown; the chosen best is not among them"
+  }
+ ],
+ "reasons": [
+  "deflated_sharpe: deflated Sharpe 0.909 over 4 trial(s)",
+  "alpha_after_beta: alpha is not significant after beta: beta 0.49 to buy & hold, annual alpha +45.0% (95% interval -11.2% to +101.2%, t=1.6), 45% of the average return is market exposure",
+  "regime_stability: the evidence rests on one regime: 98% of the profit comes from rising markets; 97% of the profit comes from calm markets",
+  "cost_realism: costs look optimistic: the high-low half-spread is 55.5 bps per side against 5.0 bps modeled: total return +535.9% -> +355.5% at the realistic cost"
+ ],
+ "slice": "disc",
+ "n_trials": 4,
+ "exit_code": 0,
+ "report_sha256": "fcade026a5a0ee46a916cb0829cfb90dfdc17eca1880d71162efb4e78234726d",
+ "grid_size": 4,
+ "finished_at": "2026-11-08T16:55:22+00:00",
+ "seconds": 2.5
+}

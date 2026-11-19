@@ -7,7 +7,7 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
+    build-essential git \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy configuration files
@@ -35,8 +35,11 @@ ENV PYTHONUNBUFFERED=1
 ENV MONTE_NEO_DATA_DIR=/app/data
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Headless mode by default
+# Headless mode by default: no display, no Metal/MLX, UTF-8 console, compiled engines cached in a volume
 ENV TERM=xterm-256color
+ENV MPLBACKEND=Agg
+ENV PYTHONIOENCODING=utf-8
+ENV NUMBA_CACHE_DIR=/app/data/.numba
 
 # Entry point
 ENTRYPOINT ["uv", "run", "monte-neo"]

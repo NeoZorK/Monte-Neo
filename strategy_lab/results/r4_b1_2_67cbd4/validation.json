@@ -1,0 +1,327 @@
+{
+ "verdict": "REJECT",
+ "certificate_id": "d2fea8938b9ea7d1",
+ "arl": 2,
+ "arl_depth": 0,
+ "arl_headline": "ARL 2, depth 0/4 (arl-rules/1, provisional)",
+ "arl_provisional": true,
+ "arl_summary": "ARL 2/9 \u2014 blocked at 3: it earns after costs (cost_sensitivity, market_impact)",
+ "sharpe": null,
+ "deflated_sharpe": null,
+ "ic_t_stat": 3.606413168033438,
+ "mean_ic": 0.04902417256163081,
+ "total_return": null,
+ "max_drawdown": null,
+ "bars": null,
+ "timing_p": null,
+ "benchmark_sharpe": null,
+ "benchmark_total_return": null,
+ "checks": [
+  {
+   "id": "ic",
+   "status": "info",
+   "summary": "mean rank IC 0.0490 (t=3.6, ICIR 0.15): the signal predicts returns"
+  },
+  {
+   "id": "ic_decay",
+   "status": "info",
+   "summary": "best horizon 20; no exponential decay found (IC does not fall with horizon)"
+  },
+  {
+   "id": "quantile_monotonicity",
+   "status": "warn",
+   "summary": "bucket returns are not monotone (75% adjacent increases, rank corr 0.70): profit may sit in one extreme"
+  },
+  {
+   "id": "long_short_legs",
+   "status": "pass",
+   "summary": "short leg earns 64% of the spread; long leg 36%"
+  },
+  {
+   "id": "breadth_consistency",
+   "status": "skip",
+   "summary": "no claimed IR given (--claim-ir)"
+  },
+  {
+   "id": "signal_placebo",
+   "status": "pass",
+   "summary": "real spread Sharpe 0.062/period beats permuted-score placebos (p=0.015)"
+  },
+  {
+   "id": "selection_vs_timing",
+   "status": "info",
+   "summary": "spread 0.6081%/period; selection effect 0.5816%; with dates shuffled 0.4506% (a time-invariant tilt or market timing, not stock selection)"
+  },
+  {
+   "id": "cost_sensitivity",
+   "status": "fail",
+   "summary": "the portfolio does not earn after costs: net return -23.8% a year at the modelled costs, -39.1% at double (commission 1 bp and square-root impact at AUM 5e+04)"
+  },
+  {
+   "id": "market_impact",
+   "status": "fail",
+   "summary": "at AUM 5e+04: gross -12.41%, impact 20.74%, net -34.55% per year"
+  },
+  {
+   "id": "participation_limit",
+   "status": "pass",
+   "summary": "participation p95 1.03%, max 13.61% of bar volume (limit 5%)"
+  },
+  {
+   "id": "capacity_curve",
+   "status": "info",
+   "summary": "net Sharpe is not positive even at the smallest AUM"
+  },
+  {
+   "id": "short_feasibility",
+   "status": "warn",
+   "summary": "5% of short exposure in the least liquid 20%; borrow 2.95%/yr vs short-leg profit -41.37%/yr"
+  },
+  {
+   "id": "turnover_vs_decay",
+   "status": "info",
+   "summary": "holding 10.0 bars"
+  },
+  {
+   "id": "rebalance_timing_luck",
+   "status": "warn",
+   "summary": "annual net return by rebalance day: min -23.75%, median -1.14%, max 26.61% (k=21)"
+  },
+  {
+   "id": "factor_exposure",
+   "status": "info",
+   "summary": "factors explain 15% of return variance; strongest: market (beta -0.18, t -6.6), size (beta +0.22, t +4.0)"
+  },
+  {
+   "id": "residual_alpha",
+   "status": "warn",
+   "summary": "no significant residual alpha (t -0.2)"
+  },
+  {
+   "id": "factor_spanning",
+   "status": "warn",
+   "summary": "adds nothing the factors do not have (max Sharpe 1.68 -> 1.69)"
+  },
+  {
+   "id": "hidden_short_volatility",
+   "status": "pass",
+   "summary": "no short-volatility payoff (skew -0.1)"
+  },
+  {
+   "id": "market_timing_beta",
+   "status": "info",
+   "summary": "up beta -0.27, down beta -0.24 (timing t -0.3)"
+  },
+  {
+   "id": "crowding",
+   "status": "info",
+   "summary": "correlation with momentum +0.01, low_vol +0.28; mean return on momentum crash days +0.0052"
+  },
+  {
+   "id": "known_anomaly_match",
+   "status": "info",
+   "summary": "closest known factor: market (corr -0.33)"
+  },
+  {
+   "id": "book_correlation",
+   "status": "skip",
+   "summary": "no book given (--book): the value to an existing book was not assessed"
+  },
+  {
+   "id": "hlz_hurdle",
+   "status": "info",
+   "summary": "t = -1.22, below 2 (the no-edge check owns this case)"
+  },
+  {
+   "id": "min_backtest_length",
+   "status": "fail",
+   "summary": "7.4 years of history; Sharpe -0.39 is not positive, so no length of history separates it from luck"
+  },
+  {
+   "id": "drawdown_plausibility",
+   "status": "pass",
+   "summary": "max drawdown 99.4% vs 92.8%..100.0% for iid returns with the same mean and volatility"
+  },
+  {
+   "id": "haircut_sharpe",
+   "status": "info",
+   "summary": "Sharpe -0.39 becomes -0.00 after Bonferroni for 134 trials (haircut 100%)"
+  },
+  {
+   "id": "deflated_sharpe",
+   "status": "fail",
+   "summary": "deflated Sharpe 0.000 over 134 trial(s) on net returns (Sharpe -0.39 a year after commission 1 bp and square-root impact at AUM 5e+04)"
+  },
+  {
+   "id": "neutrality",
+   "status": "warn",
+   "summary": "mean rolling beta -0.32, mean net exposure -0.04: declared neutral but is not"
+  },
+  {
+   "id": "concentration",
+   "status": "warn",
+   "summary": "median effective positions 12.0, largest single weight 100%"
+  },
+  {
+   "id": "leverage_gross_net",
+   "status": "info",
+   "summary": "gross 1.92 (max 2.00), net -0.04; largest gross jump 1.00"
+  },
+  {
+   "id": "historical_stress_replay",
+   "status": "info",
+   "summary": "6 stress windows in the data; worst for the strategy: SVB (-14.9% vs market 6.7%)"
+  },
+  {
+   "id": "tail_risk",
+   "status": "info",
+   "summary": "VaR95 -5.76%, CVaR95 -9.28%, CVaR99 -16.56%, worst bar -51.77%, longest recovery 2644 bars"
+  },
+  {
+   "id": "universe_subsampling",
+   "status": "warn",
+   "summary": "54% of 100 random 70% subsets earn a positive net return (median Sharpe 0.01); top-5 symbols give no share of the profit (there is no gross profit): the edge leans on a few names"
+  },
+  {
+   "id": "group_split",
+   "status": "skip",
+   "summary": "no groups given (sector/country per symbol)"
+  },
+  {
+   "id": "start_date_sensitivity",
+   "status": "warn",
+   "summary": "annual return over 13 start dates ranges -8.56% to 9.75%: the range exceeds the median absolute return"
+  },
+  {
+   "id": "cpcv_paths",
+   "status": "warn",
+   "summary": "net Sharpe over 15 test combinations: min -0.82, median -0.38, 33% positive"
+  },
+  {
+   "id": "synthetic_market_null",
+   "status": "fail",
+   "summary": "net Sharpe -0.14 vs 0.20 median on 100 synthetic markets (p = 0.861): not distinguishable from the market-only null"
+  },
+  {
+   "id": "noise_injection",
+   "status": "skip",
+   "summary": "net Sharpe -0.14 is not positive: nothing to degrade"
+  },
+  {
+   "id": "data_source_replication",
+   "status": "skip",
+   "summary": "no second price source given"
+  },
+  {
+   "id": "bar_construction",
+   "status": "skip",
+   "summary": "daily or slower bars: the bar grid is the calendar day"
+  },
+  {
+   "id": "universe_lookahead",
+   "status": "pass",
+   "summary": "every held symbol is inside its membership window"
+  },
+  {
+   "id": "classification_lookahead",
+   "status": "skip",
+   "summary": "no groups file given"
+  },
+  {
+   "id": "cross_market_close_alignment",
+   "status": "skip",
+   "summary": "no exchange or close-time map given"
+  },
+  {
+   "id": "post_discovery_decay",
+   "status": "skip",
+   "summary": "no discovery date given"
+  },
+  {
+   "id": "research_hygiene",
+   "status": "skip",
+   "summary": "no research-process information given"
+  }
+ ],
+ "reasons": [],
+ "slice": "pre",
+ "n_trials": 134,
+ "exit_code": 0,
+ "report_sha256": "659140b741bd1b8e4f79833e5b6dd998125ba59dc85206ba690a8fcf6c03122f",
+ "economics": {
+  "validation": {
+   "bars": 1461,
+   "sharpe": 0.861,
+   "total_return": 1.0362,
+   "max_drawdown": -0.292,
+   "corr_btc": 0.215,
+   "beta_btc": 0.083,
+   "beta_share": 0.046,
+   "alpha_t_vs_btc": 1.42,
+   "deflated_sharpe": 0.183,
+   "btc_buyhold_sharpe": 0.782
+  },
+  "discovery": {
+   "bars": 1233,
+   "sharpe": 1.316,
+   "total_return": 2.6103,
+   "max_drawdown": -0.3965,
+   "corr_btc": 0.066,
+   "beta_btc": 0.027,
+   "beta_share": 0.004,
+   "alpha_t_vs_btc": 2.29,
+   "deflated_sharpe": 0.416,
+   "btc_buyhold_sharpe": 1.114
+  },
+  "cost_x2_sharpe_validation": 0.688,
+  "cost_x2_sharpe_discovery": 1.202,
+  "by_year": {
+   "2017": {
+    "sharpe": 2.172,
+    "return": 0.407,
+    "btc_return": 2.201
+   },
+   "2018": {
+    "sharpe": 0.175,
+    "return": -0.008,
+    "btc_return": -0.73
+   },
+   "2019": {
+    "sharpe": 2.221,
+    "return": 0.586,
+    "btc_return": 0.943
+   },
+   "2020": {
+    "sharpe": 1.776,
+    "return": 0.629,
+    "btc_return": 3.02
+   },
+   "2021": {
+    "sharpe": 1.156,
+    "return": 0.348,
+    "btc_return": 0.598
+   },
+   "2022": {
+    "sharpe": 0.481,
+    "return": 0.08,
+    "btc_return": -0.642
+   },
+   "2023": {
+    "sharpe": 0.787,
+    "return": 0.154,
+    "btc_return": 1.556
+   },
+   "2024": {
+    "sharpe": 0.921,
+    "return": 0.212,
+    "btc_return": 1.213
+   }
+  },
+  "notes": [
+   "daily bars, fills at the next close, per-coin Binance fees + spread (VIP0), no funding on perpetual shorts, survivors-only universe"
+  ]
+ },
+ "gate_open": false,
+ "finished_at": "2026-11-09T09:19:09+00:00",
+ "seconds": 79.0
+}

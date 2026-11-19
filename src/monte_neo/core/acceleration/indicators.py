@@ -12,8 +12,18 @@ except ImportError:  # optional: pip install "monte-neo[apple]"
 import numpy as np
 
 
+def _require_mlx() -> None:
+    """Raise ImportError when MLX is absent, so callers fall back to the CPU path."""
+    if mx is None:
+        raise ImportError('MLX is not installed: pip install "monte-neo[apple]"')
+
+
 class MLXIndicator:
     """Base class for MLX indicators."""
+
+    def __init__(self) -> None:
+        _require_mlx()
+
     def compute(self, close: mx.array) -> mx.array:
         """
         Compute indicator.
@@ -26,6 +36,7 @@ class MLXIndicator:
 
 class MLXSMA(MLXIndicator):
     def __init__(self, period: int):
+        _require_mlx()
         self.period = period
         # Simple average = sum / P
         self.weight = mx.full((1, period, 1), 1.0 / period)
@@ -134,6 +145,7 @@ class MLXSMACrossStrategy:
     """SMA Crossover Strategy on GPU (Fast vs Slow)."""
     
     def __init__(self, fast_period: int, slow_period: int):
+        _require_mlx()
         self.fast_sma = MLXSMA(fast_period)
         self.slow_sma = MLXSMA(slow_period)
         

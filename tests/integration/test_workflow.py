@@ -1,12 +1,16 @@
 """Integration tests for full workflow."""
 
+import importlib.util
+
 import pandas as pd
+import pytest
 
 from monte_neo.core.generator import GeneratorConfig, IndicatorGenerator
 from monte_neo.data.storage import ParquetStorage
 from monte_neo.metrics.calculator import MetricsCalculator
 
 
+@pytest.mark.skipif(importlib.util.find_spec("mlx") is None, reason="research generator and Monte Carlo engine need MLX (monte-neo[apple])")
 def test_full_generation_workflow(tmp_path, sample_ohlcv):
     # Setup storage
     storage = ParquetStorage(tmp_path)
@@ -60,6 +64,7 @@ def test_metrics_consistency(sample_ohlcv):
     assert m1["max_drawdown"] == m2["max_drawdown"]
 
 
+@pytest.mark.skipif(importlib.util.find_spec("mlx") is None, reason="research generator and Monte Carlo engine need MLX (monte-neo[apple])")
 def test_monte_carlo_engine_robustness(sample_ohlcv):
     from monte_neo.indicators.technical import SMAIndicator
     from monte_neo.monte_carlo.engine import MCConfig, MonteCarloEngine

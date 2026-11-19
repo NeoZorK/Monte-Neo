@@ -1,0 +1,181 @@
+{
+ "verdict": "PASS_WITH_WARNINGS",
+ "certificate_id": "099b552309f4e585",
+ "arl": 3,
+ "arl_summary": "ARL 3/9 \u2014 blocked at 4: the signal predicts (timing_significance)",
+ "sharpe": 1.3110934223268849,
+ "deflated_sharpe": 0.7904974322287748,
+ "ic_t_stat": null,
+ "mean_ic": null,
+ "total_return": 7.916049091566263,
+ "max_drawdown": 0.3221047996829041,
+ "bars": 2192,
+ "checks": [
+  {
+   "id": "data_integrity",
+   "status": "pass",
+   "summary": "OHLCV is clean"
+  },
+  {
+   "id": "data_quality",
+   "status": "pass",
+   "summary": "no spikes, frozen prices, split jumps or gaps"
+  },
+  {
+   "id": "determinism",
+   "status": "pass",
+   "summary": "signal() is deterministic"
+  },
+  {
+   "id": "lookahead_truncation",
+   "status": "pass",
+   "summary": "truncation probe: no leak detected"
+  },
+  {
+   "id": "lookahead_perturbation",
+   "status": "pass",
+   "summary": "future-perturbation probe: no leak detected"
+  },
+  {
+   "id": "external_data",
+   "status": "pass",
+   "summary": "outside data: none read (df only)"
+  },
+  {
+   "id": "repaint_history",
+   "status": "pass",
+   "summary": "repaint (history): the signal of a closed bar never changed (17 prefixes, +50 bars, revised tail)"
+  },
+  {
+   "id": "repaint_live",
+   "status": "info",
+   "summary": "repaint (forming bar): decided at the close, flickers while the bar forms (79% of snapshots): act on it only after the bar closes"
+  },
+  {
+   "id": "lookahead_static_lint",
+   "status": "pass",
+   "summary": "static lint: clean"
+  },
+  {
+   "id": "implausible_accuracy",
+   "status": "pass",
+   "summary": "next-bar hit rate 0.524 over 1279 bars (z 1.7)"
+  },
+  {
+   "id": "data_independence",
+   "status": "pass",
+   "summary": "data independence: positions follow the prices"
+  },
+  {
+   "id": "implausible_performance",
+   "status": "pass",
+   "summary": "annualized Sharpe 1.3 is within the usual range"
+  },
+  {
+   "id": "costs_modeled",
+   "status": "pass",
+   "summary": "15.00 bps per side modeled"
+  },
+  {
+   "id": "net_profitability",
+   "status": "pass",
+   "summary": "net total return +791.60% after costs"
+  },
+  {
+   "id": "cost_margin",
+   "status": "pass",
+   "summary": "break-even cost 200.00 bps per side vs 15.00 modeled"
+  },
+  {
+   "id": "delay_sensitivity",
+   "status": "pass",
+   "summary": "survives 1 bar execution delay"
+  },
+  {
+   "id": "timing_significance",
+   "status": "warn",
+   "summary": "beats 92% of 200 shifted copies of its positions (p 0.090)"
+  },
+  {
+   "id": "sample_size",
+   "status": "pass",
+   "summary": "37 closed trades (min 30)"
+  },
+  {
+   "id": "deflated_sharpe",
+   "status": "warn",
+   "summary": "deflated Sharpe 0.790 over 65 trial(s)"
+  },
+  {
+   "id": "trials_disclosed",
+   "status": "pass",
+   "summary": "n_trials declared"
+  },
+  {
+   "id": "holdout_consistency",
+   "status": "pass",
+   "summary": "Sharpe/bar train +0.0728 vs holdout +0.0595"
+  },
+  {
+   "id": "period_consistency",
+   "status": "pass",
+   "summary": "profitable in 5 of 6 periods"
+  },
+  {
+   "id": "walk_forward_stability",
+   "status": "info",
+   "summary": "5 of 6 equal windows (356 bars each) made money; worst -1.3%, best +141.3%"
+  },
+  {
+   "id": "sharpe_confidence",
+   "status": "info",
+   "summary": "Sharpe 95% interval +0.44 to +2.10 (return +68.7% to +4538.4%); 100% of resamples have a positive Sharpe"
+  },
+  {
+   "id": "serial_correlation",
+   "status": "info",
+   "summary": "returns are serially correlated (lag-1 +0.01): the annualized Sharpe 1.31 is about 1.00 after the correction (Lo), 24% lower"
+  },
+  {
+   "id": "track_record",
+   "status": "info",
+   "summary": "needs 553 bars (about 1.51 years) to be positive at 95%; has 2,131"
+  },
+  {
+   "id": "benchmark",
+   "status": "info",
+   "summary": "buy & hold +2344.66% (Sharpe 1.17) vs strategy +791.60% (Sharpe 1.31)"
+  },
+  {
+   "id": "spread_estimate",
+   "status": "info",
+   "summary": "rough spread estimate from high and low: about 74.33 bps (37.16 bps per side); the model charges only 5 bps slippage per side, well below it: costs may be optimistic"
+  },
+  {
+   "id": "capacity",
+   "status": "info",
+   "summary": "capital that keeps 90% of 1,148 fills within a share of the bar's volume: 1%: 136M, 5%: 680M, 10%: 1.36B (median bar trades 1.49B)"
+  },
+  {
+   "id": "trial_ledger",
+   "status": "pass",
+   "summary": "5 variant(s) tried on this data (counted by the ledger)"
+  },
+  {
+   "id": "preregistration",
+   "status": "info",
+   "summary": "pre-registered at 2026-11-07T16:49:00.601291+00:00: the hypothesis was written before the first verification of this code"
+  }
+ ],
+ "reasons": [
+  "timing_significance: beats 92% of 200 shifted copies of its positions (p 0.090)",
+  "deflated_sharpe: deflated Sharpe 0.790 over 65 trial(s)"
+ ],
+ "slice": "pre",
+ "n_trials": 65,
+ "exit_code": 0,
+ "report_sha256": "3729dff99d092fccd1e636b7096d733aa9da3d95bd91d6e54166e8904f82f0f7",
+ "gate_open": true,
+ "finished_at": "2026-11-07T16:49:04+00:00",
+ "seconds": 1.5
+}

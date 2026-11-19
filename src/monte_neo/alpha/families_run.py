@@ -72,6 +72,8 @@ def run_families(
     process: dict[str, Any] | None = None,
     groups: dict[str, str] | None = None,
     existing: str | Path | pd.DataFrame | None = None,
+    net_returns: np.ndarray | None = None,
+    net_costs: str = "",
 ) -> list[dict[str, Any]]:
     """Run families B, C, E, F, G and I on the portfolio returns of the score.
 
@@ -87,6 +89,8 @@ def run_families(
             ``hygiene`` (see :func:`monte_neo.alpha.process.run_process`).
         groups: ``symbol -> sector or country`` for the robustness split by group.
         existing: Scores of signals the fund already runs (timestamp, symbol, one column per signal): is the new one new?
+        net_returns: Net returns of the executable portfolio (after costs); family F and the Deflated Sharpe use them instead of the gross spread.
+        net_costs: Text saying which costs ``net_returns`` carry.
 
     Returns:
         Check rows.
@@ -106,7 +110,12 @@ def run_families(
         from monte_neo.alpha.orthogonality import load_existing_scores, signal_orthogonality
 
         rows.append(signal_orthogonality(panel, load_existing_scores(existing, panel)))
-    rows += run_multiple_testing(r, ppy, int(n_trials), timestamps=dates, seed=seed)
+    f_returns = r if net_returns is None else np.asarray(net_returns, dtype=float)
+    rows += run_multiple_testing(f_returns, ppy, int(n_trials), timestamps=dates, seed=seed)
+    if net_returns is not None:
+        from monte_neo.alpha.executable import net_deflated_sharpe_row
+
+        rows.append(net_deflated_sharpe_row(f_returns, int(n_trials), ppy, net_costs))
     market = built["market"].reindex(dates).fillna(0.0).to_numpy() if "market" in built else np.zeros_like(r)
     rows += run_risk(r, market, dates, ppy, weights=w, declared_neutral=declared_neutral)
     rows += run_robustness(panel, quantiles=quantiles, seed=seed, groups=groups, cost_bps=0.0)  # costs are family D's job

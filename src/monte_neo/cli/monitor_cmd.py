@@ -25,6 +25,9 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--live", help="live returns file (date, return), or a fills file")
     p.add_argument("--fills", help="fills file: timestamp, symbol, side, quantity, price, [fee], [reference_price]")
     p.add_argument("--slippage-bps", type=float, default=None, help="modelled slippage in bps (default: from the certificate)")
+    p.add_argument("--source", choices=["real_fills", "paper", "testnet", "simulated"],
+                   help="where the live data comes from; only real_fills can support ARL 9 (paper and testnet stop at 8)")
+    p.add_argument("--custody", help="statement that the fills are held at a real venue or broker (account statement id or hash); needed for ARL 9 depth D4")
     p.add_argument("--haircut", type=float, default=0.5, help="share of the backtest mean expected live (default 0.5)")
     p.add_argument("--format", choices=("text", "json"), default="text")
     p.add_argument("--out", help="also write the JSON report to this path")
@@ -50,7 +53,7 @@ def main(argv: list[str] | None = None) -> int:
 
         source = load_certificate(args.certificate) if args.certificate else args.backtest
         live = load_live(args.live) if args.live else {"kind": "fills", "returns": None, "fills": None}
-        report = verify_live(source, live, fills=args.fills, modelled_slippage_bps=args.slippage_bps, haircut=args.haircut)
+        report = verify_live(source, live, fills=args.fills, modelled_slippage_bps=args.slippage_bps, haircut=args.haircut, source=args.source, custody=args.custody)
         if args.out:
             Path(args.out).write_text(json.dumps(report, indent=2, default=str), encoding="utf-8")
     except Exception as exc:  # input errors must not look like a warning
@@ -65,6 +68,8 @@ def main(argv: list[str] | None = None) -> int:
         for c in report["checks"]:
             table.add_row(c["id"], f"[{_STYLE.get(c['status'], 'white')}]{c['status']}[/]", c["summary"])
         console.print(table)
+        if report.get("arl"):
+            console.print(f"[bold]{report['arl']['headline']}[/]: {report['arl']['summary']}")
         for action in report["next_actions"]:
             console.print(f"- {action}")
     if args.format == "json":

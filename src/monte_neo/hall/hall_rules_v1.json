@@ -1,0 +1,34 @@
+{
+ "schema": "hall-of-fame-rules/1",
+ "version": "hall-of-fame/1",
+ "status": "provisional",
+ "arl_rules_version": "arl-rules/1",
+ "top_n": 10,
+ "score": {
+  "order": ["ARL level (higher first)", "ARL depth (higher first)", "Deflated Sharpe on the certificate (higher first; no value ranks last)", "certificate date (earlier first)", "entry id (alphabetical)"],
+  "excluded_verdicts": ["REJECT"],
+  "note": "Return, profit and Sharpe are not part of the score. The Deflated Sharpe only breaks ties between equal ARL and depth, and it already pays for the n_trials recorded in the certificate."
+ },
+ "tiers": {
+  "A": {"name": "open", "ranked": true, "meaning": "The code is public, so anyone can run `monte-neo verify --recheck` and reproduce the certificate. The submitter reproduced it locally and the maintainer reproduces it again before the entry is merged."},
+  "B": {"name": "privately verified", "ranked": true, "meaning": "The author passed the code to the maintainer privately. The maintainer reproduced the certificate and signed the entry; the code is not published. The signature must verify against a key in `hall_of_fame/maintainer_keys.json`."},
+  "C": {"name": "self-reported", "ranked": false, "meaning": "Only the author's certificate. It is never reproduced by anyone else, never ranked and never gets a medal; it is listed separately."}
+ },
+ "categories": ["trend", "mean-reversion", "carry", "pairs", "cross-sectional", "seasonality", "other"],
+ "limits": {
+  "entries_per_author_per_month": 3,
+  "min_n_trials": 1
+ },
+ "dedupe": "Two entries with the same data hash and signal hash, or the same data hash and strategy source hash, are the same strategy under different names: only the earliest entry (by submission date, then id) stays ranked.",
+ "medals": {"gold": 1, "silver": 2, "bronze": 3},
+ "honesty": [
+  "The score is evidence, not return: the order is ARL, depth, then the Deflated Sharpe, then the certificate date. A REJECT verdict is never ranked.",
+  "n_trials is mandatory: a certificate without it is refused, and its Deflated Sharpe already pays for every variant the author tried.",
+  "Only tier A (open) and tier B (privately verified and signed by the maintainer) entries are ranked. Self-reported (tier C) entries are shown apart and never get a medal.",
+  "Every entry carries the SHA-256 of its certificate; a changed certificate, a bad certificate signature or a bad maintainer signature fails the build.",
+  "The same strategy under another name is one entry (same data and signal hashes), and an author can add at most 3 entries per month.",
+  "Medals and holding periods come from monthly snapshots in hall_of_fame/history.jsonl, never from a hand edit.",
+  "A change of these rules or of the ARL rules is a new version and a new table; the old table is archived, never rewritten.",
+  "These tables rate the evidence about a strategy. They are not investment advice, not a recommendation to trade and say nothing about future returns."
+ ]
+}

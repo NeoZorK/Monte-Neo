@@ -213,6 +213,9 @@ runs:
         sig = r.get("signature")
         signed = f", signed by key `{sig['key_id']}`" if sig else ""
         print(f"## Monte-Neo verdict: {r['verdict']}\n\nCertificate `{r['certificate_id']}`{signed}\n")
+        arl = r.get("arl")
+        if arl:
+            print(f"**{arl['headline']}** (rates the evidence, not the investment)\n")
         g = r.get("grid")
         if g:
             wf = g["walk_forward"]

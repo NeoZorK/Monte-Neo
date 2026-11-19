@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="190" viewBox="0 0 420 190" role="img" aria-label="Monte-Neo Hall of Fame silver (overall): Time-series momentum BTC by Rostyslav Shcherbyna (process), idea: Claude Sonnet 5.5, certificate SHA-256 dce45d55c6a01706e7e4151350bca4a78dafb4cd2807c693e9d2e491de92d6e9">
+<title>Monte-Neo Hall of Fame silver (overall): Time-series momentum BTC by Rostyslav Shcherbyna (process), idea: Claude Sonnet 5.5, certificate SHA-256 dce45d55c6a01706e7e4151350bca4a78dafb4cd2807c693e9d2e491de92d6e9</title><desc>Evidence rating, not investment advice. Holds this rank: 2026-11 – 2026-11. Rules hall-of-fame/1, ARL arl-rules/1.</desc>
+<defs><linearGradient id="m" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eef1f4"/><stop offset="1" stop-color="#9aa3ad"/></linearGradient></defs>
+<rect width="420" height="190" rx="14" fill="#141922" stroke="#9aa3ad" stroke-width="2"/>
+<path d="M46 14 L70 70 L94 14 Z" fill="#9aa3ad"/>
+<circle cx="70" cy="86" r="40" fill="url(#m)" stroke="#eef1f4" stroke-width="3"/>
+<text x="70" y="99" text-anchor="middle" font-family="Georgia,serif" font-size="38" font-weight="700" fill="#141922">2</text>
+<text x="70" y="146" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="12" font-weight="700" fill="#eef1f4">SILVER · OVERALL</text>
+<g font-family="Helvetica,Arial,sans-serif" fill="#e8ecf2">
+<text x="132" y="32" font-size="11" font-weight="700" fill="#eef1f4" letter-spacing="1">MONTE-NEO HALL OF FAME</text>
+<text x="132" y="58" font-size="17" font-weight="700">Time-series momentum BTC</text>
+<text x="132" y="78" font-size="12">Rostyslav Shcherbyna (process), idea: Claud…</text>
+<text x="132" y="98" font-size="12">ARL 3, depth 2/4 - provisional</text>
+<text x="132" y="116" font-size="11" fill="#b9c2cf">Holds this rank: 2026-11 – 2026-11</text>
+<text x="132" y="136" font-size="9" font-family="Menlo,Consolas,monospace" fill="#b9c2cf">SHA-256 dce45d55c6a01706e7e4151350bca4a7</text>
+<text x="132" y="148" font-size="9" font-family="Menlo,Consolas,monospace" fill="#b9c2cf">8dafb4cd2807c693e9d2e491de92d6e9</text>
+<text x="20" y="176" font-size="10" fill="#b9c2cf">Evidence rating, not investment advice. Simulated results do not predict future returns.</text></g>
+</svg>

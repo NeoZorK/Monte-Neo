@@ -1,0 +1,123 @@
+{
+ "verdict": "NEEDS_MORE_EVIDENCE",
+ "certificate_id": "d63da88edd48bd04",
+ "arl": 1,
+ "arl_depth": 0,
+ "arl_headline": "ARL 1, depth 0/4 (arl-rules/1, provisional)",
+ "arl_provisional": true,
+ "arl_summary": "ARL 1/9 \u2014 not assessed beyond 1: the backtest is not broken (lookahead_truncation (not run), universe_lookahead (not run))",
+ "sharpe": 0.5813898204155267,
+ "deflated_sharpe": 0.17294821102818647,
+ "ic_t_stat": null,
+ "mean_ic": null,
+ "total_return": null,
+ "max_drawdown": 0.06204803529505498,
+ "bars": null,
+ "timing_p": null,
+ "benchmark_sharpe": null,
+ "benchmark_total_return": null,
+ "checks": [
+  {
+   "id": "returns_only_scope",
+   "status": "info",
+   "summary": "Return series only: smoothing, distribution and significance were checked; look-ahead, costs and data quality behind the returns cannot be checked without the strategy or positions."
+  },
+  {
+   "id": "data_integrity",
+   "status": "pass",
+   "summary": "series is clean: finite, ordered, unique dates, no gaps, no frozen values"
+  },
+  {
+   "id": "idle_share",
+   "status": "info",
+   "summary": "89% of periods have an exactly zero return (flat or out of the market); zero_kink and round_numbers run on the periods in the market only"
+  },
+  {
+   "id": "return_smoothing",
+   "status": "pass",
+   "summary": "no sign of smoothing (lag-1 autocorrelation 0.12, unsmoothed Sharpe 0.52)"
+  },
+  {
+   "id": "zero_kink",
+   "status": "pass",
+   "summary": "no kink at zero (7 small losses, 2 small gains, z=1.7)"
+  },
+  {
+   "id": "implausible_consistency",
+   "status": "pass",
+   "summary": "5% positive periods vs 51% expected (z=-17.6)"
+  },
+  {
+   "id": "round_numbers",
+   "status": "pass",
+   "summary": "round-number share 7.5% (expected 0.0%)"
+  },
+  {
+   "id": "track_record_significance",
+   "status": "fail",
+   "summary": "track record is not significant: probabilistic Sharpe 0.72, deflated for 9 strategies 0.17; track record 1.0 years, 8.0 needed"
+  },
+  {
+   "id": "drawdown_consistency",
+   "status": "pass",
+   "summary": "max drawdown 6.2% within the simulated range (5th percentile 5.3%)"
+  }
+ ],
+ "reasons": [
+  "track_record_significance: track record is not significant: probabilistic Sharpe 0.72, deflated for 9 strategies 0.17; track record 1.0 years, 8.0 needed"
+ ],
+ "slice": "disc",
+ "n_trials": 9,
+ "exit_code": 0,
+ "report_sha256": "d8df234160c33579b9f3da9ea74013909b3b046efb33afdbe27e75fa3fd81fb3",
+ "grid_size": 9,
+ "grid_sharpes": [
+  {
+   "window": 60,
+   "entry": 1.5,
+   "sharpe": 0.014
+  },
+  {
+   "window": 60,
+   "entry": 2.0,
+   "sharpe": 0.534
+  },
+  {
+   "window": 60,
+   "entry": 2.5,
+   "sharpe": 0.237
+  },
+  {
+   "window": 90,
+   "entry": 1.5,
+   "sharpe": 1.035
+  },
+  {
+   "window": 90,
+   "entry": 2.0,
+   "sharpe": 0.582
+  },
+  {
+   "window": 90,
+   "entry": 2.5,
+   "sharpe": 0.911
+  },
+  {
+   "window": 120,
+   "entry": 1.5,
+   "sharpe": -0.654
+  },
+  {
+   "window": 120,
+   "entry": 2.0,
+   "sharpe": 0.123
+  },
+  {
+   "window": 120,
+   "entry": 2.5,
+   "sharpe": 0.123
+  }
+ ],
+ "finished_at": "2026-11-08T16:54:57+00:00",
+ "seconds": 2.4
+}

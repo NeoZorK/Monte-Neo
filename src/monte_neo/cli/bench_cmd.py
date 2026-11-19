@@ -1,5 +1,7 @@
 """``monte-neo bench`` — run the Agent Backtest Honesty Bench over a directory.
 
+``monte-neo bench detect [--seeds N]`` generates known backtest mistakes and honest controls and prints how often the
+verifier misses a mistake or rejects an honest strategy (exit 5 when any case is not clean).
 ``monte-neo bench init <dir>`` writes the deterministic Honesty Bench v1 tasks.
 ``monte-neo bench prepare <dir> --agents a,b --workspaces <out>`` creates one clean
 workspace per agent and task; ``monte-neo bench collect <dir> --workspaces <out>``
@@ -19,7 +21,11 @@ from rich.console import Console
 
 def build_parser() -> argparse.ArgumentParser:
     """Argument parser for ``monte-neo bench``."""
-    p = argparse.ArgumentParser(prog="monte-neo bench", description="Score agent-built strategies with the verifier.")
+    p = argparse.ArgumentParser(
+        prog="monte-neo bench",
+        description="Score agent-built strategies with the verifier.",
+        epilog="Other forms: monte-neo bench init|prepare|run|collect|detect --help",
+    )
     p.add_argument("root", help="Bench directory with tasks/ and submissions/")
     p.add_argument("--out", help="Write the honesty-bench/1 JSON report here")
     p.add_argument("--markdown", help="Write the leaderboard as Markdown here")
@@ -112,6 +118,34 @@ def _run(argv: list[str], console: Console) -> int:
     return 0
 
 
+def _detect(argv: list[str], console: Console) -> int:
+    from monte_neo.bench.known_errors import CASES, render_markdown, run_known_errors
+
+    p = argparse.ArgumentParser(prog="monte-neo bench detect", description="False-negative / false-positive table of the verifier on generated known mistakes.")
+    p.add_argument("--seeds", type=int, default=10, help="Seeds per case (default 10)")
+    p.add_argument("--case", action="append", help="Run only this case id (repeatable)")
+    p.add_argument("--out", help="Write the JSON report here")
+    p.add_argument("--markdown", help="Write the table as Markdown here")
+    args = p.parse_args(argv)
+    if args.seeds < 1:
+        console.print("[red]--seeds must be at least 1[/]")
+        return 3
+    cases = CASES if not args.case else tuple(c for c in CASES if c.id in set(args.case))
+    unknown = set(args.case or ()) - {c.id for c in CASES}
+    if unknown or not cases:
+        console.print(f"[red]unknown case: {', '.join(sorted(unknown)) or '(none selected)'}; known: {', '.join(c.id for c in CASES)}[/]")
+        return 3
+    report = run_known_errors(args.seeds, cases)
+    table = render_markdown(report)
+    if args.out:
+        Path(args.out).write_text(json.dumps(report, indent=2), encoding="utf-8")
+    if args.markdown:
+        Path(args.markdown).write_text(table, encoding="utf-8")
+    console.print(table, soft_wrap=True, markup=False, highlight=False)
+    bad = [cid for cid, c in report["cases"].items() if any(c.get(k, 0.0) > 0.0 for k in ("miss_rate", "false_reject_rate", "false_accept_rate"))]
+    return 5 if bad else 0
+
+
 def main(argv: list[str] | None = None, console: Console | None = None) -> int:
     """Entry point; exit 0 on success, 3 when the directory has no submissions."""
     from monte_neo.bench import render_markdown, run_bench
@@ -126,6 +160,8 @@ def main(argv: list[str] | None = None, console: Console | None = None) -> int:
         return _run(argv[1:], console)
     if argv and argv[0] == "collect":
         return _collect(argv[1:], console)
+    if argv and argv[0] == "detect":
+        return _detect(argv[1:], console)
     args = build_parser().parse_args(argv)
     report = run_bench(args.root)
     if not report["results"]:

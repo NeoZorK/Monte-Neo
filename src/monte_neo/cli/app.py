@@ -164,7 +164,7 @@ class MonteNeoCLI:
         from monte_neo.core.optimization.production_exporter import ProductionExporter
         
         try:
-            with open(json_path) as f:
+            with open(json_path, encoding="utf-8") as f:
                 data = json.load(f)
             
             # Mock indicator for export

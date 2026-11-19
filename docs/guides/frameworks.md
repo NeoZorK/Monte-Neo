@@ -49,9 +49,9 @@ arguments are those of `verify_strategy` (`model=`, `n_trials=`, `claim=`, ...).
 | `from_lean(events, ohlcv)` | order events: `time`, `fillQuantity`, `status` | sign of the running fill quantity | open | fake events only |
 | `from_fills(fills, ohlcv, fill_at=)` | `timestamp`, signed `quantity` | sign of the running quantity | your choice | unit tests |
 
-"The real framework" means a CI job runs a moving-average strategy in the installed framework and compares the
+"The real framework" means a local test (`tests/frameworks`, not run in CI) runs a moving-average strategy in the installed framework and compares the
 adapter's positions with the position the framework itself held on every bar (`tests/frameworks`). Freqtrade and Lean
-are not in that job (Freqtrade needs exchange access to start, Lean runs in Docker): check their adapters on your
+are not in that test (Freqtrade needs exchange access to start, Lean runs in Docker): check their adapters on your
 own run before trusting a certificate, and tell us the result.
 
 Notes from those runs: Backtrader and backtesting.py fill at the next open; backtesting.py leaves a trade that is

@@ -1,0 +1,9 @@
+{
+ "keys": [
+  {
+   "key_id": "5530a1e2e46a2429",
+   "public_key": "ed25519:xp4SsTA2h8cvR54wmQjujGe1AqB7KsxJYwJpHHq6ykU=",
+   "owner": "seed key generated to sign the example entries; the maintainer replaces it with their own key and re-attests (monte-neo hall attest)"
+  }
+ ]
+}

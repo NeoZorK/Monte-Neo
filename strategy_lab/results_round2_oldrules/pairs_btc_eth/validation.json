@@ -1,0 +1,157 @@
+{
+ "verdict": "NEEDS_MORE_EVIDENCE",
+ "certificate_id": "2afad050f2b0f85e",
+ "arl": 1,
+ "arl_summary": "ARL 1/9 \u2014 not assessed beyond 1: the backtest is not broken (lookahead_truncation (not run), universe_lookahead (not run))",
+ "sharpe": 0.07184488922815782,
+ "deflated_sharpe": 0.009782290414005801,
+ "ic_t_stat": null,
+ "mean_ic": null,
+ "total_return": null,
+ "max_drawdown": 0.3373876269089887,
+ "bars": null,
+ "timing_p": null,
+ "benchmark_sharpe": null,
+ "benchmark_total_return": null,
+ "checks": [
+  {
+   "id": "returns_only_scope",
+   "status": "info",
+   "summary": "Return series only: smoothing, distribution and significance were checked; look-ahead, costs and data quality behind the returns cannot be checked without the strategy or positions."
+  },
+  {
+   "id": "return_smoothing",
+   "status": "pass",
+   "summary": "no sign of smoothing (lag-1 autocorrelation -0.23, unsmoothed Sharpe 0.06)"
+  },
+  {
+   "id": "zero_kink",
+   "status": "warn",
+   "summary": "small losses are missing: 81 small losses vs 1358 small gains (expected about 719.2 losses, z=-33.6); losses may be deferred or rounded up"
+  },
+  {
+   "id": "implausible_consistency",
+   "status": "pass",
+   "summary": "13% positive periods vs 50% expected (z=-32.0)"
+  },
+  {
+   "id": "round_numbers",
+   "status": "warn",
+   "summary": "73% of returns are exact multiples of 5 bps vs 0.0% expected: figures may be typed or rounded by hand"
+  },
+  {
+   "id": "track_record_significance",
+   "status": "fail",
+   "summary": "track record is not significant: probabilistic Sharpe 0.56, deflated for 83 strategies 0.01; track record 5.0 years, 510.4 needed"
+  },
+  {
+   "id": "drawdown_consistency",
+   "status": "pass",
+   "summary": "max drawdown 33.7% within the simulated range (5th percentile 21.3%)"
+  },
+  {
+   "id": "data_integrity",
+   "status": "pass",
+   "summary": "input prices are clean"
+  }
+ ],
+ "reasons": [
+  "zero_kink: small losses are missing: 81 small losses vs 1358 small gains (expected about 719.2 losses, z=-33.6); losses may be deferred or rounded up",
+  "round_numbers: 73% of returns are exact multiples of 5 bps vs 0.0% expected: figures may be typed or rounded by hand",
+  "track_record_significance: track record is not significant: probabilistic Sharpe 0.56, deflated for 83 strategies 0.01; track record 5.0 years, 510.4 needed"
+ ],
+ "evidence_added": [
+  "data_integrity"
+ ],
+ "arl_scope": "returns-only evidence: the Lab added data_integrity of the input prices; signal-level checks (ic, timing, placebo) cannot run on a return series, so the ARL is capped by construction and is not comparable with signal certificates",
+ "slice": "pre",
+ "n_trials": 83,
+ "exit_code": 0,
+ "report_sha256": "dd903e01bf80ec15c4dffedc0974b63f325391f27e2b9b40828d3bedcf0d40d3",
+ "pair": {
+  "legs": {
+   "exit_code": 0,
+   "verdict": "PASS_WITH_WARNINGS",
+   "certificate_id": "c31fbebd7a45e7f5",
+   "checks": [
+    "legs_scope [info]: Accounting only: the reported P&L was re-derived from the leg positions you gave. Look-ahead in the signal, trading costs and data quality are not checked here; use the full verify for them.",
+    "accounting_mismatch [pass]: the reported P&L matches the legs within 5% (unexplained 0.0%).",
+    "derived_significance [warn]: the legs earn Sharpe +0.15 (t-statistic +0.32, 1735 bars): not distinguishable from zero."
+   ]
+  },
+  "pairs_checks": {
+   "verdict": "NOT_AVAILABLE",
+   "checks": [
+    "cointegration, ADF/KPSS, half-life and break tests are not in this build of Monte-Neo (branch x/laughing-morse-208e19, not merged): the pair is NOT econometrically verified"
+   ]
+  },
+  "null_test": {
+   "exit_code": 0,
+   "verdict": "PASS",
+   "certificate_id": "95e2008b5c867c32",
+   "checks": [
+    "null_test_scope [info]: The strategy was run on independent random walks of your length and volatility. This finds mechanical edges (accounting, data handling); a pass does not show that the strategy has a real edge.",
+    "edge_on_noise [pass]: no edge on noise, on 100 independent random-walk sets: median Sharpe -0.32, 22% positive, median t-statistic -0.91."
+   ]
+  }
+ },
+ "economics": {
+  "validation": {
+   "bars": 1461,
+   "sharpe": 0.004,
+   "total_return": -0.0706,
+   "max_drawdown": -0.3374,
+   "corr_btc": -0.082,
+   "beta_btc": -0.027,
+   "beta_share": 0.007,
+   "alpha_t_vs_btc": 0.14,
+   "deflated_sharpe": 0.007,
+   "btc_buyhold_sharpe": 0.782
+  },
+  "discovery": {
+   "bars": 366,
+   "sharpe": 0.581,
+   "total_return": 0.059,
+   "max_drawdown": -0.062,
+   "corr_btc": 0.036,
+   "beta_btc": 0.005,
+   "beta_share": 0.001,
+   "alpha_t_vs_btc": 0.5,
+   "deflated_sharpe": 0.029,
+   "btc_buyhold_sharpe": 2.253
+  },
+  "by_year": {
+   "2020": {
+    "sharpe": 0.581,
+    "return": 0.059,
+    "btc_return": 3.02
+   },
+   "2021": {
+    "sharpe": -0.286,
+    "return": -0.143,
+    "btc_return": 0.598
+   },
+   "2022": {
+    "sharpe": -0.371,
+    "return": -0.05,
+    "btc_return": -0.642
+   },
+   "2023": {
+    "sharpe": 0.216,
+    "return": 0.013,
+    "btc_return": 1.556
+   },
+   "2024": {
+    "sharpe": 0.873,
+    "return": 0.127,
+    "btc_return": 1.213
+   }
+  },
+  "notes": [
+   "daily bars, fills at the next close, per-coin Binance fees + spread (VIP0), no funding on perpetual shorts, survivors-only universe"
+  ]
+ },
+ "gate_open": false,
+ "finished_at": "2026-11-08T12:04:32+00:00",
+ "seconds": 2.9
+}

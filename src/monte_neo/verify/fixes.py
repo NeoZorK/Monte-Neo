@@ -157,8 +157,11 @@ class _Causalize(ast.NodeTransformer):
         return replacement
 
 
-def suggest_fixes(source: str) -> dict[str, Any]:
-    """``{"changes", "patched", "diff", "remaining"}``: the rewrites, the new source, a unified diff and the lint findings left."""
+def suggest_fixes(source: str, filename: str = "strategy.py") -> dict[str, Any]:
+    """``{"changes", "patched", "diff", "remaining"}``: the rewrites, the new source, a unified diff and the lint findings left.
+
+    ``filename`` names the file in the diff header (the patched side is ``<stem>.causal.py``).
+    """
     try:
         tree = ast.parse(source)
     except SyntaxError as exc:
@@ -166,9 +169,60 @@ def suggest_fixes(source: str) -> dict[str, Any]:
     fixer = _Causalize()
     patched_tree = ast.fix_missing_locations(fixer.visit(tree))
     patched = ast.unparse(patched_tree) + "\n" if fixer.changes else source
-    diff = "".join(difflib.unified_diff(source.splitlines(True), patched.splitlines(True), "strategy.py", "strategy.causal.py")) if fixer.changes else ""
+    diff = "".join(difflib.unified_diff(source.splitlines(True), patched.splitlines(True), filename, (filename[:-3] if filename.endswith(".py") else filename) + ".causal.py")) if fixer.changes else ""
     remaining = lint_source(patched)["findings"] if fixer.changes else lint_source(source)["findings"]
     return {"changes": fixer.changes, "patched": patched, "diff": diff, "remaining": remaining}
 
 
-__all__ = ["suggest_fixes"]
+def advise(report: dict[str, Any]) -> list[dict[str, Any]]:
+    """Per-check advice for the failing and warning rows of a certificate.
+
+    Each item is ``{"check", "status", "action", "repair", "not_repairable", "note"}``: ``action`` is the fix-it text,
+    ``repair`` the declared transform(s) the repair catalogue would try (``{"id", "steps"}`` list, e.g. staggered
+    tranches for rebalance luck, a beta hedge, a longer holding period), ``not_repairable`` what only the owner can do
+    (add delisted symbols, extend the history). A repair is a trial: ``monte-neo repair`` counts every candidate in
+    ``n_trials``, chooses on the first 70 % of the history by the defects left (never by return) and opens a lockbox
+    once, so applying one by hand without that protocol is curve-fitting.
+    """
+    from monte_neo.repair import plan
+    from monte_neo.verify.checks import NEXT_ACTIONS
+
+    out: list[dict[str, Any]] = []
+    for row in report.get("checks", []):
+        if row["status"] not in ("fail", "warn"):
+            continue
+        options = [c for c in plan.candidates([row], None, 24) if "+" not in c["id"]]
+        blocked = plan.NOT_REPAIRABLE.get(row["id"])
+        if not (options or blocked or row["id"] in NEXT_ACTIONS):
+            continue
+        out.append({
+            "check": row["id"], "status": row["status"], "action": NEXT_ACTIONS.get(row["id"], ""),
+            "repair": [{"id": c["id"], "steps": [[n, p] for n, p in c["steps"]], "why": c["why"]} for c in options],
+            "not_repairable": blocked,
+            "note": "a repair is a trial: run monte-neo repair (dev/lockbox, n_trials grows) instead of tuning by hand" if options else "",
+        })
+    return out
+
+
+def advise_depth(arl: dict[str, Any]) -> list[dict[str, Any]]:
+    """Advice for every open ARL depth criterion of a readiness report (or a certificate's ``next_actions`` of it).
+
+    Each item has the ``level``, ``criterion``, ``state`` (``unmet`` or ``not assessed``), ``why``, the ``command`` that
+    produces the missing evidence and, when the criterion is a defect a declared transform addresses, ``repair`` (the same
+    declared candidates ``monte-neo repair`` tries, chosen on development data only, every candidate counted in ``n_trials``).
+    A criterion with no evidence is never repaired: it needs the run.
+    """
+    from monte_neo.repair import plan
+
+    out = []
+    for a in arl.get("next_actions", []):
+        check = a.get("repair_check")
+        row = {"id": check, "status": "warn", "details": {}}
+        options = [c for c in plan.candidates([row], None, 6) if "+" not in c["id"]] if check and a["state"] == "unmet" else []
+        out.append({"level": a["level"], "criterion": a["criterion"], "state": a["state"], "why": a["why"], "command": a["command"],
+                    "repair": [{"id": c["id"], "steps": [[n, p] for n, p in c["steps"]]} for c in options],
+                    "note": "run monte-neo repair: dev/lockbox, n_trials grows" if options else ""})
+    return out
+
+
+__all__ = ["advise", "advise_depth", "suggest_fixes"]

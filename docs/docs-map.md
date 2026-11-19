@@ -48,6 +48,8 @@ A simplified guide to the Monte-Neo file structure.
 - docs/assets/report-leak.png - Screenshot of the HTML report of a rejected strategy (README, from `docs/assets/reports/leak.html`)
 - docs/assets/demo-verify.gif - Animated demo: leaky agent strategy → fix → honest verdict (scripts/make_demo_gif.py)
 - docs/assets/demo-arrival.gif - Animated demo: a strategy that lives on data it could not have seen, and an honest one (scripts/make_arrival_gif.py)
+- docs/guides/carry.md - Delta-neutral carry in the full verifier: funding as P&L, basis accuracy, accrual sample, future-funding probe, margin, baskets
+- docs/guides/research.md - Honest strategy search: fixed split, ledger, pre-registered batches, family statistics, one sealed holdout, breadth
 - docs/guides/arrival-time.md - Latency audit guide: arrival look-ahead, the delay where the profit vanishes, latency Monte Carlo, recorder, limits
 - docs/marketing/launch-kit.md - Ready-to-post launch texts, GitHub About text, catalogue entries
 - docs/marketing/article-six-ways.md - Article draft: six ways an agent's backtest lies
@@ -90,6 +92,121 @@ A simplified guide to the Monte-Neo file structure.
 - src/monte_neo/verify/legs.py, nulltest.py, phantom.py - legs accounting check, random-walk null test, reference pairs model
 - src/monte_neo/cli/legs_cmd.py - CLI for --legs, --null-test, --demo-phantom
 - tests/unit/test_phantom_legs.py - phantom-profit tests
+- tests/unit/test_returns_idle.py - idle (zero) periods vs round_numbers and zero_kink
+- tests/unit/test_series_checks.py - data_integrity and ARL for returns/legs
+- docs/guides/pairs-econometrics.md - verify --legs --pairs-checks: cointegration, structural breaks, pair-selection bias, legging and borrow risk
+- src/monte_neo/verify/pairs_unitroot.py, pairs_johansen.py, pairs_stability.py, pairs_breaks.py - ADF, Engle-Granger, KPSS, half-life, Johansen, rolling hedge ratio and cointegration, CUSUM, Chow, sup-Wald, Bai-Perron (numpy only)
+- src/monte_neo/verify/pairs_selection.py, pairs_legging.py, pairs_verify.py - pair-selection deflation, second-leg delay and borrow scenarios, the check rows
+- tests/unit/test_pairs_math.py, test_pairs_verify.py - tests on processes with a known answer, and end-to-end verdicts
+- docs/catalog/README.md - strategy catalog overview: 24 types, 100 strategies, how to read it
+- docs/catalog/INDEX.md - catalog index
+- docs/catalog/TYPES.md - the 24 strategy types
+- docs/catalog/RESULTS.md - verified results per catalog strategy (generated from Strategy Lab data via lab_map.json)
+- docs/catalog/WHAT_DID_NOT_WORK.md - rejected and no-evidence results with computed reasons (generated)
+- docs/catalog/lab_results.py, docs/catalog/lab_map.json - generator input for the two pages above
+- docs/catalog/PROTOCOL.md - test protocol for catalog strategies
+- docs/catalog/IMPLEMENTATION_PLAN.md - implementation plan
+- docs/catalog/strategies.yaml, types.yaml, traps.yaml, build_catalog.py - catalog data and the generator of the cards
+- docs/catalog/cards/accruals.md - catalog card
+- docs/catalog/cards/adx_trend.md - catalog card
+- docs/catalog/cards/all_weather.md - catalog card
+- docs/catalog/cards/always_flat.md - catalog card
+- docs/catalog/cards/avellaneda_lee_pca.md - catalog card
+- docs/catalog/cards/avellaneda_stoikov.md - catalog card
+- docs/catalog/cards/bab.md - catalog card
+- docs/catalog/cards/bh_btc.md - catalog card
+- docs/catalog/cards/bh_eth.md - catalog card
+- docs/catalog/cards/bh_spy.md - catalog card
+- docs/catalog/cards/blb_ma_1_150.md - catalog card
+- docs/catalog/cards/bollinger_breakout.md - catalog card
+- docs/catalog/cards/bollinger_mr.md - catalog card
+- docs/catalog/cards/bond_rolldown.md - catalog card
+- docs/catalog/cards/btc_eth_ratio.md - catalog card
+- docs/catalog/cards/bxm_buywrite.md - catalog card
+- docs/catalog/cards/cash_and_carry.md - catalog card
+- docs/catalog/cards/collar_cll.md - catalog card
+- docs/catalog/cards/commodity_carry.md - catalog card
+- docs/catalog/cards/constant_mix.md - catalog card
+- docs/catalog/cards/convert_arb.md - catalog card
+- docs/catalog/cards/cppi.md - catalog card
+- docs/catalog/cards/crypto_equal_weight.md - catalog card
+- docs/catalog/cards/crypto_funding_carry.md - catalog card
+- docs/catalog/cards/crypto_tsmom.md - catalog card
+- docs/catalog/cards/crypto_xs_mom.md - catalog card
+- docs/catalog/cards/cum_rsi2.md - catalog card
+- docs/catalog/cards/dca_monthly.md - catalog card
+- docs/catalog/cards/dogs_of_dow.md - catalog card
+- docs/catalog/cards/donchian_20_10.md - catalog card
+- docs/catalog/cards/donchian_55_20.md - catalog card
+- docs/catalog/cards/dual_momentum_gem.md - catalog card
+- docs/catalog/cards/eaa_keller.md - catalog card
+- docs/catalog/cards/eg_pairs.md - catalog card
+- docs/catalog/cards/equal_weight_1n.md - catalog card
+- docs/catalog/cards/erc_risk_parity.md - catalog card
+- docs/catalog/cards/faber_sma10.md - catalog card
+- docs/catalog/cards/fifty_two_week_high.md - catalog card
+- docs/catalog/cards/fomc_drift.md - catalog card
+- docs/catalog/cards/fx_carry_g10.md - catalog card
+- docs/catalog/cards/fx_momentum.md - catalog card
+- docs/catalog/cards/gatev_pairs.md - catalog card
+- docs/catalog/cards/global_carry.md - catalog card
+- docs/catalog/cards/golden_cross.md - catalog card
+- docs/catalog/cards/grid_trading.md - catalog card
+- docs/catalog/cards/gross_profitability.md - catalog card
+- docs/catalog/cards/halloween.md - catalog card
+- docs/catalog/cards/hml_value.md - catalog card
+- docs/catalog/cards/hop_trend.md - catalog card
+- docs/catalog/cards/hrp.md - catalog card
+- docs/catalog/cards/ibs.md - catalog card
+- docs/catalog/cards/ichimoku_cloud.md - catalog card
+- docs/catalog/cards/index_inclusion.md - catalog card
+- docs/catalog/cards/industry_momentum.md - catalog card
+- docs/catalog/cards/inverse_vol.md - catalog card
+- docs/catalog/cards/iron_condor.md - catalog card
+- docs/catalog/cards/ivy_five.md - catalog card
+- docs/catalog/cards/johansen_basket.md - catalog card
+- docs/catalog/cards/jt_momentum_12_1.md - catalog card
+- docs/catalog/cards/kalman_pairs.md - catalog card
+- docs/catalog/cards/low_vol_ang.md - catalog card
+- docs/catalog/cards/ls_composite.md - catalog card
+- docs/catalog/cards/macd_12_26_9.md - catalog card
+- docs/catalog/cards/macro_regimes.md - catalog card
+- docs/catalog/cards/magic_formula.md - catalog card
+- docs/catalog/cards/martingale_doubling.md - catalog card
+- docs/catalog/cards/max_diversification.md - catalog card
+- docs/catalog/cards/mean_variance_naive.md - catalog card
+- docs/catalog/cards/merger_arb.md - catalog card
+- docs/catalog/cards/min_variance.md - catalog card
+- docs/catalog/cards/ou_pairs.md - catalog card
+- docs/catalog/cards/overnight_drift.md - catalog card
+- docs/catalog/cards/paa_keller.md - catalog card
+- docs/catalog/cards/pead.md - catalog card
+- docs/catalog/cards/permanent_portfolio.md - catalog card
+- docs/catalog/cards/piotroski_f.md - catalog card
+- docs/catalog/cards/put_write.md - catalog card
+- docs/catalog/cards/qmj_quality.md - catalog card
+- docs/catalog/cards/random_entry_null.md - catalog card
+- docs/catalog/cards/residual_momentum.md - catalog card
+- docs/catalog/cards/rsi2_connors.md - catalog card
+- docs/catalog/cards/short_straddle.md - catalog card
+- docs/catalog/cards/short_vix_futures.md - catalog card
+- docs/catalog/cards/sixty_forty.md - catalog card
+- docs/catalog/cards/sma200_filter.md - catalog card
+- docs/catalog/cards/smb_size.md - catalog card
+- docs/catalog/cards/st_reversal_1m.md - catalog card
+- docs/catalog/cards/svxy_short_vol_etp.md - catalog card
+- docs/catalog/cards/tail_trend_vol_scaled.md - catalog card
+- docs/catalog/cards/target_date_glide.md - catalog card
+- docs/catalog/cards/three_down_days.md - catalog card
+- docs/catalog/cards/three_fund.md - catalog card
+- docs/catalog/cards/tsmom_long_only.md - catalog card
+- docs/catalog/cards/tsmom_mop.md - catalog card
+- docs/catalog/cards/turn_of_month.md - catalog card
+- docs/catalog/cards/value_averaging.md - catalog card
+- docs/catalog/cards/vol_managed_mm.md - catalog card
+- docs/catalog/cards/vol_target_10.md - catalog card
+- docs/catalog/cards/yield_curve_timing.md - catalog card
+- docs/catalog/cards/zscore_mr.md - catalog card
 - paper/phantom-mean-reversion/ - preprint "Phantom Mean Reversion": main.tex, figures, code (phantom_mr_sim.py, other_hedges.py, make_figures.py), results, build_arxiv.sh
 - docs/guides/returns-due-diligence.md - verify --returns: smoothing, zero kink, implausible consistency, significance, benchmark
 - docs/guides/dossier-readiness-monitor.md - monte-neo dossier (frameworks SR 11-7, SS1/23, RTS 6), Alpha Readiness Level 1-9, monte-neo monitor
@@ -98,6 +215,7 @@ A simplified guide to the Monte-Neo file structure.
 - tests/zoo/test_zoo_alpha.py, alpha_cases.py; scripts/alpha_calibration.py - zoo A15 (alpha traps and twins) and its calibration
 - docs/guides/repair.md - monte-neo repair: protocol, catalogue R1-R11, outcomes, zoo A16
 - docs/guides/discover.md - monte-neo discover: verified indicator search (gate, effective trials, search null, lockbox)
+- scripts/gen_profiles_doc.py - writes the generated profile tables into docs/guides/profiles.md
 - scripts/check_english_only.py - Language guard: fails on Cyrillic text or private working files in tracked files, PR titles, PR descriptions and commit messages
 - scripts/mutation_check.py - Mutation check of the verifier core
 - tests/unit/test_mutation_pins.py - Exact values and boundaries pinned after the mutation check
@@ -125,6 +243,7 @@ A simplified guide to the Monte-Neo file structure.
 - src/monte_neo/verify/model_protocol.py, model_rows.py - fit/predict protocol, ml_refit_gap, ml_cv_overlap
 - src/monte_neo/verify/events.py, events_checks.py, events_run.py - --events: load, join by publication time, quality, pit_events
 - src/monte_neo/verify/returns_dd.py, returns_dd_checks.py - verify --returns: due diligence on a return series
+- src/monte_neo/verify/series_checks.py - data_integrity row and honest ARL for returns/legs inputs (no OHLCV)
 - src/monte_neo/cli/returns_cmd.py - verify --returns and --demo-returns
 - src/monte_neo/dossier/ - validation-dossier/1: framework maps, build, HTML
 - src/monte_neo/readiness.py - Alpha Readiness Level 1-9
@@ -141,7 +260,8 @@ A simplified guide to the Monte-Neo file structure.
 - src/monte_neo/verify/fixes.py - Causal rewrites for suggest_fix
 - src/monte_neo/cli/discover_cmd.py - monte-neo discover command
 - docs/guides/frameworks.md - Adapters (vectorbt, Freqtrade, Lean, Zipline, fills), Jupyter display, pandas accessor, pre-commit, badge, Docker image
-- docs/guides/trap-suite.md - Trap Suite catalogue (80 traps, 35 honest controls) and how to contribute a trap
+- docs/guides/verifier-gaps.md - checks added after the coverage audit and the known-error benchmark with measured rates
+- docs/guides/trap-suite.md - Trap Suite catalogue (83 traps, 36 honest controls) and how to contribute a trap
 - src/monte_neo/bench/ - Honesty Bench (verify agent submissions, compare claims, leaderboard; v1 tasks + answer key)
 - src/monte_neo/cli/bench_cmd.py - `monte-neo bench` command
 - scripts/make_example_bench.py - Builds an example bench from the Trap Suite
@@ -153,7 +273,11 @@ A simplified guide to the Monte-Neo file structure.
 
 ### Docker (docker/)
 - docker/Dockerfile - Multi-stage Docker build using uv
-- docker/docker-compose.yml - Docker Compose service definitions
+- docker/docker-compose.yml - Docker Compose: dev shell plus `headless` profile (verify, strategy-lab)
+- docs/setup/platforms.md - Platform and Python support matrix (what is verified, what is only prepared)
+- scripts/win_smoke.ps1 - PowerShell smoke for Windows (prepared, never run yet)
+- scripts/py_matrix.sh - Full test suite on several Python versions, one at a time, resumable
+- scripts/perf_baseline.py - Wall time and peak memory of verify, alpha and research on reference sizes
 - docker/verify/Dockerfile - Verifier image for untrusted strategy code (engines precompiled, runs as nobody)
 
 ### Source Code (src/monte_neo/)
@@ -288,6 +412,33 @@ A simplified guide to the Monte-Neo file structure.
 - src/monte_neo/verify/pbo.py - Probability of Backtest Overfitting (CSCV) for parameter searches
 - src/monte_neo/verify/claim.py - Claimed numbers against verified ones (--claim)
 - src/monte_neo/verify/microstructure.py - Spread estimate from high and low, capacity from volume
+- src/monte_neo/verify/alpha_beta.py - alpha after beta (Newey-West) gate
+- src/monte_neo/verify/cost_profiles.py - fee tiers, spread from quotes, doubled-cost and cost-realism gates
+- src/monte_neo/verify/regime_checks.py - regime_stability row
+- src/monte_neo/verify/data_contract.py - point-in-time publication and universe-membership validator
+- src/monte_neo/verify/execution.py - volume-capped execution with partial fills and square-root impact
+- src/monte_neo/verify/funding.py - funding and borrow rate series applied to held weights
+- src/monte_neo/verify/portfolio_risk.py - portfolio CVaR, risk contribution, correlations
+- docs/guides/coverage-limits.md - what is and is not covered
+- docs/guides/hall-of-fame.md - Hall of Fame guide: tiers, score, limits, submit/attest/build (rule blocks generated from src/monte_neo/hall/hall_rules_v1.json)
+- docs/hall-of-fame.md - generated Hall of Fame tables, medals, history (monte-neo hall build)
+- hall_of_fame/ - entries, certificates, maintainer_keys.json, history.jsonl, badges/, archive/
+- src/monte_neo/hall/ - Hall of Fame: rules (hall_rules_v1.json), entry checks, ranking, render, build
+- src/monte_neo/cli/hall_cmd.py - monte-neo hall build / submit / attest
+- docs/guides/arl.md - ARL levels, depth and honest rules (tables generated from src/monte_neo/arl_rules_v1.json)
+- docs/guides/profiles.md - Strategy-type profiles (tables generated from src/monte_neo/profiles/profiles_v1.json)
+- docs/guides/options.md - Options verification: input, checks, what is not assessed
+- docs/guides/arl-calibration.md - ARL on the Trap Suite (generated by scripts/arl_calibration.py)
+- src/monte_neo/arl_rules_v1.json, arl_rules.py, arl_depth.py - the single source of truth for ARL, its loader and depth
+- src/monte_neo/verify/sealed_holdout.py - holdout that opens once (the only source of D4)
+- src/monte_neo/cli/readiness_cmd.py - monte-neo readiness
+- src/monte_neo/verify/survivorship.py - survivorship bias priced from declared delisted names
+- src/monte_neo/verify/rebalance_phase.py - rebalance_timing_luck for verify
+- src/monte_neo/verify/basket_checks.py - selection vs timing and alpha after two betas for baskets
+- tests/unit/test_basket_gates.py, test_advice_repairs.py, test_live_source.py - tests of the basket gates, advice and live source
+- tests/unit/test_coverage_gaps_v055.py - tests of the four modules above
+- docs/guides/gates-alpha-cost-regime.md - guide to the alpha, cost and regime gates
+- tests/unit/test_alpha_beta.py, tests/unit/test_cost_regime_gates.py - tests of those gates
 - src/monte_neo/verify/quotes.py - Top-of-book quotes with arrival time: loading, quote quality, bars on the exchange and arrival clocks
 - src/monte_neo/verify/arrival.py - Arrival look-ahead, latency scan and latency Monte Carlo on quotes
 - src/monte_neo/verify/quotes_probes.py - The look-ahead probes of verify_strategy, run on the arrival bars of a quote run
@@ -297,3 +448,11 @@ A simplified guide to the Monte-Neo file structure.
 - src/monte_neo/cli/quotes_cmd.py - monte-neo verify --quotes and --demo-quotes
 - .github/workflows/language-guard.yml - CI: runs the language guard on pull requests and on main
 - tests/unit/test_language_guard.py - Tests of the language guard
+- strategy_lab/README.md - Strategy Lab: rules against self-deception and the commands to run it (data in strategy_lab/data, work and logs are git-ignored)
+- strategy_lab/results/summary.json - Per-idea verdict, ARL, certificate id, report hash, trials, date: input for the Hall of Fame
+- examples/strategies/<name>/ - Ten Strategy Lab ideas: strategy.py (signal or returns), card.md (idea, limits, authors), report.md (generated review)
+- scripts/strategy_lab/fetch_data.py - Resumable local download of public Binance klines and funding with SHA-256 and a manifest
+- scripts/strategy_lab/labcore.py, labstages.py - Data slices, stages (prepare, discovery, validation, holdout), freeze gate
+- scripts/strategy_lab/run_all.py, watchdog.sh - Runner with resume, status, log, ETA, progress bar, RAM/thread limits
+- scripts/strategy_lab/freeze.py, analyze.py - Freeze a candidate before the holdout; write report.md files and summary.json
+- tests/unit/test_strategy_lab.py - Strategy Lab: causal signals, freeze gate, end-to-end holdout on synthetic data

@@ -72,7 +72,7 @@ See [Development setup](development-setup.md), [Contributing](../development/con
 ## Requirements
 
 - **OS**: macOS Apple Silicon recommended for Metal; Linux OK for `cpu_numba` research path
-- **Python**: 3.11+
+- **Python**: 3.11 to 3.15 (see [Platforms](platforms.md))
 - **Memory**: 8–16GB-class hosts are the design center for large sweeps
 
 ## TestPyPI (maintainers only)

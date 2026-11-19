@@ -123,26 +123,24 @@ def periods(
     return {"frequency": freq, "periods": rows}
 
 
-def regimes(equity: np.ndarray, market_close: np.ndarray, start: int, periods_per_year: float) -> dict[str, Any]:
-    """Strategy results in rising / falling and calm / volatile markets.
+def regime_masks(market_close: np.ndarray, start: int) -> tuple[dict[str, np.ndarray], np.ndarray, int]:
+    """Boolean masks (rising / falling / calm / volatile), the usable-bar mask and the window.
 
-    A bar's regime comes from the market's trailing return and volatility over the
-    previous ``window`` bars, so it is known at the start of the bar.
+    A bar's regime comes from the market's trailing return and volatility over the previous ``window`` bars, so it is
+    known at the start of the bar. Without a usable bar the masks are empty.
     """
-    n = equity.size
-    window = max(20, n // 20)
     market = np.asarray(market_close, dtype=np.float64)
+    n = market.size
+    window = max(20, n // 20)
     m_ret = np.zeros(n)
     m_ret[1:] = market[1:] / market[:-1] - 1.0
-    s_ret = np.zeros(n)
-    s_ret[1:] = np.where(equity[:-1] > 0, equity[1:] / np.where(equity[:-1] > 0, equity[:-1], 1.0) - 1.0, 0.0)
     trailing = pd.Series(m_ret).rolling(window)
     trend = trailing.sum().shift(1).to_numpy()
     vol = trailing.std().shift(1).to_numpy()
     usable = np.arange(n) >= max(start + 1, window + 1)
     usable &= np.isfinite(trend) & np.isfinite(vol)
     if not usable.any():
-        return {"window": window, "regimes": {}}
+        return {}, usable, window
     vol_cut = float(np.median(vol[usable]))
     masks = {
         "rising": usable & (trend > 0),
@@ -150,6 +148,20 @@ def regimes(equity: np.ndarray, market_close: np.ndarray, start: int, periods_pe
         "calm": usable & (vol <= vol_cut),
         "volatile": usable & (vol > vol_cut),
     }
+    return masks, usable, window
+
+
+def regimes(equity: np.ndarray, market_close: np.ndarray, start: int, periods_per_year: float) -> dict[str, Any]:
+    """Strategy results in rising / falling and calm / volatile markets (see :func:`regime_masks`)."""
+    n = equity.size
+    market = np.asarray(market_close, dtype=np.float64)
+    m_ret = np.zeros(n)
+    m_ret[1:] = market[1:] / market[:-1] - 1.0
+    s_ret = np.zeros(n)
+    s_ret[1:] = np.where(equity[:-1] > 0, equity[1:] / np.where(equity[:-1] > 0, equity[:-1], 1.0) - 1.0, 0.0)
+    masks, usable, window = regime_masks(market, start)
+    if not masks:
+        return {"window": window, "regimes": {}}
     out = {}
     for name, mask in masks.items():
         out[name] = {
@@ -180,4 +192,4 @@ def series(equity: np.ndarray, benchmark_equity: np.ndarray, timestamps: Any, st
     }
 
 
-__all__ = ["buy_and_hold", "periods", "regimes", "series"]
+__all__ = ["buy_and_hold", "periods", "regime_masks", "regimes", "series"]

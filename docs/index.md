@@ -81,7 +81,7 @@ strategy on the time the data arrived, names the delay in ms where its profit va
 
 - [Verifier API](api/verify.md): checks, verdicts, certificates, re-checks and signatures
 - [Frameworks and notebooks](guides/frameworks.md): vectorbt, Freqtrade, Lean, Zipline, Jupyter, pre-commit, badge, Docker
-- [Trap Suite](guides/trap-suite.md): 80 strategies that lie and 35 honest controls, and how to add yours
+- [Trap Suite](guides/trap-suite.md): 83 strategies that lie and 36 honest controls, and how to add yours
 - [Honesty Bench](guides/honesty-bench.md): score how honestly agents report backtests
 - [Verify a certificate](verify.md): check a signed certificate in your browser
 - [Six ways your agent's backtest lies](marketing/article-six-ways.md): the traps, with numbers

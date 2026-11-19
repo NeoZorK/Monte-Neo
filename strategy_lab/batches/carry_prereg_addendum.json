@@ -1,0 +1,42 @@
+{
+  "note": "Pre-registration addendum 2 for the carry track, written and committed BEFORE the run through Monte-Neo block 10 (1450cc9). Not investment advice. Nothing from 2025-01-01 on is read: tables are cut at 2024-12-31. The earlier checks (first path and block 9) are recorded in strategy_lab/results/carry_E_newpath.md; validation is already contaminated (simulator rewritten after the first read, margin 50% chosen after 25% liquidated, yearly funding printed before pre-registration).",
+  "monte_neo_commit": "1450cc9 (branch x/honest-research)",
+  "runs": ["E", "E_pit"],
+  "slices": ["2020-01-01..2024-12-31", "2021-01-01..2024-12-31"],
+  "common": {
+    "rule": "carry_track E_btc_eth_slow signal per coin: mean funding of 30 days, enter > 0.0002/day, exit <= 0.00005, decisions weekly on calendar phase 0 (days since 2019-12-01 divisible by 7), weight 1/3 of equity per held coin (50% of equity deployed per coin with 50% margin), at most two coins held",
+    "leverage": 2.0,
+    "maintenance_margin": 0.04,
+    "capital_cost_apr": 0.075,
+    "rebalance_every": 7,
+    "capacity_spread_bars": 1,
+    "reference_symbol": "BTCUSDT",
+    "perp_high": "the Lab's perp day-high with the bad-tick cap (at most 10% above max(open, close))",
+    "volumes": "spot_quote_volume and perp_quote_volume = daily volume x close, in USDT, per leg"
+  },
+  "collateral_policy_E": {
+    "meaning": "rebalance between spot and perp when the perp margin buffer falls below 25% of notional: top up to 1/leverage (50%) by selling spot; the transfer arrives one bar later; cost of selling spot / moving the margin per binance_costs",
+    "trigger": 0.25,
+    "delay_bars": 1,
+    "cost_bps": 13,
+    "cost_basis": "spot side cost of ETHUSDT, the dearer of the two coins: VIP0 spot fee 10 bps + 3 bps spread (binance_costs.py)",
+    "note": "the Lab simulator itself tops up at 30% with no delay; this policy is stricter (smaller trigger, one-bar delay) and is the one tested"
+  },
+  "E": {
+    "universe": "BTCUSDT, ETHUSDT chosen by hand (the original candidate)",
+    "costs_bps_spot_perp": [13, 8],
+    "costs_basis": "ETH pair (dearer) for both coins"
+  },
+  "E_pit": {
+    "meaning": "the same signal with an ex-ante composition: on each weekly rebalance date the top 2 coins by perp quote volume over the previous 30 bars (strictly before the date), recomputed by the verifier; positions outside it are flat",
+    "pool": ["BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "LTCUSDT", "LINKUSDT", "DOGEUSDT", "DOTUSDT", "AVAXUSDT", "ATOMUSDT", "SOLUSDT"],
+    "pool_note": "the 12 coins of the Lab carry data; all alive over the sample, so the survivorship cap may stay (the verifier says so); delisted perps are not in the Lab data",
+    "universe_rule": {"top_n": 2, "lookback_bars": 30, "rebalance_every": 7, "on": "perp_quote_volume"},
+    "signal_detail": "per-coin hold state evolves as in E regardless of membership; the weight is 1/3 x hold x in_universe, so a coin that leaves the universe is exited and, if it returns while the state is still hold, is held again",
+    "costs_bps_spot_perp": [15, 10],
+    "costs_basis": "fixed for all pool coins at the cost of the 5 bps spread class (XRP/ADA/SOL: fee 10/5 + 5), between BTC/ETH and the dear small coins; the verifier also tests doubled costs",
+    "n_trials_note": "E_pit is a new attempt: n_trials = 104 + 2016 + 45 + 1 = 2166 for E_pit; E stays at 2165"
+  },
+  "selection": "no selection: both are reported whatever the outcome; no parameter is changed after seeing results",
+  "gates_for_holdout": ["ARL >= 6 and depth >= 2", "DSR >= 0.95 at the worst phase", "profit at costs x2", "beta about 0 with t >= 2", "capacity >= 250k USDT"]
+}

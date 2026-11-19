@@ -342,6 +342,10 @@ def bar_count(df: pd.DataFrame) -> int:
 
 def market_for(df: pd.DataFrame) -> SingleMarket | UniverseMarket:
     """The adapter for a loaded table: a universe when it has a symbol column."""
+    from monte_neo.verify.carry_market import CarryMarket, CarryUniverse, is_carry
+
+    if is_carry(df):  # the table built by verify.carry: its own accuracy, sample and benchmark rules
+        return CarryUniverse(df) if "symbol" in df.columns else CarryMarket(df)
     return UniverseMarket(df) if "symbol" in df.columns else SingleMarket(df)
 
 

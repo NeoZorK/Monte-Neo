@@ -1,0 +1,23 @@
+{
+ "slices": {
+  "disc": {
+   "bars": 1233,
+   "first": "2017-08-17",
+   "last": "2020-12-31"
+  },
+  "pre": {
+   "bars": 2694,
+   "first": "2017-08-17",
+   "last": "2024-12-31"
+  },
+  "full": {
+   "bars": 3363,
+   "first": "2017-08-17",
+   "last": "2026-10-31"
+  }
+ },
+ "registration": "reg-2-0c0bcf97",
+ "planned_trials": 83,
+ "finished_at": "2026-11-08T16:54:49+00:00",
+ "seconds": 0.2
+}

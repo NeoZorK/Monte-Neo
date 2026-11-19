@@ -48,4 +48,4 @@ def test_numba_is_optional_off_cpython_and_has_a_fast_extra() -> None:
     project = tomllib.loads((Path(__file__).parents[2] / "pyproject.toml").read_text(encoding="utf-8"))["project"]
     numba = next(dep for dep in project["dependencies"] if dep.startswith("numba"))
     assert "CPython" in numba and "emscripten" in numba
-    assert project["optional-dependencies"]["fast"] == ["numba>=0.58"]
+    assert project["optional-dependencies"]["fast"] == ["numba>=0.58", "numba>=0.68; python_version >= '3.15'"]

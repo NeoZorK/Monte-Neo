@@ -1,0 +1,14 @@
+{
+ "_note": "catalog id -> Strategy Lab result. Only exact matches of the rule and the instrument are listed; everything else stays 'not yet verified'.",
+ "donchian_55_20": {"kind": "lab", "name": "donchian_btc", "instance": "BTC"},
+ "bollinger_mr": {"kind": "lab", "name": "bollinger_mr_eth", "instance": "ETH"},
+ "rsi2_connors": {"kind": "lab", "name": "rsi2_mr_btc", "instance": "BTC"},
+ "crypto_tsmom": {"kind": "lab", "name": "tsmom_btc", "instance": "BTC"},
+ "turn_of_month": {"kind": "lab", "name": "turn_of_month_btc", "instance": "BTC"},
+ "crypto_funding_carry": {"kind": "lab", "name": "funding_carry_basket", "instance": "crypto basket"},
+ "bab": {"kind": "lab", "name": "r3_bab_beta", "instance": "crypto"},
+ "tsmom_mop": {"kind": "etf", "name": "etf_tsmom_voltarget", "instance": "ETFs"},
+ "jt_momentum_12_1": {"kind": "etf", "name": "etf_xs_momentum", "instance": "ETFs"},
+ "inverse_vol": {"kind": "etf", "name": "etf_risk_parity", "instance": "ETFs"},
+ "dual_momentum_gem": {"kind": "etf", "name": "etf_dual_momentum", "instance": "ETFs"}
+}

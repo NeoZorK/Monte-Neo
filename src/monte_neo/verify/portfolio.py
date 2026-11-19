@@ -14,6 +14,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from monte_neo.verify.portfolio_risk import portfolio_risk
 from monte_neo.verify.reality import reality_check
 from monte_neo.verify.returns import annualized_sharpe, strategy_returns
 from monte_neo.verify.stats import deflated_sharpe
@@ -42,7 +43,8 @@ def _clusters(corr: np.ndarray, threshold: float) -> list[int]:
 def verify_portfolio(
     df: pd.DataFrame, strategies: list[str | Path | Callable[..., Any]], *, names: list[str] | None = None, samples: int = 300
 ) -> dict[str, Any]:
-    """Per-strategy Sharpe, correlation clusters, effective number, the best strategy deflated, SPA and the equal-weight ensemble."""
+    """Per-strategy Sharpe, correlation clusters, effective number, the best strategy deflated, SPA, the equal-weight ensemble
+    and its risk (CVaR, risk concentration, mean and tail correlation, see :mod:`monte_neo.verify.portfolio_risk`)."""
     if len(strategies) < 2:
         raise ValueError("a portfolio needs at least two strategies")
     labels = names or [getattr(s, "__name__", str(s)) for s in strategies]
@@ -67,6 +69,7 @@ def verify_portfolio(
     ensemble = mat.mean(axis=0)
     equity = np.cumprod(1.0 + ensemble)
     drawdown = float(np.max(1.0 - equity / np.maximum.accumulate(equity)))
+    risk = portfolio_risk(mat, labels)
     luck = bool(rc and rc.get("p_spa", 1.0) > 0.05)
     return {
         "strategies": [{"name": labels[i], "sharpe": round(float(sharpes[i]), 3), "cluster": groups[i]} for i in range(len(labels))],
@@ -76,10 +79,12 @@ def verify_portfolio(
         "best": {"name": labels[best], "sharpe": round(float(sharpes[best]), 3), "deflated_sharpe": dsr.get("deflated_sharpe"), "trials_used": max(1, round(n_eff))},
         "reality_check": {"p_reality_check": rc.get("p_reality_check"), "p_spa": rc.get("p_spa")} if rc else None,
         "ensemble": {"sharpe": round(annualized_sharpe(ensemble, ppy), 3), "max_drawdown": round(drawdown, 4)},
+        "risk": risk,
         "luck_risk": luck,
         "summary": (
             f"{len(labels)} strategies behave like {n_eff:.1f} independent ones; "
             + ("the best one is not distinguishable from the luckiest of the list (SPA)" if luck else "the best one beats the luckiest of the list (SPA)")
+            + (f"; {risk['top_risk']['name']} carries {risk['top_risk']['share']:.0%} of the risk" if risk["concentrated"] else "")
         ),
     }
 

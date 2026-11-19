@@ -1,0 +1,31 @@
+name: ClusterFuzzLite
+
+# Coverage-guided fuzzing (atheris) of the file-facing code: table parsers, strategy lint, certificates.
+# Not active: this file is an example. To enable, pin both actions to a commit SHA (the repository test requires it) and copy it to
+# .github/workflows/cflite.yml. Manual trigger only; the targets live in .clusterfuzzlite/ and need no repository secrets.
+on:
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  fuzzing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: cflite-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Build fuzzers
+        id: build
+        uses: google/clusterfuzzlite/actions/build_fuzzers@v1  # pin to a commit SHA before enabling
+        with:
+          language: python
+          sanitizer: address
+      - name: Run fuzzers
+        uses: google/clusterfuzzlite/actions/run_fuzzers@v1  # pin to a commit SHA before enabling
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          fuzz-seconds: 300
+          mode: code-change
+          sanitizer: address

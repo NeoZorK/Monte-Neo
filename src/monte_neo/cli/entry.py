@@ -13,9 +13,12 @@ HELP = """usage: monte-neo <command> [options]
 Commands:
   verify   verify a trading-strategy backtest (monte-neo verify --help)
   alpha    does a cross-sectional signal predict returns, and can it be traded? (monte-neo alpha --help)
+  hall     Hall of Fame: rank certificates by evidence, medals (monte-neo hall --help)
   policy   write or check your institution's thresholds (monte-neo policy init)
   dossier  turn a certificate into a validation dossier for a committee (monte-neo dossier --demo)
   repair   repair a strategy's defects without overfitting it, or say why not (monte-neo repair --demo)
+  readiness the ARL, depth and next steps for one certificate (monte-neo readiness --help)
+  research honest strategy search: fixed split, ledger, one sealed holdout (monte-neo research --help)
   monitor  compare live or paper returns with the backtest; is the alpha dead? (monte-neo monitor --help)
   history  certificate history and diffs; blocks a verdict regression
   register write the hypothesis down before the test
@@ -53,10 +56,14 @@ def main() -> int:
         from monte_neo.cli.alpha_cmd import main as alpha_main
 
         return alpha_main(sys.argv[2:])
-    if command in ("dossier", "monitor", "repair"):
+    if command in ("dossier", "monitor", "repair", "readiness", "research"):
         from importlib import import_module
 
         return import_module(f"monte_neo.cli.{command}_cmd").main(sys.argv[2:])
+    if command == "hall":
+        from monte_neo.cli.hall_cmd import main as hall_main
+
+        return hall_main(sys.argv[2:])
     if command == "policy":
         from monte_neo.cli.policy_cmd import main as policy_main
 
@@ -81,6 +88,14 @@ def main() -> int:
         from monte_neo.mcp.server import main as mcp_main
 
         return mcp_main(sys.argv[2:])
+    if command and not command.startswith("-"):
+        import difflib
+
+        names = [line.split()[0] for line in HELP.splitlines()[3:] if line.startswith("  ") and not line.startswith("  -")]
+        close = difflib.get_close_matches(command, names, n=1)
+        hint = f" Did you mean `monte-neo {close[0]}`?" if close else ""
+        print(f"monte-neo: unknown command {command!r}.{hint} Run `monte-neo --help` for the list.", file=sys.stderr)
+        return 2
     try:
         from monte_neo.cli.app import main as app_main
     except ImportError as exc:
@@ -88,7 +103,7 @@ def main() -> int:
         print(
             f"{what}The interactive research CLI needs extra packages ({exc.name or exc}): "
             "pip install 'monte-neo[research]'.\n"
-            "Commands in the base install: monte-neo verify | alpha | policy | repair | dossier | monitor | discover | history | register | oracle | portfolio | doctor | init-ci | bench | mcp | --version (monte-neo --help lists them)",
+            "Commands in the base install: monte-neo verify | alpha | policy | hall | repair | dossier | monitor | readiness | research | discover | history | register | oracle | portfolio | doctor | init-ci | bench | mcp | --version (monte-neo --help lists them)",
             file=sys.stderr,
         )
         return 2

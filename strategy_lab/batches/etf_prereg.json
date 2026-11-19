@@ -1,0 +1,112 @@
+{
+ "registered": "2026-11-09",
+ "before_any_etf_data": true,
+ "split": {
+  "discovery_end": "2014-12-31",
+  "validation": "2015-01-01..2020-12-31",
+  "holdout_sealed_from": "2021-01-01"
+ },
+ "universe": [
+  "SPY",
+  "QQQ",
+  "IWM",
+  "EFA",
+  "EEM",
+  "TLT",
+  "IEF",
+  "SHY",
+  "LQD",
+  "HYG",
+  "GLD",
+  "SLV",
+  "DBC",
+  "USO",
+  "UUP",
+  "VNQ"
+ ],
+ "costs": {
+  "bps_per_side": 3,
+  "also": [
+   2,
+   5,
+   "x2"
+  ],
+  "borrow_bps_year": 50,
+  "leverage_cap": 1.0,
+  "execution": "next bar"
+ },
+ "ideas": {
+  "etf_tsmom_voltarget": {
+   "ref": "Moskowitz, Ooi, Pedersen 2012",
+   "params": {
+    "lookback": 252,
+    "vol_win": 60,
+    "asset_vol": 0.4,
+    "port_vol": 0.1
+   },
+   "grid": {
+    "lookback": [
+     126,
+     189,
+     252,
+     315,
+     378
+    ]
+   }
+  },
+  "etf_xs_momentum": {
+   "ref": "Jegadeesh, Titman 1993 (12-1)",
+   "params": {
+    "lookback": 252,
+    "skip": 21,
+    "top_frac": 0.3333333333333333
+   },
+   "grid": {
+    "lookback": [
+     126,
+     189,
+     252
+    ]
+   }
+  },
+  "etf_risk_parity": {
+   "ref": "inverse-volatility, Asness et al. 2012",
+   "params": {
+    "vol_win": 60
+   },
+   "grid": {
+    "vol_win": [
+     60,
+     126,
+     252
+    ]
+   }
+  },
+  "etf_bond_trend_carry": {
+   "ref": "trend + carry in bonds, Asness, Moskowitz, Pedersen 2013",
+   "params": {
+    "lookback": 252
+   },
+   "grid": {
+    "lookback": [
+     126,
+     252
+    ]
+   }
+  },
+  "etf_dual_momentum": {
+   "ref": "Antonacci 2014 (GEM)",
+   "params": {
+    "lookback": 252
+   },
+   "grid": {
+    "lookback": [
+     126,
+     189,
+     252
+    ]
+   }
+  }
+ },
+ "etf_trials": 16
+}

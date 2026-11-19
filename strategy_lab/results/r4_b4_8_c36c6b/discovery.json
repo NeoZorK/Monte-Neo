@@ -1,0 +1,245 @@
+{
+ "verdict": "REJECT",
+ "certificate_id": "7141182643d280cb",
+ "arl": 2,
+ "arl_depth": 0,
+ "arl_headline": "ARL 2, depth 0/4 (arl-rules/1, provisional)",
+ "arl_provisional": true,
+ "arl_summary": "ARL 2/9 \u2014 blocked at 3: it earns after costs (market_impact)",
+ "sharpe": null,
+ "deflated_sharpe": null,
+ "ic_t_stat": 0.665754844033473,
+ "mean_ic": 0.014348656120994781,
+ "total_return": null,
+ "max_drawdown": null,
+ "bars": null,
+ "timing_p": null,
+ "benchmark_sharpe": null,
+ "benchmark_total_return": null,
+ "checks": [
+  {
+   "id": "ic",
+   "status": "warn",
+   "summary": "mean rank IC 0.0143 (t=0.7): no evidence the signal predicts returns"
+  },
+  {
+   "id": "ic_decay",
+   "status": "info",
+   "summary": "best horizon 13; no exponential decay found (IC does not fall with horizon)"
+  },
+  {
+   "id": "quantile_monotonicity",
+   "status": "warn",
+   "summary": "bucket returns are not monotone (50% adjacent increases, rank corr 0.60): profit may sit in one extreme"
+  },
+  {
+   "id": "long_short_legs",
+   "status": "warn",
+   "summary": "105% of the spread profit comes from the short leg: shorts are often not implementable (borrow, bans, microcaps)"
+  },
+  {
+   "id": "breadth_consistency",
+   "status": "skip",
+   "summary": "no claimed IR given (--claim-ir)"
+  },
+  {
+   "id": "signal_placebo",
+   "status": "fail",
+   "summary": "real spread Sharpe 0.036/period is not above permuted-score placebos (p=0.104): the construction earns, not the signal"
+  },
+  {
+   "id": "selection_vs_timing",
+   "status": "info",
+   "summary": "spread 0.3327%/period; selection effect 0.3199%; with dates shuffled 0.3027% (a time-invariant tilt or market timing, not stock selection)"
+  },
+  {
+   "id": "market_impact",
+   "status": "fail",
+   "summary": "at AUM 5e+04: gross -39.69%, impact 43.38%, net -84.32% per year"
+  },
+  {
+   "id": "participation_limit",
+   "status": "warn",
+   "summary": "participation p95 5.08%, max 61.86% of bar volume (limit 5%)"
+  },
+  {
+   "id": "capacity_curve",
+   "status": "info",
+   "summary": "net Sharpe is not positive even at the smallest AUM"
+  },
+  {
+   "id": "short_feasibility",
+   "status": "warn",
+   "summary": "13% of short exposure in the least liquid 20%; borrow 2.89%/yr vs short-leg profit -37.01%/yr"
+  },
+  {
+   "id": "turnover_vs_decay",
+   "status": "info",
+   "summary": "holding 10.7 bars"
+  },
+  {
+   "id": "rebalance_timing_luck",
+   "status": "pass",
+   "summary": "annual net return by rebalance day: min -52.70%, median -22.37%, max 8.97% (k=21)"
+  },
+  {
+   "id": "factor_exposure",
+   "status": "info",
+   "summary": "factors explain 16% of return variance; strongest: market (beta -0.18, t -6.3), size (beta +0.23, t +3.6)"
+  },
+  {
+   "id": "residual_alpha",
+   "status": "warn",
+   "summary": "no significant residual alpha (t -0.0)"
+  },
+  {
+   "id": "factor_spanning",
+   "status": "warn",
+   "summary": "adds nothing the factors do not have (max Sharpe 1.37 -> 1.37)"
+  },
+  {
+   "id": "hidden_short_volatility",
+   "status": "pass",
+   "summary": "no short-volatility payoff (skew -0.2)"
+  },
+  {
+   "id": "market_timing_beta",
+   "status": "info",
+   "summary": "up beta -0.23, down beta -0.21 (timing t -0.3)"
+  },
+  {
+   "id": "crowding",
+   "status": "info",
+   "summary": "correlation with momentum +0.01, low_vol +0.26; mean return on momentum crash days +0.0049"
+  },
+  {
+   "id": "known_anomaly_match",
+   "status": "info",
+   "summary": "closest known factor: market (corr -0.33)"
+  },
+  {
+   "id": "book_correlation",
+   "status": "skip",
+   "summary": "no book given (--book): the value to an existing book was not assessed"
+  },
+  {
+   "id": "hlz_hurdle",
+   "status": "info",
+   "summary": "t = -0.96, below 2 (the no-edge check owns this case)"
+  },
+  {
+   "id": "min_backtest_length",
+   "status": "pass",
+   "summary": "3.4 years of history; Sharpe -0.43 is not positive, so no length of history separates it from luck"
+  },
+  {
+   "id": "drawdown_plausibility",
+   "status": "pass",
+   "summary": "max drawdown 95.5% vs 74.4%..99.6% for iid returns with the same mean and volatility"
+  },
+  {
+   "id": "haircut_sharpe",
+   "status": "info",
+   "summary": "Sharpe -0.43 becomes -0.43 after Bonferroni for 1 trial (haircut 0%)"
+  },
+  {
+   "id": "neutrality",
+   "status": "pass",
+   "summary": "mean rolling beta -0.25, mean net exposure -0.10"
+  },
+  {
+   "id": "concentration",
+   "status": "warn",
+   "summary": "median effective positions 10.9, largest single weight 100%"
+  },
+  {
+   "id": "leverage_gross_net",
+   "status": "info",
+   "summary": "gross 1.83 (max 2.00), net -0.10; largest gross jump 1.00"
+  },
+  {
+   "id": "historical_stress_replay",
+   "status": "info",
+   "summary": "2 stress windows in the data; worst for the strategy: Volmageddon (-13.1% vs market -0.3%)"
+  },
+  {
+   "id": "tail_risk",
+   "status": "info",
+   "summary": "VaR95 -5.87%, CVaR95 -9.98%, CVaR99 -18.86%, worst bar -51.77%, longest recovery 1183 bars"
+  },
+  {
+   "id": "universe_subsampling",
+   "status": "fail",
+   "summary": "13% of 100 random 70% subsets earn a positive net return (median Sharpe -0.29); top-5 symbols give no share of the profit (there is no gross profit): the result does not hold on most subsets"
+  },
+  {
+   "id": "group_split",
+   "status": "skip",
+   "summary": "no groups given (sector/country per symbol)"
+  },
+  {
+   "id": "start_date_sensitivity",
+   "status": "warn",
+   "summary": "annual return over 13 start dates ranges -28.07% to 11.49%: the range exceeds the median absolute return"
+  },
+  {
+   "id": "cpcv_paths",
+   "status": "warn",
+   "summary": "net Sharpe over 15 test combinations: min -1.34, median -0.47, 27% positive"
+  },
+  {
+   "id": "synthetic_market_null",
+   "status": "fail",
+   "summary": "net Sharpe -0.43 vs 0.23 median on 100 synthetic markets (p = 0.911): not distinguishable from the market-only null"
+  },
+  {
+   "id": "noise_injection",
+   "status": "skip",
+   "summary": "net Sharpe -0.43 is not positive: nothing to degrade"
+  },
+  {
+   "id": "data_source_replication",
+   "status": "skip",
+   "summary": "no second price source given"
+  },
+  {
+   "id": "bar_construction",
+   "status": "skip",
+   "summary": "daily or slower bars: the bar grid is the calendar day"
+  },
+  {
+   "id": "universe_lookahead",
+   "status": "pass",
+   "summary": "every held symbol is inside its membership window"
+  },
+  {
+   "id": "classification_lookahead",
+   "status": "skip",
+   "summary": "no groups file given"
+  },
+  {
+   "id": "cross_market_close_alignment",
+   "status": "skip",
+   "summary": "no exchange or close-time map given"
+  },
+  {
+   "id": "post_discovery_decay",
+   "status": "skip",
+   "summary": "no discovery date given"
+  },
+  {
+   "id": "research_hygiene",
+   "status": "skip",
+   "summary": "no research-process information given"
+  }
+ ],
+ "reasons": [],
+ "slice": "disc",
+ "n_trials": 1,
+ "exit_code": 0,
+ "report_sha256": "33e4cd4f344c66200225d8659b345b7dd2bd8f8fff7365b973dff537d172e015",
+ "grid_size": 1,
+ "grid_sharpes": [],
+ "finished_at": "2026-11-09T03:01:29+00:00",
+ "seconds": 17.1
+}

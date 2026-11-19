@@ -29,7 +29,7 @@ def save_cache(name: str, data: Any, use_pickle: bool = False) -> bool:
         raise ValueError(_NO_PICKLE)
     try:
         path = get_cache_path(name)
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f)
         return True
     except Exception as e:
@@ -44,7 +44,7 @@ def load_cache(name: str, use_pickle: bool = False) -> Any | None:
     if not os.path.exists(path):
         return None
     try:
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
         logger.warning(f"Failed to load cache {name}: {e}")

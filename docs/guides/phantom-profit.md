@@ -97,6 +97,8 @@ means only that no mechanical edge was found on noise; it does not show that the
 The MCP tool `verify_legs` runs check 1 on a file and returns the same certificate. The rules in `integrations/` tell the
 agent to export the legs of a pairs strategy and to fix a `REJECT` by booking the P&L from the legs.
 
+Whether the pair has a relationship worth trading at all (cointegration, breaks, selection bias, legging) is a separate question: see [econometric checks for pairs](pairs-econometrics.md).
+
 ## Scope and honesty
 
 - Both checks are about accounting. Look-ahead in the signal, costs and data quality are checked by the rest of

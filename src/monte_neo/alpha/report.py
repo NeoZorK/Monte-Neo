@@ -106,6 +106,13 @@ def validate_alpha(
     exchanges: str | Path | dict[str, str] | None = None,
     discovery_date: str | None = None,
     existing: str | Path | pd.DataFrame | None = None,
+    funding: str | Path | pd.DataFrame | None = None,
+    aum_grid: list[float] | None = None,
+    min_capacity: float | None = None,
+    liquid_top: int | None = None,
+    liquid_lookback: int = 30,
+    terminal_returns: dict[str, float] | None = None,
+    rebalance_phase: str | None = None,
 ) -> dict[str, Any]:
     """Check whether a cross-sectional score has real predictive power and whether its portfolio can be traded.
 
@@ -127,6 +134,13 @@ def validate_alpha(
         exchanges: Exchange per symbol (a dict, or a file with symbol, exchange): closes of different markets.
         discovery_date: When the anomaly was published or found (``YYYY-MM``): decay after discovery.
         existing: Scores of signals already run (timestamp, symbol, one column per signal): partial IC of the new one.
+        funding: Funding history (timestamp, symbol, funding_bps a long pays per bar): priced on every perpetual leg, short legs included.
+        aum_grid: AUMs (quote currency) for the capacity grid in one run, for example 250000, 500000, 5000000.
+        min_capacity: AUM at which the net return must stay positive (default: the largest of the grid).
+        liquid_top: Trade only the K most liquid symbols by traded value known before each date (a point-in-time universe, membership derived).
+        liquid_lookback: Bars of trailing traded value for ``liquid_top`` (default 30).
+        terminal_returns: Return a delisted symbol gets on the bar after its last price (``{symbol: -0.9}``); undeclared ones are flagged.
+        rebalance_phase: ``K/H``: rebalance on bar K of every H and hold the scores in between, to run the whole report for one phase.
 
     Returns:
         An ``alpha-report/1`` dict: verdict, checks, metrics, next_actions, reproducibility.
@@ -137,15 +151,30 @@ def validate_alpha(
     if quantiles < 2:
         raise ValueError("quantiles must be >= 2")
     panel = build_panel(prices, scores)
+    from monte_neo.alpha import universe_tools as ut
+
+    panel, extra_rows, derived_membership = ut.prepare_panel(panel, liquid_top=liquid_top, liquid_lookback=liquid_lookback,
+                                                           terminal_returns=terminal_returns, rebalance_phase=rebalance_phase)
     checks = run_checks(panel, horizon=horizon, quantiles=quantiles, claimed_ir=claimed_ir, seed=seed, placebos=placebos)
     half_life = next((c["details"].get("half_life") for c in checks if c["id"] == "ic_decay"), None)
-    checks += run_implementability(panel, quantiles=quantiles, aum=aum, half_life=half_life)
+    from monte_neo.alpha.funding_cost import load_funding
+
+    checks += extra_rows
+    from monte_neo.alpha.executable import cost_sensitivity_row, executable_returns
+    from monte_neo.alpha.implementability_run import portfolio_weights
+
+    funding_m = load_funding(funding, panel) if funding is not None else None
+    w_exec = portfolio_weights(panel, quantiles)
+    net, net_info = executable_returns(w_exec, panel.close, panel.volume, aum, funding_bps=funding_m)
+    checks.append(cost_sensitivity_row(w_exec, panel.close, panel.volume, aum, panel.periods_per_year, funding_m))
+    checks += run_implementability(panel, quantiles=quantiles, aum=aum, half_life=half_life, funding_bps=funding_m,
+                                   aum_grid=aum_grid, min_capacity=min_capacity)
     if families:
         from monte_neo.alpha.families_inputs import process_inputs
 
-        process, group_map = process_inputs(membership, groups, exchanges, discovery_date)
+        process, group_map = process_inputs(membership if membership is not None else derived_membership, groups, exchanges, discovery_date)
         checks += run_families(panel, quantiles=quantiles, factors=factors, book=book, n_trials=n_trials, seed=seed,
-                               process=process, groups=group_map, existing=existing)
+                               process=process, groups=group_map, existing=existing, net_returns=net, net_costs=net_info["costs"])
     by = {c["id"]: c["details"] for c in checks}
     metrics = {
         "n_dates": len(panel.dates), "n_symbols": len(panel.symbols),
@@ -171,12 +200,52 @@ def validate_alpha(
                          "groups": data_sha256(groups) if groups is not None else None,
                          "exchanges": exchanges if isinstance(exchanges, dict) else (data_sha256(exchanges) if exchanges else None),
                          "discovery_date": discovery_date,
-                         "existing": data_sha256(existing) if existing is not None else None},
+                         "existing": data_sha256(existing) if existing is not None else None,
+                         **({"funding": data_sha256(funding)} if funding is not None else {}),
+                         **({"aum_grid": list(aum_grid)} if aum_grid else {}), **({"min_capacity": min_capacity} if min_capacity is not None else {}),
+                         **({"liquid_top": liquid_top, "liquid_lookback": liquid_lookback} if liquid_top else {}),
+                         **({"terminal_returns": terminal_returns} if terminal_returns is not None else {}), **({"rebalance_phase": rebalance_phase} if rebalance_phase else {})},
             "engine_version": __version__,
         },
         "disclaimer": f"{ALPHA_SCOPE} {SHORT}",
     })
+    from monte_neo.verify.verdict import certificate_id
+
+    report["certificate_id"] = certificate_id(report["reproducibility"], report["verdict"])
     from monte_neo.readiness import readiness
 
     report["readiness"] = readiness(alpha=report)
     return report
+
+
+def recheck_alpha(
+    certificate: dict[str, Any], prices: pd.DataFrame | str | Path, scores: pd.DataFrame | str | Path, *,
+    factors: str | Path | None = None, book: str | Path | pd.DataFrame | None = None,
+    membership: str | Path | pd.DataFrame | None = None, groups: str | Path | pd.DataFrame | None = None,
+    existing: str | Path | pd.DataFrame | None = None, exchanges: str | Path | dict[str, str] | None = None,
+    funding: str | Path | pd.DataFrame | None = None,
+) -> dict[str, Any]:
+    """Re-run an ``alpha-report/1`` with its stored settings and compare the certificate id.
+
+    Inputs that the report only stored as hashes (``factors``, ``book``, ``membership``, ``groups``, ``existing``, a file of ``exchanges``) must be
+    given again; a different file gives a different id.
+
+    Returns:
+        ``{"reproduced", "certificate_id", "expected_id", "verdict", "data_matches"}``.
+    """
+    repro = certificate.get("reproducibility", {})
+    st = repro.get("settings", {})
+    fresh = validate_alpha(
+        prices, scores, horizon=int(st.get("horizon", 1)), quantiles=int(st.get("quantiles", 5)), claimed_ir=st.get("claimed_ir"),
+        seed=int(st.get("seed", 0)), placebos=int(st.get("placebos", 200)), aum=st.get("aum"), factors=factors, book=book,
+        n_trials=int(st.get("n_trials", 1)), families=bool(st.get("families", True)), membership=membership, groups=groups,
+        exchanges=exchanges if exchanges is not None else (st.get("exchanges") if isinstance(st.get("exchanges"), dict) else None), discovery_date=st.get("discovery_date"),
+        existing=existing, funding=funding, aum_grid=st.get("aum_grid"), min_capacity=st.get("min_capacity"),
+        liquid_top=st.get("liquid_top"), liquid_lookback=int(st.get("liquid_lookback", 30)), terminal_returns=st.get("terminal_returns"),
+        rebalance_phase=st.get("rebalance_phase"),
+    )
+    return {
+        "reproduced": fresh["certificate_id"] == certificate.get("certificate_id"),
+        "certificate_id": fresh["certificate_id"], "expected_id": certificate.get("certificate_id"), "verdict": fresh["verdict"],
+        "data_matches": fresh["reproducibility"]["data_sha256"] == repro.get("data_sha256"),
+    }

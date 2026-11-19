@@ -17,7 +17,9 @@ from monte_neo.backtest.bar_engine import run_bar_backtest
 from monte_neo.backtest.jit import warn_if_slow
 from monte_neo.backtest.model import ExecutionModel
 from monte_neo.verify import checks as rows
-from monte_neo.verify.breakdown import buy_and_hold, periods, regimes, series
+from monte_neo.verify.alpha_beta import alpha_after_beta_row
+from monte_neo.verify.basket_checks import alpha_two_betas_row, selection_timing_row
+from monte_neo.verify.breakdown import buy_and_hold, periods, regime_masks, regimes, series
 from monte_neo.verify.claim import claim_row, parse_claim
 from monte_neo.verify.confidence import (
     bootstrap_ci,
@@ -26,7 +28,16 @@ from monte_neo.verify.confidence import (
     track_record,
     track_record_row,
 )
+from monte_neo.verify.cost_profiles import cost_sensitivity_row, realism_row
 from monte_neo.verify.costs import breakeven_cost_bps, delay_scan
+from monte_neo.verify.dynamic_mc import (
+    regime_mix_bootstrap,
+    regime_mix_row,
+    regime_swap_null,
+    regime_swap_row,
+    run_reversed,
+    time_reversal_row,
+)
 from monte_neo.verify.engine import is_weights, simulate
 from monte_neo.verify.executor import ProcessRunner, resolve_jobs, split_spec
 from monte_neo.verify.ingest import (
@@ -44,6 +55,8 @@ from monte_neo.verify.market import SingleMarket, UniverseMarket, market_for
 from monte_neo.verify.microstructure import capacity, capacity_row, spread_estimate, spread_row
 from monte_neo.verify.notebook import Certificate
 from monte_neo.verify.quality import data_quality, quality_row, spike_profit_share
+from monte_neo.verify.rebalance_phase import rebalance_phase_row
+from monte_neo.verify.regime_checks import regime_stability_row
 from monte_neo.verify.repaint import MODES as REPAINT_MODES
 from monte_neo.verify.repaint import TIMINGS as SIGNAL_TIMINGS
 from monte_neo.verify.repaint import repaint_rows
@@ -131,6 +144,17 @@ def verify_strategy(
     events: Any = None,
     events_delay: float = 0.0,
     events_sha256: str | None = None,
+    cost_profile: str | tuple[float, float] | None = None,
+    maker_share: float = 0.0,
+    allow_rebate: bool = False,
+    adverse_selection_bps: float = 0.0,
+    quotes_half_spread_bps: float | None = None,
+    delisted: Any = None,
+    delist_return: float = -0.30,
+    reference_symbol: str | None = None,
+    rebalance_every: int | None = None,
+    corporate_actions: Any = None,
+    profile: str | None = None,
 ) -> dict[str, Any]:
     """Verify one strategy and return a ``strategy-verdict/1`` report.
 
@@ -168,7 +192,25 @@ def verify_strategy(
     to the OHLCV by publication time plus ``events_delay`` seconds, as ``ev_<column>`` columns the strategy reads; with
     ``event_time`` the strategy also runs on the leaky join (row ``pit_events``). ``events_sha256`` is set by a recheck
     to make sure the same events are used. See :mod:`monte_neo.verify.events_run`.
+    ``cost_profile`` (a name from :data:`monte_neo.verify.cost_profiles.FEE_PROFILES` or a ``(maker, taker)`` pair in bps)
+    replaces the model's commission with the exchange fee, ``maker_share`` is the fraction of fills that are maker orders; ``allow_rebate=True`` accepts a negative maker fee in a
+    ``(maker, taker)`` pair inside the realism envelope of :func:`monte_neo.verify.execution_calib.rebate_fee_bps`.
+    ``quotes_half_spread_bps`` is the median half-spread of real quotes (see ``quotes_half_spread_bps`` in
+    :mod:`monte_neo.verify.cost_profiles`); it makes the ``cost_realism`` gate a failure instead of a warning.
+    ``delisted`` (symbols, ``(symbol, assumed total return)`` pairs, or a table ``symbol[, delist_return]``; ``[]`` declares
+    none) lists names that belonged to a universe but are missing from the data; ``delist_return`` is the default assumed
+    return of a missing name. Without it a universe whose symbols all survive is capped at ARL 4
+    (see :mod:`monte_neo.verify.survivorship`). ``reference_symbol`` (a symbol of the universe, for example BTC) adds
+    ``alpha_after_reference``; ``rebalance_every`` sets the cadence for ``rebalance_timing_luck`` (default: detected). ``corporate_actions`` is a table
+    of declared splits and dividends (columns ``bar`` or ``date``, ``kind``, ``value``; one instrument) checked against the
+    prices, see :mod:`monte_neo.verify.corporate_actions`.
+    ``profile`` (an id from :mod:`monte_neo.profiles`, for example ``trend_cta``) adds a ``profile`` block to the certificate:
+    which checks the strategy type requires, which ran, what is not assessed. It never changes the verdict.
     """
+    if profile is not None:
+        from monte_neo.profiles import get_profile
+
+        get_profile(profile)  # fail early on an unknown id
     if policy is not None:
         from monte_neo.verify.policy import apply_policy, load_policy, run_inputs
 
@@ -187,7 +229,11 @@ def verify_strategy(
             extra_checks=extra_checks, extra=extra, io_watch=io_watch, jobs=jobs, timeout=timeout, isolate=isolate,
             claim=claim, symbol_costs=symbol_costs, ledger=ledger, registration=registration, repaint=repaint,
             signal_timing=signal_timing, model_cutoff=model_cutoff, events=events, events_delay=events_delay,
-            events_sha256=events_sha256,
+            events_sha256=events_sha256, cost_profile=cost_profile, maker_share=maker_share,
+            allow_rebate=allow_rebate, adverse_selection_bps=adverse_selection_bps,
+            quotes_half_spread_bps=quotes_half_spread_bps, delisted=delisted, delist_return=delist_return,
+            reference_symbol=reference_symbol, rebalance_every=rebalance_every,
+            corporate_actions=corporate_actions, profile=profile,
         )
         return apply_policy(report, rules)
     if n_trials is not None and int(n_trials) < 1:
@@ -215,6 +261,10 @@ def verify_strategy(
         raise ValueError("this certificate was issued with events: pass the same events file")
     market = market_for(df)
     n = market.n_bars
+    if cost_profile is not None:
+        from monte_neo.verify.cost_profiles import with_profile
+
+        model = with_profile(model or _default_model(n), cost_profile, maker_share, allow_rebate=allow_rebate, adverse_selection_bps=adverse_selection_bps)  # written into the certificate's model
     if symbol_costs is not None:
         model = apply_symbol_costs(market, model or _default_model(n), symbol_costs)  # written into the certificate's model
     # Every knob that can change the verdict goes into the certificate, so a recheck
@@ -228,6 +278,28 @@ def verify_strategy(
         "repaint": repaint,
         "signal_timing": signal_timing,
     }
+    if cost_profile is not None:  # only when set: older certificate ids stay the same
+        settings["cost_profile"] = cost_profile if isinstance(cost_profile, str) else [float(x) for x in cost_profile]
+        settings["maker_share"] = float(maker_share)
+        if allow_rebate:  # only when set: older certificate ids stay the same
+            settings["allow_rebate"] = True
+            settings["adverse_selection_bps"] = float(adverse_selection_bps)
+    if delisted is not None:
+        from monte_neo.verify.survivorship import parse_delisted
+
+        settings["delisted"] = [list(x) for x in parse_delisted(delisted, float(delist_return))]  # pairs: a recheck passes them back
+    if profile is not None:
+        settings["profile"] = str(profile)  # only when set: older certificate ids stay the same
+    if reference_symbol is not None:
+        settings["reference_symbol"] = str(reference_symbol)
+    if rebalance_every is not None:
+        settings["rebalance_every"] = int(rebalance_every)
+    if corporate_actions is not None and market.kind == "single":
+        from monte_neo.verify.corporate_actions import parse_actions
+
+        settings["corporate_actions"] = [[b, k, v] for b, k, v in parse_actions(corporate_actions, n, market.timestamps)]  # bars: a recheck passes them back
+    if quotes_half_spread_bps is not None:
+        settings["quotes_half_spread_bps"] = float(quotes_half_spread_bps)
     if model_cutoff is not None:
         from monte_neo.verify.cutoff import parse_cutoff
 
@@ -246,7 +318,7 @@ def verify_strategy(
         fn, src = runner, source if source is not None else read_source(runner.path)
     else:
         if (timeout is not None or isolate or resolve_jobs(jobs) > 1) and not isinstance(signal_fn, ProcessRunner):
-            raise ValueError("jobs, timeout and isolate need strategy code in a file (strategy='file.py')")
+            raise ValueError("jobs, timeout and isolate run the strategy in a worker, so they need strategy code in a file: pass --strategy file.py (with --signals the positions are already computed: drop --jobs/--timeout/--isolate)")
         with io_watch:
             fn, src = _resolve_strategy(strategy, signal_fn, source)
     from monte_neo.verify.model_protocol import ModelSignal
@@ -259,7 +331,9 @@ def verify_strategy(
     if isinstance(local_fn, ModelSignal):
         from monte_neo.verify.model_rows import model_rows
 
-        extra_checks = [*(extra_checks or []), *model_rows(df, local_fn, model or _default_model(n), positions)]
+        extra_checks = [*(extra_checks or []), *model_rows(df, local_fn, model or _default_model(n), positions, n_trials)]
+        if local_fn.n_configs > int(n_trials or 1):
+            n_trials = local_fn.n_configs  # every configuration tried counts into the Deflated Sharpe
     book = None
     if ledger:
         from monte_neo.verify.ledger import Ledger, ledger_row, variant_id
@@ -302,6 +376,23 @@ def verify_strategy(
     finally:
         if runner is not None:
             runner.close()
+
+
+def _sample_rows(market: Any, stat_rows: list[dict[str, Any]], rets: np.ndarray, sig: np.ndarray, warmup: int, n_closed: int, min_trades: int) -> list[dict[str, Any]]:
+    """A market that earns by accrual (carry) replaces the closed-trade count with its own sample rule."""
+    if not getattr(market, "carry", False):
+        return stat_rows
+    from monte_neo.verify.carry_market import sample_row
+
+    held = market.held(sig, warmup, rets.size)
+    return [sample_row(rets, held, n_closed, min_trades) if r["id"] == "sample_size" else r for r in stat_rows]
+
+
+def _beta_reference(market: Any, bench: dict[str, Any], warmup: int) -> np.ndarray:
+    """The returns the strategy's beta is measured against: the underlying for carry, the passive benchmark otherwise."""
+    if getattr(market, "carry", False):
+        return np.asarray(market.reference_returns(warmup), dtype=np.float64)
+    return bar_returns(bench["equity"], start=warmup)
 
 
 def _local_strategy(strategy: Any, src: str | None, isolate: bool, has_events: bool) -> Any:
@@ -417,9 +508,12 @@ def _checks_and_report(
     by_period = periods(run["equity"], bench["equity"], traded, timestamps, model.warmup_bars, ppy)
     by_regime = regimes(run["equity"], market.market_close(), model.warmup_bars, ppy)
 
+    dynamic_rows = _dynamic_mc_rows(market, fn, mode, model, run, bench, total_return, ppy)
+    universe_rows = _universe_rows(market, settings, bench, total_return, traded)
+    basket_rows = _basket_rows(market, settings, traded, rets, bench, model, ppy)
     checks = [
         integrity,
-        *market.universe_checks(),
+        *universe_rows,
         quality_row(quality, profit_share, market.symbols),
         rows.probe_row("determinism", determinism, "determinism"),
         rows.probe_row("lookahead_truncation", truncation, "truncation probe"),
@@ -432,7 +526,8 @@ def _checks_and_report(
         rows.performance_row(float(dsr["sharpe_annualized"]), int(rets.size)),
         *rows.economics_rows(model, total_return, breakeven, delay),
         rows.timing_row(timing),
-        *rows.statistics_rows(dsr, n_closed, int(min_trades), trials_declared=n_trials is not None, holdout=holdout),
+        *_sample_rows(market, rows.statistics_rows(dsr, n_closed, int(min_trades), trials_declared=n_trials is not None, holdout=holdout),
+                      rets, sig, model.warmup_bars, n_closed, int(min_trades)),
         rows.period_row(by_period, total_return),
         stability_row(windows),
         confidence_row(interval),
@@ -440,6 +535,14 @@ def _checks_and_report(
         track_record_row(history),
         *([claim_row(settings["claim"], _verified(dsr, run, n_closed, journal_stats))] if "claim" in settings else []),
         rows.benchmark_row(total_return, dsr["sharpe_annualized"], bench),
+        alpha_after_beta_row(rets, _beta_reference(market, bench, model.warmup_bars), ppy),
+        regime_stability_row(by_regime, total_return),
+        *dynamic_rows,
+        rebalance_phase_row(ohlc, sig, model, settings.get("rebalance_every")),
+        *_corporate_rows(market, settings, ohlc, traded, total_return),
+        *basket_rows,
+        cost_sensitivity_row(ohlc, sig, model),
+        realism_row(ohlc, sig, model, spread, settings.get("quotes_half_spread_bps")),
         spread_row(spread),
         *([capacity_row(room)] if market.capacity_volume is not None else []),
         *(extra_checks or []),
@@ -488,6 +591,70 @@ def _checks_and_report(
         ),
     }
     return _report(checks, metrics, market, full, src, model, n_trials, settings, extra, sections)
+
+
+def _corporate_rows(market: Any, settings: dict[str, Any], ohlc: dict[str, Any], traded: np.ndarray, total_return: float) -> list[dict[str, Any]]:
+    """The ``corporate_actions`` row when declared actions were given (one instrument)."""
+    if "corporate_actions" not in settings:
+        return []
+    from monte_neo.verify.corporate_actions import corporate_actions_row
+
+    actions = [(int(b), str(k), float(v)) for b, k, v in settings["corporate_actions"]]
+    return [corporate_actions_row(ohlc, actions, np.asarray(traded, dtype=np.float64), total_return)]
+
+
+def _dynamic_mc_rows(market: Any, fn: Any, mode: str, model: ExecutionModel, run: dict[str, Any], bench: dict[str, Any], total_return: float, ppy: float) -> list[dict[str, Any]]:
+    """Regime-swap null, regime-mix bootstrap and time-reversal null (single instrument, see ``dynamic_mc``)."""
+    if market.kind != "single":
+        why = "not assessed: the dynamic Monte Carlo covers one instrument"
+        return [rows.check(i, "statistics", "skip", why) for i in ("regime_swap_null", "regime_mix_bootstrap", "time_reversal_null")]
+    equity = run["equity"]
+    masks, usable, _ = regime_masks(market.market_close(), model.warmup_bars)
+    s_ret = np.zeros(equity.size)
+    prev = np.where(equity[:-1] > 0, equity[:-1], 1.0)
+    s_ret[1:] = np.where(equity[:-1] > 0, equity[1:] / prev - 1.0, 0.0)
+    reversed_run = why = None
+    if total_return > 0.0 and fn is not None:
+        reversed_run, why = run_reversed(market.frame, fn, mode, model, total_return)
+    elif fn is None:
+        why = "not assessed: needs the strategy code (a signals file cannot be re-run on reversed history)"
+    return [
+        regime_swap_row(regime_swap_null(s_ret, masks, usable) if masks else {}, total_return),
+        regime_mix_row(regime_mix_bootstrap(s_ret, masks, ppy) if masks else {}, total_return),
+        time_reversal_row({"total_return": total_return}, reversed_run, why or ""),
+    ]
+
+
+def _universe_rows(market: Any, settings: dict[str, Any], bench: dict[str, Any], total_return: float, traded: np.ndarray) -> list[dict[str, Any]]:
+    """The structural survivorship row, priced with the declared missing names when there are any."""
+    rows_ = market.universe_checks()
+    if not rows_:
+        return []
+    from monte_neo.verify.survivorship import survivorship_bias_row
+
+    declared = settings.get("delisted")
+    exposure = float(np.mean(np.clip(traded, 0.0, None).sum(axis=1))) if traded.ndim == 2 else 0.0
+    return [survivorship_bias_row(
+        rows_[0], delisted=None if declared is None else [(a, float(b)) for a, b in declared], n_symbols=len(market.symbols),
+        bench_return=float(bench["total_return"]), total_return=total_return, exposure=exposure)]
+
+
+def _basket_rows(market: Any, settings: dict[str, Any], traded: np.ndarray, rets: np.ndarray, bench: dict[str, Any],
+                 model: ExecutionModel, ppy: float) -> list[dict[str, Any]]:
+    """Selection-vs-timing and alpha after the basket and a reference symbol (universe markets only)."""
+    ref = settings.get("reference_symbol")
+    if traded.ndim != 2:
+        return []
+    close = market.ohlc["close"]
+    step = close[1:] / close[:-1] - 1.0
+    out = [selection_timing_row(traded[:-1][-rets.size:], step[-rets.size:], ppy)]
+    if ref is not None:
+        if ref not in market.symbols:
+            raise ValueError(f"reference_symbol {ref!r} is not a symbol of the universe: {', '.join(map(str, market.symbols[:10]))}")
+        col = list(market.symbols).index(ref)
+        basket = bar_returns(bench["equity"], start=model.warmup_bars)
+        out.append(alpha_two_betas_row(rets, basket[-rets.size:], step[-rets.size:, col], ppy, str(ref)))
+    return out
 
 
 def _trade_journal(ohlc: dict[str, np.ndarray], sig: np.ndarray, model: ExecutionModel, n_closed: int) -> list[dict[str, Any]] | None:
@@ -550,6 +717,18 @@ def _report(
     cert_id = certificate_id(repro, verdict)
     reasons = [f"{c['id']}: {c['summary']}" for c in checks if c["status"] == "fail"]
     reasons += [f"{c['id']}: {c['summary']}" for c in checks if c["status"] == "warn"]
+    body = {
+        "schema": VERDICT_SCHEMA_ID, "verdict": verdict, "certificate_id": cert_id, "reasons": reasons, "checks": checks,
+        "metrics": metrics, "reproducibility": repro,
+    }
+    if settings.get("profile"):
+        from monte_neo.profiles import profile_block
+
+        sections = {**(sections or {}), "profile": profile_block(str(settings["profile"]), checks)}
+    from monte_neo.readiness import arl_block, readiness
+
+    ready = readiness(certificate=body)
+    next_actions = rows.next_actions(checks) + [f"{a['criterion']} of ARL {a['level']}: {a['command']}" for a in ready["next_actions"] if a["state"] != "met"][:4]
     return Certificate(to_jsonable(
         {
             "schema": VERDICT_SCHEMA_ID,
@@ -558,7 +737,8 @@ def _report(
             "reasons": reasons,
             "checks": checks,
             "metrics": metrics,
-            "next_actions": rows.next_actions(checks),
+            "next_actions": next_actions,
+            "arl": arl_block(ready),  # derived from the checks and the rules version: not part of the certificate id
             "reproducibility": repro,
             "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
             "disclaimer": DISCLAIMER,

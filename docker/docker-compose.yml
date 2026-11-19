@@ -1,3 +1,9 @@
+# Dev shell (default) and headless profiles. Run from the repository root:
+#   docker compose -f docker/docker-compose.yml up -d monte-neo            # dev shell container
+#   docker compose -f docker/docker-compose.yml --profile headless run --rm verify --help
+#   SCRIPT=scripts/strategy_lab/<name>.py docker compose -f docker/docker-compose.yml \
+#       --profile headless run --rm strategy-lab [script args]
+# Everything runs on Linux without MLX/Metal (the Apple extras are not installed).
 services:
   monte-neo:
     build:
@@ -17,3 +23,44 @@ services:
     tty: true
     entrypoint: /bin/bash
     command: -c "sleep infinity"
+
+  # `monte-neo verify ...` with no TTY, read-only code, data only in ./data
+  verify:
+    profiles: ["headless"]
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: monte-neo
+    entrypoint: ["monte-neo"]
+    command: ["verify", "--help"]
+    environment:
+      - MONTE_NEO_DATA_DIR=/app/data
+      - NO_COLOR=1
+    volumes:
+      - ../data:/app/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    restart: "no"
+
+  # Long Strategy Lab runs: resume-safe scripts, restart on crash, logs and state in ./data/strategy_lab
+  strategy-lab:
+    profiles: ["headless"]
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: monte-neo
+    entrypoint: ["python"]
+    command: ["${SCRIPT:-scripts/strategy_lab/run.py}"]
+    working_dir: /app
+    environment:
+      - MONTE_NEO_DATA_DIR=/app/data
+      - NO_COLOR=1
+    volumes:
+      - ../data:/app/data
+      - ../scripts:/app/scripts:ro
+    restart: on-failure:5
+    security_opt:
+      - no-new-privileges:true

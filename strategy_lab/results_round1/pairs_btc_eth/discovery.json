@@ -1,0 +1,109 @@
+{
+ "verdict": "NEEDS_MORE_EVIDENCE",
+ "certificate_id": "3cad5fc4767bda18",
+ "arl": 0,
+ "arl_summary": "ARL 0/9 \u2014 not assessed beyond 0: idea on clean data (data_integrity (not run), ic (not run))",
+ "sharpe": -0.12105760136256821,
+ "deflated_sharpe": 0.0452452407964854,
+ "ic_t_stat": null,
+ "mean_ic": null,
+ "total_return": null,
+ "max_drawdown": 0.3373876269089887,
+ "bars": null,
+ "checks": [
+  {
+   "id": "returns_only_scope",
+   "status": "info",
+   "summary": "Return series only: smoothing, distribution and significance were checked; look-ahead, costs and data quality behind the returns cannot be checked without the strategy or positions."
+  },
+  {
+   "id": "return_smoothing",
+   "status": "pass",
+   "summary": "no sign of smoothing (lag-1 autocorrelation -0.28, unsmoothed Sharpe -0.10)"
+  },
+  {
+   "id": "zero_kink",
+   "status": "warn",
+   "summary": "small losses are missing: 38 small losses vs 864 small gains (expected about 451.4 losses, z=-27.5); losses may be deferred or rounded up"
+  },
+  {
+   "id": "implausible_consistency",
+   "status": "pass",
+   "summary": "10% positive periods vs 50% expected (z=-26.6)"
+  },
+  {
+   "id": "round_numbers",
+   "status": "warn",
+   "summary": "78% of returns are exact multiples of 5 bps vs 0.0% expected: figures may be typed or rounded by hand"
+  },
+  {
+   "id": "track_record_significance",
+   "status": "fail",
+   "summary": "track record is not significant: probabilistic Sharpe 0.42, deflated for 9 strategies 0.05; track record 3.0 years, inf needed"
+  },
+  {
+   "id": "drawdown_consistency",
+   "status": "pass",
+   "summary": "max drawdown 33.7% within the simulated range (5th percentile 21.3%)"
+  }
+ ],
+ "reasons": [
+  "zero_kink: small losses are missing: 38 small losses vs 864 small gains (expected about 451.4 losses, z=-27.5); losses may be deferred or rounded up",
+  "round_numbers: 78% of returns are exact multiples of 5 bps vs 0.0% expected: figures may be typed or rounded by hand",
+  "track_record_significance: track record is not significant: probabilistic Sharpe 0.42, deflated for 9 strategies 0.05; track record 3.0 years, inf needed"
+ ],
+ "slice": "disc",
+ "n_trials": 9,
+ "exit_code": 0,
+ "report_sha256": "421533a8487b4e95548bfa47f9654e14a10d801d4e142a9231bb11abc064a6c9",
+ "grid_size": 9,
+ "grid_sharpes": [
+  {
+   "window": 60,
+   "entry": 1.5,
+   "sharpe": -0.729
+  },
+  {
+   "window": 60,
+   "entry": 2.0,
+   "sharpe": -0.072
+  },
+  {
+   "window": 60,
+   "entry": 2.5,
+   "sharpe": -0.125
+  },
+  {
+   "window": 90,
+   "entry": 1.5,
+   "sharpe": -0.13
+  },
+  {
+   "window": 90,
+   "entry": 2.0,
+   "sharpe": -0.121
+  },
+  {
+   "window": 90,
+   "entry": 2.5,
+   "sharpe": 0.314
+  },
+  {
+   "window": 120,
+   "entry": 1.5,
+   "sharpe": -0.506
+  },
+  {
+   "window": 120,
+   "entry": 2.0,
+   "sharpe": -0.332
+  },
+  {
+   "window": 120,
+   "entry": 2.5,
+   "sharpe": 0.292
+  }
+ ],
+ "finished_at": "2026-11-07T16:48:53+00:00",
+ "seconds": 1.0
+}

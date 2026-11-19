@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from monte_neo import disclaimer
+from monte_neo.verify.sealed_holdout import SealedHoldout
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -22,10 +23,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--certificate", help="A strategy-verdict/1 certificate (monte-neo verify --out cert.json)")
     p.add_argument("--alpha", help="Optional alpha-report/1 JSON for the strategy's signal (monte-neo alpha --out)")
     p.add_argument("--live", help="Optional live-monitor/1 JSON (monte-neo monitor --out)")
+    p.add_argument("--holdout", help="Optional sealed-holdout file (.monte-neo/sealed_holdout.jsonl): the only source of out-of-sample depth (D4)")
     p.add_argument("--framework", choices=sorted(FRAMEWORKS), default="generic", help="Clause map to include (default generic)")
     p.add_argument("--out", default="dossier", help="Folder to write (default ./dossier)")
     for field in ("name", "owner", "purpose", "scope", "developer", "tier"):
         p.add_argument(f"--{field}", help=f"Model {field} shown in 'Purpose and scope'")
+    p.add_argument("--also", nargs="+", metavar="CERT", help="More certificates of the same strategy family: the extended dossier shows ARL, depth, regimes, costs and capacity for each")
+    p.add_argument("--research", metavar="DIR", help="A monte-neo research project folder: adds the search funnel and the search cost")
+    p.add_argument("--portfolio", metavar="JSON", help="A portfolio verification report (verify portfolio --out): adds the portfolio section")
     p.add_argument("--lite", action="store_true", help="Also write dossier-lite.html: one plain-language page for a non-quant reader")
     p.add_argument("--demo", action="store_true", help="Build a dossier from a synthetic certificate (no files needed)")
     return p
@@ -66,7 +71,19 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print("dossier: give --certificate cert.json, or --demo", file=sys.stderr)
             return 3
-        dossier = build_dossier(cert, framework=args.framework, meta=meta, alpha=_read(args.alpha), live=_read(args.live))
+        dossier = build_dossier(cert, framework=args.framework, meta=meta, alpha=_read(args.alpha), live=_read(args.live),
+                                  holdout=SealedHoldout(args.holdout).evidence() if args.holdout else None)
+        if args.also or args.research or args.portfolio:
+            from monte_neo.dossier.extended import build_extended
+
+            funnel = None
+            if args.research:
+                from monte_neo.research.funnel import funnel as make_funnel
+                from monte_neo.research.project import ResearchProject
+
+                funnel = make_funnel(ResearchProject(args.research))
+            more = [load_certificate(p) for p in args.also or []]
+            dossier["extended"] = build_extended([cert, *more], funnel=funnel, portfolio=_read(args.portfolio), live=_read(args.live), framework=args.framework)
         out = write_dossier(dossier, cert, args.out, lite=args.lite)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"dossier: {exc}", file=sys.stderr)

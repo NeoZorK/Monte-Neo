@@ -1,0 +1,25 @@
+{
+ "arl_rules_version": "arl-rules/1",
+ "author": "Rostyslav Shcherbyna (process), idea: Claude Sonnet 5.5",
+ "category": "trend",
+ "certificate_sha256": "dce45d55c6a01706e7e4151350bca4a78dafb4cd2807c693e9d2e491de92d6e9",
+ "hall_rules_version": "hall-of-fame/1",
+ "id": "2026-11-10-time-series-momentum-btc-dce45d55",
+ "provisional": true,
+ "recheck": {
+  "by": "maintainer",
+  "checked_at": "2026-11-10",
+  "engine_version": "v0.54.0",
+  "reproduced": true
+ },
+ "schema": "hall-entry/1",
+ "signature": {
+  "alg": "ed25519",
+  "key_id": "5530a1e2e46a2429",
+  "public_key": "ed25519:xp4SsTA2h8cvR54wmQjujGe1AqB7KsxJYwJpHHq6ykU=",
+  "value": "pVYOxyLy5GGT8PgUzBZrEtQViaR5f+iydsKnH8Mal5sK1mT1a5wb+rGfNLNNF9HyxXLCnygM0eE44P9q8bVxBQ=="
+ },
+ "strategy": "Time-series momentum BTC",
+ "submitted_at": "2026-11-10",
+ "tier": "B"
+}
