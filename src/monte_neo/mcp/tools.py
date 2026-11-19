@@ -10,6 +10,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from monte_neo._paths import strategy_file
 from monte_neo._version import __version__
 
 SERVER_INSTRUCTIONS = (
@@ -467,7 +468,7 @@ def suggest_fix(strategy_path: str, certificate_path: str | None = None) -> dict
     """
     from monte_neo.verify.fixes import advise, suggest_fixes
 
-    path = Path(strategy_path.split(":")[0])
+    path = Path(strategy_file(strategy_path))
     if not path.is_file():
         raise FileNotFoundError(f"strategy file not found: {path}")
     result = suggest_fixes(path.read_text(encoding="utf-8"), filename=path.name)
@@ -509,7 +510,7 @@ def register_hypothesis(hypothesis: str, strategy_path: str | None = None, param
     """
     from monte_neo.verify.register import Registry
 
-    source = Path(strategy_path.split(":")[0]).read_text(encoding="utf-8") if strategy_path else None
+    source = Path(strategy_file(strategy_path)).read_text(encoding="utf-8") if strategy_path else None
     entry = Registry().register(hypothesis, source=source, params=params, n_trials=n_trials)
     return {"id": f"reg-{entry['seq']}-{entry['hash'][:8]}", "registered_at": entry["at"], "variant": entry["variant"]}
 
@@ -540,7 +541,7 @@ def verify_portfolio(ohlcv_path: str, strategy_paths: list[str]) -> dict[str, An
     from monte_neo.verify import load_ohlcv
     from monte_neo.verify.portfolio import verify_portfolio as _portfolio
 
-    return _portfolio(load_ohlcv(ohlcv_path), list(strategy_paths), names=[Path(s.split(":")[0]).stem for s in strategy_paths])
+    return _portfolio(load_ohlcv(ohlcv_path), list(strategy_paths), names=[Path(strategy_file(s)).stem for s in strategy_paths])
 
 
 def diagnose_data(table_path: str, provider: str = "auto") -> dict[str, Any]:

@@ -17,6 +17,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from monte_neo._paths import strategy_file
 from monte_neo._version import __version__
 from monte_neo.backtest.model import ExecutionModel
 from monte_neo.verify.arrival import (
@@ -149,7 +150,7 @@ def verify_quotes(
         raise ValueError("give exactly one of strategy (file.py[:func]) or signal_fn")
     if strategy is not None:
         signal_fn, source = load_signal_fn(strategy)
-        source = source if source is not None else read_source(Path(str(strategy).split(":")[0]))
+        source = source if source is not None else read_source(Path(strategy_file(str(strategy))))
     feeds = list(feeds or [])
     if feeds and symbol is None:
         raise ValueError("feeds need symbol=... (the instrument the strategy trades)")
