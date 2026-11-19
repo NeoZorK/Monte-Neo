@@ -142,7 +142,7 @@ def run_case(case: Case, seed: int, *, commission_bps: float = 5.0, slippage_bps
         warnings.simplefilter("ignore")
         if isinstance(payload, str):
             scope: dict[str, Any] = {"__name__": "known_error"}
-            exec(compile(payload, "<known_error>", "exec"), scope)  # noqa: S102 - generated above, no outside input
+            exec(compile(payload, "<known_error>", "exec"), scope)  # noqa: S102  # nosec B102 - generated above, no outside input
             rep = verify_strategy(df, signal_fn=scope["signal"], source=payload, n_trials=trials, model=model)
         else:
             rep = verify_strategy(df, signals=payload, n_trials=trials, model=model)

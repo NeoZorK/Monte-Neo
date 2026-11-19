@@ -59,7 +59,7 @@ class Candidate:
     def signal_fn(self) -> Callable[..., Any]:
         """Run the code and return ``partial(signal, **params)``. Runs the code with your permissions: only your own code."""
         ns: dict[str, Any] = {"__name__": "_research_candidate"}
-        exec(compile(self.source, f"<candidate {self.id}>", "exec"), ns)  # noqa: S102
+        exec(compile(self.source, f"<candidate {self.id}>", "exec"), ns)  # noqa: S102  # nosec B102 - runs the user's own strategy code, as documented
         fn = ns.get("signal")
         if not callable(fn):
             raise ValueError("the candidate code must define signal(df, **params)")
