@@ -593,6 +593,17 @@ Monte-Neo is free and MIT-licensed, and it is built in the open. If it saved you
   Missed leaks become new Trap Suite cases.
 - **Add the badge** to your strategy repository (see the certificate badge section above), so readers know the result was verified.
 
+### Support the work
+
+Monte-Neo is written and maintained by one independent researcher in Ukraine, with no company, grant or paid tier behind it.
+Every Trap Suite case, every calibration run and every honest "this strategy failed" report is unpaid work.
+If the verifier stopped you from trading a phantom profit, a voluntary donation keeps it free, independent and growing.
+
+**Bitcoin:** `bc1qm0ynz8tk2em3zr8agv5j3550vpm420z3hxdfkq`
+
+Donations are entirely optional, buy no features or influence over verdicts, and are not a condition for any help.
+Please check the address against this README on GitHub before sending.
+
 ## Project status
 
 Monte-Neo is in active development (beta). The verifier API and the `strategy-verdict/1`
