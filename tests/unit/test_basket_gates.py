@@ -86,7 +86,7 @@ def test_verify_strategy_survivorship_end_to_end() -> None:
 
 
 def _cert(**status: str) -> dict:
-    ids = ["data_integrity", "lookahead_truncation", "net_profitability", "timing_significance", "residual_alpha",
+    ids = ["data_integrity", "lookahead_truncation", "net_profitability", "timing_significance", "selection_adjusted_sharpe", "residual_alpha",
            "hidden_short_volatility", "deflated_sharpe"]
     rows = [{"id": i, "status": "pass", "category": "x"} for i in ids]
     return {"checks": rows + [{"id": k, "status": v, "category": "integrity"} for k, v in status.items()]}

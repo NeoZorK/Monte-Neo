@@ -1,0 +1,1123 @@
+{
+ "schema": "arl-rules/2",
+ "version": "arl-rules/2",
+ "status": "provisional",
+ "authorship": "The Alpha Readiness Level (ARL) was devised by Rostyslav Shcherbyna, author of Monte-Neo; it is modelled on the idea of a technology readiness level and is a Monte-Neo scale, not an industry standard.",
+ "statuses": {
+  "OK": [
+   "pass",
+   "info"
+  ],
+  "SOFT": [
+   "pass",
+   "info",
+   "warn"
+  ],
+  "PASS": [
+   "pass"
+  ]
+ },
+ "levels": [
+  {
+   "level": 1,
+   "name": "Idea on clean data",
+   "requirements": [
+    [
+     [
+      [
+       "data_integrity",
+       "SOFT"
+      ]
+     ],
+     [
+      [
+       "ic",
+       "SOFT"
+      ]
+     ]
+    ]
+   ],
+   "how": "monte-neo verify or monte-neo alpha"
+  },
+  {
+   "level": 2,
+   "name": "The backtest is not broken",
+   "requirements": [
+    [
+     [
+      [
+       "lookahead_truncation",
+       "OK"
+      ]
+     ],
+     [
+      [
+       "universe_lookahead",
+       "SOFT"
+      ]
+     ]
+    ]
+   ],
+   "how": "monte-neo verify --strategy (probes need code), or alpha with --membership"
+  },
+  {
+   "level": 3,
+   "name": "It earns after costs",
+   "requirements": [
+    [
+     [
+      [
+       "net_profitability",
+       "OK"
+      ]
+     ],
+     [
+      [
+       "market_impact",
+       "SOFT"
+      ],
+      [
+       "cost_sensitivity",
+       "SOFT"
+      ]
+     ]
+    ]
+   ],
+   "how": "monte-neo verify, or monte-neo alpha --aum"
+  },
+  {
+   "level": 4,
+   "name": "The signal predicts",
+   "requirements": [
+    [
+     [
+      [
+       "ic",
+       "OK"
+      ],
+      [
+       "signal_placebo",
+       "OK"
+      ]
+     ],
+     [
+      [
+       "timing_significance",
+       "OK"
+      ]
+     ]
+    ],
+    [
+     [
+      [
+       "selection_adjusted_sharpe",
+       "OK"
+      ]
+     ]
+    ]
+   ],
+   "how": "monte-neo alpha (scores), or verify (timing test); Deflated Sharpe of the certificate at least 0.8"
+  },
+  {
+   "level": 5,
+   "name": "It is new alpha",
+   "requirements": [
+    [
+     [
+      [
+       "residual_alpha",
+       "OK"
+      ],
+      [
+       "hidden_short_volatility",
+       "OK"
+      ]
+     ]
+    ]
+   ],
+   "how": "monte-neo alpha (attribution)"
+  },
+  {
+   "level": 6,
+   "name": "It survives the search",
+   "requirements": [
+    [
+     [
+      [
+       "deflated_sharpe",
+       "OK"
+      ]
+     ],
+     [
+      [
+       "hlz_hurdle",
+       "PASS"
+      ],
+      [
+       "min_backtest_length",
+       "SOFT"
+      ]
+     ]
+    ]
+   ],
+   "how": "verify with --n-trials / --ledger, or alpha with --n-trials"
+  },
+  {
+   "level": 7,
+   "name": "Tradable and robust",
+   "requirements": [
+    [
+     [
+      [
+       "market_impact",
+       "SOFT"
+      ]
+     ],
+     [
+      [
+       "capacity",
+       "SOFT"
+      ]
+     ]
+    ],
+    [
+     [
+      [
+       "synthetic_market_null",
+       "OK"
+      ],
+      [
+       "universe_subsampling",
+       "SOFT"
+      ],
+      [
+       "start_date_sensitivity",
+       "OK"
+      ]
+     ],
+     [
+      [
+       "period_consistency",
+       "OK"
+      ],
+      [
+       "delay_sensitivity",
+       "OK"
+      ]
+     ]
+    ],
+    [
+     [
+      [
+       "rebalance_timing_luck",
+       "OK"
+      ]
+     ],
+     [
+      [
+       "cost_margin",
+       "OK"
+      ]
+     ]
+    ]
+   ],
+   "how": "alpha with --aum (robustness runs by default), or verify with volume data"
+  },
+  {
+   "level": 8,
+   "name": "It adds to your book",
+   "requirements": [
+    [
+     [
+      [
+       "marginal_sharpe",
+       "OK"
+      ]
+     ]
+    ]
+   ],
+   "how": "monte-neo alpha --book book.csv"
+  },
+  {
+   "level": 9,
+   "name": "Confirmed live",
+   "requirements": [
+    [
+     [
+      [
+       "live_vs_backtest",
+       "OK"
+      ],
+      [
+       "alpha_death_monitor",
+       "OK"
+      ],
+      [
+       "live_source",
+       "OK"
+      ]
+     ]
+    ]
+   ],
+   "how": "monte-neo monitor --live live.csv --source real_fills --fills fills.csv (paper and testnet stop at 8)"
+  }
+ ],
+ "caps": {
+  "lookahead_fail_max_level": 1,
+  "ceilings": [
+   {
+    "check": "survivorship",
+    "max_level": 4,
+    "why": "the universe may be today's survivors: declare the delisted names (delisted=...) or add their prices"
+   }
+  ],
+  "blockers": [
+   {
+    "level": 5,
+    "check": "alpha_after_beta",
+    "why": "the return is not shown to be more than benchmark exposure"
+   },
+   {
+    "level": 5,
+    "check": "universe_subsampling",
+    "why": "the result rests on a few assets: it does not hold on random subsets of the universe"
+   },
+   {
+    "level": 5,
+    "check": "noise_injection",
+    "why": "the result does not survive small noise in the inputs: it fits exact values"
+   },
+   {
+    "level": 5,
+    "check": "short_feasibility",
+    "why": "the short side could not be borrowed or traded at the size shown"
+   },
+   {
+    "level": 5,
+    "check": "residual_vs_book",
+    "why": "the return is explained by the existing book: it is not new alpha for that book"
+   },
+   {
+    "level": 5,
+    "check": "cross_market_close_alignment",
+    "why": "the signal uses closes of markets that close later than the trade (same date, different time zone)"
+   },
+   {
+    "level": 5,
+    "check": "post_discovery_decay",
+    "why": "the edge disappears after its discovery date"
+   },
+   {
+    "level": 5,
+    "check": "claim_consistency",
+    "why": "the claimed numbers are better than the verified ones"
+   },
+   {
+    "level": 5,
+    "check": "universe_lookahead",
+    "why": "the universe looks like today's members (no name added or delisted): pass a point-in-time membership file (--membership); a fixed universe declares every symbol for the whole period"
+   }
+  ],
+  "non_real_sources": {
+   "sources": [
+    "paper",
+    "testnet",
+    "simulated"
+   ],
+   "max_level": 8,
+   "why": "paper, testnet and simulated fills are not live"
+  }
+ },
+ "depth": {
+  "max": 4,
+  "criteria": [
+   {
+    "id": "D1",
+    "name": "Margin",
+    "text": "the level's main check passes by a clear margin, not at the threshold"
+   },
+   {
+    "id": "D2",
+    "name": "Breadth",
+    "text": "the result repeats across independent slices (periods, assets, regimes, start dates)"
+   },
+   {
+    "id": "D3",
+    "name": "Sample",
+    "text": "enough independent observations for the claim at this level"
+   },
+   {
+    "id": "D4",
+    "name": "Out of sample",
+    "text": "the same level holds on data that did not choose the parameters (sealed holdout or forward data)"
+   }
+  ],
+  "levels": {
+   "1": {
+    "D1": {
+     "text": "no data warning at all (data_integrity and data_quality both pass)",
+     "rule": {
+      "type": "all",
+      "of": [
+       {
+        "type": "status",
+        "id": "data_integrity",
+        "allowed": [
+         "pass"
+        ]
+       },
+       {
+        "type": "status",
+        "id": "data_quality",
+        "allowed": [
+         "pass"
+        ]
+       }
+      ]
+     },
+     "needs": "monte-neo verify --ohlcv data.csv --strategy s.py --n-trials N --ledger"
+    },
+    "D2": {
+     "text": "two independent sources agree (data_source_replication)",
+     "rule": {
+      "type": "status",
+      "id": "data_source_replication",
+      "allowed": [
+       "pass"
+      ]
+     },
+     "needs": "monte-neo alpha --ohlcv prices.csv --scores scores.csv --aum A --n-trials N --replicate SOURCE2"
+    },
+    "D3": {
+     "text": "at least 3 years of bars",
+     "rule": {
+      "type": "derived",
+      "name": "years",
+      "op": ">=",
+      "value": 3
+     },
+     "needs": "monte-neo verify --ohlcv data.csv --strategy s.py --n-trials N --ledger (more history)"
+    },
+    "D4": {
+     "text": "a fresh fetch gives identical hashes",
+     "rule": {
+      "type": "evidence",
+      "key": "fresh_fetch_hash"
+     },
+     "needs": "re-fetch the data and compare data_sha256 (monte-neo verify --recheck cert.json)"
+    }
+   },
+   "2": {
+    "D1": {
+     "text": "all four probes pass (truncation, perturbation, static lint, repaint)",
+     "rule": {
+      "type": "all",
+      "of": [
+       {
+        "type": "status",
+        "id": "lookahead_truncation",
+        "allowed": [
+         "pass"
+        ]
+       },
+       {
+        "type": "status",
+        "id": "lookahead_perturbation",
+        "allowed": [
+         "pass"
+        ]
+       },
+       {
+        "type": "status",
+        "id": "lookahead_static_lint",
+        "allowed": [
+         "pass"
+        ]
+       },
+       {
+        "type": "status",
+        "id": "repaint_history",
+        "allowed": [
+         "pass"
+        ]
+       }
+      ]
+     },
+     "needs": "monte-neo verify --ohlcv data.csv --strategy s.py --n-trials N --ledger (strategy code and source are required)"
+    },
+    "D2": {
+     "text": "probes pass at many cut points (at least 12 in truncation and perturbation)",
+     "rule": {
+      "type": "all",
+      "of": [
+       {
+        "type": "detail",
+        "id": "lookahead_truncation",
+        "key": "checkpoints",
+        "op": ">=",
+        "value": 12
+       },
+       {
+        "type": "detail",
+        "id": "lookahead_perturbation",
+        "key": "checkpoints",
+        "op": ">=",
+        "value": 12
+       },
+       {
+        "type": "status",
+        "id": "lookahead_truncation",
+        "allowed": [
+         "pass"
+        ]
+       },
+       {
+        "type": "status",
+        "id": "lookahead_perturbation",
+        "allowed": [
+         "pass"
+        ]
+       }
+      ]
+     },
+     "needs": "monte-neo verify --probe-checks 24"
+    },
+    "D3": {
+     "text": "at least 20 cut points",
+     "rule": {
+      "type": "all",
+      "of": [
+       {
+        "type": "detail",
+        "id": "lookahead_truncation",
+        "key": "checkpoints",
+        "op": ">=",
+        "value": 20
+       },
+       {
+        "type": "status",
+        "id": "lookahead_truncation",
+        "allowed": [
+         "pass"
+        ]
+       }
+      ]
+     },
+     "needs": "monte-neo verify --probe-checks 24"
+    },
+    "D4": {
+     "text": "probes pass again on the sealed holdout",
+     "rule": {
+      "type": "all",
+      "of": [
+       {
+        "type": "holdout_valid"
+       },
+       {
+        "type": "all",
+        "of": [
+         {
+          "type": "status",
+          "id": "lookahead_truncation",
+          "allowed": [
+           "pass"
+          ]
+         },
+         {
+          "type": "status",
+          "id": "lookahead_perturbation",
+          "allowed": [
+           "pass"
+          ]
+         }
+        ],
+        "holdout": true
+       }
+      ]
+     },
+     "needs": "freeze and open the sealed holdout once (SealedHoldout), then monte-neo readiness --holdout .monte-neo/sealed_holdout.jsonl"
+    }
+   },
+   "3": {
+    "D1": {
+     "text": "break-even cost at least 5x the modelled cost",
+     "rule": {
+      "type": "ratio",
+      "a": {
+       "id": "cost_margin",
+       "key": "breakeven_bps"
+      },
+      "b": {
+       "id": "costs_modeled",
+       "key": "per_side_cost_bps"
+      },
+      "op": ">=",
+      "value": 5
+     },
+     "needs": "monte-neo verify --ohlcv data.csv --strategy s.py --n-trials N --ledger",
+     "repair": "cost_margin"
+    },
+    "D2": {
+     "text": "profitable in at least 5 of 6 equal periods (walk-forward windows)",
+     "rule": {
+      "type": "ratio",
+      "a": {
+       "id": "walk_forward_stability",
+       "key": "positive"
+      },
+      "b": {
+       "id": "walk_forward_stability",
+       "key": "windows"
+      },
+      "op": ">=",
+      "value": 0.8333333333333334
+     },
+     "needs": "monte-neo verify --ohlcv data.csv --strategy s.py --n-trials N --ledger",
+     "repair": "net_profitability"
+    },
+    "D3": {
+     "text": "at least 100 closed trades",
+     "rule": {
+      "type": "detail",
+      "id": "sample_size",
+      "key": "n_closed_trades",
+      "op": ">=",
+      "value": 100
+     },
+     "needs": "monte-neo verify --ohlcv data.csv --strategy s.py --n-trials N --ledger (more history or instruments)"
+    },
+    "D4": {
+     "text": "net positive on the sealed holdout",
+     "rule": {
+      "type": "all",
+      "of": [
+       {
+        "type": "holdout_valid"
+       },
+       {
+        "type": "status",
+        "id": "net_profitability",
+        "allowed": [
+         "pass"
+        ],
+        "holdout": true
+       }
+      ]
+     },
+     "needs": "freeze and open the sealed holdout once (SealedHoldout), then monte-neo readiness --holdout .monte-neo/sealed_holdout.jsonl"
+    }
+   },
+   "4": {
+    "D1": {
+     "text": "permutation / placebo p below 0.01 after paying for all project trials (p x n_trials)",
+     "rule": {
+      "type": "any",
+      "of": [
+       {
+        "type": "pvalue",
+        "id": "signal_placebo",
+        "key": "p_value",
+        "max": 0.01,
+        "trials": true
+       },
+       {
+        "type": "pvalue",
+        "id": "timing_significance",
+        "key": "p_value",
+        "max": 0.01,
+        "trials": true
+       }
+      ]
+     },
+     "needs": "monte-neo alpha --ohlcv prices.csv --scores scores.csv --aum A --n-trials N"
+    },
+    "D2": {
+     "text": "positive in at least 70 % of periods or assets",
+     "rule": {
+      "type": "any",
+      "of": [
+       {
+        "type": "detail",
+        "id": "universe_subsampling",
+        "key": "share_positive",
+        "op": ">=",
+        "value": 0.7
+       },
+       {
+        "type": "ratio",
+        "a": {
+         "id": "walk_forward_stability",
+         "key": "positive"
+        },
+        "b": {
+         "id": "walk_forward_stability",
+         "key": "windows"
+        },
+        "op": ">=",
+        "value": 0.7
+       }
+      ]
+     },
+     "needs": "monte-neo alpha --ohlcv prices.csv --scores scores.csv --aum A --n-trials N"
+    },
+    "D3": {
+     "text": "at least 1,000 observations",
+     "rule": {
+      "type": "derived",
+      "name": "observations",
+      "op": ">=",
+      "value": 1000
+     },
+     "needs": "monte-neo verify --ohlcv data.csv --strategy s.py --n-trials N --ledger (more history)"
+    },
+    "D4": {
+     "text": "significant on the sealed holdout",
+     "rule": {
+      "type": "all",
+      "of": [
+       {
+        "type": "holdout_valid"
+       },
+       {
+        "type": "any",
+        "of": [
+         {
+          "type": "status",
+          "id": "timing_significance",
+          "allowed": [
+           "pass"
+          ]
+         },
+         {
+          "type": "status",
+          "id": "signal_placebo",
+          "allowed": [
+           "pass"
+          ]
+         }
+        ],
+        "holdout": true
+       }
+      ]
+     },
+     "needs": "freeze and open the sealed holdout once (SealedHoldout), then monte-neo readiness --holdout .monte-neo/sealed_holdout.jsonl"
+    }
+   },
+   "5": {
+    "D1": {
+     "text": "residual alpha t-statistic at least 3, after paying for all project trials",
+     "rule": {
+      "type": "tstat",
+      "id": "residual_alpha",
+      "key": "alpha_t",
+      "min_t": 3,
+      "trials": true
+     },
+     "needs": "monte-neo alpha --ohlcv prices.csv --scores scores.csv --aum A --n-trials N"
+    },
+    "D2": {
+     "text": "alpha survives all factors including the market beta",
+     "rule": {
+      "type": "all",
+      "of": [
+       {
+        "type": "status",
+        "id": "residual_alpha",
+        "allowed": [
+         "pass"
+        ]
+       },
+       {
+        "type": "status",
+        "id": "alpha_after_beta",
+        "allowed": [
+         "pass"
+        ],
+        "optional": true
+       }
+      ]
+     },
+     "needs": "monte-neo alpha --ohlcv prices.csv --scores scores.csv --aum A --n-trials N",
+     "repair": "alpha_after_beta"
+    },
+    "D3": {
+     "text": "at least 5 years",
+     "rule": {
+      "type": "derived",
+      "name": "years",
+      "op": ">=",
+      "value": 5
+     },
+     "needs": "monte-neo verify --ohlcv data.csv --strategy s.py --n-trials N --ledger (more history)"
+    },
+    "D4": {
+     "text": "residual alpha positive on the sealed holdout",
+     "rule": {
+      "type": "all",
+      "of": [
+       {
+        "type": "holdout_valid"
+       },
+       {
+        "type": "any",
+        "of": [
+         {
+          "type": "status",
+          "id": "residual_alpha",
+          "allowed": [
+           "pass"
+          ]
+         },
+         {
+          "type": "status",
+          "id": "alpha_after_beta",
+          "allowed": [
+           "pass"
+          ]
+         }
+        ],
+        "holdout": true
+       }
+      ]
+     },
+     "needs": "freeze and open the sealed holdout once (SealedHoldout), then monte-neo readiness --holdout .monte-neo/sealed_holdout.jsonl"
+    }
+   },
+   "6": {
+    "D1": {
+     "text": "Deflated Sharpe at least 0.99 with the project's full trial count",
+     "rule": {
+      "type": "detail",
+      "id": "deflated_sharpe",
+      "key": "deflated_sharpe",
+      "op": ">=",
+      "value": 0.99,
+      "trials_key": "n_trials",
+      "trials": true
+     },
+     "needs": "monte-neo verify --ohlcv data.csv --strategy s.py --n-trials N --ledger"
+    },
+    "D2": {
+     "text": "probability of backtest overfitting below 0.2",
+     "rule": {
+      "type": "detail",
+      "id": "pbo",
+      "key": "pbo",
+      "op": "<",
+      "value": 0.2
+     },
+     "needs": "monte-neo verify --grid grid.json"
+    },
+    "D3": {
+     "text": "trial count audited in the ledger and not below the real count",
+     "rule": {
+      "type": "all",
+      "of": [
+       {
+        "type": "status",
+        "id": "trial_ledger",
+        "allowed": [
+         "pass"
+        ]
+       },
+       {
+        "type": "trials_declared"
+       }
+      ]
+     },
+     "needs": "monte-neo verify --ohlcv data.csv --strategy s.py --n-trials N --ledger"
+    },
+    "D4": {
+     "text": "holdout opened once after freeze, Deflated Sharpe at least 0.95 there",
+     "rule": {
+      "type": "all",
+      "of": [
+       {
+        "type": "holdout_valid"
+       },
+       {
+        "type": "detail",
+        "id": "deflated_sharpe",
+        "key": "deflated_sharpe",
+        "op": ">=",
+        "value": 0.95,
+        "holdout": true
+       }
+      ]
+     },
+     "needs": "freeze and open the sealed holdout once (SealedHoldout), then monte-neo readiness --holdout .monte-neo/sealed_holdout.jsonl"
+    }
+   },
+   "7": {
+    "D1": {
+     "text": "net positive at 2x costs and a 1-bar delay",
+     "rule": {
+      "type": "all",
+      "of": [
+       {
+        "type": "status",
+        "id": "cost_sensitivity",
+        "allowed": [
+         "pass"
+        ]
+       },
+       {
+        "type": "status",
+        "id": "delay_sensitivity",
+        "allowed": [
+         "pass"
+        ]
+       }
+      ]
+     },
+     "needs": "monte-neo verify --ohlcv data.csv --strategy s.py --n-trials N --ledger",
+     "repair": "cost_sensitivity"
+    },
+    "D2": {
+     "text": "worst of regimes, rebalance phases (and subsamples, start dates when run) still passes",
+     "rule": {
+      "type": "all",
+      "of": [
+       {
+        "type": "status",
+        "id": "regime_stability",
+        "allowed": [
+         "pass"
+        ]
+       },
+       {
+        "type": "status",
+        "id": "rebalance_timing_luck",
+        "allowed": [
+         "pass"
+        ]
+       },
+       {
+        "type": "status",
+        "id": "universe_subsampling",
+        "allowed": [
+         "pass"
+        ],
+        "optional": true
+       },
+       {
+        "type": "status",
+        "id": "start_date_sensitivity",
+        "allowed": [
+         "pass"
+        ],
+        "optional": true
+       }
+      ]
+     },
+     "needs": "monte-neo verify --ohlcv data.csv --strategy s.py --n-trials N --ledger",
+     "repair": "rebalance_timing_luck"
+    },
+    "D3": {
+     "text": "capacity at least 10x the planned capital",
+     "rule": {
+      "type": "ratio",
+      "a": {
+       "id": "capacity_curve",
+       "key": "aum_half"
+      },
+      "b": {
+       "id": "market_impact",
+       "key": "aum"
+      },
+      "op": ">=",
+      "value": 10
+     },
+     "needs": "monte-neo alpha --ohlcv prices.csv --scores scores.csv --aum A --n-trials N"
+    },
+    "D4": {
+     "text": "survives the sealed holdout under realistic fills (net positive, cost_realism passes)",
+     "rule": {
+      "type": "all",
+      "of": [
+       {
+        "type": "holdout_valid"
+       },
+       {
+        "type": "all",
+        "of": [
+         {
+          "type": "status",
+          "id": "net_profitability",
+          "allowed": [
+           "pass"
+          ]
+         },
+         {
+          "type": "status",
+          "id": "cost_realism",
+          "allowed": [
+           "pass"
+          ]
+         }
+        ],
+        "holdout": true
+       }
+      ]
+     },
+     "needs": "freeze and open the sealed holdout once (SealedHoldout), then monte-neo readiness --holdout .monte-neo/sealed_holdout.jsonl"
+    }
+   },
+   "8": {
+    "D1": {
+     "text": "marginal Sharpe interval excludes 0",
+     "rule": {
+      "type": "all",
+      "of": [
+       {
+        "type": "status",
+        "id": "marginal_sharpe",
+        "allowed": [
+         "pass"
+        ]
+       },
+       {
+        "type": "detail",
+        "id": "marginal_sharpe",
+        "key": "gain_ci90.0",
+        "op": ">",
+        "value": 0
+       }
+      ]
+     },
+     "needs": "monte-neo alpha ... --book book.csv"
+    },
+    "D2": {
+     "text": "positive across sub-periods and stress",
+     "rule": {
+      "type": "evidence",
+      "key": "book_stress"
+     },
+     "needs": "monte-neo alpha ... --book book.csv --stress"
+    },
+    "D3": {
+     "text": "at least 3 years overlapping the book",
+     "rule": {
+      "type": "derived",
+      "name": "years",
+      "op": ">=",
+      "value": 3
+     },
+     "needs": "monte-neo alpha ... --book book.csv"
+    },
+    "D4": {
+     "text": "positive on forward data",
+     "rule": {
+      "type": "all",
+      "of": [
+       {
+        "type": "holdout_valid"
+       },
+       {
+        "type": "status",
+        "id": "marginal_sharpe",
+        "allowed": [
+         "pass"
+        ],
+        "holdout": true
+       }
+      ]
+     },
+     "needs": "freeze and open the sealed holdout once (SealedHoldout), then monte-neo readiness --holdout .monte-neo/sealed_holdout.jsonl"
+    }
+   },
+   "9": {
+    "D1": {
+     "text": "live Sharpe inside the backtest confidence interval",
+     "rule": {
+      "type": "between",
+      "value": "live.live_sharpe_annualized",
+      "lo": "cert.sharpe_ci95.0",
+      "hi": "cert.sharpe_ci95.1"
+     },
+     "needs": "monte-neo monitor --certificate cert.json --live live.csv --fills fills.csv --source real_fills --custody STATEMENT"
+    },
+    "D2": {
+     "text": "seen in at least 2 market conditions",
+     "rule": {
+      "type": "evidence",
+      "key": "live_regimes"
+     },
+     "needs": "monte-neo monitor --certificate cert.json --live live.csv --fills fills.csv --source real_fills --custody STATEMENT (a live period that spans a rising and a falling market)"
+    },
+    "D3": {
+     "text": "at least 6 months and 100 fills live",
+     "rule": {
+      "type": "all",
+      "of": [
+       {
+        "type": "derived",
+        "name": "live_span_days",
+        "op": ">=",
+        "value": 182
+       },
+       {
+        "type": "derived",
+        "name": "live_fills",
+        "op": ">=",
+        "value": 100
+       }
+      ]
+     },
+     "needs": "monte-neo monitor --certificate cert.json --live live.csv --fills fills.csv --source real_fills --custody STATEMENT"
+    },
+    "D4": {
+     "text": "real fills with a custody statement",
+     "rule": {
+      "type": "all",
+      "of": [
+       {
+        "type": "status",
+        "id": "live_source",
+        "allowed": [
+         "pass"
+        ]
+       },
+       {
+        "type": "derived",
+        "name": "custody",
+        "op": ">=",
+        "value": 1
+       }
+      ]
+     },
+     "needs": "monte-neo monitor --certificate cert.json --live live.csv --fills fills.csv --source real_fills --custody STATEMENT"
+    }
+   }
+  },
+  "trial_levels": [
+   4,
+   5,
+   6
+  ]
+ },
+ "honesty": [
+  "Thresholds are fixed and versioned before use (arl-rules/2); a change bumps the version, and a certificate records the version it was computed with. The numbers are provisional proposals until calibrated on the Trap Suite and the wild corpus (docs/guides/alpha-calibration.md); arl-rules/2 is frozen only by the owner's decision.",
+  "The sealed holdout opens once. If it is opened more than once for the same strategy, D4 is 0 for every level, permanently, and the ledger shows why.",
+  "Trials are paid. Depth at levels 4-6 is computed with the full n_trials of the project, not of one idea.",
+  "Paper, testnet and simulated fills are not live. They cap ARL at 8; ARL 9 and D4 of level 9 require real fills and a custody statement.",
+  "No evidence, no points. 'Not assessed' is shown next to the missing run (--aum, --book, --n-trials, monitor --live).",
+  "A depth never lifts the level: ARL 6 depth 4 is still below ARL 7 depth 0.",
+  "ARL is not a recommendation to trade and says nothing about future returns."
+ ],
+ "derived": [
+  {
+   "id": "selection_adjusted_sharpe",
+   "category": "statistics",
+   "metric": "deflated_sharpe",
+   "min": 0.8,
+   "why": "Calibration (350 000 synthetic cases, 2026-11): without it, noise best-of-100 reached level 4 in 78 % of cases; with Deflated Sharpe >= 0.8 at level 4 it reaches it in under 1 %.",
+   "next_action": "Report every variant tried (--n-trials or a trial ledger) and verify on more data: the Sharpe does not survive the number of variants tried."
+  }
+ ],
+ "changes": [
+  "arl-rules/2 (from arl-rules/1): level 4 also needs selection_adjusted_sharpe (Deflated Sharpe of the certificate >= 0.8, computed with at least the project's number of trials).",
+  "arl-rules/2: level 5 is also blocked when one of these checks ran and warned or failed: universe_subsampling, noise_injection, short_feasibility, residual_vs_book, cross_market_close_alignment, post_discovery_decay, claim_consistency. Calibration (350 000 cases): cross-sectional traps at level 5 or above 39 % -> 8 %, planted edge 65 % -> 59 %.",
+  "arl-rules/2: level 5 is blocked when universe_lookahead warns (a cross-section whose universe looks like today's members). A point-in-time membership file lifts it; for a fixed universe (FX, futures) the file lists every symbol for the whole period."
+ ]
+}

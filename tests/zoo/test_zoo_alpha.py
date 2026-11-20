@@ -12,7 +12,7 @@ import os
 import warnings
 
 import pytest
-from alpha_cases import GENERATORS, met, run_case
+from alpha_cases import GENERATORS, declare_universe, met, run_case
 
 LEVEL = os.environ.get("ZOO_LEVEL", "lite")
 SEEDS = range(20) if LEVEL == "full" else range(1)
@@ -28,7 +28,7 @@ _CACHE: dict[tuple[str, bool, int], tuple] = {}
 def _run(key: str, trap: bool, seed: int) -> tuple[dict[str, bool], int]:
     """Expectation results and readiness level of one generated case (cached: the ARL test reuses the run)."""
     if (key, trap, seed) not in _CACHE:
-        case = GENERATORS[key](seed, trap)
+        case = declare_universe(GENERATORS[key](seed, trap))
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             report = run_case(case, seed=seed)

@@ -5,7 +5,7 @@ from __future__ import annotations
 import warnings
 
 import pytest
-from alpha_cases import GENERATORS, run_case
+from alpha_cases import GENERATORS, declare_universe, run_case
 
 ARL_PAIRS = ("residual_alpha", "hidden_short_volatility", "signal_placebo")
 _CACHE: dict[tuple[str, bool], dict] = {}
@@ -13,7 +13,7 @@ _CACHE: dict[tuple[str, bool], dict] = {}
 
 def _readiness(key: str, trap: bool) -> dict:
     if (key, trap) not in _CACHE:
-        case = GENERATORS[key](0, trap)
+        case = declare_universe(GENERATORS[key](0, trap))
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             _CACHE[(key, trap)] = run_case(case, seed=0)["readiness"]
@@ -24,7 +24,7 @@ def _readiness(key: str, trap: bool) -> dict:
 @pytest.mark.parametrize("key", list(GENERATORS))
 def test_depth_is_honest_on_every_case(key: str, trap: bool) -> None:
     r = _readiness(key, trap)
-    assert r["rules_version"] == "arl-rules/1" and r["provisional"] is True and r["headline"].startswith(f"ARL {r['level']}, depth {r['depth']}/4")
+    assert r["rules_version"] == "arl-rules/2" and r["provisional"] is True and r["headline"].startswith(f"ARL {r['level']}, depth {r['depth']}/4")
     for lv in r["levels"]:
         assert lv["counts"] or lv["depth"] == 0
         assert 0 <= lv["depth"] <= 4

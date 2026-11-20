@@ -14,7 +14,7 @@ def _rep(**statuses: str) -> dict:
 
 FULL = dict(
     data_integrity="pass", lookahead_truncation="pass", net_profitability="pass", ic="info", signal_placebo="pass",
-    residual_alpha="pass", hidden_short_volatility="pass", deflated_sharpe="pass", market_impact="pass",
+    selection_adjusted_sharpe="pass", residual_alpha="pass", hidden_short_volatility="pass", deflated_sharpe="pass", market_impact="pass",
     synthetic_market_null="pass", universe_subsampling="pass", start_date_sensitivity="pass",
     rebalance_timing_luck="pass", marginal_sharpe="pass", live_vs_backtest="pass", alpha_death_monitor="info", live_source="pass",
 )
@@ -56,3 +56,26 @@ def test_alpha_report_carries_its_level() -> None:
     bad = validate_alpha(prices, noise, placebos=60, aum=2e5)
     assert good["readiness"]["level"] > bad["readiness"]["level"] >= 1
     assert "not the investment" in good["readiness"]["disclaimer"]
+
+
+def test_level_four_needs_the_deflated_sharpe_floor() -> None:
+    """arl-rules/2: the Deflated Sharpe of the certificate must reach 0.8, computed with at least the project's trials."""
+    ev = {k: v for k, v in FULL.items() if k != "selection_adjusted_sharpe"}
+    cert = _rep(**ev)
+    assert readiness(cert)["levels"][3]["state"] == "not assessed"  # no metric: not assessed, never passed
+    cert["metrics"], cert["reproducibility"] = {"deflated_sharpe": 0.95}, {"n_trials": 10}
+    assert readiness(cert)["level"] == 9
+    assert readiness(cert, n_trials=50)["level"] == 3  # the certificate counted fewer trials than the project tried
+    low = readiness({**cert, "metrics": {"deflated_sharpe": 0.6}})
+    assert low["level"] == 3 and low["levels"][3]["blocking"] == ["selection_adjusted_sharpe"]
+
+
+def test_level_five_blockers_of_arl_rules_2() -> None:
+    """A check that ran and warned blocks level 5; a check that did not run (not applicable) does not."""
+    assert readiness(_rep(**FULL))["level"] == 9
+    for check in ("universe_subsampling", "noise_injection", "short_feasibility", "residual_vs_book",
+                  "cross_market_close_alignment", "post_discovery_decay", "claim_consistency", "universe_lookahead"):
+        r = readiness(_rep(**{**FULL, check: "warn"}))
+        assert r["level"] == 4 and check in r["levels"][4]["blocking"], check
+    both = readiness(_rep(**{**FULL, "noise_injection": "fail", "post_discovery_decay": "warn"}))
+    assert both["levels"][4]["blocking"] == ["noise_injection", "post_discovery_decay"]

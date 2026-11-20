@@ -3,6 +3,30 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
+## [Unreleased]
+
+Planned for v0.56.0.
+
+### Added
+- **Catalog labelling** (`monte-neo catalog classify`, `catalog-rules/1`, provisional): the main category of 24, components
+  (filter, overlay, blend, sleeve), tags, a 73-bit type mask (`type-mask/1`) and a readable type tag such as `#TSM.FX+f:VOL`,
+  derived by twelve ordered rules from the specification and the measured positions, never by hand. Declared and measured
+  labels are compared (`label_mismatch`). `monte-neo catalog mask` decodes a mask. Page: `docs/catalog/TAXONOMY.md`.
+
+### Changed
+- **ARL rules `arl-rules/2`** (provisional): level 4 also needs `selection_adjusted_sharpe`, the Deflated Sharpe of the certificate
+  (or of the alpha report on net returns) at least 0.8, computed with at least the project's number of trials. Calibration on
+  350 000 synthetic cases: with `arl-rules/1`, the best of 100 noise variants reached level 4 in 78 % of cases; with the new floor,
+  in under 1 %. Strategies with a weak edge now stop at level 3 until more data or fewer variants. `arl-rules/1` stays loadable, so a
+  recheck of an older certificate uses the rules it recorded. The Hall of Fame table stays on `arl-rules/1` until a new table starts.
+- **ARL level 5 blockers** (`arl-rules/2`): level 5 is also blocked when one of these checks ran and warned or failed:
+  `universe_subsampling` (a few assets carry the result), `noise_injection` (it fits exact values), `short_feasibility`,
+  `residual_vs_book`, `cross_market_close_alignment` (closes of later-closing markets), `post_discovery_decay` and `claim_consistency`.
+  A check that did not run (not applicable) does not block. On the calibration cases, cross-sectional traps at level 5 or above fell
+  from 39 % to 8 %; planted edges from 65 % to 59 %. A cross-section whose universe looks like today's members (`universe_lookahead` warns: no name added or
+  delisted) stops at level 4 until a point-in-time membership file is given (`--membership`); a fixed universe (FX, futures) lists
+  every symbol for the whole period.
+
 ## [v0.55.0] — 2026-11-20
 
 ### Added

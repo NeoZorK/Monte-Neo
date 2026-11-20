@@ -8,7 +8,7 @@ highest one whose requirements, and those of every level below it, are met. A le
 **not assessed**, never passed: the report then names the run that would assess it (for example ``--aum`` or ``--book``).
 Every level also has a **depth** from 0 to 4 (see :mod:`monte_neo.arl_depth`); a depth never lifts the level.
 
-All numbers and rules are read from ``arl_rules_v1.json`` (:mod:`monte_neo.arl_rules`), the single source of truth; the
+All numbers and rules are read from ``arl_rules_v2.json`` (:mod:`monte_neo.arl_rules`), the single source of truth; the
 report records the rules version and that it is ``provisional`` until the owner freezes it.
 
 Evidence comes from a ``strategy-verdict/1`` certificate, an ``alpha-report/1``, a ``live-monitor/1`` report and a
@@ -73,6 +73,39 @@ def _project_trials(n_trials: int | None, certificate: dict[str, Any] | None, al
     return max(seen)
 
 
+def _derived(
+    rules: dict[str, Any], certificate: dict[str, Any] | None, alpha: dict[str, Any] | None, rows: dict[str, Any], trials: int
+) -> None:
+    """Rows the rules derive from a metric (``derived``), for example a Deflated Sharpe floor at level 4.
+
+    The metric is read from the certificate, else from the check row of the same name (an alpha report on net returns).
+    A metric computed with fewer trials than the project tried overstates the evidence, so the row warns.
+    Without the metric there is no row: the level is then not assessed, never passed.
+    """
+    metrics = (certificate or {}).get("metrics") or {}
+    for dv in rules.get("derived", []):
+        if dv["id"] in rows:
+            continue
+        value = metrics.get(dv["metric"])
+        if value is not None:
+            cert_trials = int(((certificate or {}).get("reproducibility") or {}).get("n_trials") or 1)
+        else:
+            value = ((rows.get(dv["metric"]) or {}).get("details") or {}).get(dv["metric"])
+            settings = ((alpha or {}).get("reproducibility") or {}).get("settings") or {}
+            cert_trials = int((rows.get(dv["metric"]) or {}).get("details", {}).get("n_trials") or settings.get("n_trials") or 1)
+        if value is None:
+            continue
+        value = float(value)
+        if cert_trials < trials:
+            status, summary = "warn", f"{dv['metric']} {value:.3f} was computed with {cert_trials} trials, the project tried {trials}: verify again with --n-trials {trials}"
+        elif value >= float(dv["min"]):
+            status, summary = "pass", f"{dv['metric']} {value:.3f} >= {dv['min']}"
+        else:
+            status, summary = "fail", f"{dv['metric']} {value:.3f} < {dv['min']}: {dv['next_action']}"
+        rows[dv["id"]] = {"id": dv["id"], "category": dv.get("category", "statistics"), "status": status, "summary": summary,
+                          "details": {"metric": dv["metric"], "value": value, "min": dv["min"], "trials": cert_trials, "why": dv["why"]}}
+
+
 def readiness(
     certificate: dict[str, Any] | None = None, alpha: dict[str, Any] | None = None, live: dict[str, Any] | None = None, *,
     holdout: dict[str, Any] | None = None, n_trials: int | None = None, evidence: dict[str, Any] | None = None,
@@ -97,6 +130,7 @@ def readiness(
     """
     rules = load_rules(rules_version)
     rows = _rows(certificate, alpha, live)
+    _derived(rules, certificate, alpha, rows, _project_trials(n_trials, certificate, alpha, rows))
     caps = rules["caps"]
     lookahead_fails = sorted(r["id"] for r in rows.values() if r.get("category") == "lookahead" and r["status"] == "fail")
     levels, level, stopped = [], 0, False
@@ -116,9 +150,9 @@ def readiness(
                 blocking += [f"{i} (not run)" for i in ids if i not in rows][:3]
         if n == 2 and lookahead_fails:
             state, blocking = "failed", lookahead_fails
-        for b in caps["blockers"]:
-            if n == b["level"] and b["check"] in rows and rows[b["check"]]["status"] not in OK:
-                state, blocking = "failed", [b["check"]]  # e.g. the return is not shown to be more than benchmark exposure
+        hits = [b["check"] for b in caps["blockers"] if n == b["level"] and b["check"] in rows and rows[b["check"]]["status"] not in OK]
+        if hits:  # a check that ran and warned blocks the level, e.g. the return is not more than benchmark exposure
+            state, blocking = "failed", hits
         levels.append({"level": n, "name": lv["name"], "state": state, "blocking": blocking, "how": lv["how"]})
         if state == "met" and not stopped:
             level = n

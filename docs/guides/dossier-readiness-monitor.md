@@ -58,7 +58,7 @@ compliance statement or a model approval.
 
 > The Alpha Readiness Level (ARL) was devised by Rostyslav Shcherbyna, author of Monte-Neo; it is modelled on the idea of a technology readiness level and is a Monte-Neo scale, not an industry standard.
 
-The rules live in one file, `src/monte_neo/arl_rules_v1.json` (`arl-rules/1`, provisional); the full page with the depth criteria is [ARL and depth](arl.md). The table below is generated from it.
+The rules live in one file, `src/monte_neo/arl_rules_v2.json` (`arl-rules/2`, provisional); the full page with the depth criteria is [ARL and depth](arl.md). The table below is generated from it.
 
 Every `alpha` report and every dossier carries an ARL: where the evidence stands on the way from an idea to capital.
 
@@ -68,7 +68,7 @@ Every `alpha` report and every dossier carries an ARL: where the evidence stands
 | 1 | Idea on clean data | `data_integrity` or `ic` |
 | 2 | The backtest is not broken | `lookahead_truncation` or `universe_lookahead` |
 | 3 | It earns after costs | `net_profitability` or `market_impact` + `cost_sensitivity` |
-| 4 | The signal predicts | `ic` + `signal_placebo` or `timing_significance` |
+| 4 | The signal predicts | `ic` + `signal_placebo` or `timing_significance`; `selection_adjusted_sharpe` |
 | 5 | It is new alpha | `residual_alpha` + `hidden_short_volatility` |
 | 6 | It survives the search | `deflated_sharpe` or `hlz_hurdle` + `min_backtest_length` |
 | 7 | Tradable and robust | `market_impact` or `capacity`; `synthetic_market_null` + `universe_subsampling` + `start_date_sensitivity` or `period_consistency` + `delay_sensitivity`; `rebalance_timing_luck` or `cost_margin` |

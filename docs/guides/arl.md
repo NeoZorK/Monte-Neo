@@ -41,12 +41,12 @@ D2 Breadth, D3 Sample and D4 Out of sample, listed per level in the depth table 
    and is reported as *not assessed*.
 4. Caps (look-ahead, survivorship, paper or testnet data, not-significant alpha) are applied last and are listed in the
    certificate.
-5. The result carries the rules version (`arl-rules/1`) and `provisional`, so a recheck recomputes it with the same rules.
+5. The result carries the rules version (`arl-rules/2`) and `provisional`, so a recheck recomputes it with the same rules.
 
 The ARL rates the **evidence** about a strategy, not the strategy or its profit. It is not a recommendation to trade and
 says nothing about future returns. Not investment advice.
 
-The rules are one machine-readable file, `src/monte_neo/arl_rules_v1.json` (version `arl-rules/1`, status
+The rules are one machine-readable file, `src/monte_neo/arl_rules_v2.json` (version `arl-rules/2`, status
 **provisional**). The tables below are generated from it and a test fails when this page and the file disagree.
 Every certificate records `arl.rules_version` and `arl.provisional`; `monte-neo verify --recheck` recomputes the ARL
 with the version the certificate recorded.
@@ -63,7 +63,7 @@ with the version the certificate recorded.
 | 1 | Idea on clean data | `data_integrity` or `ic` |
 | 2 | The backtest is not broken | `lookahead_truncation` or `universe_lookahead` |
 | 3 | It earns after costs | `net_profitability` or `market_impact` + `cost_sensitivity` |
-| 4 | The signal predicts | `ic` + `signal_placebo` or `timing_significance` |
+| 4 | The signal predicts | `ic` + `signal_placebo` or `timing_significance`; `selection_adjusted_sharpe` |
 | 5 | It is new alpha | `residual_alpha` + `hidden_short_volatility` |
 | 6 | It survives the search | `deflated_sharpe` or `hlz_hurdle` + `min_backtest_length` |
 | 7 | Tradable and robust | `market_impact` or `capacity`; `synthetic_market_null` + `universe_subsampling` + `start_date_sensitivity` or `period_consistency` + `delay_sensitivity`; `rebalance_timing_luck` or `cost_margin` |
@@ -89,7 +89,15 @@ Caps:
 <!-- arl:caps:start -->
 - A failed look-ahead check caps the level at 1.
 - `survivorship` warning or failing caps the level at 4: the universe may be today's survivors: declare the delisted names (delisted=...) or add their prices.
-- `alpha_after_beta` not significant blocks level 5: the return is not shown to be more than benchmark exposure.
+- `alpha_after_beta` that ran and warned or failed blocks level 5: the return is not shown to be more than benchmark exposure.
+- `universe_subsampling` that ran and warned or failed blocks level 5: the result rests on a few assets: it does not hold on random subsets of the universe.
+- `noise_injection` that ran and warned or failed blocks level 5: the result does not survive small noise in the inputs: it fits exact values.
+- `short_feasibility` that ran and warned or failed blocks level 5: the short side could not be borrowed or traded at the size shown.
+- `residual_vs_book` that ran and warned or failed blocks level 5: the return is explained by the existing book: it is not new alpha for that book.
+- `cross_market_close_alignment` that ran and warned or failed blocks level 5: the signal uses closes of markets that close later than the trade (same date, different time zone).
+- `post_discovery_decay` that ran and warned or failed blocks level 5: the edge disappears after its discovery date.
+- `claim_consistency` that ran and warned or failed blocks level 5: the claimed numbers are better than the verified ones.
+- `universe_lookahead` that ran and warned or failed blocks level 5: the universe looks like today's members (no name added or delisted): pass a point-in-time membership file (--membership); a fixed universe declares every symbol for the whole period.
 - Live data from paper, testnet, simulated (or an unstated source) caps the level at 8: paper, testnet and simulated fills are not live.
 <!-- arl:caps:end -->
 
@@ -122,7 +130,7 @@ project (p-values and t-statistics are multiplied by it).
 ## Honest rules
 
 <!-- arl:honesty:start -->
-1. Thresholds are fixed and versioned before use (arl-rules/1); a change bumps the version, and a certificate records the version it was computed with. The numbers are provisional proposals until calibrated on the Trap Suite and the wild corpus (docs/guides/alpha-calibration.md); arl-rules/1 is frozen only by the owner's decision.
+1. Thresholds are fixed and versioned before use (arl-rules/2); a change bumps the version, and a certificate records the version it was computed with. The numbers are provisional proposals until calibrated on the Trap Suite and the wild corpus (docs/guides/alpha-calibration.md); arl-rules/2 is frozen only by the owner's decision.
 2. The sealed holdout opens once. If it is opened more than once for the same strategy, D4 is 0 for every level, permanently, and the ledger shows why.
 3. Trials are paid. Depth at levels 4-6 is computed with the full n_trials of the project, not of one idea.
 4. Paper, testnet and simulated fills are not live. They cap ARL at 8; ARL 9 and D4 of level 9 require real fills and a custody statement.
@@ -140,4 +148,4 @@ Action comment and in the MCP tools `verify_strategy` and `readiness_level`.
 ## Status of the numbers
 
 The thresholds are proposals until calibrated on the Trap Suite and the wild corpus
-([calibration on the Trap Suite](arl-calibration.md), [alpha checks](alpha-calibration.md)). `arl-rules/1` stays `provisional` until the owner freezes it.
+([calibration on the Trap Suite](arl-calibration.md), [alpha checks](alpha-calibration.md)). `arl-rules/2` stays `provisional` until the owner freezes it.

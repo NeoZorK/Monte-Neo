@@ -95,7 +95,14 @@ def test_tier_b_flow_attest_build_and_duplicates(lab: dict, tmp_path: Path, caps
     assert signed["recheck"]["by"] == "maintainer" and signed["signature"]["key_id"] == key["key_id"]
     build = ["build", "--root", str(root), "--readme", str(rd), "--docs", str(docs), "--guide", str(tmp_path / "none.md"), "--month", "2026-11"]
     assert run(*build, "--check") == 1 and "out of date" in capsys.readouterr().out
-    assert run(*build) == 0 and "Private SMA" in rd.read_text()
+    assert run(*build) == 0
+    # The current table ranks only certificates computed with its ARL rules version; one computed with newer rules is kept
+    # in a separate table, without a medal, until the maintainer starts a new table (docs/guides/hall-of-fame.md).
+    from monte_neo.arl_rules import load_rules
+    from monte_neo.hall.rules import load_rules as hall_rules
+
+    same = load_rules()["version"] == hall_rules()["arl_rules_version"]
+    assert "Private SMA" in rd.read_text() if same else any("Private SMA" in f.read_text() for f in root.rglob("*.md"))
     assert run(*build, "--check") == 0 and "up to date" in capsys.readouterr().out
     # the same strategy under another name is refused at submit time, and attesting it again is refused too
     dup = ["submit", str(d / "cert.json"), *AUTHOR, "--name", "Renamed", "--tier", "B", "--out", str(tmp_path / "o2"), "--root", str(root), "--date", "2026-11-11"]

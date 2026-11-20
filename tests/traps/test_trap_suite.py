@@ -194,7 +194,7 @@ def _arl_never_promotes(report: dict, name: str, dataset: str) -> None:
     from monte_neo.readiness import readiness
 
     arl = report["arl"]
-    assert arl["rules_version"] == "arl-rules/1" and arl["provisional"] is True
+    assert arl["rules_version"] == "arl-rules/2" and arl["provisional"] is True
     full = readiness(certificate=report)
     assert (full["level"], full["depth"]) == (arl["level"], arl["depth"])
     for lv in full["levels"]:

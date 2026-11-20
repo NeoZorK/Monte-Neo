@@ -19,6 +19,7 @@ Commands:
   repair   repair a strategy's defects without overfitting it, or say why not (monte-neo repair --demo)
   readiness the ARL, depth and next steps for one certificate (monte-neo readiness --help)
   research honest strategy search: fixed split, ledger, one sealed holdout (monte-neo research --help)
+  catalog  label a strategy by the catalog rules: category, type tag, type mask (monte-neo catalog --help)
   monitor  compare live or paper returns with the backtest; is the alpha dead? (monte-neo monitor --help)
   history  certificate history and diffs; blocks a verdict regression
   register write the hypothesis down before the test
@@ -59,7 +60,7 @@ def main() -> int:
         from monte_neo.cli.alpha_cmd import main as alpha_main
 
         return alpha_main(sys.argv[2:])
-    if command in ("dossier", "monitor", "repair", "readiness", "research"):
+    if command in ("dossier", "monitor", "repair", "readiness", "research", "catalog"):
         from importlib import import_module
 
         return import_module(f"monte_neo.cli.{command}_cmd").main(sys.argv[2:])
@@ -106,7 +107,7 @@ def main() -> int:
         print(
             f"{what}The interactive research CLI needs extra packages ({exc.name or exc}): "
             "pip install 'monte-neo[research]'.\n"
-            "Commands in the base install: monte-neo verify | alpha | policy | hall | repair | dossier | monitor | readiness | research | discover | history | register | oracle | portfolio | doctor | init-ci | bench | mcp | --version (monte-neo --help lists them)",
+            "Commands in the base install: monte-neo verify | alpha | policy | hall | repair | dossier | monitor | readiness | research | catalog | discover | history | register | oracle | portfolio | doctor | init-ci | bench | mcp | --version (monte-neo --help lists them)",
             file=sys.stderr,
         )
         return 2

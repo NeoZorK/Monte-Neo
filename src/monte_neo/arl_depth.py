@@ -1,4 +1,4 @@
-"""ARL depth: how strongly the evidence at one level is established, 0 to 4 (rules in ``arl_rules_v1.json``).
+"""ARL depth: how strongly the evidence at one level is established, 0 to 4 (rules in ``arl_rules_v2.json``).
 
 Each level has four criteria (D1 margin, D2 breadth, D3 sample, D4 out of sample). A criterion scores one point only when
 its evidence exists and meets the threshold; a criterion whose evidence was not produced scores 0 and is reported as

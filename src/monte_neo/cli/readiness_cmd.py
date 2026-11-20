@@ -1,7 +1,7 @@
 """``monte-neo readiness``: the Alpha Readiness Level and its depth for the evidence given.
 
 The Alpha Readiness Level (ARL) was devised by Rostyslav Shcherbyna, author of Monte-Neo; it is modelled on the idea of a
-technology readiness level and is a Monte-Neo scale, not an industry standard. The rules are in ``arl_rules_v1.json``.
+technology readiness level and is a Monte-Neo scale, not an industry standard. The rules are in ``arl_rules_v2.json``.
 
 Exit codes: 0 printed, 3 input error.
 """

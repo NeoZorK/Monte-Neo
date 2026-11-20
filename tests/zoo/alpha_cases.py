@@ -337,6 +337,14 @@ GENERATORS: dict[str, Callable[..., Case]] = {
 }
 
 
+def declare_universe(case: Case) -> Case:
+    """An honest twin declares its universe: every symbol is a member for the whole period (arl-rules/2 blocks level 5 when a
+    cross-section's universe looks like today's members and no membership file is given). A trap declares nothing."""
+    if not case.trap and "membership" not in case.kwargs:
+        case.kwargs["membership"] = pd.DataFrame({"symbol": sorted(set(case.prices["symbol"])), "start": "", "end": ""})
+    return case
+
+
 def run_case(case: Case, seed: int = 0) -> dict[str, Any]:
     """Run ``validate_alpha`` on a case; returns the report (statuses via :func:`statuses`)."""
     from monte_neo.alpha import validate_alpha
