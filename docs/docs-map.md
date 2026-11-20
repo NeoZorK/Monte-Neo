@@ -1,4 +1,4 @@
-# Monte-Neo v0.54.0
+# Monte-Neo v0.55.0
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -81,6 +81,7 @@ A simplified guide to the Monte-Neo file structure.
 - docs/guides/honesty-bench.md - Agent Backtest Honesty Bench: layout, metrics, fair-play rules
 - docs/verify.md - Browser page that checks a certificate's Ed25519 signature (docs/assets/verify-certificate.js)
 - docs/paper/methodology.md - Technical note on the verification method (probes, costs, selection, certificates, Trap Suite evaluation)
+- docs/paper/papers.md - Papers: published and planned, with status and links
 - docs/marketing/trap-of-the-week.md - Twelve weekly post drafts built on Trap Suite strategies, with measured verdicts
 - packaging/conda-forge/meta.yaml - conda-forge recipe draft (not built)
 - .github/ISSUE_TEMPLATE/false_accusation.yml - Issue form for false accusations of honest strategies
@@ -101,6 +102,8 @@ A simplified guide to the Monte-Neo file structure.
 - docs/catalog/README.md - strategy catalog overview: 24 types, 100 strategies, how to read it
 - docs/catalog/INDEX.md - catalog index
 - docs/catalog/TYPES.md - the 24 strategy types
+- docs/catalog/TAXONOMY.md - planned catalog taxonomy: 24 categories, depth 4, facets, type tag and type mask
+- docs/catalog/REGISTRY.md - public strategy registry: what it holds and how records get there
 - docs/catalog/RESULTS.md - verified results per catalog strategy (generated from Strategy Lab data via lab_map.json)
 - docs/catalog/WHAT_DID_NOT_WORK.md - rejected and no-evidence results with computed reasons (generated)
 - docs/catalog/lab_results.py, docs/catalog/lab_map.json - generator input for the two pages above

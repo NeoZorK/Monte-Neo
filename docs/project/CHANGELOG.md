@@ -3,9 +3,7 @@
 All notable releases are documented here.
 Version source of truth: `src/monte_neo/_version.py`.
 
-## [Unreleased]
-
-Planned for v0.55.0.
+## [v0.55.0] — 2026-11-20
 
 ### Added
 - **Strategy-type profiles** (`verify --profile ID`, `--list-profiles`): trend/CTA, mean reversion, pairs/stat-arb, carry, cross-sectional

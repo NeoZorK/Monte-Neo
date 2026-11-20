@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.54.0 released; v0.55.0 in release candidate)
+# Monte-Neo Roadmap (v0.55.0 released)
 
 Product direction: verifier for agent-built strategies.
 
@@ -175,7 +175,7 @@ strategies, a public Honesty Bench leaderboard, discover on real market data.
 - [ ] Measure the latency of a machine near the exchange and the false-warning rate among strategies that really earn; then decide which rows may fail the verdict
 - Not planned, on purpose: queue position and partial fills (they need the order book and a passive-order model; a rough formula would give false precision)
 
-## v0.55.0 — release candidate (PR #129)
+## v0.55.0 — strategy-type profiles, options, repair, research projects (2026-11-20)
 - [x] Strategy profiles for all strategy types; detect, explain, repair; ML validation core
 - [x] ARL rules as one machine-readable file (`arl-rules/1`, provisional), depth sub-scale D1-D4, `monte-neo readiness`
 - [x] Research pipeline: manifest, resume, status, FDR, effective number of trials, minimum detectable effect, diagnosis

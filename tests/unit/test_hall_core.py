@@ -22,35 +22,13 @@ ROOT = Path(__file__).resolve().parents[2]
 RULES = hrules.load_rules()
 
 
-def fake_cert(
-    arl: int = 3,
-    depth: int = 1,
-    dsr: float | None = 0.5,
-    verdict: str = "NEEDS_MORE_EVIDENCE",
-    data: str = "d1",
-    sig: str | None = "s1",
-    src: str | None = None,
-    date: str = "2026-11-01",
-    n_trials: Any = 5,
-    ret: float = 1.0,
-) -> dict[str, Any]:
+def fake_cert(arl: int = 3, depth: int = 1, dsr: float | None = 0.5, verdict: str = "NEEDS_MORE_EVIDENCE", data: str = "d1",
+              sig: str | None = "s1", src: str | None = None, date: str = "2026-11-01", n_trials: Any = 5, ret: float = 1.0) -> dict[str, Any]:
     checks = [] if dsr is None else [{"id": "deflated_sharpe", "details": {"deflated_sharpe": dsr}}]
-    return {
-        "schema": "strategy-verdict/1",
-        "verdict": verdict,
-        "certificate_id": f"id-{data}-{sig}",
-        "generated_at": f"{date}T00:00:00+00:00",
-        "arl": {"level": arl, "depth": depth, "rules_version": "arl-rules/1", "provisional": True},
-        "reproducibility": {
-            "engine_version": "v0.54.0",
-            "data_sha256": data,
-            "signals_sha256": sig,
-            "source_sha256": src,
-            "n_trials": n_trials,
-        },
-        "checks": checks,
-        "metrics": {"total_return": ret},
-    }
+    return {"schema": "strategy-verdict/1", "verdict": verdict, "certificate_id": f"id-{data}-{sig}", "generated_at": f"{date}T00:00:00+00:00",
+            "arl": {"level": arl, "depth": depth, "rules_version": "arl-rules/1", "provisional": True},
+            "reproducibility": {"engine_version": "v0.54.0", "data_sha256": data, "signals_sha256": sig, "source_sha256": src, "n_trials": n_trials},
+            "checks": checks, "metrics": {"total_return": ret}}
 
 
 @pytest.fixture(scope="module")
@@ -59,36 +37,14 @@ def key(tmp_path_factory: pytest.TempPathFactory) -> dict[str, str]:
 
 
 def keys_file(root: Path, k: dict[str, str]) -> None:
-    (root / "maintainer_keys.json").write_text(
-        json.dumps(
-            {"keys": [{"key_id": k["key_id"], "public_key": Path(k["public_key"]).read_text().strip(), "owner": "t"}]}
-        )
-    )
+    (root / "maintainer_keys.json").write_text(json.dumps({"keys": [{"key_id": k["key_id"], "public_key": Path(k["public_key"]).read_text().strip(), "owner": "t"}]}))
 
 
-def add(
-    root: Path,
-    cert: dict[str, Any],
-    k: dict[str, str] | None = None,
-    tier: str = "A",
-    author: str = "Ann",
-    name: str = "Alpha",
-    cat: str = "trend",
-    date: str = "2026-11-01",
-    rules: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    entry = he.make_entry(
-        cert,
-        author=author,
-        strategy=name,
-        category=cat,
-        tier=tier,
-        submitted_at=date,
-        rules=rules or RULES,
-        code_url="https://example.com/x" if tier == "A" else None,
-        idea_credit="idea" if tier == "A" else None,
-        recheck={"reproduced": True, "engine_version": "v0.54.0", "by": "maintainer"} if tier != "C" else None,
-    )
+def add(root: Path, cert: dict[str, Any], k: dict[str, str] | None = None, tier: str = "A", author: str = "Ann", name: str = "Alpha",
+        cat: str = "trend", date: str = "2026-11-01", rules: dict[str, Any] | None = None) -> dict[str, Any]:
+    entry = he.make_entry(cert, author=author, strategy=name, category=cat, tier=tier, submitted_at=date, rules=rules or RULES,
+                          code_url="https://example.com/x" if tier == "A" else None, idea_credit="idea" if tier == "A" else None,
+                          recheck={"reproduced": True, "engine_version": "v0.54.0", "by": "maintainer"} if tier != "C" else None)
     if tier == "B":
         assert k
         entry = he.attest(entry, k["private_key"])
@@ -103,7 +59,6 @@ def items(root: Path) -> list[hr.Item]:
 
 
 # ---- rules ----
-
 
 def test_rules_valid_and_guide_in_sync() -> None:
     assert RULES["version"] == "hall-of-fame/1" and RULES["status"] == "provisional"
@@ -134,7 +89,6 @@ def test_rules_validation_and_unknown_block() -> None:
 
 
 # ---- entry ----
-
 
 def test_hash_is_canonical_and_summary_reads_the_certificate() -> None:
     a = fake_cert()
@@ -173,35 +127,20 @@ def test_certificate_tampering_and_requirements(key: dict[str, str]) -> None:
     c = fake_cert()
     e = he.make_entry(c, author="Ann", strategy="S", category="trend", tier="C", submitted_at="2026-11-01", rules=RULES)
     assert any("SHA-256" in x for x in he.check_entry(e, {**c, "verdict": "PASS"}, RULES, {}))
-    for cert, text in (
-        (fake_cert(n_trials=None), "n_trials"),
-        (fake_cert(n_trials=0), "n_trials"),
-        (fake_cert(n_trials=True), "n_trials"),
-    ):
-        e2 = he.make_entry(
-            cert, author="Ann", strategy="S", category="trend", tier="C", submitted_at="2026-11-01", rules=RULES
-        )
+    for cert, text in ((fake_cert(n_trials=None), "n_trials"), (fake_cert(n_trials=0), "n_trials"), (fake_cert(n_trials=True), "n_trials")):
+        e2 = he.make_entry(cert, author="Ann", strategy="S", category="trend", tier="C", submitted_at="2026-11-01", rules=RULES)
         assert any(text in x for x in he.check_entry(e2, cert, RULES, {}))
     old = {**fake_cert(), "arl": None}
-    e3 = he.make_entry(
-        old, author="Ann", strategy="S", category="trend", tier="C", submitted_at="2026-11-01", rules=RULES
-    )
+    e3 = he.make_entry(old, author="Ann", strategy="S", category="trend", tier="C", submitted_at="2026-11-01", rules=RULES)
     assert any("ARL block" in x for x in he.check_entry(e3, old, RULES, {}))
     other = fake_cert()
     other["arl"]["rules_version"] = "arl-rules/2"
-    assert any(
-        "differ" in x
-        for x in he.check_entry({**e, "certificate_sha256": he.certificate_sha256(other)}, other, RULES, {})
-    )
+    assert any("differ" in x for x in he.check_entry({**e, "certificate_sha256": he.certificate_sha256(other)}, other, RULES, {}))
     bad = {**c, "schema": "x"}
-    e4 = he.make_entry(
-        bad, author="Ann", strategy="S", category="trend", tier="C", submitted_at="2026-11-01", rules=RULES
-    )
+    e4 = he.make_entry(bad, author="Ann", strategy="S", category="trend", tier="C", submitted_at="2026-11-01", rules=RULES)
     assert any("strategy-verdict/1" in x for x in he.check_entry(e4, bad, RULES, {}))
     signed = sign_certificate(c, key["private_key"])
-    es = he.make_entry(
-        signed, author="Ann", strategy="S", category="trend", tier="C", submitted_at="2026-11-01", rules=RULES
-    )
+    es = he.make_entry(signed, author="Ann", strategy="S", category="trend", tier="C", submitted_at="2026-11-01", rules=RULES)
     assert he.check_entry(es, signed, RULES, {}) == []
     forged = {**signed, "verdict": "PASS"}
     ef = {**es, "certificate_sha256": he.certificate_sha256(forged)}
@@ -210,9 +149,7 @@ def test_certificate_tampering_and_requirements(key: dict[str, str]) -> None:
 
 def test_tier_requirements_and_attestation(tmp_path: Path, key: dict[str, str]) -> None:
     c = fake_cert()
-    mk = lambda tier, **kw: he.make_entry(
-        c, author="Ann", strategy="S", category="trend", tier=tier, submitted_at="2026-11-01", rules=RULES, **kw
-    )  # noqa: E731
+    mk = lambda tier, **kw: he.make_entry(c, author="Ann", strategy="S", category="trend", tier=tier, submitted_at="2026-11-01", rules=RULES, **kw)  # noqa: E731
     a = mk("A")
     errs = he.check_entry(a, c, RULES, {})
     assert any("recheck" in x for x in errs) and any("code_url" in x for x in errs)
@@ -229,13 +166,10 @@ def test_tier_requirements_and_attestation(tmp_path: Path, key: dict[str, str]) 
     assert any("does not match" in x for x in he.check_entry({**good, "author": "Eve"}, c, RULES, trusted))
     bad_sig = {**good, "signature": {**good["signature"], "value": "AAAA"}}
     assert any("does not match" in x for x in he.check_entry(bad_sig, c, RULES, trusted))
-    assert any(
-        "does not match" in x for x in he.check_entry({**good, "signature": {"public_key": 5}}, c, RULES, trusted)
-    )
+    assert any("does not match" in x for x in he.check_entry({**good, "signature": {"public_key": 5}}, c, RULES, trusted))
 
 
 # ---- ranking ----
-
 
 def test_order_is_evidence_not_return(tmp_path: Path, key: dict[str, str]) -> None:
     keys_file(tmp_path, key)
@@ -280,30 +214,19 @@ def test_author_limit_per_month(tmp_path: Path) -> None:
 
 def test_invalid_items_are_reported(tmp_path: Path) -> None:
     e = add(tmp_path, fake_cert(sig="a"))
-    (tmp_path / "certificates" / f"{e['id']}.json").write_text(
-        json.dumps(fake_cert(sig="other"))
-    )  # changed certificate
+    (tmp_path / "certificates" / f"{e['id']}.json").write_text(json.dumps(fake_cert(sig="other")))  # changed certificate
     add(tmp_path, fake_cert(sig="b"), name="moved")
-    (tmp_path / "entries" / "wrong-name.json").write_text(
-        (tmp_path / "entries" / next(p.name for p in (tmp_path / "entries").iterdir() if "moved" in p.name)).read_text()
-    )
+    (tmp_path / "entries" / "wrong-name.json").write_text((tmp_path / "entries" / next(p.name for p in (tmp_path / "entries").iterdir() if "moved" in p.name)).read_text())
     (tmp_path / "entries" / "broken.json").write_text("{not json")
     (tmp_path / "entries" / "list.json").write_text("[]")
     cls = hr.classify(items(tmp_path), RULES)
     msgs = " | ".join(x for i in cls["errors"] for x in i["errors"])
-    assert (
-        len(cls["errors"]) == 4
-        and "SHA-256" in msgs
-        and "id must equal the file name" in msgs
-        and "unreadable entry" in msgs
-    )
+    assert len(cls["errors"]) == 4 and "SHA-256" in msgs and "id must equal the file name" in msgs and "unreadable entry" in msgs
 
 
 def test_tables_top_n_categories_and_archive(tmp_path: Path) -> None:
     for n in range(4):
-        add(
-            tmp_path, fake_cert(arl=3 + n, sig=f"s{n}"), name=f"n{n}", cat="trend" if n < 3 else "carry", author=f"A{n}"
-        )
+        add(tmp_path, fake_cert(arl=3 + n, sig=f"s{n}"), name=f"n{n}", cat="trend" if n < 3 else "carry", author=f"A{n}")
     old = copy.deepcopy(RULES)
     old["version"] = "hall-of-fame/0"
     add(tmp_path, fake_cert(arl=9, sig="old"), name="oldrules", author="Zed", rules=old)
@@ -339,7 +262,6 @@ def test_read_history_and_keys(tmp_path: Path) -> None:
 
 # ---- render and build ----
 
-
 def setup_repo(tmp_path: Path, key: dict[str, str]) -> tuple[Path, Path, Path]:
     root = tmp_path / "hall_of_fame"
     root.mkdir()
@@ -360,12 +282,7 @@ def test_build_writes_checks_and_follows_history(tmp_path: Path, key: dict[str, 
     changed = hb.write(res)
     assert readme in changed and hb.stale(hb.build(root, readme, docs, "2026-11")) == []
     text = readme.read_text()
-    assert (
-        "🥇 1 | Gold one" in text
-        and "end\n" in text
-        and text.count("Not investment advice") >= 2
-        and "Selfie" not in text
-    )
+    assert "🥇 1 | Gold one" in text and "end\n" in text and text.count("Not investment advice") >= 2 and "Selfie" not in text
     page = docs.read_text()
     assert "## Self-reported" in page and "Selfie" in page and "verdict REJECT is never ranked" in page
     assert re.search(r"\(https://raw\.githubusercontent\.com/", page)  # badge links point at the raw files
@@ -373,11 +290,7 @@ def test_build_writes_checks_and_follows_history(tmp_path: Path, key: dict[str, 
     assert len(badges) == 4  # overall + trend, gold and silver
     svg = (root / "badges" / badges[0]).read_text()
     tree = ET.fromstring(svg)
-    assert (
-        tree.tag.endswith("svg")
-        and he.certificate_sha256(fake_cert(arl=4, sig="a")) in svg
-        and "not investment advice" in svg
-    )
+    assert tree.tag.endswith("svg") and he.certificate_sha256(fake_cert(arl=4, sig="a")) in svg and "not investment advice" in svg
     # a later month with a new leader: the old leader moves to silver and the history shows spans
     add(root, fake_cert(arl=5, sig="e"), name="New leader", author="Ed", date="2026-12-01")
     hb.write(hb.build(root, readme, docs, "2026-12"))
@@ -411,19 +324,13 @@ def test_old_rules_are_archived_not_rewritten(tmp_path: Path, key: dict[str, str
     res = hb.build(root, readme, docs, "2026-11")
     hb.write(res)
     arch = root / "archive" / "hall-of-fame-0__arl-rules-1.md"
-    assert (
-        "Old timer" in arch.read_text()
-        and "no medals" in arch.read_text()
-        and "Not investment advice" in arch.read_text()
-    )
+    assert "Old timer" in arch.read_text() and "no medals" in arch.read_text() and "Not investment advice" in arch.read_text()
     assert "Old timer" not in readme.read_text() and "archive/hall-of-fame-0__arl-rules-1.md" in docs.read_text()
 
 
 def test_render_helpers_and_empty_tables() -> None:
     assert hrender.medal_of(1, RULES) == "gold" and hrender.medal_of(9, RULES) is None
-    assert (
-        "No ranked entries" in hrender.table([], RULES, "overall", {}) and hrender.plain_table([], RULES) == "_None._"
-    )
+    assert "No ranked entries" in hrender.table([], RULES, "overall", {}) and hrender.plain_table([], RULES) == "_None._"
     assert hrender.embed_snippets([]) == "_No medals yet._"
     assert hrender._cut("x" * 50, 10) == "x" * 9 + "…"
 

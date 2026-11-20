@@ -142,5 +142,12 @@ def test_rules_file_json_is_what_load_returns() -> None:
 def test_citation_file_is_untouched() -> None:
     import subprocess
 
-    out = subprocess.run(["git", "diff", "--name-only", "github/main", "--", "CITATION.cff"], cwd=ROOT, capture_output=True, text=True, check=False)
-    assert out.stdout.strip() == ""
+    # A release may bump version and date-released; everything else (authors, title, licence) stays as on main.
+    out = subprocess.run(["git", "show", "github/main:CITATION.cff"], cwd=ROOT, capture_output=True, text=True, check=False)
+    if out.returncode != 0:
+        pytest.skip("github/main is not available")
+
+    def stable(text: str) -> list[str]:
+        return [ln for ln in text.splitlines() if not ln.startswith(("version:", "date-released:"))]
+
+    assert stable((ROOT / "CITATION.cff").read_text(encoding="utf-8")) == stable(out.stdout)
