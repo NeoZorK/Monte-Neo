@@ -121,7 +121,7 @@ nav:
       - Strategy catalog: catalog/README.md
       - Index of 100 strategies: catalog/INDEX.md
       - Strategy types: catalog/TYPES.md
-      - Taxonomy (planned): catalog/TAXONOMY.md
+      - Taxonomy and labels: catalog/TAXONOMY.md
       - Verified results: catalog/RESULTS.md
       - What did not work: catalog/WHAT_DID_NOT_WORK.md
       - Protocol: catalog/PROTOCOL.md
