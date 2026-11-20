@@ -30,9 +30,9 @@ AUTHORSHIP = ("The Alpha Readiness Level (ARL) was devised by Rostyslav Shcherby
 
 def test_rules_file_is_valid_and_provisional() -> None:
     r = load_rules()
-    assert r["schema"] == r["version"] == "arl-rules/1" and r["status"] == "provisional"
+    assert r["schema"] == r["version"] == "arl-rules/2" and r["status"] == "provisional"
     assert [lv["level"] for lv in r["levels"]] == list(range(1, 10))
-    assert load_rules("arl-rules/1") is r
+    assert load_rules("arl-rules/2") is r
     assert [c["id"] for c in r["depth"]["criteria"]] == ["D1", "D2", "D3", "D4"] and r["depth"]["max"] == 4
     for n in range(1, 10):
         assert set(r["depth"]["levels"][str(n)]) == {"D1", "D2", "D3", "D4"}
@@ -80,7 +80,7 @@ def test_authorship_is_published_verbatim() -> None:
 
 def test_docs_equal_the_rules_file() -> None:
     for page in ("docs/guides/arl.md", "docs/guides/dossier-readiness-monitor.md"):
-        assert page_in_sync(ROOT / page), f"{page} is out of sync with arl_rules_v1.json: run monte-neo readiness --sync-docs {page}"
+        assert page_in_sync(ROOT / page), f"{page} is out of sync with arl_rules_v2.json: run monte-neo readiness --sync-docs {page}"
 
 
 def test_a_changed_threshold_makes_the_docs_stale() -> None:
@@ -102,7 +102,7 @@ def test_generated_blocks_cover_the_rules() -> None:
     md = markdown_levels() + markdown_depth() + markdown_honesty() + markdown_caps()
     for lv in r["levels"]:
         assert lv["name"] in md
-    assert describe_requirement(r["levels"][3]["requirements"]) == "`ic` + `signal_placebo` or `timing_significance`"
+    assert describe_requirement(r["levels"][3]["requirements"]) == "`ic` + `signal_placebo` or `timing_significance`; `selection_adjusted_sharpe`"
     assert "caps the level at 1" in markdown_caps() and "paper, testnet, simulated" in markdown_caps()
     assert markdown_honesty().startswith("1. ")
 

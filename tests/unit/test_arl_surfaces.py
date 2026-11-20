@@ -41,8 +41,8 @@ def cert() -> dict:
 
 def test_certificate_records_level_depth_and_rules_version(cert: dict) -> None:
     arl = cert["arl"]
-    assert arl["rules_version"] == "arl-rules/1" and arl["provisional"] is True
-    assert arl["headline"] == f"ARL {arl['level']}, depth {arl['depth']}/4 (arl-rules/1, provisional)"
+    assert arl["rules_version"] == "arl-rules/2" and arl["provisional"] is True
+    assert arl["headline"] == f"ARL {arl['level']}, depth {arl['depth']}/4 (arl-rules/2, provisional)"
     assert isinstance(arl["open_criteria"], list) and arl["summary"].startswith("ARL")
     assert any("ARL" in a and "of ARL" in a for a in cert["next_actions"]) or arl["level"] >= 8
 
@@ -56,7 +56,7 @@ def test_arl_is_not_part_of_the_certificate_id() -> None:
 def test_recheck_recomputes_with_the_recorded_version() -> None:
     cert = verify_strategy(DF, signals=_sig(DF), model=MODEL, n_trials=3)  # signals only, so the recheck sees the same evidence
     out = recheck_certificate(cert, DF, signals=_sig(DF))
-    assert out["arl_rules_version"] == "arl-rules/1" and out["arl_matches"] is True and out["arl"].startswith("ARL")
+    assert out["arl_rules_version"] == "arl-rules/2" and out["arl_matches"] is True and out["arl"].startswith("ARL")
     old = json.loads(json.dumps(cert))
     old["arl"]["rules_version"] = "arl-rules/0"
     bad = recheck_certificate(old, DF, signals=_sig(DF))
@@ -86,10 +86,10 @@ def test_readiness_cli_text_json_and_errors(cert: dict, tmp_path: Path, capsys: 
     c.write_text(json.dumps(cert), encoding="utf-8")
     assert readiness_cmd.main(["--certificate", str(c), "--n-trials", "20"]) == 0
     out = capsys.readouterr().out
-    assert "ARL" in out and "arl-rules/1" in out and "Rostyslav Shcherbyna" in out and "depth" in out
+    assert "ARL" in out and "arl-rules/2" in out and "Rostyslav Shcherbyna" in out and "depth" in out
     assert readiness_cmd.main(["--certificate", str(c), "--format", "json"]) == 0
     rep = json.loads(capsys.readouterr().out)
-    assert rep["rules_version"] == "arl-rules/1" and rep["n_trials_used"] >= 3
+    assert rep["rules_version"] == "arl-rules/2" and rep["n_trials_used"] >= 3
     assert readiness_cmd.main([]) == 3
     assert readiness_cmd.main(["--certificate", str(tmp_path / "missing.json")]) == 3
     assert readiness_cmd.main(["--certificate", str(c), "--rules-version", "arl-rules/9"]) == 3
@@ -121,7 +121,7 @@ def test_dispatch_through_the_entry_point(cert: dict, tmp_path: Path, capsys: py
 def test_alpha_report_and_dossier_show_it(cert: dict) -> None:
     prices, scores, _ = demo_panel(seed=1, n_symbols=12, n_days=300)
     rep = validate_alpha(prices, scores, placebos=20, n_trials=5)
-    assert rep["readiness"]["headline"].startswith("ARL") and rep["readiness"]["rules_version"] == "arl-rules/1"
+    assert rep["readiness"]["headline"].startswith("ARL") and rep["readiness"]["rules_version"] == "arl-rules/2"
     assert rep["readiness"]["n_trials_used"] == 5
     d = build_dossier(cert, alpha=rep)
     assert d["readiness"]["headline"] in render_html(d) and "provisional" in render_html(d)
@@ -136,7 +136,7 @@ def test_monitor_report_carries_the_arl(cert: dict, tmp_path: Path) -> None:
     idx = pd.bdate_range("2024-01-01", periods=120)
     live = pd.Series(np.random.default_rng(0).normal(0.0005, 0.01, 120), idx, name="return")
     rep = verify_live(cert, live, source="paper")
-    assert rep["arl"]["headline"].startswith("ARL") and rep["arl"]["rules_version"] == "arl-rules/1"
+    assert rep["arl"]["headline"].startswith("ARL") and rep["arl"]["rules_version"] == "arl-rules/2"
     assert rep["metrics"]["live_span_days"] > 100 and rep["metrics"]["custody"] is None
     again = verify_live(cert, live, source="real_fills", custody="stmt-1")
     assert again["metrics"]["custody"] == "stmt-1"
@@ -146,7 +146,7 @@ def test_mcp_tools(cert: dict, tmp_path: Path) -> None:
     c = tmp_path / "c.json"
     c.write_text(json.dumps(cert), encoding="utf-8")
     out = tools.readiness_level(str(c), n_trials=10)
-    assert out["rules_version"] == "arl-rules/1" and out["headline"].startswith("ARL")
+    assert out["rules_version"] == "arl-rules/2" and out["headline"].startswith("ARL")
     h = SealedHoldout(tmp_path / "h.jsonl")
     h.freeze(DF, "def signal(df):\n    return df['close']\n")
     assert tools.readiness_level(str(c), holdout_path=str(tmp_path / "h.jsonl"))["levels"]

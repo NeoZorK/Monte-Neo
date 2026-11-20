@@ -1,7 +1,8 @@
-# Taxonomy (planned for v0.56)
+# Taxonomy (v0.56, provisional)
 
-Draft structure of the strategy catalog. The labelling rules (`catalog-rules/1`) and the command
-`monte-neo catalog classify` are planned for v0.56; until then the catalog uses the families in [TYPES.md](TYPES.md).
+Structure of the strategy catalog. The labelling rules (`catalog-rules/1`, provisional) and the command
+`monte-neo catalog classify` arrive in v0.56; the 100 existing records still use the families in [TYPES.md](TYPES.md) until
+they are moved to the new ids.
 
 ## Levels
 
@@ -47,10 +48,27 @@ Return source, position structure, instrument, holding period, breadth, data nee
 much of the strategy Monte-Neo can verify. A declared label is checked against the measured behaviour; a conflict is
 reported as a label mismatch.
 
-## Type tag and type mask (planned)
+## Type tag and type mask
 
 Labelling is automatic: the classifier reads the specification and the verified positions and returns the main category,
 subcategory, components (filters, overlays, blend parts, sleeves), tags, and a **type mask**: a fixed-layout code of every
 category the strategy uses and in what role. A readable **type tag** is derived from the mask, for example `#TSM.FX+f:VOL`
 (trend on FX with a volatility filter). The type tag says which kinds are inside; the catalog id says which entry; a hash
 of the specification says which exact rules. Records are never labelled by hand.
+
+## Labelling command
+
+```bash
+monte-neo catalog classify spec.json --positions positions.csv --prices close.csv
+monte-neo catalog mask tm1:...
+monte-neo catalog categories
+```
+
+`spec.json` (`catalog-spec/1`) declares instruments, legs, signal inputs, sizing and components; the positions and prices
+give the measured labels (holding time, breadth, long share, net exposure, beta, sign correlation with past returns, skew,
+size after a loss, calendar concentration). Twelve rules are applied in order and the first that fires gives the main
+category; every rule that fired is stored with its reason. The record (`catalog-label/1`) holds the type mask
+(`type-mask/1`, 73 bits), the readable type tag, the catalog id prefix (`MN-<category>-<asset class>-`), the hash of the
+specification and the flags: `label_mismatch` (declared and measured labels differ), `unconfirmed` (only the declaration
+gave the category), `no_dominant_component` and `unexplained_component` (blends). The label never changes a verdict.
+The thresholds live in `src/monte_neo/catalog/catalog_rules_v1.json` and are calibrated on synthetic strategies with known labels.

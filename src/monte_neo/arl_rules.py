@@ -1,4 +1,4 @@
-"""The ARL rules: one machine-readable file (``arl_rules_v1.json``) is the single source of truth.
+"""The ARL rules: one machine-readable file (``arl_rules_v2.json``; earlier versions stay loadable for rechecks) is the single source of truth.
 
 ``readiness.py`` and ``arl_depth.py`` read only this file. The tables in the documentation are generated from it
 (:func:`markdown_levels`, :func:`markdown_depth`, :func:`markdown_honesty`) and a test compares them with the pages, so a
@@ -16,8 +16,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-RULES_FILE = Path(__file__).with_name("arl_rules_v1.json")
-KNOWN_VERSIONS = {"arl-rules/1": RULES_FILE}
+RULES_FILE = Path(__file__).with_name("arl_rules_v2.json")
+KNOWN_VERSIONS = {"arl-rules/1": Path(__file__).with_name("arl_rules_v1.json"), "arl-rules/2": RULES_FILE}
 REQUIRED = ("schema", "version", "status", "authorship", "statuses", "levels", "caps", "depth", "honesty")
 RULE_TYPES = {"status", "detail", "ratio", "tstat", "pvalue", "derived", "any", "all", "evidence", "holdout_valid", "between", "trials_declared"}
 
@@ -71,6 +71,9 @@ def validate(rules: dict[str, Any]) -> None:
             if not c.get("text") or not c.get("needs"):
                 raise ValueError(f"level {n} {cid}: text and needs are required")
             _check_rule(c["rule"], f"level {n} {cid}")
+    for dv in rules.get("derived", []):
+        if not {"id", "metric", "min", "why", "next_action"} <= set(dv):
+            raise ValueError(f"derived check {dv.get('id')!r}: id, metric, min, why and next_action are required")
 
 
 def describe_requirement(requirements: list[Any]) -> str:
@@ -113,7 +116,7 @@ def markdown_caps(rules: dict[str, Any] | None = None) -> str:
     c = r["caps"]
     lines = [f"- A failed look-ahead check caps the level at {c['lookahead_fail_max_level']}."]
     lines += [f"- `{x['check']}` warning or failing caps the level at {x['max_level']}: {x['why']}." for x in c["ceilings"]]
-    lines += [f"- `{x['check']}` not significant blocks level {x['level']}: {x['why']}." for x in c["blockers"]]
+    lines += [f"- `{x['check']}` that ran and warned or failed blocks level {x['level']}: {x['why']}." for x in c["blockers"]]
     ns = c["non_real_sources"]
     lines.append(f"- Live data from {', '.join(ns['sources'])} (or an unstated source) caps the level at {ns['max_level']}: {ns['why']}.")
     return "\n".join(lines)

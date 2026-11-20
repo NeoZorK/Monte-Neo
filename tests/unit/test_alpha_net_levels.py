@@ -58,7 +58,9 @@ def test_signal_eaten_by_costs_gets_neither_level_3_nor_6() -> None:
 
 # ---------------------------------------------------------------- an honest strong portfolio still gets them
 def test_honest_strong_portfolio_reaches_level_6() -> None:
-    rep, ids = _rep(1e4)
+    # a fixed universe declares its members for the whole period (arl-rules/2: otherwise it stops at level 4)
+    members = pd.DataFrame({"symbol": sorted(set(PRICES["symbol"])), "start": "", "end": ""})
+    rep, ids = _rep(1e4, membership=members)
     assert ids["cost_sensitivity"]["status"] == "pass" and ids["deflated_sharpe"]["status"] == "pass" and ids["hlz_hurdle"]["status"] == "pass"
     assert rep["readiness"]["level"] >= 6
 

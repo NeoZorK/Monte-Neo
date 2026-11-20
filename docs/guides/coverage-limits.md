@@ -31,7 +31,7 @@ New in this release (library functions; pass their rows to `verify_strategy(extr
 * **Automatic repair** only tries a small declared set of fixes. Each one counts as a trial, is re-verified in full and cannot raise a verdict by itself.
   Bad data, survivorship and phantom profit need you.
 * **Dossier evidence map** (SR 11-7, SS1/23) shows which clause has which evidence. It is not a compliance statement, a model approval or legal advice.
-* **ARL and depth** rules are provisional (`arl-rules/1`); the numbers are proposals until calibrated.
+* **ARL and depth** rules are provisional (`arl-rules/2`); the numbers are proposals until calibrated.
 * **Catalog results** are validation only with the holdout sealed; a verified row is one instance of a rule on one instrument and sample.
 * **Platforms:** macOS and Linux, Python 3.11 to 3.15 (3.15 beta-supported). **Windows is prepared but unverified**: see [Platforms](../setup/platforms.md).
 * Nothing here is investment advice, and no result predicts future returns.

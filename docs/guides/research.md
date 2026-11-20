@@ -17,7 +17,7 @@ result here rates the evidence, not the strategy.
 | `n_trials` is automatic | The number of promoted candidates of all batches; it only grows. Screened variants are reported beside it. |
 | The family is tested, not the winner | SPA (Hansen), the White Reality Check and the Romano-Wolf stepdown over **all** validated candidates; a significant loser is never an edge. |
 | The search has a price | The Sharpe that luck alone delivers for this many candidates on this many bars (False Strategy Theorem), and the smallest Sharpe the search could detect at all. |
-| One holdout, one opening | `holdout` freezes one candidate (hash of code and parameters) and opens it once. A second opening is written down and **permanently sets D4 of the ARL depth to 0** (`arl-rules/1`). |
+| One holdout, one opening | `holdout` freezes one candidate (hash of code and parameters) and opens it once. A second opening is written down and **permanently sets D4 of the ARL depth to 0** (`arl-rules/2`). |
 
 `holdout` refuses a candidate whose validation gate is closed (not significant after Romano-Wolf, or a Sharpe below the luck level);
 `--override` opens it anyway and the override is shown in the report. Both `holdout` and `freeze` need `--confirm`: neither can be undone.
@@ -59,7 +59,7 @@ monte-neo research forward record --project r1 --data prices_newer.csv
 
 `--data` is needed once; later steps read the path from the manifest. `status` shows the stage, counts, the progress of a running step with its
 ETA, whether a command holds the project, the anti-pattern warnings and the next step. `report --certify-top K` certifies the best K validated
-candidates so that each gets an ARL with its depth (`arl-rules/1`) and, with `--profile`, the coverage block of its strategy profile.
+candidates so that each gets an ARL with its depth (`arl-rules/2`) and, with `--profile`, the coverage block of its strategy profile.
 
 ### The grammar plugin
 

@@ -77,7 +77,7 @@ def test_returns_path_uses_the_gate() -> None:
 
 
 def _cert(status: str) -> dict:
-    ids = ["data_integrity", "lookahead_truncation", "net_profitability", "timing_significance", "residual_alpha",
+    ids = ["data_integrity", "lookahead_truncation", "net_profitability", "timing_significance", "selection_adjusted_sharpe", "residual_alpha",
            "hidden_short_volatility"]
     rows = [{"id": i, "status": "pass", "category": "x"} for i in ids]
     return {"checks": rows + [{"id": "alpha_after_beta", "status": status, "category": "statistics"}]}

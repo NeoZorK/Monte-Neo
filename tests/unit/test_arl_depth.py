@@ -37,7 +37,7 @@ def _hold(*rows: dict) -> dict:
 
 def test_no_evidence_means_depth_zero_and_not_assessed_with_a_command() -> None:
     rep = readiness(None)
-    assert rep["level"] == 0 and rep["depth"] == 0 and rep["headline"].startswith("ARL 0, depth 0/4 (arl-rules/1, provisional)")
+    assert rep["level"] == 0 and rep["depth"] == 0 and rep["headline"].startswith("ARL 0, depth 0/4 (arl-rules/2, provisional)")
     ev = _ev()
     for n in range(1, 10):
         d = depth_for_level(n, ev)
@@ -140,7 +140,7 @@ def _live(source: str | None, custody: str | None = None, **more: object) -> dic
 
 
 def _eight() -> dict:
-    ids = ["data_integrity", "lookahead_truncation", "net_profitability", "timing_significance", "residual_alpha", "hidden_short_volatility",
+    ids = ["data_integrity", "lookahead_truncation", "net_profitability", "timing_significance", "selection_adjusted_sharpe", "residual_alpha", "hidden_short_volatility",
            "deflated_sharpe", "market_impact", "synthetic_market_null", "universe_subsampling", "start_date_sensitivity",
            "rebalance_timing_luck", "marginal_sharpe"]
     return _cert(*[_row(i, category="lookahead" if i.startswith("look") else "statistics") for i in ids])
@@ -209,7 +209,7 @@ def test_frozen_rules_drop_the_provisional_flag(monkeypatch: pytest.MonkeyPatch)
     frozen["status"] = "frozen"
     monkeypatch.setattr(rd, "load_rules", lambda version=None: frozen)
     rep = rd.readiness(_cert())
-    assert rep["provisional"] is False and rep["headline"].endswith("(arl-rules/1)")
+    assert rep["provisional"] is False and rep["headline"].endswith("(arl-rules/2)")
 
 
 def test_derived_values_missing_and_present() -> None:
