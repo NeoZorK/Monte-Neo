@@ -20,6 +20,10 @@
   <a href="https://pypi.org/project/monte-neo/"><img src="https://img.shields.io/pypi/pyversions/monte-neo" alt="Python versions"/></a>
   <a href="https://github.com/NeoZorK/Monte-Neo/actions/workflows/ci.yml"><img src="https://github.com/NeoZorK/Monte-Neo/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
   <a href="https://github.com/NeoZorK/Monte-Neo/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license"/></a>
+  <a href="https://github.com/NeoZorK/Monte-Neo/actions/workflows/ci.yml"><img src="https://img.shields.io/badge/platforms-Linux%20%C2%B7%20macOS%20%C2%B7%20Windows-0a7bbb" alt="Platforms: Linux, macOS, Windows"/></a>
+  <a href="https://github.com/NeoZorK/Monte-Neo/pkgs/container/monte-neo-verify"><img src="https://img.shields.io/badge/Docker-ghcr.io%2Fneozork%2Fmonte--neo--verify-2496ed?logo=docker&logoColor=white" alt="Docker image on GHCR"/></a>
+  <a href="https://neozork.github.io/Monte-Neo/"><img src="https://img.shields.io/badge/docs-neozork.github.io%2FMonte--Neo-444" alt="Documentation"/></a>
+  <a href="https://github.com/NeoZorK/Monte-Neo/releases/latest"><img src="https://img.shields.io/github/v/release/NeoZorK/Monte-Neo?label=release" alt="Latest release"/></a>
   <br/>
   <a href="https://registry.modelcontextprotocol.io/v0/servers?search=io.github.NeoZorK/monte-neo"><img src="https://img.shields.io/badge/MCP%20Registry-io.github.NeoZorK%2Fmonte--neo-6f42c1" alt="MCP Registry"/></a>
   <a href="https://neozork.github.io/Monte-Neo/guides/agents/"><img src="https://img.shields.io/badge/tested%20with-Claude%20Code%20%C2%B7%20Qwen%20Code%20(local)-444" alt="Tested with Claude Code and Qwen Code (local)"/></a>
@@ -137,7 +141,42 @@ The run used a synthetic random walk; output shortened.
 | `NEEDS_MORE_EVIDENCE` | Too few trades, or the Sharpe does not survive the number of variants tried | 1 |
 | `REJECT` | The backtest is broken or loses money after costs | 2 |
 
-## New in v0.53: from a rejected backtest to a committee
+## New in v0.55: a profile for every strategy type, and a readiness scale
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/NeoZorK/Monte-Neo/main/docs/assets/demo-readiness.gif" alt="monte-neo readiness shows ARL 1 of 9 with depth and the level that blocks; repair --explain lists the findings in plain words with the next action for each" width="760"/>
+</p>
+
+- **Strategy-type profiles** (`verify --profile ID`, `--list-profiles`): trend and CTA, mean reversion, pairs and stat-arb,
+  carry, cross-sectional long-short, buy and hold, allocation and risk parity, market neutral, short volatility,
+  event-driven and options. Each profile names the checks that type needs, its benchmark, its traps and what is not
+  assessed. A profile adds coverage; it never raises a verdict. [Guide](https://neozork.github.io/Monte-Neo/guides/profiles/)
+- **Options verification** (`verify --options FILE`): fills against bid and ask (no fantasy mid fill), volatility seen
+  after the decision, Black-Scholes tail stress, early exercise, pin risk and margin. [Guide](https://neozork.github.io/Monte-Neo/guides/options/)
+- **Alpha Readiness Level with depth** (`monte-neo readiness`): nine levels from "idea on clean data" to "live with real
+  fills", each with a depth of 0 to 4, read from one versioned rules file. [Guide](https://neozork.github.io/Monte-Neo/guides/arl/)
+- **Detect, explain, repair**: `repair --explain CERT` explains 16 common findings in plain words with the next action;
+  `repair --preview` shows a fix before and after, and every preview counts as a trial. [Guide](https://neozork.github.io/Monte-Neo/guides/repair/)
+- **Honest strategy search** (`monte-neo research`): discovery, pre-registered validation, family-wise tests, one sealed
+  holdout opened once. [Guide](https://neozork.github.io/Monte-Neo/guides/research/)
+- **Extended dossier** for a committee, a **delta-neutral carry** path, a **strategy catalog** of 100 strategies, a
+  **Hall of Fame** ranked by evidence, and econometric checks for pairs (`verify --legs --pairs-checks`).
+- **Windows**: command lines with Windows paths, journals and certificates now behave the same on Windows, macOS and
+  Linux; CI runs every supported Python (3.11 to 3.15) on all three systems (Windows on 3.15 waits for a regular NumPy build).
+
+All changes: [changelog](https://github.com/NeoZorK/Monte-Neo/blob/main/docs/project/CHANGELOG.md).
+
+## New in v0.54: phantom profit in pairs strategies
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/NeoZorK/Monte-Neo/main/docs/assets/demo-phantom.gif" alt="monte-neo verify --demo-phantom: a pairs rule booked on spread changes earns a Sharpe of 9 on pure noise; booked on its legs it has no edge" width="760"/>
+</p>
+
+A pairs rule booked as `position * diff(spread)` earns on two unrelated random walks. `verify --legs` re-derives the
+profit from the legs you could trade, `verify --null-test` runs your rule unchanged on independent random walks, and
+`verify --demo-phantom` shows both in one command. [Guide](https://neozork.github.io/Monte-Neo/guides/phantom-profit/)
+
+## Since v0.53: from a rejected backtest to a committee
 
 ### Repair the strategy, without overfitting it
 

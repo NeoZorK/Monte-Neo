@@ -78,59 +78,63 @@ nav:
   - Get started:
       - Install: setup/installation.md
       - Quick start: guides/quick-start.md
-      - Use from agents: guides/agents.md
-      - Local agents: guides/local-agents.md
-      - Honesty Bench: guides/honesty-bench.md
-      - Trap Suite: guides/trap-suite.md
-      - Verifier checks added after the audit: guides/verifier-gaps.md
-      - Latency audit (quotes): guides/arrival-time.md
-      - Frameworks and notebooks: guides/frameworks.md
-      - Repair without overfitting: guides/repair.md
-      - Alpha validation: guides/alpha.md
-      - Coverage limits: guides/coverage-limits.md
-      - Policy, trials, model cutoff: guides/policy-trials-cutoff.md
-      - ML models and event data: guides/ml-and-events.md
-      - Track record due diligence: guides/returns-due-diligence.md
-      - Phantom profit in pairs strategies: guides/phantom-profit.md
-      - Econometric checks for pairs: guides/pairs-econometrics.md
-      - Dossier, readiness, live monitor: guides/dossier-readiness-monitor.md
-      - Honest strategy search: guides/research.md
-      - Delta-neutral carry: guides/carry.md
-      - Reference alpha: guides/reference-alpha.md
-      - Alpha calibration: guides/alpha-calibration.md
-      - ARL and depth: guides/arl.md
-      - Strategy-type profiles: guides/profiles.md
-      - Options verification: guides/options.md
-      - Hall of Fame (guide): guides/hall-of-fame.md
-      - Hall of Fame (table): hall-of-fame.md
-      - ARL calibration: guides/arl-calibration.md
-      - Indicator search: guides/discover.md
-      - Ledger and fixes: guides/ledger-and-fixes.md
-      - Repainting: guides/repaint.md
-      - Project tools: guides/workflow-tools.md
-      - Real data and wild scan: guides/real-data-and-wild-corpus.md
-      - Discover calibration: guides/discover-calibration.md
-      - Honesty scorecard: guides/honesty-scorecard.md
       - Example reports: gallery.md
       - Verify a certificate: verify.md
       - FAQ: guides/FAQ.md
-      - Contributing: development/contributing.md
+  - Agents and integrations:
+      - Use from agents: guides/agents.md
+      - Local agents: guides/local-agents.md
+      - Frameworks and notebooks: guides/frameworks.md
+      - Project tools: guides/workflow-tools.md
+      - Honesty Bench: guides/honesty-bench.md
+      - Honesty scorecard: guides/honesty-scorecard.md
+  - Verify a backtest:
+      - Trap Suite: guides/trap-suite.md
+      - Checks added after the audit: guides/verifier-gaps.md
+      - Coverage limits: guides/coverage-limits.md
+      - Latency audit (quotes): guides/arrival-time.md
+      - Repainting: guides/repaint.md
+      - Ledger and fixes: guides/ledger-and-fixes.md
+      - Policy, trials, model cutoff: guides/policy-trials-cutoff.md
+      - ML models and event data: guides/ml-and-events.md
+      - Repair without overfitting: guides/repair.md
+  - Strategy types:
+      - Strategy-type profiles: guides/profiles.md
+      - Options verification: guides/options.md
+      - Phantom profit in pairs strategies: guides/phantom-profit.md
+      - Econometric checks for pairs: guides/pairs-econometrics.md
+      - Delta-neutral carry: guides/carry.md
+  - Alpha and readiness:
+      - Alpha validation: guides/alpha.md
+      - ARL and depth: guides/arl.md
+      - Dossier, readiness, live monitor: guides/dossier-readiness-monitor.md
+      - Track record due diligence: guides/returns-due-diligence.md
+      - Reference alpha: guides/reference-alpha.md
+      - Alpha calibration: guides/alpha-calibration.md
+      - ARL calibration: guides/arl-calibration.md
+  - Research:
+      - Honest strategy search: guides/research.md
+      - Indicator search: guides/discover.md
+      - Discover calibration: guides/discover-calibration.md
+      - Real data and wild scan: guides/real-data-and-wild-corpus.md
   - Catalog:
       - Strategy catalog: catalog/README.md
       - Index of 100 strategies: catalog/INDEX.md
       - Strategy types: catalog/TYPES.md
-      - Taxonomy (planned v0.56): catalog/TAXONOMY.md
+      - Taxonomy (planned): catalog/TAXONOMY.md
       - Verified results: catalog/RESULTS.md
       - What did not work: catalog/WHAT_DID_NOT_WORK.md
       - Protocol: catalog/PROTOCOL.md
       - Public registry: catalog/REGISTRY.md
+      - Hall of Fame (table): hall-of-fame.md
+      - Hall of Fame (guide): guides/hall-of-fame.md
   - Articles:
       - Six ways your agent's backtest lies: marketing/article-six-ways.md
       - Papers: paper/papers.md
       - Technical note (method): paper/methodology.md
   - API:
       - Strategy verifier: api/verify.md
-  - Research (frozen):
+  - Research engine (frozen):
       - Research export: api/export.md
       - Research policy: api/policy.md
       - Holdout: api/holdout.md
@@ -138,6 +142,7 @@ nav:
   - Project:
       - Changelog: project/CHANGELOG.md
       - Roadmap: project/ROADMAP.md
+      - Contributing: development/contributing.md
       - Packaging: project/PACKAGING.md
       - Branching: project/BRANCHING.md
       - Docs map: docs-map.md
