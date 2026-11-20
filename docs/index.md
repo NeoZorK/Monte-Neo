@@ -16,6 +16,10 @@ Catch look-ahead bias, hidden trading costs and overfitting before a backtest re
 [![CI](https://github.com/NeoZorK/Monte-Neo/actions/workflows/ci.yml/badge.svg)](https://github.com/NeoZorK/Monte-Neo/actions/workflows/ci.yml)
 [![MCP Registry](https://img.shields.io/badge/MCP%20Registry-io.github.NeoZorK%2Fmonte--neo-6f42c1)](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.NeoZorK/monte-neo)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/NeoZorK/Monte-Neo/blob/main/LICENSE)
+[![Platforms](https://img.shields.io/badge/platforms-Linux%20%C2%B7%20macOS%20%C2%B7%20Windows-0a7bbb)](https://github.com/NeoZorK/Monte-Neo/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/pypi/pyversions/monte-neo)](https://pypi.org/project/monte-neo/)
+[![Docker](https://img.shields.io/badge/Docker-ghcr.io%2Fneozork%2Fmonte--neo--verify-2496ed?logo=docker&logoColor=white)](https://github.com/NeoZorK/Monte-Neo/pkgs/container/monte-neo-verify)
+[![Release](https://img.shields.io/github/v/release/NeoZorK/Monte-Neo?label=release)](https://github.com/NeoZorK/Monte-Neo/releases/latest)
 </p>
 
 !!! tip "Install"
@@ -49,7 +53,29 @@ certificate that can be signed.
 | **Integrity** | Broken OHLCV (NaN, bad prices, bars out of time order), non-deterministic signals |
 
 
-!!! info "New in v0.53: from a rejected backtest to a committee"
+## New in v0.55: a profile for every strategy type, and a readiness scale
+
+![monte-neo readiness and repair --explain](assets/demo-readiness.gif){ width="820" }
+
+- [Strategy-type profiles](guides/profiles.md) (`verify --profile ID`): eleven strategy types, each with the checks it
+  needs, its benchmark, its traps and what is not assessed. A profile adds coverage; it never raises a verdict.
+- [Options verification](guides/options.md) (`verify --options FILE`): bid and ask fills, volatility seen after the
+  decision, tail stress, early exercise, pin risk and margin.
+- [Alpha Readiness Level with depth](guides/arl.md) (`monte-neo readiness`): nine levels, depth 0 to 4 for each, one
+  versioned rules file.
+- [Detect, explain, repair](guides/repair.md): `repair --explain` names 16 common findings in plain words with the next action.
+- [Honest strategy search](guides/research.md), an [extended dossier](guides/dossier-readiness-monitor.md),
+  [delta-neutral carry](guides/carry.md), the [strategy catalog](catalog/README.md) and the [Hall of Fame](hall-of-fame.md).
+- Windows behaves like macOS and Linux; CI covers Python 3.11 to 3.15 on all three systems.
+
+## New in v0.54: phantom profit in pairs strategies
+
+![monte-neo verify --demo-phantom](assets/demo-phantom.gif){ width="820" }
+
+A pairs rule booked on spread changes earns on two unrelated random walks. `verify --legs` re-derives the profit from the
+legs you could trade and `verify --null-test` runs your rule unchanged on random walks. [Read the guide](guides/phantom-profit.md).
+
+!!! info "Since v0.53: from a rejected backtest to a committee"
     - [Repair without overfitting](guides/repair.md): defects fixed, choices made by the number of defects on 70 % of
       the history, a lockbox opened once, and an honest `REPAIRED_NO_EDGE` when the profit was the defect.
     - [Alpha validation](guides/alpha.md) with an [Alpha Readiness Level](guides/dossier-readiness-monitor.md):
@@ -59,7 +85,7 @@ certificate that can be signed.
     - [ML models and event data](guides/ml-and-events.md), [track records from returns](guides/returns-due-diligence.md),
       [policy, tracker trials and LLM cutoffs](guides/policy-trials-cutoff.md), [a reference alpha](guides/reference-alpha.md).
 
-## New: catch look-ahead that hides in milliseconds
+## Catch look-ahead that hides in milliseconds
 
 ![monte-neo verify --quotes](assets/demo-arrival.gif){ width="820" }
 
