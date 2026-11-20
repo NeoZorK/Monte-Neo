@@ -86,6 +86,12 @@ jobs:
         include:
           - os: macos-15
             extras: "--extra apple"
+        exclude:
+          # NumPy for Python 3.15 on Windows is an experimental MinGW build that crashes on import-time use
+          # (segmentation fault in `monte-neo verify --demo`). Python 3.15 stays covered on Linux and macOS;
+          # put Windows back when NumPy ships a regular Windows wheel for 3.15.
+          - os: windows-latest
+            python-version: "3.15"
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
