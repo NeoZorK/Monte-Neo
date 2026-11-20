@@ -1,0 +1,314 @@
+# Strategy and benchmark types. Not investment advice. References are cited by author/year/title/venue;
+# links and access dates are recorded in REFERENCES.md after a manual link check (not done in phase 1).
+- id: passive_index
+  name: Buy-and-hold / passive cap-weighted index
+  family: benchmark
+  what: "Hold a broad market-cap-weighted index (or one asset) with dividends reinvested. It is the null hypothesis every active strategy must beat after costs and risk."
+  measure:
+    metrics: [CAGR, volatility, Sharpe, max drawdown, time under water, total-return series incl. dividends]
+    benchmark: "Itself; for others, the matching total-return index (equities) or spot asset (crypto)"
+    horizon: "At least one full market cycle (10+ years for equities; crypto has under 2 full cycles)"
+  traps: [survivorship, corporate_actions, regime_dependence, costs]
+  checks: [data_integrity, benchmark, regime_split]
+  data: [Total-return daily prices, dividends or adjusted close]
+  cannot: [Whether the sample period is representative; future returns]
+  refs: "Sharpe 1991 \"The Arithmetic of Active Management\" FAJ, Bogle 2005 \"The Mutual Fund Industry 60 Years Later\" FAJ"
+- id: balanced_60_40
+  name: 60/40 and static multi-asset allocation
+  family: allocation
+  what: "Fixed weights across equities and bonds (and sometimes gold, commodities, REITs), rebalanced on a schedule."
+  measure:
+    metrics: [CAGR, Sharpe, max drawdown, stock-bond correlation, rebalancing bonus, risk contribution by asset]
+    benchmark: "The same weights without rebalancing; 100% equity; cash"
+    horizon: "20+ years; stock-bond correlation changes sign across eras"
+  traps: [rebalance, regime_dependence, data_vendor, tax]
+  checks: [data_integrity, benchmark, rebalance_sensitivity, regime_split]
+  data: [Total-return series of each sleeve, rebalance dates]
+  cannot: [Correlation regime in the future; tax drag; bond index substitution (ETF vs index)]
+  refs: "Perold and Sharpe 1988 \"Dynamic Strategies for Asset Allocation\" FAJ, Asness Frazzini Pedersen 2012 \"Leverage Aversion and Risk Parity\" FAJ"
+- id: risk_parity
+  name: Risk parity / inverse-volatility / equal risk contribution
+  family: allocation
+  what: "Weights set so each asset contributes equal risk (inverse volatility or full covariance ERC), usually levered to a target volatility."
+  measure:
+    metrics: [Sharpe, vol-targeting realized vs target, max drawdown, leverage used, financing cost]
+    benchmark: "60/40 and equal weight at matched volatility"
+    horizon: "Includes a rising-rate era and a stock-bond correlation flip"
+  traps: [leverage, costs, regime_dependence, rebalance]
+  checks: [benchmark, leverage_audit, rebalance_sensitivity, regime_split]
+  data: [Daily total returns of sleeves, financing rate]
+  cannot: [Cost of leverage obtainable by the user; futures vs ETF implementation differences]
+  refs: "Qian 2005 \"Risk Parity Portfolios\" PanAgora, Maillard Roncalli Teiletche 2010 \"The Properties of Equally Weighted Risk Contribution Portfolios\" JPM, Asness Frazzini Pedersen 2012 FAJ"
+- id: equal_weight
+  name: Equal weight (1/N) and naive diversification
+  family: allocation
+  what: "Hold N assets with weight 1/N, periodically rebalanced."
+  measure:
+    metrics: [Sharpe, turnover, concentration vs cap-weight, small-cap tilt]
+    benchmark: "Cap-weighted index of the same universe"
+    horizon: "10+ years"
+  traps: [survivorship, rebalance, capacity, hidden_beta]
+  checks: [data_integrity, benchmark, universe_pit, capacity_estimate]
+  data: [Constituent history with point-in-time membership]
+  cannot: [Illiquidity of small constituents at scale]
+  refs: "DeMiguel Garlappi Uppal 2009 \"Optimal Versus Naive Diversification\" RFS"
+- id: minimum_variance
+  name: Minimum variance / max diversification / HRP
+  family: allocation
+  what: "Optimizer-based weights from a covariance estimate (minimum variance, most-diversified, hierarchical risk parity)."
+  measure:
+    metrics: [Realized volatility vs equal weight, Sharpe, turnover, estimation window sensitivity]
+    benchmark: "Equal weight and cap-weight of the same universe"
+    horizon: "10+ years, out of sample with expanding covariance window"
+  traps: [overfit_params, hidden_beta, rebalance, data_snooping]
+  checks: [pbo, benchmark, rebalance_sensitivity]
+  data: [Return panel of 20+ assets]
+  cannot: [Covariance stability in the future]
+  refs: "Clarke de Silva Thorley 2006 \"Minimum-Variance Portfolios in the U.S. Equity Market\" JPM, Choueifaty Coignard 2008 \"Toward Maximum Diversification\" JPM, Lopez de Prado 2016 \"Building Diversified Portfolios that Outperform Out of Sample\" JPM"
+- id: factor_premia
+  name: Factor / smart-beta (value, momentum, quality, low-vol, size)
+  family: factor
+  what: "Long-only or long-short portfolios sorted on a characteristic (book-to-market, past return, profitability, beta, market cap)."
+  measure:
+    metrics: [Factor alpha vs market and other factors, t-stat with multiple-testing haircut, turnover, capacity, drawdowns]
+    benchmark: "Cap-weighted market; Fama-French / AQR factor regressions"
+    horizon: "Decades; factor premia are multi-year bets"
+  traps: [pit_fundamentals, survivorship, post_publication, data_snooping, shorting_cost, capacity, crash_risk, costs]
+  checks: [dsr, pbo, alpha_after_beta, pre_post_publication_split, pit_contract]
+  data: [Point-in-time fundamentals, delisting-adjusted returns, borrow costs]
+  cannot: [Whether the premium persists; proprietary factor definitions]
+  refs: "Fama French 1993 \"Common risk factors in the returns on stocks and bonds\" JFE, Carhart 1997 JF, Novy-Marx 2013 JFE, Asness Frazzini Pedersen 2019 \"Quality minus junk\" RAST, Harvey Liu Zhu 2016 \"...and the cross-section of expected returns\" RFS, McLean Pontiff 2016 JF, Hou Xue Zhang 2020 RFS"
+- id: trend_following
+  name: Trend following / time-series momentum / CTA
+  family: trend
+  what: "Go long assets with positive past return (or price above a moving average / breakout), short or flat otherwise, often volatility-scaled and diversified across many markets."
+  measure:
+    metrics: [Sharpe, Sortino, convexity in equity down-markets (crisis alpha), beta to buy-and-hold, hit rate, payoff ratio, max drawdown]
+    benchmark: "Buy-and-hold of each asset; beta-neutral residual; equal-weight diversified trend index"
+    horizon: "Multi-decade, multi-asset; single-asset trend has few independent bets"
+  traps: [hidden_beta, regime_dependence, overfit_params, small_sample, costs, roll_yield, execution_timing]
+  checks: [benchmark, alpha_after_beta, dsr, timing, regime_split, roll_audit]
+  data: [Daily OHLCV; continuous futures with roll rules for non-crypto]
+  cannot: [Diversification across markets when only one asset is supplied; futures margin details]
+  refs: "Moskowitz Ooi Pedersen 2012 \"Time series momentum\" JFE, Hurst Ooi Pedersen 2017 \"A Century of Evidence on Trend-Following Investing\" JPM, Brock Lakonishok LeBaron 1992 JF, Kim Tse Wald 2016 \"Time series momentum and volatility scaling\" JFM"
+- id: xs_momentum
+  name: Cross-sectional momentum and reversal
+  family: factor
+  what: "Rank assets by past return; long winners and short losers (momentum, 12-1 months) or the opposite at 1-week/1-month horizons (reversal)."
+  measure:
+    metrics: [Long-short Sharpe, alpha vs factors, momentum-crash drawdowns, turnover, net-of-cost return]
+    benchmark: "Market and Fama-French plus UMD"
+    horizon: "Decades; reversal is a short-horizon, high-turnover effect"
+  traps: [survivorship, crash_risk, costs, shorting_cost, capacity, stale_price, lookahead]
+  checks: [dsr, tail_skew_profile, borrow_model, universe_pit, alpha_after_beta]
+  data: [Daily returns of a point-in-time universe, borrow cost]
+  cannot: [Crash timing; short availability]
+  refs: "Jegadeesh Titman 1993 JF, Jegadeesh 1990 JF, Lehmann 1990 QJE, Daniel Moskowitz 2016 \"Momentum crashes\" JFE, Barroso Santa-Clara 2015 \"Momentum has its moments\" JFE"
+- id: mean_reversion
+  name: Short-term mean reversion (single instrument)
+  family: mean_reversion
+  what: "Buy oversold / sell overbought using oscillators, z-scores or bands, with a quick exit."
+  measure:
+    metrics: [Win rate, payoff ratio, expectancy per trade, max adverse excursion, tail loss, time in market]
+    benchmark: "Buy-and-hold and a random-entry null with the same holding time"
+    horizon: "Many independent trades; drawdown clustered in trends"
+  traps: [ruin_risk, short_vol_tail, costs, overfit_params, regime_dependence, stale_price]
+  checks: [timing, dsr, costs, tail_skew_profile, ruin_probability]
+  data: [Daily OHLCV]
+  cannot: [Intraday excursion beyond daily bars]
+  refs: "Connors Alvarez 2008 \"Short Term Trading Strategies That Work\", Lo MacKinlay 1990 RFS, Bollinger 2001 \"Bollinger on Bollinger Bands\""
+- id: stat_arb_pairs
+  name: Statistical arbitrage and pairs trading
+  family: relative_value
+  what: "Trade the spread between related assets that is assumed stationary (distance, cointegration, Ornstein-Uhlenbeck, PCA residuals)."
+  measure:
+    metrics: [Net Sharpe, spread half-life, stationarity tests out of sample, leg-level P&L, borrow cost, turnover]
+    benchmark: "Market-neutral zero; randomly paired null; per-leg buy-and-hold"
+    horizon: "Includes regime breaks; formation and trading windows separated"
+  traps: [selection_pairs, coint_break, shorting_cost, costs, execution_timing, capacity, survivorship]
+  checks: [cointegration_suite, pair_selection_bias, legging_audit, dsr, borrow_model]
+  data: [Aligned adjusted prices of both legs, borrow rates, liquidity]
+  cannot: [Fundamental reason a spread should hold; legging risk without intraday data]
+  refs: "Gatev Goetzmann Rouwenhorst 2006 RFS, Engle Granger 1987 Econometrica, Elliott van der Hoek Malcolm 2005 Quant. Finance, Avellaneda Lee 2010 Quant. Finance, Do Faff 2010 \"Does simple pairs trading still work?\" FAJ"
+- id: market_making
+  name: Market making / liquidity provision
+  family: microstructure
+  what: "Quote both sides, earn the spread, manage inventory and adverse selection."
+  measure:
+    metrics: [Spread capture, adverse selection (markout), inventory risk, fill ratio, fees and rebates, latency sensitivity]
+    benchmark: "Zero; quoting at the touch with no skew"
+    horizon: "Intraday to weeks; many fills"
+  traps: [execution_model, lookahead, capacity, short_vol_tail, costs]
+  checks: [verify_quotes (existing), execution_model_audit]
+  data: [Level-2 or quote/trade tape with timestamps]
+  cannot: [Queue position without full order-book data; daily bars are not enough]
+  refs: "Avellaneda Stoikov 2008 \"High-frequency trading in a limit order book\" Quant. Finance, Glosten Milgrom 1985 JFE"
+- id: carry
+  name: Carry (FX, commodity roll, bond roll-down, crypto funding/basis)
+  family: carry
+  what: "Earn the yield differential or roll return from holding higher-yielding exposure funded by lower-yielding exposure."
+  measure:
+    metrics: [Carry return vs spot return decomposition, Sharpe, skew, crash drawdowns, funding sign flips, margin usage]
+    benchmark: "Spot/buy-and-hold; cash"
+    horizon: "Includes a crisis (2008 FX, 2020 and 2022 crypto)"
+  traps: [short_vol_tail, funding_basis, roll_yield, leverage, crash_risk, costs]
+  checks: [carry_decomposition, tail_skew_profile, roll_audit, leverage_audit, smoothing]
+  data: [Spot and forward/futures or perpetual prices, funding history, interest rates]
+  cannot: [Counterparty/exchange default; margin calls from intraday spikes]
+  refs: "Koijen Moskowitz Pedersen Vrugt 2018 \"Carry\" JFE, Lustig Roussanov Verdelhan 2011 RFS, Gorton Rouwenhorst 2006 FAJ, Schmeling Schrimpf Todorov 2023 \"Crypto Carry\" BIS WP 1087"
+- id: short_volatility
+  name: Volatility selling / short vol
+  family: volatility
+  what: "Collect the variance risk premium by selling options or shorting volatility products; payoff is concave with a severe left tail."
+  measure:
+    metrics: [Skew, kurtosis, CVaR 1%/5%, worst day/month, Sharpe adjusted for skew (e.g. Sortino, Omega), time to recover, stress replays (Feb 2018 XIV, Mar 2020)]
+    benchmark: "Equity index; put-write index; cash"
+    horizon: "Must include a vol-spike event; otherwise the sample is uninformative"
+  traps: [short_vol_tail, smoothing, leverage, hidden_beta, ruin_risk, costs, execution_model]
+  checks: [tail_skew_profile, stress_replay, smoothing, alpha_after_beta, ruin_probability]
+  data: [Option chains or VIX futures history, underlying prices]
+  cannot: [Gap and liquidity events not in the sample; early assignment details with daily data]
+  refs: "Carr Wu 2009 \"Variance Risk Premiums\" RFS, Bondarenko 2014 \"Why are put options so expensive?\" QJFin, Coval Shumway 2001 JF, Whaley 2002 \"Return and risk of CBOE Buy Write Monthly Index\" JD"
+- id: options_overlay
+  name: Options overlays (covered call, put-write, collar, protective put)
+  family: volatility
+  what: "Hold the underlying and add short calls/puts or protective puts on a fixed rule."
+  measure:
+    metrics: [Return vs underlying at matched beta, upside capture, downside capture, Sharpe, drawdown]
+    benchmark: "Underlying total-return index; beta-matched equity plus cash"
+    horizon: "Full cycle including a strong rally and a crash"
+  traps: [hidden_beta, short_vol_tail, execution_model, costs, tax]
+  checks: [benchmark, alpha_after_beta, tail_skew_profile]
+  data: [Option chains (bid/ask) or published overlay-index series]
+  cannot: [Fills at mid; early exercise; the tax treatment]
+  refs: "Whaley 2002 JD, Israelov Nielsen 2014 \"Covered Call Strategies: One Fact and Eight Myths\" FAJ"
+- id: event_merger_arb
+  name: Merger arbitrage and event-driven
+  family: event
+  what: "Buy the target of an announced deal at a discount to the offer; collect the spread when the deal closes. Related: PEAD, index inclusion."
+  measure:
+    metrics: [Annualized spread return, deal-break loss, hit rate, correlation to market in down-markets, event study CARs]
+    benchmark: "Market and risk-free rate; hedge-fund merger arb index"
+    horizon: "Includes a merger-boom and a bust; deal-level sample size"
+  traps: [short_vol_tail, hidden_beta, survivorship, lookahead, capacity, costs, pit_fundamentals]
+  checks: [tail_skew_profile, alpha_after_beta, event_study_audit]
+  data: [Deal database with announcement timestamps, prices around events]
+  cannot: [Legal and regulatory risk; deal-specific information]
+  refs: "Mitchell Pulvino 2001 \"Characteristics of Risk and Return in Risk Arbitrage\" JF, Bernard Thomas 1989 JAR"
+- id: convertible_arb
+  name: Convertible arbitrage
+  family: relative_value
+  what: "Long convertible bond, short the underlying stock (delta hedge), harvest cheap implied volatility and carry."
+  measure:
+    metrics: [Net return, credit spread beta, liquidity-crisis drawdown, gamma P&L, smoothing of reported returns]
+    benchmark: "Credit and equity indices; hedge-fund index"
+    horizon: "Includes 2008 and 2020"
+  traps: [smoothing, stale_price, leverage, short_vol_tail, shorting_cost, capacity]
+  checks: [smoothing, tail_skew_profile, leverage_audit]
+  data: [Convertible prices (often indicative), stock borrow, credit spreads]
+  cannot: [Reproducing a convertible book from public OHLCV; model-dependent marks]
+  refs: "Agarwal Fung Loon Naik 2011 \"Risk and return in convertible arbitrage\" J. Empirical Finance"
+- id: global_macro
+  name: Global macro (discretionary and systematic)
+  family: macro
+  what: "Directional positions across rates, FX, commodities and equities driven by macro views. Systematic variants use rule-based growth/inflation regimes."
+  measure:
+    metrics: [Sharpe, regime-conditional return, beta to risk assets, hit rate, decision log]
+    benchmark: "Diversified risk-parity and trend indices"
+    horizon: "Full cycles; sparse independent macro events"
+  traps: [discretion, small_sample, hidden_beta, lookahead, data_snooping]
+  checks: [dsr, alpha_after_beta, regime_split, holdout]
+  data: [Point-in-time macro releases (with release dates), market prices]
+  cannot: [Discretionary judgement; revised macro data used as if known at the time]
+  refs: "Fung Hsieh 2001 \"The Risk in Hedge Fund Strategies\" RFS, Bridgewater All Weather public description"
+- id: long_short_equity
+  name: Long/short equity
+  family: factor
+  what: "Long selected stocks, short others; net exposure varies."
+  measure:
+    metrics: [Net and gross exposure, beta, alpha, short-leg contribution, borrow cost, turnover]
+    benchmark: "Market, sector, and factor returns"
+    horizon: "Multi-year, includes crashes"
+  traps: [shorting_cost, hidden_beta, survivorship, capacity, pit_fundamentals, costs]
+  checks: [alpha_after_beta, borrow_model, universe_pit, dsr]
+  data: [Equity panel with delistings, borrow rates, sector map]
+  cannot: [Stock-picking skill from narrative; locates and recalls]
+  refs: "Ackermann McEnally Ravenscraft 1999 \"The Performance of Hedge Funds\" JF, Fama French 2015 RFS"
+- id: calendar_anomaly
+  name: Calendar and seasonal effects
+  family: calendar
+  what: "Systematic return patterns by day of week, month, holiday, or overnight vs intraday."
+  measure:
+    metrics: [Mean excess return in window, t-stat with multiple-testing correction, out-of-sample persistence, net of costs]
+    benchmark: "Unconditional average return of the same asset"
+    horizon: "Decades; effects are small and fragile"
+  traps: [data_snooping, post_publication, costs, regime_dependence, small_sample]
+  checks: [dsr, pre_post_publication_split, costs, holdout]
+  data: [Daily OHLC (open and close needed for overnight/intraday split)]
+  cannot: [Causal reasons; stability in the future]
+  refs: "French 1980 JFE, Ariel 1987 JF, Lakonishok Smidt 1988 RFS, Bouman Jacobsen 2002 AER, Cooper Cliff Gulen 2008 \"Return Differences between Trading and Non-Trading Hours\" SSRN, Sullivan Timmermann White 2001 JF"
+- id: vol_managed
+  name: Volatility targeting / managed portfolios
+  family: overlay
+  what: "Scale exposure inversely to recent realized volatility to hold risk constant."
+  measure:
+    metrics: [Sharpe vs unmanaged, realized vol vs target, turnover, drawdown, leverage]
+    benchmark: "Same asset unmanaged and at matched average leverage"
+    horizon: "Includes vol-clustering episodes"
+  traps: [lookahead, leverage, costs, overfit_params, execution_timing]
+  checks: [lookahead, timing, benchmark, costs]
+  data: [Daily returns]
+  cannot: [Gap risk between rebalances]
+  refs: "Moreira Muir 2017 \"Volatility-Managed Portfolios\" JF, Harvey et al. 2018 \"The Impact of Volatility Targeting\" JPM"
+- id: rebalancing_policy
+  name: Rebalancing and glide-path policies (constant-mix, CPPI, target-date)
+  family: allocation
+  what: "Rule-based change of weights over time or with wealth/risk (constant-mix, portfolio insurance, glide path to retirement date)."
+  measure:
+    metrics: [Terminal wealth distribution, shortfall probability, path dependence, turnover, cost drag]
+    benchmark: "Buy-and-hold with the same initial weights"
+    horizon: "Investor lifetime; needs simulated and historical paths"
+  traps: [rebalance, regime_dependence, costs, tax, small_sample]
+  checks: [rebalance_sensitivity, monte_carlo paths (existing engine), benchmark]
+  data: [Return series of sleeves; contribution schedule]
+  cannot: [Investor behaviour; the tax and lifetime-income context]
+  refs: "Black Jones 1987 \"Simplifying Portfolio Insurance\" JPM, Perold Sharpe 1988 FAJ"
+- id: dca
+  name: Dollar-cost averaging and value averaging
+  family: allocation
+  what: "Invest a fixed amount per period (DCA) or follow a target-path of portfolio value (value averaging)."
+  measure:
+    metrics: [Money-weighted return (IRR), terminal wealth vs lump sum, regret, drawdown of invested capital]
+    benchmark: "Lump-sum investment at the first date; cash-held share"
+    horizon: "Multi-year contribution schedule"
+  traps: [regime_dependence, hidden_beta, costs, small_sample]
+  checks: [benchmark, regime_split]
+  data: [Price series; contribution schedule]
+  cannot: [Investor cash flows in reality; behavioural effects]
+  refs: "Constantinides 1979 \"A Note on the Suboptimality of Dollar-Cost Averaging\" JFQA, Edleson 1991 \"Value Averaging\""
+- id: crypto_specific
+  name: Crypto-specific (perpetual funding, basis, cross-sectional crypto momentum)
+  family: carry
+  what: "Strategies exploiting perpetual swap funding, spot-futures basis, or cross-sectional crypto returns."
+  measure:
+    metrics: [Net of funding and fees, exchange-risk-adjusted return, drawdown, tail skew, capacity]
+    benchmark: "BTC/ETH buy-and-hold; stablecoin yield"
+    horizon: "Short history (2017+); covers few regimes"
+  traps: [funding_basis, hidden_beta, survivorship, short_vol_tail, capacity, regime_dependence, small_sample]
+  checks: [carry_decomposition, alpha_after_beta, universe_pit, regime_split, dsr]
+  data: [Spot and perp OHLCV, funding history, delisted-coin history]
+  cannot: [Exchange insolvency, depeg events outside the price series]
+  refs: "Liu Tsyvinski 2021 \"Risks and Returns of Cryptocurrency\" RFS, Liu Tsyvinski Wu 2022 \"Common Risk Factors in Cryptocurrency\" JF, Schmeling Schrimpf Todorov 2023 BIS WP 1087"
+- id: controls
+  name: Negative controls and null strategies
+  family: control
+  what: "Random entry with matched holding time, always-flat, and ruinous retail patterns (martingale, grid) included to calibrate the verifier and show what failure looks like."
+  measure:
+    metrics: [Verdict distribution, false-positive rate of the verifier]
+    benchmark: "Verifier expectation (should not PASS)"
+    horizon: "Same as the catalog"
+  traps: [ruin_risk, data_snooping, overfit_params]
+  checks: [dsr, ruin_probability, timing]
+  data: [Daily OHLCV]
+  cannot: [Nothing special; they exist to measure verifier calibration]
+  refs: "Bailey Lopez de Prado 2014 \"The Deflated Sharpe Ratio\" JPM, Bailey Borwein Lopez de Prado Zhu 2017 \"The Probability of Backtest Overfitting\" JCF"

@@ -22,6 +22,7 @@ ROUND_FACTOR = 3.0
 DSR_MIN = 0.95
 DD_QUANTILE = 5.0
 DD_SIMS = 500
+IDLE_EXCLUDE = 0.20  # at or above this share of exact zeros the series is a trading record with idle periods
 
 
 def _acf(r: np.ndarray, k: int) -> float:
@@ -62,8 +63,33 @@ def return_smoothing(r: np.ndarray, ppy: float) -> dict[str, Any]:
                  f"no sign of smoothing (lag-1 autocorrelation {rho1:.2f}, unsmoothed Sharpe {unsm:.2f})", det)
 
 
+def idle_share(r: np.ndarray) -> float:
+    """Share of periods with an exactly zero return (the strategy was flat, out of the market)."""
+    return float(np.mean(r == 0.0)) if r.size else 0.0
+
+
+def active_returns(r: np.ndarray) -> tuple[np.ndarray, float]:
+    """The returns the distribution checks should look at, and the idle share.
+
+    A fund rarely reports an exact 0.00 month, so there a zero is evidence (a loss floored at zero, Bollen and Pool 2009)
+    and stays in. A trading strategy that sits out of the market books exactly 0 on every flat bar; those zeros are not
+    "round numbers" and are not draws from a normal model, so from ``IDLE_EXCLUDE`` (20 %) of zeros on they are dropped
+    and the checks run on the periods in the market only.
+    """
+    idle = idle_share(r)
+    return (r[r != 0.0], idle) if idle >= IDLE_EXCLUDE else (r, idle)
+
+
 def zero_kink(r: np.ndarray) -> dict[str, Any]:
-    """Bollen-Pool discontinuity at zero: small losses vs small gains against a normal-model expectation."""
+    """Bollen-Pool discontinuity at zero: small losses vs small gains against a normal-model expectation.
+
+    Source: Bollen and Pool (2009), "Do hedge fund managers misreport returns? Evidence from the pooled distribution",
+    Journal of Finance 64(5). Exact zeros of an often-flat strategy are excluded (see :func:`active_returns`), because
+    they pile mass at zero that a normal model cannot produce and would fake missing losses.
+    """
+    r, idle = active_returns(r)
+    if r.size < 2:
+        return check("zero_kink", "statistics", "skip", f"only {r.size} periods in the market ({idle:.0%} idle)", {"idle_share": idle})
     mu, sd = float(r.mean()), float(np.std(r, ddof=1))
     if sd <= 0:
         return check("zero_kink", "statistics", "skip", "zero volatility: no distribution to inspect")
@@ -72,7 +98,7 @@ def zero_kink(r: np.ndarray) -> dict[str, Any]:
     pb = _N.cdf((0 - mu) / sd) - _N.cdf((-w - mu) / sd)
     pa = _N.cdf((w - mu) / sd) - _N.cdf((0 - mu) / sd)
     total = below + above
-    det = {"bin_width": w, "small_losses": below, "small_gains": above}
+    det = {"bin_width": w, "small_losses": below, "small_gains": above, "idle_share": idle, "n_used": int(r.size)}
     if total < KINK_MIN_COUNT or pb + pa <= 0:
         return check("zero_kink", "statistics", "skip", f"only {total} returns near zero: too few for the test", det)
     p0 = pb / (pb + pa)
@@ -114,15 +140,21 @@ def _decimals(r: np.ndarray, cap: int = 10) -> int:
 
 
 def round_numbers(r: np.ndarray) -> dict[str, Any]:
-    """Exact multiples of 5 bps (0.0005, which includes 0.001) against the share expected for the data's resolution."""
+    """Exact multiples of 5 bps (0.0005, which includes 0.001) against the share expected for the data's resolution.
+
+    Idle periods (exact zeros of a strategy that is often flat) are not counted as round numbers, see :func:`active_returns`.
+    """
+    r, idle = active_returns(r)
+    if r.size == 0:
+        return check("round_numbers", "integrity", "skip", "every period is idle (zero return)", {"idle_share": idle})
     d = _decimals(r)
     if d <= 4:
-        return check("round_numbers", "integrity", "skip", f"data is rounded to {d} decimals", {"decimals": d})
+        return check("round_numbers", "integrity", "skip", f"data is rounded to {d} decimals", {"decimals": d, "idle_share": idle})
     k = r / 0.0005
     share = float(np.mean(np.abs(k - np.round(k)) < 1e-9))
     expected = min(1.0, 10.0**-d / 0.0005)
     count = int(round(share * r.size))
-    det = {"decimals": d, "round_share": share, "expected_share": expected}
+    det = {"decimals": d, "round_share": share, "expected_share": expected, "idle_share": idle, "n_used": int(r.size)}
     if count >= 4 and share > ROUND_FACTOR * expected:
         return check("round_numbers", "integrity", "warn",
                      f"{share:.0%} of returns are exact multiples of 5 bps vs {expected:.1%} expected: figures may be typed or rounded by hand", det)
@@ -171,6 +203,6 @@ def drawdown_consistency(r: np.ndarray, seed: int) -> dict[str, Any]:
 
 
 __all__ = [
-    "drawdown_consistency", "implausible_consistency", "max_drawdown", "return_smoothing", "round_numbers",
+    "IDLE_EXCLUDE", "active_returns", "drawdown_consistency", "idle_share", "implausible_consistency", "max_drawdown", "return_smoothing", "round_numbers",
     "smoothing_weights", "track_record_significance", "zero_kink",
 ]

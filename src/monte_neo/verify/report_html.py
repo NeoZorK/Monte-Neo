@@ -97,6 +97,11 @@ def _headline(report: dict[str, Any]) -> str:
     return f"{_TITLES.get(verdict, verdict)}: {why}{more}." if why else f"{_TITLES.get(verdict, verdict)}."
 
 
+def _arl_line(report: dict[str, Any]) -> str:
+    arl = report.get("arl")
+    return f"<p class='muted'><b>{_e(arl['headline'])}</b> · {_e(arl['summary'])}</p>" if arl else ""
+
+
 def _category_cards(report: dict[str, Any]) -> str:
     checks = _checks(report)
     cards = []
@@ -400,6 +405,7 @@ def render_html(report: dict[str, Any]) -> str:
         f"<h1>Monte-Neo strategy verdict <span class='pill verdict {_VERDICT_TONE.get(verdict, 'mute')}'>{_e(verdict)}</span></h1>"
         f"<p class='muted'>Certificate <span class='mono'>{_e(report.get('certificate_id', ''))}</span> · "
         f"engine {_e(repro.get('engine_version', ''))} · {_e(report.get('generated_at', ''))}</p>"
+        f"{_arl_line(report)}"
         f"<div class='card headline {_VERDICT_TONE.get(verdict, 'mute')}'>{_e(_headline(report))}</div>"
         f"{_category_cards(report)}"
         f"<div class='card'>{signed}</div>"

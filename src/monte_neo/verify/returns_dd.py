@@ -13,9 +13,11 @@ import pandas as pd
 
 from monte_neo._version import __version__
 from monte_neo.verify import returns_dd_checks as rc
+from monte_neo.verify.alpha_beta import alpha_after_beta_row, alpha_beta
 from monte_neo.verify.checks import check
 from monte_neo.verify.claim import claim_row, parse_claim
 from monte_neo.verify.schema import DISCLAIMER, VERDICT_SCHEMA_ID, aggregate_verdict, to_jsonable
+from monte_neo.verify.series_checks import series_integrity, series_readiness
 from monte_neo.verify.stats import infer_periods_per_year
 from monte_neo.verify.verdict import certificate_id
 
@@ -32,6 +34,8 @@ NEXT_ACTIONS: dict[str, str] = {
     "track_record_significance": "The record is too short or too weak for the number of strategies run: wait for more history, or ask for the returns of every fund and strategy the manager launched, including closed ones.",
     "drawdown_consistency": "Drawdown is too shallow for the volatility: ask whether marks are smoothed and whether losing periods were left out or re-based.",
     "claim_consistency": "The claimed numbers are better than the series reproduces: use the verified Sharpe, return and drawdown.",
+    "data_integrity": "Fix the return series: one dated, finite return per period, no duplicate or backward dates, no returns of -100% or worse, no stale repeated values.",
+    "benchmark_relation": "The return is not shown to be more than benchmark exposure: judge the strategy on its beta-neutral version (hedge the benchmark) or test it on a period where the benchmark fell.",
     "returns_only_scope": "To check look-ahead, costs and data quality, ask for the strategy code or the position history and run the full verify.",
 }
 
@@ -106,39 +110,29 @@ def _ppy(index: pd.DatetimeIndex, given: float | None) -> float:
     return next((float(c) for c in (4, 12, 52, 252, 365) if abs(raw - c) / c < 0.03), round(raw, 2))
 
 
-def _nw_alpha_t(y: np.ndarray, x: np.ndarray) -> tuple[float, float, float]:
-    n = y.size
-    xm = np.column_stack([np.ones(n), x])
-    beta = np.linalg.lstsq(xm, y, rcond=None)[0]
-    e = y - xm @ beta
-    lags = int(math.floor(4 * (n / 100.0) ** (2 / 9)))
-    u = xm * e[:, None]
-    s = u.T @ u
-    for k in range(1, lags + 1):
-        g = u[k:].T @ u[:-k]
-        s += (1 - k / (lags + 1)) * (g + g.T)
-    bread = np.linalg.inv(xm.T @ xm)
-    cov = bread @ s @ bread
-    return float(beta[0]), float(beta[1]), float(beta[0] / math.sqrt(max(cov[0, 0], 1e-30)))
-
-
 def benchmark_relation(r: pd.Series, bench: pd.Series, ppy: float) -> dict[str, Any]:
-    """Beta, correlation, Newey-West alpha t and up/down capture against a benchmark."""
+    """Alpha after beta against a benchmark: beta, correlation, annual alpha with its 95 % interval, up/down capture.
+
+    A gate, not context: ``warn`` when the alpha is not significantly positive after removing the benchmark exposure
+    (see :mod:`monte_neo.verify.alpha_beta`).
+    """
     both = pd.concat([r, bench], axis=1, join="inner").dropna()
     if both.shape[0] < MIN_OBS:
         return check("benchmark_relation", "statistics", "skip", f"only {both.shape[0]} dates overlap the benchmark")
     y, x = both.iloc[:, 0].to_numpy(), both.iloc[:, 1].to_numpy()
-    alpha, beta, t = _nw_alpha_t(y, x)
+    gate = alpha_after_beta_row(y, x, ppy)
+    if gate["status"] == "skip":
+        return check("benchmark_relation", "statistics", "skip", gate["summary"])
     up, dn = x > 0, x < 0
     cap_up = float(y[up].mean() / x[up].mean()) if up.any() else None
     cap_dn = float(y[dn].mean() / x[dn].mean()) if dn.any() else None
-    corr = float(np.corrcoef(y, x)[0, 1])
-    det = {"n": int(y.size), "beta": beta, "correlation": corr, "alpha_annual": alpha * ppy, "alpha_t_newey_west": t,
+    d = alpha_beta(y, x, ppy)
+    det = {**gate["details"], "correlation": float(np.corrcoef(y, x)[0, 1]), "alpha_t_newey_west": d["alpha_t"],
            "up_capture": cap_up, "down_capture": cap_dn}
-    msg = f"beta {beta:.2f}, correlation {corr:.2f}, annual alpha {alpha * ppy:+.1%} (Newey-West t={t:.1f})"
+    msg = gate["summary"] + f", correlation {det['correlation']:.2f}"
     if cap_up is not None and cap_dn is not None:
         msg += f", up capture {cap_up:.0%}, down capture {cap_dn:.0%}"
-    return check("benchmark_relation", "statistics", "info", msg, det)
+    return check("benchmark_relation", "statistics", gate["status"], msg, det)
 
 
 def _hash(s: pd.Series | None) -> str | None:
@@ -198,8 +192,14 @@ def verify_returns(
     dd = rc.max_drawdown(v)
     sig, sig_m = rc.track_record_significance(v, ppy, n_str)
     smooth = rc.return_smoothing(v, ppy)
+    idle = rc.idle_share(v)
     checks = [
         check("returns_only_scope", "integrity", "info", SCOPE_NOTE),
+        series_integrity(pd.DatetimeIndex(r.index), v),
+        *([check("idle_share", "integrity", "info",
+                 f"{idle:.0%} of periods have an exactly zero return (flat or out of the market)"
+                 + ("; zero_kink and round_numbers run on the periods in the market only" if idle >= rc.IDLE_EXCLUDE else ""),
+                 {"idle_share": idle, "threshold": rc.IDLE_EXCLUDE})] if idle > 0 else []),
         smooth,
         rc.zero_kink(v),
         rc.implausible_consistency(v, ppy),
@@ -237,6 +237,7 @@ def verify_returns(
         "metrics": metrics,
         "next_actions": [NEXT_ACTIONS[c["id"]] for c in checks if c["id"] in NEXT_ACTIONS and (c["status"] in ("fail", "warn") or c["id"] == "returns_only_scope")],
         "reproducibility": repro,
+        "readiness": series_readiness({"checks": checks}, "returns"),
         "scope": SCOPE_NOTE,
         "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "disclaimer": DISCLAIMER,

@@ -1,4 +1,4 @@
-# Monte-Neo Roadmap (v0.54.0)
+# Monte-Neo Roadmap (v0.55.0 released)
 
 Product direction: verifier for agent-built strategies.
 
@@ -175,9 +175,28 @@ strategies, a public Honesty Bench leaderboard, discover on real market data.
 - [ ] Measure the latency of a machine near the exchange and the false-warning rate among strategies that really earn; then decide which rows may fail the verdict
 - Not planned, on purpose: queue position and partial fills (they need the order book and a passive-order model; a rough formula would give false precision)
 
+## v0.55.0 — strategy-type profiles, options, repair, research projects (2026-11-20)
+- [x] Strategy profiles for all strategy types; detect, explain, repair; ML validation core
+- [x] ARL rules as one machine-readable file (`arl-rules/1`, provisional), depth sub-scale D1-D4, `monte-neo readiness`
+- [x] Research pipeline: manifest, resume, status, FDR, effective number of trials, minimum detectable effect, diagnosis
+- [x] Strategy catalog, "What did not work", Hall of Fame
+- [x] CI matrix: Linux, macOS, Windows; Python 3.11-3.15; community files (code of conduct, accessibility)
+- [ ] `arl-rules/2` from the calibration run (level 4 pays for the number of trials; universe breadth at level 5; book comparison at level 8)
+- [ ] Windows test fixes found by the new CI matrix
+
+## Planned: v0.56
+- [ ] Catalog labelling rules (`catalog-rules/1`): strategy type derived from the specification and checked against behaviour
+- [ ] `monte-neo catalog classify` and `monte-neo export --format protocolith-record` for the public registry
+- [ ] One command to verify a multi-asset portfolio from per-asset positions
+- [ ] Python 3.16, speed, source check of the remaining catalog cards
+
+## Planned: v0.57-v0.58
+- [ ] `monte-neo identify`: what a strategy does from its trades, positions or returns, without its code (published accuracy first)
+- [ ] Loaders for public filings (SEC 13F, N-PORT, CFTC Commitments of Traders, EU/UK short-position disclosures) dated by publication, and a look-ahead trap for 13F copy strategies
+
 ## Planned: stages 8-10 
 - [ ] v0.51 protection against stateful cheating; v0.52-v0.54 hypothesis zoo (about 2,400 cases, published honesty scorecard)
-- [ ] v0.55 trial ledger and suggest_fix; v0.56-v0.61 `monte-neo discover` (verified indicator search)
+- [x] trial ledger, `suggest_fix` and `monte-neo discover` shipped in v0.50-v0.54 (the numbering of this old plan changed)
 
 ## v0.49.0 — stage 7: CI in one command
 - [x] `monte-neo init-ci`

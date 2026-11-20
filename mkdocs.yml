@@ -82,17 +82,28 @@ nav:
       - Local agents: guides/local-agents.md
       - Honesty Bench: guides/honesty-bench.md
       - Trap Suite: guides/trap-suite.md
+      - Verifier checks added after the audit: guides/verifier-gaps.md
       - Latency audit (quotes): guides/arrival-time.md
       - Frameworks and notebooks: guides/frameworks.md
       - Repair without overfitting: guides/repair.md
       - Alpha validation: guides/alpha.md
+      - Coverage limits: guides/coverage-limits.md
       - Policy, trials, model cutoff: guides/policy-trials-cutoff.md
       - ML models and event data: guides/ml-and-events.md
       - Track record due diligence: guides/returns-due-diligence.md
       - Phantom profit in pairs strategies: guides/phantom-profit.md
+      - Econometric checks for pairs: guides/pairs-econometrics.md
       - Dossier, readiness, live monitor: guides/dossier-readiness-monitor.md
+      - Honest strategy search: guides/research.md
+      - Delta-neutral carry: guides/carry.md
       - Reference alpha: guides/reference-alpha.md
       - Alpha calibration: guides/alpha-calibration.md
+      - ARL and depth: guides/arl.md
+      - Strategy-type profiles: guides/profiles.md
+      - Options verification: guides/options.md
+      - Hall of Fame (guide): guides/hall-of-fame.md
+      - Hall of Fame (table): hall-of-fame.md
+      - ARL calibration: guides/arl-calibration.md
       - Indicator search: guides/discover.md
       - Ledger and fixes: guides/ledger-and-fixes.md
       - Repainting: guides/repaint.md
@@ -104,8 +115,18 @@ nav:
       - Verify a certificate: verify.md
       - FAQ: guides/FAQ.md
       - Contributing: development/contributing.md
+  - Catalog:
+      - Strategy catalog: catalog/README.md
+      - Index of 100 strategies: catalog/INDEX.md
+      - Strategy types: catalog/TYPES.md
+      - Taxonomy (planned v0.56): catalog/TAXONOMY.md
+      - Verified results: catalog/RESULTS.md
+      - What did not work: catalog/WHAT_DID_NOT_WORK.md
+      - Protocol: catalog/PROTOCOL.md
+      - Public registry: catalog/REGISTRY.md
   - Articles:
       - Six ways your agent's backtest lies: marketing/article-six-ways.md
+      - Papers: paper/papers.md
       - Technical note (method): paper/methodology.md
   - API:
       - Strategy verifier: api/verify.md
@@ -121,6 +142,8 @@ nav:
       - Branching: project/BRANCHING.md
       - Docs map: docs-map.md
       - Security: https://github.com/NeoZorK/Monte-Neo/blob/main/SECURITY.md
+      - Code of conduct: https://github.com/NeoZorK/Monte-Neo/blob/main/CODE_OF_CONDUCT.md
+      - Accessibility: https://github.com/NeoZorK/Monte-Neo/blob/main/ACCESSIBILITY.md
   - Commercial: en/COMMERCIAL.md
 
 exclude_docs: |

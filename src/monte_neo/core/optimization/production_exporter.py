@@ -34,14 +34,14 @@ class ProductionExporter:
         }
         
         json_path = os.path.join(export_subdir, "config.json")
-        with open(json_path, 'w') as f:
+        with open(json_path, 'w', encoding="utf-8") as f:
             json.dump(export_data, f, indent=4)
 
         # 2. Export C++ Production Logic
         cpp_path = self._export_cpp(indicator, export_subdir)
         
         # 3. Create a basic README for the export
-        with open(os.path.join(export_subdir, "README.md"), 'w') as f:
+        with open(os.path.join(export_subdir, "README.md"), 'w', encoding="utf-8") as f:
             f.write(f"# Production Export: {indicator.__class__.__name__}\n\n")
             f.write(f"Robustness Score: {validation_results.get('robustness_score', 'N/A')}\n")
             f.write(f"Is Production Ready: {validation_results.get('is_production_ready', False)}\n\n")
@@ -59,12 +59,12 @@ class ProductionExporter:
         cpp_content = self._generate_cpp_source(indicator.__class__.__name__, params, formula)
         cpp_path = os.path.join(target_dir, "production_indicator.cpp")
         
-        with open(cpp_path, 'w') as f:
+        with open(cpp_path, 'w', encoding="utf-8") as f:
             f.write(cpp_content)
             
         # Add a simple compile script
         compile_sh = os.path.join(target_dir, "compile.sh")
-        with open(compile_sh, 'w') as f:
+        with open(compile_sh, 'w', encoding="utf-8") as f:
             f.write("#!/bin/bash\n")
             f.write("echo 'Compiling Production C++ Indicator...'\n")
             f.write("g++ -O3 production_indicator.cpp -o production_indicator\n")
@@ -89,7 +89,7 @@ class ProductionExporter:
         metal_content = self._generate_metal_source(indicator.__class__.__name__, params, formula)
         metal_path = os.path.join(target_dir, "production_indicator.metal")
         
-        with open(metal_path, 'w') as f:
+        with open(metal_path, 'w', encoding="utf-8") as f:
             f.write(metal_content)
             
         return metal_path

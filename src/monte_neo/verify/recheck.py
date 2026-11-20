@@ -149,6 +149,7 @@ def _recheck(
 
         again = apply_policy(again, repro["policy"])
     same_verdict = again["verdict"] == cert.get("verdict")
+    report.update(_arl_recheck(cert, again))
     same_id = again["certificate_id"] == cert.get("certificate_id")
     report.update(
         verdict=again["verdict"],
@@ -167,6 +168,25 @@ def _recheck(
         else:
             report["reason"] = "verdict differs" if not same_verdict else "certificate id differs"
     return report
+
+
+def _arl_recheck(cert: dict[str, Any], again: dict[str, Any]) -> dict[str, Any]:
+    """The ARL recomputed from the fresh evidence with the rules version the certificate recorded.
+
+    A certificate without an ``arl`` block (older than the depth rules) is not compared. An unknown recorded version is
+    reported, not guessed: the rules of that version are needed to reproduce its level and depth.
+    """
+    from monte_neo.readiness import arl_block, readiness
+
+    old = cert.get("arl")
+    if not old:
+        return {}
+    try:
+        now = arl_block(readiness(certificate=again, rules_version=old.get("rules_version")))
+    except ValueError as exc:
+        return {"arl_rules_version": old.get("rules_version"), "arl_matches": False, "arl_reason": str(exc)}
+    return {"arl_rules_version": old.get("rules_version"), "arl": now["headline"],
+            "arl_matches": (now["level"], now["depth"]) == (old.get("level"), old.get("depth"))}
 
 
 __all__ = ["RECHECK_SCHEMA_ID", "load_certificate", "recheck_certificate"]

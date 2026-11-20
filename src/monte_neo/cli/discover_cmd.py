@@ -35,12 +35,12 @@ def write_outputs(result: dict[str, Any], out: Path) -> None:
     from monte_neo.verify.report_html import render_html
 
     out.mkdir(parents=True, exist_ok=True)
-    (out / "strategy.py").write_text(result["best"]["source"], encoding="utf-8")
-    (out / "search.jsonl").write_text(result["journal"], encoding="utf-8")
-    (out / "certificate.json").write_text(json.dumps(result["certificate"], indent=2, sort_keys=True, default=str), encoding="utf-8")
-    (out / "report.html").write_text(render_html(result["certificate"]), encoding="utf-8")
+    (out / "strategy.py").write_text(result["best"]["source"], encoding="utf-8", newline="\n")
+    (out / "search.jsonl").write_text(result["journal"], encoding="utf-8", newline="\n")
+    (out / "certificate.json").write_text(json.dumps(result["certificate"], indent=2, sort_keys=True, default=str), encoding="utf-8", newline="\n")
+    (out / "report.html").write_text(render_html(result["certificate"]), encoding="utf-8", newline="\n")
     slim = {k: v for k, v in result.items() if k != "journal"}
-    (out / "result.json").write_text(json.dumps(slim, indent=2, sort_keys=True, default=str), encoding="utf-8")
+    (out / "result.json").write_text(json.dumps(slim, indent=2, sort_keys=True, default=str), encoding="utf-8", newline="\n")
 
 
 def recheck(df: Any, out: Path) -> int:

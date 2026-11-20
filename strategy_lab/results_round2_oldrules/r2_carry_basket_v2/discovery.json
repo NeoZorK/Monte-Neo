@@ -1,0 +1,88 @@
+{
+ "verdict": "PASS_WITH_WARNINGS",
+ "certificate_id": "3901603a0774711d",
+ "arl": 1,
+ "arl_summary": "ARL 1/9 \u2014 not assessed beyond 1: the backtest is not broken (lookahead_truncation (not run), universe_lookahead (not run))",
+ "sharpe": 9.018305118849378,
+ "deflated_sharpe": 0.99998973415838,
+ "ic_t_stat": null,
+ "mean_ic": null,
+ "total_return": null,
+ "max_drawdown": 0.010216598238110053,
+ "bars": null,
+ "timing_p": null,
+ "benchmark_sharpe": null,
+ "benchmark_total_return": null,
+ "checks": [
+  {
+   "id": "returns_only_scope",
+   "status": "info",
+   "summary": "Return series only: smoothing, distribution and significance were checked; look-ahead, costs and data quality behind the returns cannot be checked without the strategy or positions."
+  },
+  {
+   "id": "return_smoothing",
+   "status": "warn",
+   "summary": "returns look smoothed (lag-1 autocorrelation 0.29, t=5.5): illiquid marks or stale pricing; the unsmoothed Sharpe is 6.02 (reported 9.02)"
+  },
+  {
+   "id": "zero_kink",
+   "status": "warn",
+   "summary": "small losses are missing: 57 small losses vs 101 small gains (expected about 74.4 losses, z=-2.8); losses may be deferred or rounded up"
+  },
+  {
+   "id": "implausible_consistency",
+   "status": "pass",
+   "summary": "72% positive periods vs 68% expected (z=1.7)"
+  },
+  {
+   "id": "round_numbers",
+   "status": "warn",
+   "summary": "5% of returns are exact multiples of 5 bps vs 0.0% expected: figures may be typed or rounded by hand"
+  },
+  {
+   "id": "track_record_significance",
+   "status": "pass",
+   "summary": "probabilistic Sharpe 1.00, deflated for 3 strategies 1.00; track record 1.0 years, 0.1 needed"
+  },
+  {
+   "id": "drawdown_consistency",
+   "status": "pass",
+   "summary": "max drawdown 1.0% within the simulated range (5th percentile 0.3%)"
+  },
+  {
+   "id": "data_integrity",
+   "status": "pass",
+   "summary": "input prices are clean"
+  }
+ ],
+ "reasons": [
+  "return_smoothing: returns look smoothed (lag-1 autocorrelation 0.29, t=5.5): illiquid marks or stale pricing; the unsmoothed Sharpe is 6.02 (reported 9.02)",
+  "zero_kink: small losses are missing: 57 small losses vs 101 small gains (expected about 74.4 losses, z=-2.8); losses may be deferred or rounded up",
+  "round_numbers: 5% of returns are exact multiples of 5 bps vs 0.0% expected: figures may be typed or rounded by hand"
+ ],
+ "evidence_added": [
+  "data_integrity"
+ ],
+ "arl_scope": "returns-only evidence: the Lab added data_integrity of the input prices; signal-level checks (ic, timing, placebo) cannot run on a return series, so the ARL is capped by construction and is not comparable with signal certificates",
+ "slice": "disc",
+ "n_trials": 3,
+ "exit_code": 0,
+ "report_sha256": "704fa83e70d175c14698aeb40b84f9964147918ac28a451c46dfaaea991b2e01",
+ "grid_size": 3,
+ "grid_sharpes": [
+  {
+   "lookback": 7,
+   "sharpe": 7.311
+  },
+  {
+   "lookback": 14,
+   "sharpe": 9.031
+  },
+  {
+   "lookback": 30,
+   "sharpe": 7.102
+  }
+ ],
+ "finished_at": "2026-11-08T12:04:32+00:00",
+ "seconds": 1.1
+}

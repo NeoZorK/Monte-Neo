@@ -17,6 +17,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from monte_neo._paths import split_args
+
 DEFAULT_COMMANDS = {
     # Bash is allowed: the agent has to run its own backtests, and a headless session cannot ask for approval.
     "claude-code": 'claude -p "$PROMPT" --permission-mode acceptEdits --allowedTools "Bash Read Write Edit"',
@@ -91,7 +93,7 @@ def run_agents(
             if agent not in MODEL_FLAGS:
                 raise ValueError(f"--model is not known for agent {agent!r}: put the model into MN_CMD_{agent.replace('-', '_')}")
             cmd = f"{cmd} {MODEL_FLAGS[agent]} {shlex.quote(model)}"
-        first = shlex.split(cmd)[0]
+        first = split_args(cmd)[0]
         if shutil.which(first) is None:
             raise ValueError(f"agent {agent!r}: {first!r} is not installed or not on PATH (set MN_CMD_{agent.replace('-', '_')} to the right command)")
         tasks = sorted(p for p in (root / agent).glob("task-*") if p.is_dir())
@@ -120,7 +122,7 @@ def run_agents(
                 env["OPENAI_MODEL"] = model
         header = f"# agent: {agent}\n# started: {datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')}\n# command: {cmd}\n\n"
         try:
-            argv = [env["PROMPT"] if tok in ("$PROMPT", "${PROMPT}") else tok for tok in shlex.split(cmd)]  # no shell: the prompt is one argument
+            argv = [env["PROMPT"] if tok in ("$PROMPT", "${PROMPT}") else tok for tok in split_args(cmd)]  # no shell: the prompt is one argument
             proc = subprocess.run(argv, cwd=task, env=env, capture_output=True, text=True, timeout=timeout, check=False)  # noqa: S603 - the user's own agent command
             body, code = proc.stdout + proc.stderr, str(proc.returncode)
         except subprocess.TimeoutExpired as exc:

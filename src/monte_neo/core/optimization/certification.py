@@ -64,7 +64,7 @@ class RobustnessCertifier:
 """
         
         cert_path = os.path.join(self.output_dir, f"certificate_{indicator_name}_{cert_id}.md")
-        with open(cert_path, 'w') as f:
+        with open(cert_path, 'w', encoding="utf-8") as f:
             f.write(content)
             
         logger.info(f"Certificate generated at {cert_path}")

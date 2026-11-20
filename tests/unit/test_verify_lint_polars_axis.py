@@ -94,3 +94,29 @@ def test_other_axes_still_warn(body: str, rule: str) -> None:
 def test_axis_one_over_a_gather_from_the_whole_sample_still_warns() -> None:
     assert "full_sample_stat" in _rules("return nxt[near].mean(axis=1)")
     assert "full_sample_stat" not in _rules("return nxt[:, :5].mean(axis=1)")
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "return np.nanmean(df.close.to_numpy(), axis=0)",
+        "return np.nanmean(df['close'].to_numpy())",
+        "return np.mean(df.close.values, axis=None)",
+        "return np.std(df.close.astype(float).to_numpy(), axis=-1)",
+    ],
+)
+def test_numpy_stat_over_a_call_expression_warns(body: str) -> None:
+    assert _rules(body).get("full_sample_stat") == "warn"
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "return np.nanmean(df.close.to_numpy(), axis=1)",
+        "return np.mean(df.close.rolling(20).mean().to_numpy())",
+        "return np.mean(np.log(df.close))",
+        "return np.mean([1.0, 2.0])",
+    ],
+)
+def test_numpy_stat_over_a_call_expression_keeps_quiet_when_safe(body: str) -> None:
+    assert "full_sample_stat" not in _rules(body)

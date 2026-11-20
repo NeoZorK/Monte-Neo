@@ -162,11 +162,27 @@ echo '{"sharpe": 2.1, "total_return": 0.85, "max_drawdown": 0.12, "n_trades": 30
 monte-neo verify --ohlcv btc_1h.csv --strategy my_strategy.py --claim claim.json
 ```
 
+### Which command for which input
+
+| You have | Use |
+|---|---|
+| a strategy file and one price table | `verify --ohlcv ... --strategy ...` |
+| positions per bar for one instrument | `verify --ohlcv ... --signals ...` (`--jobs`, `--timeout` and `--isolate` need `--strategy`, because they run the code in a worker) |
+| only net returns (a track record, or the output of a multi-asset backtest) | `verify --returns FILE` (series-level checks; no look-ahead, placebo or regime checks, because there is no signal to re-run) |
+| a score per symbol and date (cross-sectional) | `monte-neo alpha` |
+| several strategy files on one price table | `monte-neo portfolio` |
+| two legs with quantities | `verify --legs` |
+
+Do not wrap a returns series into a synthetic price series to use `--strategy`: the signal-level checks then test the wrapper, not your
+strategy. A multi-asset portfolio built from per-asset positions has no single-command path yet; verify its net returns with `--returns`
+and each sleeve with `--strategy`. In the text output, checks listed as "not run" had no input to run on; they are not failures.
+
 ### Execution semantics
 
 The verifier uses the same fee-aware research-bar engine as the rest of Monte-Neo:
 
 - A signal on bar `t` fills at the open of bar `t + 1`.
+- Numbers on your own backtest will differ from verify's if yours fills at the close of bar `t`, charges no costs, or uses another warm-up: compare with `--commission-bps 0 --slippage-bps 0` first. A returns series wrapped into prices is an entry at the first bar, so the whole slippage lands on that one entry.
 - Commission and slippage are charged in bps per side on fill notional.
 - Default costs: 5 + 5 bps per side.
 - Default warm-up: `min(60, n_bars / 10)` bars.

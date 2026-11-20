@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from functools import partial
 
 from rich.console import Console
@@ -23,7 +24,16 @@ def run_legs(args: argparse.Namespace, console: Console) -> int:
 
     try:
         body = load_legs(args.legs)
-        report = verify_legs(body, tolerance=args.legs_tol, pnl=args.legs_pnl, periods_per_year=args.periods_per_year)
+        pairs = None
+        if args.pairs_checks:
+            from monte_neo.verify.pairs_verify import PairsOptions
+
+            pairs = PairsOptions(
+                pairs_tested=args.pairs_tested, variants_per_pair=args.pair_variants, legging_delay_bars=args.legging_delay,
+                legging_delay_ms=args.legging_delay_ms, borrow_bps=args.borrow_bps,
+                borrow_unavailable=args.borrow_unavailable, break_date=args.break_date, window=args.pairs_window,
+            )
+        report = verify_legs(body, tolerance=args.legs_tol, pnl=args.legs_pnl, periods_per_year=args.periods_per_year, pairs=pairs)
         if args.legs_fixed_out:
             path = write_fixed_returns(body, args.legs_fixed_out, pnl=args.legs_pnl)
             console.print(f"corrected returns (what the legs earn) written to {path}: check them with verify --returns")
@@ -95,3 +105,25 @@ def _pnl(prices, booking: str):
 
 
 __all__ = ["run_legs", "run_null_test", "run_phantom_demo"]
+
+
+def run_carry(args: argparse.Namespace, console: Console) -> int:
+    """Verify a delta-neutral carry rule (spot long, perpetual short, funding as P&L) with the full verifier."""
+    from monte_neo.cli.verify_cmd import _finish
+    from monte_neo.verify.carry import verify_carry
+
+    try:
+        if not args.strategy:
+            raise ValueError("--carry needs --strategy (signal(df) returning 1 to hold the pair, 0 for flat)")
+        fees = [float(x) for x in args.carry_costs.split(",")]
+        if len(fees) != 2:
+            raise ValueError("--carry-costs takes two numbers: spot,perp (bps per fill)")
+        report = verify_carry(args.carry, strategy=args.strategy, spot_cost_bps=fees[0], perp_cost_bps=fees[1], capital_cost_apr=args.carry_capital_apr, perp_leverage=args.carry_leverage,
+                              margin_policy=json.loads(args.carry_margin_policy) if args.carry_margin_policy else None,
+                              universe_rule=json.loads(args.carry_universe_rule) if args.carry_universe_rule else None,
+                              reference_symbol=args.carry_reference, capacity_spread_bars=args.carry_spread_bars, n_trials=args.n_trials,
+                              periods_per_year=args.periods_per_year, claim=args.claim)
+    except Exception as exc:  # input errors must not look like a verdict
+        console.print(f"[red]verify --carry failed: {exc}[/]")
+        return 3
+    return _finish(report, args, console)

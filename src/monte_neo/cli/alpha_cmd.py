@@ -28,6 +28,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--quantiles", type=int, default=5, help="Quantile buckets (default 5)")
     p.add_argument("--claim-ir", type=float, default=None, help="Claimed annual information ratio (enables the breadth check)")
     p.add_argument("--aum", type=float, default=None, help="Capital you plan to run (quote currency): enables the market-impact and participation checks")
+    p.add_argument("--funding", help="Funding history (.csv / .parquet: timestamp, symbol, funding_bps a long pays per bar): real funding on every perpetual leg")
+    p.add_argument("--aum-grid", help="Comma-separated AUMs for the capacity grid in one run, for example 250000,500000,5000000")
+    p.add_argument("--min-capacity", type=float, default=None, help="AUM at which the net return must stay positive (default: the largest of --aum-grid)")
+    p.add_argument("--liquid-top", type=int, default=None, help="Trade only the K most liquid symbols by traded value known before each date (point-in-time universe; membership derived)")
+    p.add_argument("--liquid-lookback", type=int, default=30, help="Bars of trailing traded value for --liquid-top (default 30)")
+    p.add_argument("--terminal-returns", help="Delisted symbols (.csv: symbol, return): the return on the bar after the last price; undeclared delistings are flagged")
+    p.add_argument("--rebalance-phase", help="K/H: rebalance on bar K of every H and hold the scores in between, to get the whole report for one phase")
     p.add_argument("--factors", help="Factor returns (.csv / .parquet: date + one column per factor) for attribution; default: built from the universe")
     p.add_argument("--book", help="Returns of your existing book (.csv / .parquet: date + one column per strategy): what does this signal add?")
     p.add_argument("--n-trials", type=int, default=1, help="Variants tried before this one (default 1)")
@@ -66,6 +73,18 @@ def _write(path: str | None, payload: Any) -> None:
         Path(path).write_text(json.dumps(payload, indent=2, allow_nan=False) + "\n", encoding="utf-8")
 
 
+def _terminal(path: str | None) -> dict[str, float] | None:
+    if not path:
+        return None
+    import pandas as pd
+
+    t = pd.read_csv(path)
+    t.columns = [str(c).strip().lower() for c in t.columns]
+    if "symbol" not in t.columns or "return" not in t.columns:
+        raise ValueError("terminal returns need the columns symbol and return")
+    return {str(s): float(r) for s, r in zip(t["symbol"], t["return"], strict=True)}
+
+
 def main(argv: list[str]) -> int:
     """Run ``monte-neo alpha``; returns the process exit code."""
     from monte_neo.alpha import demo_panel, validate_alpha
@@ -75,7 +94,10 @@ def main(argv: list[str]) -> int:
     kw = {"horizon": args.horizon, "quantiles": args.quantiles, "claimed_ir": args.claim_ir, "seed": args.seed, "aum": args.aum,
           "factors": args.factors, "book": args.book, "n_trials": args.n_trials, "families": not args.signal_only,
           "membership": args.membership, "groups": args.groups, "exchanges": args.exchanges, "discovery_date": args.discovery_date,
-          "existing": args.existing_scores}
+          "existing": args.existing_scores, "funding": args.funding, "min_capacity": args.min_capacity,
+          "aum_grid": [float(x) for x in args.aum_grid.split(",")] if args.aum_grid else None,
+          "liquid_top": args.liquid_top, "liquid_lookback": args.liquid_lookback, "rebalance_phase": args.rebalance_phase,
+          "terminal_returns": _terminal(args.terminal_returns)}
     try:
         if args.demo:
             prices, real, noise = demo_panel(2)
@@ -115,7 +137,7 @@ def _demo_summary(reports: dict[str, dict[str, Any]], console: Console) -> None:
         warned = [c["id"] for c in rep["checks"] if c["status"] == "warn"]
         why = f"failed {', '.join(failed)}" if failed else (f"warnings {', '.join(warned)}" if warned else "every check passed")
         console.print(f"  {name}: [{_VERDICT_STYLE.get(rep['verdict'], 'bold')}]{rep['verdict']}[/] ({why})")
-        console.print(f"    {rep['readiness']['summary']}")
+        console.print(f"    {rep['readiness']['headline']}: {rep['readiness']['summary']}")
     console.print(
         "  The planted score predicts returns and beats random scores; the noise score does not. "
         "It is idealised (40 independent names, a daily rebalance): real alpha is far weaker. "

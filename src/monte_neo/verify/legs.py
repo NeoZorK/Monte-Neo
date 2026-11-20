@@ -20,6 +20,7 @@ import pandas as pd
 from monte_neo._version import __version__
 from monte_neo.verify.checks import check
 from monte_neo.verify.schema import DISCLAIMER, VERDICT_SCHEMA_ID, aggregate_verdict, to_jsonable
+from monte_neo.verify.series_checks import series_integrity, series_readiness
 from monte_neo.verify.stats import infer_periods_per_year
 from monte_neo.verify.verdict import certificate_id
 
@@ -30,6 +31,7 @@ SCOPE_NOTE = (
     "costs and data quality are not checked here; use the full verify for them."
 )
 NEXT_ACTIONS: dict[str, str] = {
+    "data_integrity": "Fix the legs table: finite prices, ordered unique dates, no frozen prices or unadjusted splits, no returns of -100% or worse.",
     "accounting_mismatch": (
         "The reported P&L is not what the legs earn. For a spread with a re-estimated hedge ratio, book "
         "pnl = position.shift(1) * (d_y - beta.shift(1) * d_x), i.e. the quantities held over the bar times the price "
@@ -119,7 +121,8 @@ def _gap_share(rep: np.ndarray, der: np.ndarray) -> float:
 
 
 def verify_legs(
-    legs: str | Path | pd.DataFrame, *, tolerance: float = DEFAULT_TOLERANCE, pnl: str = "log", periods_per_year: float | None = None
+    legs: str | Path | pd.DataFrame, *, tolerance: float = DEFAULT_TOLERANCE, pnl: str = "log", periods_per_year: float | None = None,
+    pairs: Any = None,
 ) -> dict[str, Any]:
     """Check that the reported return equals what the legs earn; return a ``strategy-verdict/1`` certificate.
 
@@ -129,6 +132,8 @@ def verify_legs(
             over the whole record (default 0.05).
         pnl: ``"log"`` or ``"simple"``, see :func:`rederive`.
         periods_per_year: Bars per year; inferred from the dates when omitted.
+        pairs: A :class:`~monte_neo.verify.pairs_verify.PairsOptions` to add the econometric checks (cointegration,
+            structural breaks, pair-selection bias, legging and borrow risk); ``None`` leaves the certificate as before.
 
     Returns:
         The report with checks ``accounting_mismatch`` (integrity, a failure rejects) and ``derived_significance``.
@@ -170,12 +175,26 @@ def verify_legs(
         + ("." if sig_status == "pass" else ": not distinguishable from zero."),
         {"derived_sharpe": sr_der, "t_stat": t_der},
     )
-    checks = [check("legs_scope", "integrity", "info", SCOPE_NOTE), mismatch, significance]
+    integrity = series_integrity(
+        pd.DatetimeIndex(body.index), rep, {leg: body[f"px_{leg}"].to_numpy(dtype=np.float64) for leg in _legs_of(body)}
+    )
+    from monte_neo.verify.legs_signal import NEXT_ACTIONS as SIGNAL_ACTIONS
+    from monte_neo.verify.legs_signal import legs_signal_rows
+
+    checks = [check("legs_scope", "integrity", "info", SCOPE_NOTE), integrity, mismatch, significance, *legs_signal_rows(body, pnl=pnl)]
+    actions = {**NEXT_ACTIONS, **SIGNAL_ACTIONS}
+    if pairs is not None:
+        from monte_neo.verify.pairs_verify import NEXT_ACTIONS as PAIRS_ACTIONS
+        from monte_neo.verify.pairs_verify import pairs_checks
+
+        checks += pairs_checks(body, pairs, periods_per_year=ppy, pnl=pnl)
+        actions.update(PAIRS_ACTIONS)
     verdict = aggregate_verdict(checks)
     repro = {
         "engine": "monte-neo", "engine_version": __version__, "n_trials": 1,
         "data_sha256": hashlib.sha256(body.round(12).to_csv().encode()).hexdigest(),
-        "settings": {"kind": "legs", "tolerance": float(tolerance), "pnl": pnl, "periods_per_year": ppy},
+        "settings": {"kind": "legs", "tolerance": float(tolerance), "pnl": pnl, "periods_per_year": ppy}
+        | ({"pairs": {k: v for k, v in vars(pairs).items() if v is not None}} if pairs is not None else {}),
     }
     problems = [c for c in checks if c["status"] in ("fail", "warn")]
     return to_jsonable({
@@ -186,8 +205,8 @@ def verify_legs(
             "bars": int(rep.size), "periods_per_year": ppy, "reported_sharpe": sr_rep, "derived_sharpe": sr_der,
             "reported_total": float(rep.sum()), "derived_total": float(der.sum()), "unexplained_share": share,
         },
-        "next_actions": [NEXT_ACTIONS[c["id"]] for c in checks if c["id"] in NEXT_ACTIONS and c["status"] in ("fail", "warn")],
-        "reproducibility": repro, "scope": SCOPE_NOTE,
+        "next_actions": [actions[c["id"]] for c in checks if c["id"] in actions and c["status"] in ("fail", "warn")],
+        "reproducibility": repro, "readiness": series_readiness({"checks": checks}, "legs"), "scope": SCOPE_NOTE,
         "generated_at": datetime.now(UTC).isoformat(timespec="seconds"), "disclaimer": DISCLAIMER,
     })
 

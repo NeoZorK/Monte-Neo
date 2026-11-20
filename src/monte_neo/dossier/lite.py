@@ -72,7 +72,7 @@ def render_lite(dossier: dict[str, Any]) -> str:
         f"<div class='box'><b>Important.</b> {_e(disclaimer.FULL)}</div>"
         f"<div class='card headline {_VERDICT_TONE.get(verdict, 'mute')}'><span class='big'>Verdict: <b>{_e(verdict)}</b>.</span> "
         f"{_e(_SENTENCE.get(verdict, ''))}</div>"
-        f"<p><b>Readiness:</b> {_e(ready.get('summary', 'not assessed'))}. This rates the evidence, not the investment.</p>"
+        f"<p><b>Readiness:</b> {_e(ready.get('headline', ''))}: {_e(ready.get('summary', 'not assessed'))}. This rates the evidence, not the investment.</p>"
         f"<h2>Key numbers</h2><div class='grid'>{nums or '<p class=muted>No numbers: the run stopped early.</p>'}</div>"
         f"<h2>Main reasons</h2><div class='card'><ol>{why}</ol></div>"
         f"<h2>What this does not tell you</h2><div class='card'><ul>{cant}</ul></div>"

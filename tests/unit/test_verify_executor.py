@@ -164,6 +164,7 @@ def test_helpers(df, tmp_path: Path) -> None:
     os.environ.pop("MONTE_NEO_TEST_SECRET", None)
 
 
+@pytest.mark.skipif(os.name == "nt", reason="SIGALRM does not exist on Windows; the parent deadline is tested elsewhere")
 def test_timeouts_inside_and_outside_the_worker(df, tmp_path: Path, monkeypatch) -> None:
     from monte_neo.verify import io_guard
 

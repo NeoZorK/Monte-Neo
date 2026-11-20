@@ -160,3 +160,22 @@ docs/internal/
 scripts/internal/
 tests/internal/
 INTERNALS/
+
+# Strategy Lab: raw market data, ledgers and run state stay local; only metrics, verdicts and hashes are published
+strategy_lab/data/
+strategy_lab/work/
+strategy_lab/logs/
+
+# Strategy Lab verdicts and hashes are published (no price series inside)
+!strategy_lab/results/
+strategy_lab/work_round1/
+strategy_lab/data_extra/raw/
+strategy_lab/data_extra/processed/
+strategy_lab/data_extra/logs/
+strategy_lab/work_round2_oldrules/
+strategy_lab/data_wide/
+strategy_lab/data_etf/
+strategy_lab/forward/cache/
+strategy_lab/forward/*.log
+strategy_lab/forward/launchd.*
+strategy_lab/forward/run.lock

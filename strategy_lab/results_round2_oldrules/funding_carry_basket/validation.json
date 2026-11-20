@@ -1,0 +1,130 @@
+{
+ "verdict": "PASS_WITH_WARNINGS",
+ "certificate_id": "b08e04fa5955a2f1",
+ "arl": 1,
+ "arl_summary": "ARL 1/9 \u2014 not assessed beyond 1: the backtest is not broken (lookahead_truncation (not run), universe_lookahead (not run))",
+ "sharpe": 5.864194518331628,
+ "deflated_sharpe": 1.0,
+ "ic_t_stat": null,
+ "mean_ic": null,
+ "total_return": null,
+ "max_drawdown": 0.0338892894217897,
+ "bars": null,
+ "timing_p": null,
+ "benchmark_sharpe": null,
+ "benchmark_total_return": null,
+ "checks": [
+  {
+   "id": "returns_only_scope",
+   "status": "info",
+   "summary": "Return series only: smoothing, distribution and significance were checked; look-ahead, costs and data quality behind the returns cannot be checked without the strategy or positions."
+  },
+  {
+   "id": "return_smoothing",
+   "status": "warn",
+   "summary": "returns look smoothed (lag-1 autocorrelation 0.48, t=20.7): illiquid marks or stale pricing; the unsmoothed Sharpe is 3.50 (reported 5.86)"
+  },
+  {
+   "id": "zero_kink",
+   "status": "warn",
+   "summary": "small losses are missing: 133 small losses vs 803 small gains (expected about 450.1 losses, z=-20.7); losses may be deferred or rounded up"
+  },
+  {
+   "id": "implausible_consistency",
+   "status": "pass",
+   "summary": "53% positive periods vs 62% expected (z=-7.9)"
+  },
+  {
+   "id": "round_numbers",
+   "status": "warn",
+   "summary": "28% of returns are exact multiples of 5 bps vs 0.0% expected: figures may be typed or rounded by hand"
+  },
+  {
+   "id": "track_record_significance",
+   "status": "pass",
+   "summary": "probabilistic Sharpe 1.00, deflated for 83 strategies 1.00; track record 5.0 years, 0.1 needed"
+  },
+  {
+   "id": "drawdown_consistency",
+   "status": "pass",
+   "summary": "max drawdown 3.4% within the simulated range (5th percentile 0.5%)"
+  },
+  {
+   "id": "data_integrity",
+   "status": "pass",
+   "summary": "input prices are clean"
+  }
+ ],
+ "reasons": [
+  "return_smoothing: returns look smoothed (lag-1 autocorrelation 0.48, t=20.7): illiquid marks or stale pricing; the unsmoothed Sharpe is 3.50 (reported 5.86)",
+  "zero_kink: small losses are missing: 133 small losses vs 803 small gains (expected about 450.1 losses, z=-20.7); losses may be deferred or rounded up",
+  "round_numbers: 28% of returns are exact multiples of 5 bps vs 0.0% expected: figures may be typed or rounded by hand"
+ ],
+ "evidence_added": [
+  "data_integrity"
+ ],
+ "arl_scope": "returns-only evidence: the Lab added data_integrity of the input prices; signal-level checks (ic, timing, placebo) cannot run on a return series, so the ARL is capped by construction and is not comparable with signal certificates",
+ "slice": "pre",
+ "n_trials": 83,
+ "exit_code": 0,
+ "report_sha256": "c02356eb8be287bc273c4742cd3a36b9d4d42e40d899713d9cce98ff48f5c54d",
+ "economics": {
+  "validation": {
+   "bars": 1461,
+   "sharpe": 5.689,
+   "total_return": 0.3242,
+   "max_drawdown": -0.0339,
+   "corr_btc": -0.024,
+   "beta_btc": -0.0,
+   "beta_share": 0.001,
+   "alpha_t_vs_btc": 11.42,
+   "deflated_sharpe": 1.0,
+   "btc_buyhold_sharpe": 0.782
+  },
+  "discovery": {
+   "bars": 366,
+   "sharpe": 6.663,
+   "total_return": 0.1231,
+   "max_drawdown": -0.0149,
+   "corr_btc": -0.268,
+   "beta_btc": -0.006,
+   "beta_share": 0.072,
+   "alpha_t_vs_btc": 7.55,
+   "deflated_sharpe": 0.991,
+   "btc_buyhold_sharpe": 2.253
+  },
+  "by_year": {
+   "2020": {
+    "sharpe": 6.663,
+    "return": 0.123,
+    "btc_return": 3.02
+   },
+   "2021": {
+    "sharpe": 11.905,
+    "return": 0.269,
+    "btc_return": 0.598
+   },
+   "2022": {
+    "sharpe": -4.562,
+    "return": -0.017,
+    "btc_return": -0.642
+   },
+   "2023": {
+    "sharpe": 0.536,
+    "return": 0.003,
+    "btc_return": 1.556
+   },
+   "2024": {
+    "sharpe": 8.072,
+    "return": 0.058,
+    "btc_return": 1.213
+   }
+  },
+  "notes": [
+   "daily bars, fills at the next close, per-coin Binance fees + spread (VIP0), no funding on perpetual shorts, survivors-only universe"
+  ]
+ },
+ "gate_open": true,
+ "finished_at": "2026-11-08T12:04:31+00:00",
+ "seconds": 1.0
+}

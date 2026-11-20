@@ -16,7 +16,7 @@ FULL = dict(
     data_integrity="pass", lookahead_truncation="pass", net_profitability="pass", ic="info", signal_placebo="pass",
     residual_alpha="pass", hidden_short_volatility="pass", deflated_sharpe="pass", market_impact="pass",
     synthetic_market_null="pass", universe_subsampling="pass", start_date_sensitivity="pass",
-    rebalance_timing_luck="pass", marginal_sharpe="pass", live_vs_backtest="pass", alpha_death_monitor="info",
+    rebalance_timing_luck="pass", marginal_sharpe="pass", live_vs_backtest="pass", alpha_death_monitor="info", live_source="pass",
 )
 
 

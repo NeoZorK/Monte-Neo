@@ -36,7 +36,8 @@ def _readiness(r: dict[str, Any] | None) -> str:
         f"{_e(x['state'])}</td><td class='mono'>{_e(', '.join(x['blocking']))}</td></tr>"
         for x in r["levels"]
     )
-    return (f"<p><b>{_e(r['summary'])}</b></p><p class='muted small'>Rates the evidence, not the investment. "
+    return (f"<p><b>{_e(r.get('headline', ''))}</b> · {_e(r['summary'])}</p><p class='muted small'>Rules {_e(r.get('rules_version', ''))}"
+            f"{' (provisional)' if r.get('provisional') else ''}. {_e(r.get('authorship', ''))} Rates the evidence, not the investment. "
             f"Next: {_e(r.get('next_step') or '—')}</p><table><tr><th>ARL</th><th>Level</th><th>State</th><th>Blocking</th></tr>{rows}</table>")
 
 
@@ -69,6 +70,12 @@ def render_dossier(d: dict[str, Any], checks: list[dict[str, Any]] | None = None
                       f"{_e(alpha.get('verdict'))}</span></p>{_checks_table(alpha.get('checks', []))}</div>")
     live = d.get("live")
     live_html = f"<h2>After launch</h2><div class='card'>{_checks_table(live.get('checks', []))}</div>" if live else ""
+    ext = d.get("extended")
+    ext_html = ""
+    if ext:
+        from monte_neo.dossier.extended_html import render_extended
+
+        ext_html = render_extended(ext)
     sign = "".join(f"<tr><td>{_e(s['role'])}</td><td></td><td></td><td></td></tr>" for s in d.get("sign_off", []))
     return (
         "<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
@@ -84,7 +91,7 @@ def render_dossier(d: dict[str, Any], checks: list[dict[str, Any]] | None = None
         f"<h2>Alpha Readiness Level</h2><div class='card'>{_readiness(d.get('readiness'))}</div>"
         f"<h2>Results</h2><div class='card'>{_metrics(d['summary'].get('metrics', {}))}</div>"
         f"<h2>Checks</h2><div class='card'>{_checks_table(rows)}</div>"
-        f"{alpha_html}{live_html}"
+        f"{alpha_html}{live_html}{ext_html}"
         f"<h2>Framework map</h2><div class='card'>{_framework(d['framework'])}</div>"
         f"<h2>Assumptions and limitations</h2><div class='card'><ul>{limits}</ul></div>"
         f"<h2>Reproduce</h2><div class='card'><p class='mono'>{_e(d['reproduce']['command'])}</p>"

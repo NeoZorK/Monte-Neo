@@ -11,6 +11,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from monte_neo._paths import strategy_file
+
 
 def _load(path: str) -> dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
@@ -77,7 +79,7 @@ def register_main(argv: list[str]) -> int:
     from monte_neo.verify.register import Registry
 
     try:
-        source = Path(args.strategy.split(":")[0]).read_text(encoding="utf-8") if args.strategy else None
+        source = Path(strategy_file(args.strategy)).read_text(encoding="utf-8") if args.strategy else None
         entry = Registry(args.file).register(args.hypothesis, source=source, params=json.loads(args.params) if args.params else None, n_trials=args.n_trials)
     except (OSError, ValueError) as exc:
         print(f"register: {exc}", file=sys.stderr)
@@ -130,7 +132,7 @@ def portfolio_main(argv: list[str]) -> int:
     from monte_neo.verify.portfolio import verify_portfolio
 
     try:
-        result = verify_portfolio(load_ohlcv(args.ohlcv), list(args.strategies), names=[Path(s.split(":")[0]).stem for s in args.strategies])
+        result = verify_portfolio(load_ohlcv(args.ohlcv), list(args.strategies), names=[Path(strategy_file(s)).stem for s in args.strategies])
     except (OSError, ValueError) as exc:
         print(f"portfolio: {exc}", file=sys.stderr)
         return 3

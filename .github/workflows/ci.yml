@@ -40,11 +40,11 @@ jobs:
   # platform and Python versions users install it on, not only on the Apple research stack.
   verifier:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+        python-version: ["3.11", "3.12", "3.13", "3.14", "3.15"]
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -62,16 +62,71 @@ jobs:
 
       - name: Verifier tests and Trap Suite
         run: >-
-          uv run pytest -W ignore tests/traps tests/unit/test_bench_*.py tests/unit/test_verify_*.py
+          uv run pytest -n auto -W ignore tests/traps tests/unit/test_bench_*.py tests/unit/test_verify_*.py
           tests/unit/test_integrations.py tests/unit/test_maintenance.py tests/unit/test_discover_cli.py
       - name: Hypothesis zoo (lite)
         run: uv run pytest -W ignore tests/zoo -q
 
-  # The adapters are checked against the real frameworks: each test runs a backtest in the framework and
-  # compares what the verifier reads with the position the framework itself held.
-  frameworks:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+  # Cross-OS and cross-version check of the portable part (verifier, CLI, MCP server): Linux, macOS (arm64) and
+  # Windows, Python 3.11-3.15. Python 3.15 is a beta-supported line: a failure there is reported but does not
+  # fail the run. The MLX/Metal extra is installed on macOS only.
+  portable:
+    name: portable (${{ matrix.os }}, py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    continue-on-error: ${{ matrix.python-version == '3.15' }}
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15, windows-latest]
+        python-version: ["3.11", "3.12", "3.13", "3.14", "3.15"]
+        include:
+          - os: macos-15
+            extras: "--extra apple"
+        exclude:
+          # NumPy for Python 3.15 on Windows is an experimental MinGW build that crashes on import-time use
+          # (segmentation fault in `monte-neo verify --demo`). Python 3.15 stays covered on Linux and macOS;
+          # put Windows back when NumPy ships a regular Windows wheel for 3.15.
+          - os: windows-latest
+            python-version: "3.15"
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
+
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --python ${{ matrix.python-version }} --extra mcp --extra sign ${{ matrix.extras }} --group dev
+
+      - name: Import without Apple frameworks (non-macOS)
+        if: runner.os != 'macOS'
+        run: uv run --no-sync python -c "import sys, monte_neo, monte_neo.verify, monte_neo.mcp; assert 'mlx' not in sys.modules"
+
+      - name: CLI demo and MCP server
+        run: |
+          uv run --no-sync monte-neo --version
+          uv run --no-sync monte-neo verify --demo
+          uv run --no-sync python -c "from monte_neo.mcp.server import build_server; build_server()"
+
+      - name: Verifier tests and Trap Suite
+        run: >-
+          uv run --no-sync pytest -W ignore -q tests/traps tests/unit/test_bench_*.py tests/unit/test_verify_*.py
+          tests/unit/test_discover_cli.py tests/unit/test_no_mlx_fallback.py tests/unit/test_numba_python315.py
+
+  # Windows smoke: install, verify, MCP and CLI through scripts/win_smoke.ps1 (the pytest step is covered above).
+  windows-smoke:
+    runs-on: windows-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -79,13 +134,25 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install the frameworks (hash-locked) and Monte-Neo
-        run: |
-          pip install --require-hashes --no-deps -r scripts/requirements/frameworks.txt
-          pip install --no-deps -e .
+      - name: Windows smoke script
+        shell: pwsh
+        run: ./scripts/win_smoke.ps1 -Python python -SkipPytest
 
-      - name: Adapters against real frameworks
-        run: python -m pytest -W ignore tests/frameworks -q
+  # Linux container: the headless image builds and the verifier runs in it without MLX/Metal.
+  docker-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Build the headless image
+        run: docker build -f docker/Dockerfile -t monte-neo-ci .
+
+      - name: Verify inside the container
+        run: |
+          docker run --rm --entrypoint monte-neo monte-neo-ci --version
+          docker run --rm --entrypoint monte-neo monte-neo-ci verify --demo
+          docker run --rm --entrypoint python monte-neo-ci -c "import sys, monte_neo.verify, monte_neo.mcp; assert 'mlx' not in sys.modules"
 
   # The docs site is built with --strict on every push to main: a broken link must fail the pull
   # request, not the deployment after the merge.

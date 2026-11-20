@@ -1,0 +1,90 @@
+{
+ "candidates": {
+  "carry_E_pit": {
+   "kind": "carry",
+   "params": {
+    "L": 30,
+    "R": 7,
+    "enter": 0.0002,
+    "exit": 5e-05,
+    "id": "carry_E_pit",
+    "lookback": 30,
+    "pool": [
+     "BTCUSDT",
+     "ETHUSDT",
+     "BNBUSDT",
+     "XRPUSDT",
+     "ADAUSDT",
+     "LTCUSDT",
+     "LINKUSDT",
+     "DOGEUSDT",
+     "DOTUSDT",
+     "AVAXUSDT",
+     "ATOMUSDT",
+     "SOLUSDT"
+    ],
+    "top_n": 2,
+    "w": 0.3333333333333333
+   }
+  },
+  "etf_bond_trend_carry": {
+   "kind": "etf",
+   "params": {
+    "lookback": 252
+   }
+  },
+  "etf_risk_parity": {
+   "kind": "etf",
+   "params": {
+    "vol_win": 60
+   }
+  },
+  "etf_tsmom_voltarget": {
+   "kind": "etf",
+   "params": {
+    "asset_vol": 0.4,
+    "lookback": 252,
+    "port_vol": 0.1,
+    "vol_win": 60
+   }
+  },
+  "r4_b1_5_ff0569": {
+   "files": {
+    "examples/strategies/r4_b1_5_ff0569/strategy.py": "beb587d097282ad770b3d5a57221c2d6a9fd82607bf48e2d7b5310c2b4332fc8"
+   },
+   "horizon_days": 3,
+   "kind": "crypto_alpha"
+  },
+  "r4_b2_1_1d13a6": {
+   "files": {
+    "examples/strategies/r4_b2_1_1d13a6/strategy.py": "612e8e014febf6bfb13544e14ade211797f0ff22fd74b0f6310a471e0cc3cd09"
+   },
+   "horizon_days": 3,
+   "kind": "crypto_alpha"
+  },
+  "r4_b3_1_68ed02": {
+   "files": {
+    "examples/strategies/r4_b3_1_68ed02/strategy.py": "6707bbee63e0d76aaffbe5d199197243b08c9699c013cd2ae34845766050ba48"
+   },
+   "horizon_days": 3,
+   "kind": "crypto_alpha"
+  },
+  "r4_b4_2_18bcb0": {
+   "files": {
+    "examples/strategies/r4_b4_2_18bcb0/strategy.py": "a2e7194327a1bef9a5456ad01b5b4f91232dd82f8cca49b2917021fd832ca686"
+   },
+   "horizon_days": 3,
+   "kind": "crypto_alpha"
+  }
+ },
+ "code_files": {
+  "scripts/strategy_lab/etf_ideas.py": "8fa395346d15b6262a3b1d37572a18712b3fc6bcc41b3a6a805656a5c404bd55",
+  "scripts/strategy_lab/forward_record.py": "b3809a855137f9976ba4534ee8fddd7ad9b287d661b7587f5d1f19b37a6bf43a"
+ },
+ "common_files": {
+  "examples/strategies/_common/signals.py": "ba4b20d76b1c61f598bdb44e0ba8ba1971ddfddaca5873af128037265df86f16",
+  "examples/strategies/_common/wide_universe.json": "0e9a5ac68279553e10454816b26e483562f5d535489bb49efd58a724f98d09eb"
+ },
+ "note": "Frozen before the first record day. Any change of these hashes makes `run` refuse. Not investment advice; no trading.",
+ "start": "2026-11-10"
+}

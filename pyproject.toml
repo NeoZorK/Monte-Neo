@@ -24,6 +24,8 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Topic :: Office/Business :: Financial :: Investment",
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development :: Quality Assurance",
@@ -36,6 +38,8 @@ dependencies = [
     "pandas>=2.0",
     # Numba compiles the engines (about 100x faster); without it (PyPy, WebAssembly) the same code runs as Python
     "numba>=0.58; platform_python_implementation == 'CPython' and sys_platform != 'emscripten'",
+    # numba before 0.68 cannot be installed on Python 3.15 (its build refuses the interpreter)
+    "numba>=0.68; python_version >= '3.15' and platform_python_implementation == 'CPython' and sys_platform != 'emscripten'",
     "rich>=13.0",
     # MCP server for coding agents (`monte-neo mcp`, `monte-neo-mcp`)
     "mcp>=1.10",
@@ -46,6 +50,7 @@ dependencies = [
 # Numba, where the base install skipped it or failed to load it
 fast = [
     "numba>=0.58",
+    "numba>=0.68; python_version >= '3.15'",
 ]
 # Read .parquet tables (about 150 MB)
 parquet = [
@@ -219,6 +224,11 @@ line-length = 120
 extend-exclude = ["paper"]  # standalone reproduction scripts of the preprint, not part of the package
 lint.select = ["E", "F", "I", "N", "W", "UP"]
 lint.ignore = ["E501", "E701", "F841", "E741", "W293"]
+
+[tool.ruff.lint.per-file-ignores]
+# research scripts and example strategies use mathematical notation (E, F, D, M) and path-bootstrap imports
+"scripts/strategy_lab/*" = ["N802", "N803", "N806", "E402", "E731"]
+"examples/strategies/*" = ["N802", "N803", "N806", "E402", "E731"]
 
 [tool.black]
 target-version = ["py311"]

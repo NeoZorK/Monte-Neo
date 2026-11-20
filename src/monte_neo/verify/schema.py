@@ -46,6 +46,10 @@ VERDICT_JSON_SCHEMA: dict[str, Any] = {
         },
         "metrics": {"type": "object"},
         "next_actions": {"type": "array", "items": {"type": "string"}},
+        "scope": {"type": "string", "description": "Optional: what the certificate does and does not cover (legs and null-test certificates)"},
+        "profile": {"type": "object", "description": "Optional: strategy-type profile coverage (required checks that ran, not run, not assessed); never changes the verdict"},
+        "arl": {"type": "object", "description": "Alpha Readiness Level block derived from the checks and the arl-rules version"},
+        "readiness": {"type": "object", "description": "Optional: readiness detail of series (returns and legs) certificates"},
         "reproducibility": {"type": "object"},
         "disclaimer": {"type": "string"},
         "signature": {

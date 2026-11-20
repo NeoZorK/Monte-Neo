@@ -1,12 +1,21 @@
-"""Alpha Readiness Level (ARL 1-9): one line a research committee can read, from idea to capital.
+"""Alpha Readiness Level (ARL 1-9) and its depth (0-4 per level): one line a research committee can read.
+
+The Alpha Readiness Level (ARL) was devised by Rostyslav Shcherbyna, author of Monte-Neo; it is modelled on the idea of a
+technology readiness level and is a Monte-Neo scale, not an industry standard.
 
 Like a technology readiness level, each level asks for evidence that the level below cannot give. The level is the
 highest one whose requirements, and those of every level below it, are met. A level whose evidence was not produced is
 **not assessed**, never passed: the report then names the run that would assess it (for example ``--aum`` or ``--book``).
+Every level also has a **depth** from 0 to 4 (see :mod:`monte_neo.arl_depth`); a depth never lifts the level.
 
-Evidence comes from a ``strategy-verdict/1`` certificate, an ``alpha-report/1`` and a ``live-monitor/1`` report, as
-check rows. A requirement is a list of alternatives; one alternative is met when all of its checks are present (not
-skipped) with an allowed status. Level 2 also fails on any failed look-ahead check, whichever produced it.
+All numbers and rules are read from ``arl_rules_v1.json`` (:mod:`monte_neo.arl_rules`), the single source of truth; the
+report records the rules version and that it is ``provisional`` until the owner freezes it.
+
+Evidence comes from a ``strategy-verdict/1`` certificate, an ``alpha-report/1``, a ``live-monitor/1`` report and a
+sealed holdout record, as check rows. A requirement is a list of alternatives; one alternative is met when all of its
+checks are present (not skipped) with an allowed status. Level 2 also fails on any failed look-ahead check, whichever
+produced it (the level is then at most 1). The ``caps`` of the rules apply too: a survivorship warning caps the level
+at 4, a non-significant ``alpha_after_beta`` blocks level 5, and paper, testnet or simulated live data caps it at 8.
 
 The ARL rates the **evidence**, not the investment: an ARL of 7 is not a recommendation to trade.
 """
@@ -16,32 +25,25 @@ from __future__ import annotations
 from typing import Any
 
 from monte_neo import disclaimer
+from monte_neo.arl_depth import MET, Evidence, depth_for_level
+from monte_neo.arl_rules import load_rules
 
 READINESS_SCHEMA_ID = "alpha-readiness/1"
-OK = ("pass", "info")
-SOFT = ("pass", "info", "warn")
+_STATUS = load_rules()["statuses"]
+OK = tuple(_STATUS["OK"])
+SOFT = tuple(_STATUS["SOFT"])
 
-# level: (name, requirements, how to produce the evidence); requirement = alternatives; alternative = ((id, statuses), ...)
-LEVELS: dict[int, tuple[str, list[list[tuple[tuple[str, tuple[str, ...]], ...]]], str]] = {
-    1: ("Idea on clean data", [[(("data_integrity", SOFT),), (("ic", OK + ("warn",)),)]], "monte-neo verify or monte-neo alpha"),
-    2: ("The backtest is not broken", [[(("lookahead_truncation", OK),), (("universe_lookahead", SOFT),)]],
-        "monte-neo verify --strategy (probes need code), or alpha with --membership"),
-    3: ("It earns after costs", [[(("net_profitability", OK),), (("market_impact", SOFT),)]],
-        "monte-neo verify, or monte-neo alpha --aum"),
-    4: ("The signal predicts", [[(("ic", OK), ("signal_placebo", OK)), (("timing_significance", OK),)]],
-        "monte-neo alpha (scores), or verify (timing test)"),
-    5: ("It is new alpha", [[(("residual_alpha", OK), ("hidden_short_volatility", OK))]], "monte-neo alpha (attribution)"),
-    6: ("It survives the search", [[(("deflated_sharpe", OK),), (("hlz_hurdle", OK), ("min_backtest_length", SOFT))]],
-        "verify with --n-trials / --ledger, or alpha with --n-trials"),
-    7: ("Tradable and robust", [
-        [(("market_impact", SOFT),), (("capacity", SOFT),)],
-        [(("synthetic_market_null", OK), ("universe_subsampling", SOFT), ("start_date_sensitivity", OK)),
-         (("period_consistency", OK), ("delay_sensitivity", OK))],
-        [(("rebalance_timing_luck", OK),), (("cost_margin", OK),)],
-    ], "alpha with --aum (robustness runs by default), or verify with volume data"),
-    8: ("It adds to your book", [[(("marginal_sharpe", OK),)]], "monte-neo alpha --book book.csv"),
-    9: ("Confirmed live", [[(("live_vs_backtest", OK), ("alpha_death_monitor", OK))]], "monte-neo monitor --live live.csv"),
-}
+
+def _compat() -> tuple[dict[int, Any], dict[str, tuple[int, str]]]:
+    r = load_rules()
+    levels = {lv["level"]: (lv["name"], [[tuple((cid, tuple(_STATUS[s])) for cid, s in alt) for alt in alts] for alts in lv["requirements"]], lv["how"])
+              for lv in r["levels"]}
+    return levels, {c["check"]: (c["max_level"], c["why"]) for c in r["caps"]["ceilings"]}
+
+
+# level: (name, requirements, how to produce the evidence), and check id -> (highest ARL while it warns or fails, why):
+# derived from the rules file for callers that import them.
+LEVELS, CEILINGS = _compat()
 
 
 def _rows(*reports: dict[str, Any] | None) -> dict[str, dict[str, Any]]:
@@ -53,34 +55,56 @@ def _rows(*reports: dict[str, Any] | None) -> dict[str, dict[str, Any]]:
     return out
 
 
-def _alternative(alt: tuple[tuple[str, tuple[str, ...]], ...], rows: dict[str, dict[str, Any]]) -> str:
+def _alternative(alt: Any, rows: dict[str, dict[str, Any]]) -> str:
     """``met``, ``failed`` (present but not allowed) or ``absent`` (some evidence missing)."""
     if any(cid not in rows for cid, _ in alt):
         return "absent"
     return "met" if all(rows[cid]["status"] in allowed for cid, allowed in alt) else "failed"
 
 
+def _project_trials(n_trials: int | None, certificate: dict[str, Any] | None, alpha: dict[str, Any] | None, rows: dict[str, Any]) -> int:
+    seen = [int(n_trials or 1)]
+    if certificate:
+        seen.append(int((certificate.get("reproducibility") or {}).get("n_trials") or 1))
+    if alpha:
+        seen.append(int(((alpha.get("reproducibility") or {}).get("settings") or {}).get("n_trials") or 1))
+    if "trial_ledger" in rows:
+        seen.append(int(rows["trial_ledger"]["details"].get("counted") or 1))
+    return max(seen)
+
+
 def readiness(
-    certificate: dict[str, Any] | None = None, alpha: dict[str, Any] | None = None, live: dict[str, Any] | None = None
+    certificate: dict[str, Any] | None = None, alpha: dict[str, Any] | None = None, live: dict[str, Any] | None = None, *,
+    holdout: dict[str, Any] | None = None, n_trials: int | None = None, evidence: dict[str, Any] | None = None,
+    rules_version: str | None = None,
 ) -> dict[str, Any]:
-    """The Alpha Readiness Level of the evidence given.
+    """The Alpha Readiness Level of the evidence given, with the depth of every level.
 
     Args:
         certificate: A ``strategy-verdict/1`` certificate of the strategy.
         alpha: An ``alpha-report/1`` of its signal.
         live: A ``live-monitor/1`` report after launch.
+        holdout: A sealed-holdout record (:meth:`monte_neo.verify.sealed_holdout.SealedHoldout.evidence`).
+        n_trials: Every variant tried in the whole project; levels 4-6 are computed with at least this many.
+        evidence: Extra named evidence (for example ``{"fresh_fetch_hash": True}``) for criteria no check produces yet.
+        rules_version: Compute with this recorded version of the rules (default: the current one).
 
     Returns:
-        ``{"schema", "level", "of", "levels": [{level, name, state, blocking}], "summary", "next_step", "disclaimer"}``
-        where ``state`` is ``met``, ``failed`` or ``not assessed``.
+        ``{"schema", "rules_version", "provisional", "level", "of", "depth", "headline", "levels", "summary", "next_step",
+        "next_actions", "ceilings", "disclaimer", "authorship"}``. ``levels`` holds, per level, ``state`` (``met``, ``failed``,
+        ``capped`` or ``not assessed``), ``blocking``, ``depth`` (0 unless the level is reached, ``counts``), ``depth_if_reached`` and
+        ``depth_criteria``. ``headline`` reads ``ARL 6, depth 3/4``.
     """
+    rules = load_rules(rules_version)
     rows = _rows(certificate, alpha, live)
+    caps = rules["caps"]
     lookahead_fails = sorted(r["id"] for r in rows.values() if r.get("category") == "lookahead" and r["status"] == "fail")
     levels, level, stopped = [], 0, False
-    for n, (name, requirements, how) in LEVELS.items():
+    for lv in rules["levels"]:
+        n = lv["level"]
         state, blocking = "met", []
-        for alternatives in requirements:
-            results = [_alternative(a, rows) for a in alternatives]
+        for alternatives in lv["requirements"]:
+            results = [_alternative([(cid, tuple(_STATUS[s])) for cid, s in a], rows) for a in alternatives]
             if "met" in results:
                 continue
             ids = sorted({cid for a in alternatives for cid, _ in a})
@@ -92,24 +116,70 @@ def readiness(
                 blocking += [f"{i} (not run)" for i in ids if i not in rows][:3]
         if n == 2 and lookahead_fails:
             state, blocking = "failed", lookahead_fails
-        levels.append({"level": n, "name": name, "state": state, "blocking": blocking, "how": how})
+        for b in caps["blockers"]:
+            if n == b["level"] and b["check"] in rows and rows[b["check"]]["status"] not in OK:
+                state, blocking = "failed", [b["check"]]  # e.g. the return is not shown to be more than benchmark exposure
+        levels.append({"level": n, "name": lv["name"], "state": state, "blocking": blocking, "how": lv["how"]})
         if state == "met" and not stopped:
             level = n
         else:
             stopped = True
+    capped = sorted((c["check"], c["max_level"], c["why"]) for c in caps["ceilings"] if c["check"] in rows and rows[c["check"]]["status"] in ("warn", "fail"))
+    live_src = ((live or {}).get("metrics") or {}).get("source")
+    ns = caps["non_real_sources"]
+    if live and live_src != "real_fills" and (live_src in ns["sources"] or live_src is None):
+        capped.append(("live_source", ns["max_level"], ns["why"]))
+    cap = min((c[1] for c in capped), default=None)
+    if cap is not None:
+        level = min(level, cap)
+        for lv in levels:
+            if lv["level"] > cap and lv["state"] == "met":
+                lv["state"], lv["blocking"] = "capped", [c for c, m, _ in capped if m <= cap]
     nxt = next((x for x in levels if x["state"] != "met"), None)
+    live_note = rows["live_source"]["summary"] if nxt and nxt["level"] == 9 and "live_source" in rows and rows["live_source"]["status"] not in OK else ""
     if nxt is None:
         summary = "ARL 9/9: every level is met by the evidence given"
+    elif nxt["state"] == "capped":
+        cid, _, why = next(c for c in capped if c[1] <= cap)
+        summary = f"ARL {level}/9 — capped at {cap}: {cid} ({why})"
     else:
         reason = ", ".join(nxt["blocking"][:3]) or "no evidence"
         verb = "blocked at" if nxt["state"] == "failed" else "not assessed beyond"
         where = nxt["level"] if nxt["state"] == "failed" else nxt["level"] - 1
-        summary = f"ARL {level}/9 — {verb} {where}: {nxt['name'].lower()} ({reason})"
+        summary = f"ARL {level}/9 — {verb} {where}: {nxt['name'].lower()} ({reason})" + (f". {live_note}" if live_note else "")
+    ev = Evidence(
+        rows, holdout=holdout, n_trials=_project_trials(n_trials, certificate, alpha, rows), extra=evidence,
+        metrics={"cert": (certificate or {}).get("metrics") or {}, "alpha": (alpha or {}).get("metrics") or {}, "live": (live or {}).get("metrics") or {}},
+    )
+    actions: list[dict[str, Any]] = []
+    for lv in levels:
+        d = depth_for_level(lv["level"], ev, rules)
+        lv["counts"] = lv["level"] <= level and lv["state"] == "met"
+        lv["depth_if_reached"], lv["depth_criteria"] = d["depth"], d["criteria"]  # what the criteria say if the level were reached
+        lv["depth"] = d["depth"] if lv["counts"] else 0  # a level that is not reached has depth 0: depth never skips a level
+        if lv["level"] in (level, level + 1) and lv["level"] >= 1:
+            actions += [{"level": lv["level"], "criterion": c["id"], "state": c["state"], "why": c["why"], "command": c["needs"],
+                         "repair_check": c["repair"]} for c in d["criteria"] if c["state"] != MET]
+    depth = next((lv["depth"] for lv in levels if lv["level"] == level), 0) if level else 0
     return {
-        "schema": READINESS_SCHEMA_ID, "level": level, "of": 9, "levels": levels, "summary": summary,
+        "schema": READINESS_SCHEMA_ID, "rules_version": rules["version"], "provisional": rules["status"] == "provisional",
+        "level": level, "of": 9, "depth": depth,
+        "headline": f"ARL {level}, depth {depth}/4 ({rules['version']}{', provisional' if rules['status'] == 'provisional' else ''})",
+        "levels": levels, "summary": summary,
         "next_step": None if nxt is None else (nxt["how"] if nxt["state"] == "not assessed" else f"fix: {', '.join(nxt['blocking'][:3])}"),
+        "next_actions": actions, "n_trials_used": ev.n_trials,
+        "ceilings": [{"check": c, "max_level": m, "why": w} for c, m, w in capped],
+        "authorship": rules["authorship"],
         "disclaimer": f"Rates the evidence, not the investment. {disclaimer.SHORT}",
     }
 
 
-__all__ = ["LEVELS", "READINESS_SCHEMA_ID", "readiness"]
+def arl_block(readiness_report: dict[str, Any]) -> dict[str, Any]:
+    """The compact ``arl`` block written into certificates: level, depth, rules version, provisional flag, open criteria."""
+    r = readiness_report
+    return {"level": r["level"], "depth": r["depth"], "headline": r["headline"], "rules_version": r["rules_version"],
+            "provisional": r["provisional"], "summary": r["summary"],
+            "open_criteria": [f"L{a['level']} {a['criterion']}: {a['state']}" for a in r["next_actions"]][:12]}
+
+
+__all__ = ["CEILINGS", "LEVELS", "READINESS_SCHEMA_ID", "arl_block", "readiness"]

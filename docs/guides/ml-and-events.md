@@ -47,6 +47,40 @@ Two more checks are optional:
 - `ml_feature_drift`: define `features(df)`. The population stability index of each feature between the first
   training window and the predicted period is reported, with a warning above 0.25.
 
+### Cross-validation protocol and leakage detectors
+
+`monte_neo.verify.ml_checks` provides the honest splitters, and the verifier checks the rest. Return the splits from
+`cv_splits(df)`:
+
+```python
+from monte_neo.verify.ml_checks import purged_kfold_splits, cpcv_splits
+
+def cv_splits(df):
+    return purged_kfold_splits(len(df), k=5, label_horizon=LABEL_HORIZON, embargo=EMBARGO)
+    # or: cpcv_splits(len(df), n_groups=6, n_test_groups=2, label_horizon=LABEL_HORIZON, embargo=EMBARGO)
+```
+
+Purged K-fold keeps the folds in time order, drops every training row whose label reaches the test fold, and adds an
+embargo after it. Combinatorial purged cross-validation tests every choice of `n_test_groups` blocks (C(6, 2) = 15 splits
+rebuild C(5, 1) = 5 full backtest paths), so the result is a distribution of paths, not one lucky split.
+
+More optional hooks, each switching on one certificate row. Every row has a `next_actions` entry when it warns or fails.
+
+| Hook or constant | Row | What it says |
+|------------------|-----|--------------|
+| `cv_splits(df)` | `ml_cv_shuffle` | `warn` when the test folds are scattered over time (mean run shorter than 5 rows): a shuffled K-fold trains on the neighbours of every test row. |
+| `feature_times(df)` | `ml_feature_timestamps` | `fail` when a feature value is stamped after the decision that uses it. |
+| `features(df)` + `labels(df)` | `ml_feature_significance` | Permutation test: the label is circularly shifted at random (autocorrelation kept), rank correlation of each feature is compared with that null, Bonferroni-adjusted. `warn` when no feature beats it. |
+| `features(df)` + `labels(df)` | `ml_importance_stability` | The information coefficient of the best feature in five time folds; `warn` when its sign agrees in fewer than 70 % of folds. |
+| `features(df)` | `ml_feature_drift` | PSI per feature, with the Kolmogorov-Smirnov statistic in the details. |
+| `LABEL_HORIZON > 1` or `label_spans(df)` | `ml_label_uniqueness` | Mean uniqueness of overlapping labels (Lopez de Prado); `warn` below 0.5, with the effective number of independent samples. |
+| `predict_proba(model, df)` | `ml_calibration` | Brier score against the base-rate Brier, skill, and a reliability table; `warn` when there is no skill or the expected calibration error exceeds 0.10. Probabilities come from the same walk-forward as the positions. |
+| `N_CONFIGS = 40` | `ml_trials_accounting` | Configurations tried. The Deflated Sharpe counts `max(n_trials, N_CONFIGS)`; `warn` when `n_trials` was lower. |
+
+Three more lint rules cover code written inside `signal(df)`: `fit_on_test` (a scaler or model fitted on a `*_test` part),
+`tune_on_test` (candidates scored on the test part, best one kept) and `cv_not_time_ordered` (`cv=5` in a
+cross-validation helper). Hyper-parameter choices belong on a validation block inside the training period.
+
 Two lint rules flag the classic leaks of machine-learning code written inside `signal(df)`: `full_sample_transform` (a
 scaler, PCA or feature selector fitted on all rows before any split) and `target_encoding_full` (a mean of the target
 over all rows mapped back to the features). Both are warnings: the protocol above is the real fix.

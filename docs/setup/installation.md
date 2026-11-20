@@ -16,7 +16,7 @@ monte-neo --version
 python -c "import monte_neo; print(monte_neo.__version__)"
 ```
 
-Current release: **v0.54.0** on [PyPI](https://pypi.org/project/monte-neo/).
+Current release: **v0.55.0** on [PyPI](https://pypi.org/project/monte-neo/).
 
 Docs site: [neozork.github.io/Monte-Neo](https://neozork.github.io/Monte-Neo/).
 
@@ -72,7 +72,7 @@ See [Development setup](development-setup.md), [Contributing](../development/con
 ## Requirements
 
 - **OS**: macOS Apple Silicon recommended for Metal; Linux OK for `cpu_numba` research path
-- **Python**: 3.11+
+- **Python**: 3.11 to 3.15 (see [Platforms](platforms.md))
 - **Memory**: 8–16GB-class hosts are the design center for large sweeps
 
 ## TestPyPI (maintainers only)
@@ -85,7 +85,7 @@ Safe rehearsal:
 # download the wheel only from TestPyPI, install without resolving deps there
 pip download --no-deps -d /tmp/mn-wheels \
   --index-url https://test.pypi.org/simple/ \
-  monte-neo==0.54.0
+  monte-neo==0.55.0
 pip install --no-deps /tmp/mn-wheels/monte_neo-*.whl
 # runtime deps still come from real PyPI:
 pip install numpy pandas pyarrow numba rich questionary prompt-toolkit pyyaml python-dotenv pybind11

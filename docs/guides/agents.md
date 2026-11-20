@@ -30,6 +30,7 @@ Each report with the agent's version gets a row here with a link.
 | `validate_alpha` | A cross-sectional score: does it predict returns (rank IC, decay, quantiles, placebos), and can its long-short portfolio be traded (impact, capacity, shorts, rebalance day)? `alpha-report/1` |
 | `verify_returns` | A track record given only as returns: smoothing, missing small losses, implausible consistency, significance with the manager's number of strategies |
 | `verify_legs` | A spread, pairs or stat-arb strategy given by the quantity held in each leg: re-derives the P&L and fails `accounting_mismatch` when the reported return is not what the legs earned (phantom mean reversion from a rolling hedge ratio) |
+| `verify_pairs` | `verify_legs` plus econometrics: Engle-Granger/KPSS/Johansen cointegration, half-life, hedge-ratio stability, structural breaks with the date the link broke, Deflated Sharpe over the pairs screened, late second leg and borrow cost. A failed relationship gives `NEEDS_MORE_EVIDENCE`, never `REJECT` by itself |
 | `repair_strategy` | Repairs defects without overfitting (choice by defects on 70 % of the history, lockbox opened once): REPAIRED, REPAIRED_NO_EDGE, NOT_REPAIRABLE or NOTHING_TO_REPAIR |
 | `build_dossier` | A certificate as a validation dossier folder for a committee: framework map (SR 11-7, SS1/23, RTS 6), limitations, reproduction, sign-off |
 | `monitor_live` | After launch: live against backtest, realised slippage, alpha-death alarms |
@@ -138,7 +139,7 @@ a verdict comment on pull requests, the certificate uploaded as an artifact). Op
 verdict is still in the job summary. By hand:
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.54.0
+- uses: NeoZorK/Monte-Neo@v0.55.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py

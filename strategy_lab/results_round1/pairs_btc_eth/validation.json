@@ -1,0 +1,83 @@
+{
+ "verdict": "NEEDS_MORE_EVIDENCE",
+ "certificate_id": "49bea1821c46027f",
+ "arl": 0,
+ "arl_summary": "ARL 0/9 \u2014 not assessed beyond 0: idea on clean data (data_integrity (not run), ic (not run))",
+ "sharpe": 0.07184488922815782,
+ "deflated_sharpe": 0.012409858219654457,
+ "ic_t_stat": null,
+ "mean_ic": null,
+ "total_return": null,
+ "max_drawdown": 0.3373876269089887,
+ "bars": null,
+ "checks": [
+  {
+   "id": "returns_only_scope",
+   "status": "info",
+   "summary": "Return series only: smoothing, distribution and significance were checked; look-ahead, costs and data quality behind the returns cannot be checked without the strategy or positions."
+  },
+  {
+   "id": "return_smoothing",
+   "status": "pass",
+   "summary": "no sign of smoothing (lag-1 autocorrelation -0.23, unsmoothed Sharpe 0.06)"
+  },
+  {
+   "id": "zero_kink",
+   "status": "warn",
+   "summary": "small losses are missing: 81 small losses vs 1358 small gains (expected about 719.2 losses, z=-33.6); losses may be deferred or rounded up"
+  },
+  {
+   "id": "implausible_consistency",
+   "status": "pass",
+   "summary": "13% positive periods vs 50% expected (z=-32.0)"
+  },
+  {
+   "id": "round_numbers",
+   "status": "warn",
+   "summary": "73% of returns are exact multiples of 5 bps vs 0.0% expected: figures may be typed or rounded by hand"
+  },
+  {
+   "id": "track_record_significance",
+   "status": "fail",
+   "summary": "track record is not significant: probabilistic Sharpe 0.56, deflated for 65 strategies 0.01; track record 5.0 years, 510.4 needed"
+  },
+  {
+   "id": "drawdown_consistency",
+   "status": "pass",
+   "summary": "max drawdown 33.7% within the simulated range (5th percentile 21.3%)"
+  }
+ ],
+ "reasons": [
+  "zero_kink: small losses are missing: 81 small losses vs 1358 small gains (expected about 719.2 losses, z=-33.6); losses may be deferred or rounded up",
+  "round_numbers: 73% of returns are exact multiples of 5 bps vs 0.0% expected: figures may be typed or rounded by hand",
+  "track_record_significance: track record is not significant: probabilistic Sharpe 0.56, deflated for 65 strategies 0.01; track record 5.0 years, 510.4 needed"
+ ],
+ "slice": "pre",
+ "n_trials": 65,
+ "exit_code": 0,
+ "report_sha256": "944febeb36f7e0dafd5aa65c5f236d933e78ab877793a54c7a0b0aef60571528",
+ "pair": {
+  "legs": {
+   "exit_code": 0,
+   "verdict": "PASS_WITH_WARNINGS",
+   "certificate_id": "c31fbebd7a45e7f5",
+   "checks": [
+    "legs_scope [info]: Accounting only: the reported P&L was re-derived from the leg positions you gave. Look-ahead in the signal, trading costs and data quality are not checked here; use the full verify for them.",
+    "accounting_mismatch [pass]: the reported P&L matches the legs within 5% (unexplained 0.0%).",
+    "derived_significance [warn]: the legs earn Sharpe +0.15 (t-statistic +0.32, 1735 bars): not distinguishable from zero."
+   ]
+  },
+  "null_test": {
+   "exit_code": 0,
+   "verdict": "PASS",
+   "certificate_id": "95e2008b5c867c32",
+   "checks": [
+    "null_test_scope [info]: The strategy was run on independent random walks of your length and volatility. This finds mechanical edges (accounting, data handling); a pass does not show that the strategy has a real edge.",
+    "edge_on_noise [pass]: no edge on noise, on 100 independent random-walk sets: median Sharpe -0.32, 22% positive, median t-statistic -0.91."
+   ]
+  }
+ },
+ "gate_open": true,
+ "finished_at": "2026-11-07T16:48:56+00:00",
+ "seconds": 3.0
+}

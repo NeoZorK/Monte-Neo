@@ -48,7 +48,7 @@ class MetalFloat8Engine:
             self._create_default_shaders()
             return
         
-        with open(shader_path) as f:
+        with open(shader_path, encoding="utf-8") as f:
             shader_source = f.read()
         
         # Compile shader

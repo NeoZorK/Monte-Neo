@@ -1,0 +1,120 @@
+{
+ "verdict": "PASS_WITH_WARNINGS",
+ "certificate_id": "bec2fd5c0706b9d0",
+ "arl": 1,
+ "arl_summary": "ARL 1/9 \u2014 not assessed beyond 1: the backtest is not broken (lookahead_truncation (not run), universe_lookahead (not run))",
+ "sharpe": 6.662865959607221,
+ "deflated_sharpe": 0.9980581464125755,
+ "ic_t_stat": null,
+ "mean_ic": null,
+ "total_return": null,
+ "max_drawdown": 0.01492707915295699,
+ "bars": null,
+ "timing_p": null,
+ "benchmark_sharpe": null,
+ "benchmark_total_return": null,
+ "checks": [
+  {
+   "id": "returns_only_scope",
+   "status": "info",
+   "summary": "Return series only: smoothing, distribution and significance were checked; look-ahead, costs and data quality behind the returns cannot be checked without the strategy or positions."
+  },
+  {
+   "id": "return_smoothing",
+   "status": "pass",
+   "summary": "no sign of smoothing (lag-1 autocorrelation 0.19, unsmoothed Sharpe 4.89)"
+  },
+  {
+   "id": "zero_kink",
+   "status": "warn",
+   "summary": "small losses are missing: 51 small losses vs 88 small gains (expected about 66.5 losses, z=-2.6); losses may be deferred or rounded up"
+  },
+  {
+   "id": "implausible_consistency",
+   "status": "pass",
+   "summary": "67% positive periods vs 64% expected (z=1.2)"
+  },
+  {
+   "id": "round_numbers",
+   "status": "warn",
+   "summary": "6% of returns are exact multiples of 5 bps vs 0.0% expected: figures may be typed or rounded by hand"
+  },
+  {
+   "id": "track_record_significance",
+   "status": "pass",
+   "summary": "probabilistic Sharpe 1.00, deflated for 9 strategies 1.00; track record 1.0 years, 0.2 needed"
+  },
+  {
+   "id": "drawdown_consistency",
+   "status": "pass",
+   "summary": "max drawdown 1.5% within the simulated range (5th percentile 0.4%)"
+  },
+  {
+   "id": "data_integrity",
+   "status": "pass",
+   "summary": "input prices are clean"
+  }
+ ],
+ "reasons": [
+  "zero_kink: small losses are missing: 51 small losses vs 88 small gains (expected about 66.5 losses, z=-2.6); losses may be deferred or rounded up",
+  "round_numbers: 6% of returns are exact multiples of 5 bps vs 0.0% expected: figures may be typed or rounded by hand"
+ ],
+ "evidence_added": [
+  "data_integrity"
+ ],
+ "arl_scope": "returns-only evidence: the Lab added data_integrity of the input prices; signal-level checks (ic, timing, placebo) cannot run on a return series, so the ARL is capped by construction and is not comparable with signal certificates",
+ "slice": "disc",
+ "n_trials": 9,
+ "exit_code": 0,
+ "report_sha256": "c2e547203df22e32c82dfaad4f2021a379cd0c922c2fb164ecbc9e38574d4e0a",
+ "grid_size": 9,
+ "grid_sharpes": [
+  {
+   "lookback": 3,
+   "threshold": 0.0001,
+   "sharpe": 5.835
+  },
+  {
+   "lookback": 3,
+   "threshold": 0.0002,
+   "sharpe": 5.854
+  },
+  {
+   "lookback": 3,
+   "threshold": 0.0004,
+   "sharpe": 5.132
+  },
+  {
+   "lookback": 7,
+   "threshold": 0.0001,
+   "sharpe": 6.757
+  },
+  {
+   "lookback": 7,
+   "threshold": 0.0002,
+   "sharpe": 6.672
+  },
+  {
+   "lookback": 7,
+   "threshold": 0.0004,
+   "sharpe": 5.369
+  },
+  {
+   "lookback": 14,
+   "threshold": 0.0001,
+   "sharpe": 7.481
+  },
+  {
+   "lookback": 14,
+   "threshold": 0.0002,
+   "sharpe": 7.199
+  },
+  {
+   "lookback": 14,
+   "threshold": 0.0004,
+   "sharpe": 6.256
+  }
+ ],
+ "finished_at": "2026-11-08T12:04:30+00:00",
+ "seconds": 1.1
+}

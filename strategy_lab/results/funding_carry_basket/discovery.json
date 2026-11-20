@@ -1,0 +1,124 @@
+{
+ "verdict": "PASS_WITH_WARNINGS",
+ "certificate_id": "30178db3e6c7906b",
+ "arl": 1,
+ "arl_depth": 0,
+ "arl_headline": "ARL 1, depth 0/4 (arl-rules/1, provisional)",
+ "arl_provisional": true,
+ "arl_summary": "ARL 1/9 \u2014 not assessed beyond 1: the backtest is not broken (lookahead_truncation (not run), universe_lookahead (not run))",
+ "sharpe": 6.662865959607505,
+ "deflated_sharpe": 0.9980581464125764,
+ "ic_t_stat": null,
+ "mean_ic": null,
+ "total_return": null,
+ "max_drawdown": 0.01492707915295699,
+ "bars": null,
+ "timing_p": null,
+ "benchmark_sharpe": null,
+ "benchmark_total_return": null,
+ "checks": [
+  {
+   "id": "returns_only_scope",
+   "status": "info",
+   "summary": "Return series only: smoothing, distribution and significance were checked; look-ahead, costs and data quality behind the returns cannot be checked without the strategy or positions."
+  },
+  {
+   "id": "data_integrity",
+   "status": "pass",
+   "summary": "series is clean: finite, ordered, unique dates, no gaps, no frozen values"
+  },
+  {
+   "id": "idle_share",
+   "status": "info",
+   "summary": "5% of periods have an exactly zero return (flat or out of the market)"
+  },
+  {
+   "id": "return_smoothing",
+   "status": "pass",
+   "summary": "no sign of smoothing (lag-1 autocorrelation 0.19, unsmoothed Sharpe 4.89)"
+  },
+  {
+   "id": "zero_kink",
+   "status": "warn",
+   "summary": "small losses are missing: 51 small losses vs 88 small gains (expected about 66.5 losses, z=-2.6); losses may be deferred or rounded up"
+  },
+  {
+   "id": "implausible_consistency",
+   "status": "pass",
+   "summary": "67% positive periods vs 64% expected (z=1.2)"
+  },
+  {
+   "id": "round_numbers",
+   "status": "warn",
+   "summary": "6% of returns are exact multiples of 5 bps vs 0.0% expected: figures may be typed or rounded by hand"
+  },
+  {
+   "id": "track_record_significance",
+   "status": "pass",
+   "summary": "probabilistic Sharpe 1.00, deflated for 9 strategies 1.00; track record 1.0 years, 0.2 needed"
+  },
+  {
+   "id": "drawdown_consistency",
+   "status": "pass",
+   "summary": "max drawdown 1.5% within the simulated range (5th percentile 0.4%)"
+  }
+ ],
+ "reasons": [
+  "zero_kink: small losses are missing: 51 small losses vs 88 small gains (expected about 66.5 losses, z=-2.6); losses may be deferred or rounded up",
+  "round_numbers: 6% of returns are exact multiples of 5 bps vs 0.0% expected: figures may be typed or rounded by hand"
+ ],
+ "slice": "disc",
+ "n_trials": 9,
+ "exit_code": 0,
+ "report_sha256": "4e272929c091e6330f46646520b90488adcfeff647692598c84e8cf8c8bec020",
+ "grid_size": 9,
+ "grid_sharpes": [
+  {
+   "lookback": 3,
+   "threshold": 0.0001,
+   "sharpe": 5.835
+  },
+  {
+   "lookback": 3,
+   "threshold": 0.0002,
+   "sharpe": 5.854
+  },
+  {
+   "lookback": 3,
+   "threshold": 0.0004,
+   "sharpe": 5.132
+  },
+  {
+   "lookback": 7,
+   "threshold": 0.0001,
+   "sharpe": 6.757
+  },
+  {
+   "lookback": 7,
+   "threshold": 0.0002,
+   "sharpe": 6.672
+  },
+  {
+   "lookback": 7,
+   "threshold": 0.0004,
+   "sharpe": 5.369
+  },
+  {
+   "lookback": 14,
+   "threshold": 0.0001,
+   "sharpe": 7.481
+  },
+  {
+   "lookback": 14,
+   "threshold": 0.0002,
+   "sharpe": 7.199
+  },
+  {
+   "lookback": 14,
+   "threshold": 0.0004,
+   "sharpe": 6.256
+  }
+ ],
+ "finished_at": "2026-11-08T16:54:57+00:00",
+ "seconds": 2.3
+}

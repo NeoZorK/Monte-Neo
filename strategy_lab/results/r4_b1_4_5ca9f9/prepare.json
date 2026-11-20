@@ -1,0 +1,20 @@
+{
+ "slices": {
+  "disc": {
+   "rows": 59244,
+   "symbols": 425
+  },
+  "pre": {
+   "rows": 460196,
+   "symbols": 425
+  },
+  "full": {
+   "rows": 471569,
+   "symbols": 425
+  }
+ },
+ "registration": "reg-25-8a8d9aa3",
+ "planned_trials": 104,
+ "finished_at": "2026-11-08T21:21:11+00:00",
+ "seconds": 100.3
+}

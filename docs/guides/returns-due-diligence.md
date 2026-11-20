@@ -14,14 +14,20 @@ required. The MCP tool is `verify_returns`.
 | Check | Red flag |
 |-------|----------|
 | `returns_only_scope` | Always shown: what a return series can and cannot prove |
+| `data_integrity` | Finite values, ordered unique dates, no gaps, no return of -100% or worse, no frozen values; the same row id as the OHLCV path |
+| `idle_share` | Shown when some returns are exactly zero (a strategy that is flat): the share of idle periods |
 | `return_smoothing` | Lag-1 autocorrelation above 0.2 and significant: illiquid marks or stale prices. Reports the Sharpe after unsmoothing (Getmansky, Lo and Makarov) |
-| `zero_kink` | Far fewer small losses than small gains (Bollen and Pool): losses deferred or rounded up |
+| `zero_kink` | Far fewer small losses than small gains (Bollen and Pool): losses deferred or rounded up. From 20% exact zeros on, idle periods are left out and the test runs on the periods in the market |
 | `implausible_consistency` | More positive months than the mean and volatility allow; a fail with a monthly Sharpe of 3 or more |
-| `round_numbers` | Too many returns on round values for the data's precision |
+| `round_numbers` | Too many returns on round values for the data's precision (idle zeros are not counted as round numbers) |
 | `track_record_significance` | Probabilistic and Deflated Sharpe with `--n-strategies` (the best of four funds is not one fund), and the minimum track record length |
 | `drawdown_consistency` | A maximum drawdown too shallow for the volatility |
 | `benchmark_relation` | Beta, correlation, alpha t-statistic and up and down capture against `--benchmark` |
 | `claim_consistency` | With `--claim`: the claimed return, Sharpe or drawdown against the series |
+
+The report also carries `readiness`: the Alpha Readiness Level. A bare series can show clean data (ARL 1) and no more:
+look-ahead, costs and timing need the strategy code or positions and the OHLCV, so those levels are "not assessed"
+(missing evidence, not a failure). `verify --legs` gets the same row and the same level.
 
 A certificate can be reproduced with `monte-neo verify --returns manager.csv --recheck cert.json`.
 

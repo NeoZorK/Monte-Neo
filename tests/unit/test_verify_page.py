@@ -26,8 +26,9 @@ pytestmark = pytest.mark.skipif(NODE is None, reason="node is not installed")
 
 
 def _node(script: str, payload: dict) -> dict:
-    code = f"const v = require({json.dumps(str(JS))});\nconst input = JSON.parse(process.argv[1]);\n{script}"
-    out = subprocess.run([NODE, "-e", code, json.dumps(payload)], capture_output=True, text=True, check=True, timeout=60)
+    code = f"const v = require({json.dumps(str(JS))});\nconst input = JSON.parse(require('fs').readFileSync(0, 'utf8'));\n{script}"
+    # The payload goes through stdin: a Windows command line is limited to about 32 000 characters.
+    out = subprocess.run([NODE, "-e", code], input=json.dumps(payload), capture_output=True, text=True, encoding="utf-8", check=True, timeout=60)
     return json.loads(out.stdout)
 
 

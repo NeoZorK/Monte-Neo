@@ -503,7 +503,8 @@ class _Visitor(ast.NodeVisitor):
                 and isinstance(node.func.value, ast.Name)
                 and node.func.value.id in ("np", "numpy")
                 and node.args
-                and not isinstance(node.args[0], ast.Call | ast.Constant | ast.List | ast.Tuple)
+                and not isinstance(node.args[0], ast.Constant | ast.List | ast.Tuple)
+                and (not isinstance(node.args[0], ast.Call) or _is_series_chain(node.args[0]))
                 and not _is_window_slice(node.args[0])
             ):
                 self._add(node, "full_sample_stat", "warn", f"np.{attr} over a whole array includes future bars")

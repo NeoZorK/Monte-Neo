@@ -109,6 +109,9 @@ TRAPS = [
     ("best_start_date", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail"}),
     ("hyperparam_fit_full", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail"}),
     ("kfold_no_gap", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail"}),
+    ("fit_on_test_scaler", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "warn"}),
+    ("tune_on_test_best_window", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "warn"}),
+    ("cv_integer_folds", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail", "lookahead_static_lint": "warn"}),
     ("feature_select_future_corr", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail"}),
     ("shuffled_split_fit", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail"}),
     ("size_by_full_drawdown", "random_walk", {"REJECT"}, {"lookahead_truncation": "fail"}),
@@ -136,6 +139,7 @@ TRAPS = [
     ("resample_closed_left_shifted", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
     ("vol_target_expanding", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
     ("walk_forward_lstsq_gap", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
+    ("tune_on_validation_gap", "random_walk", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
     ("xs_cross_section_norm", "universe", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
     ("xs_point_in_time_members", "universe", {"REJECT", "NEEDS_MORE_EVIDENCE", "PASS_WITH_WARNINGS", "PASS"}, {"lookahead_static_lint": "pass"}),
     # Honest code on damaged data: the data_quality check must speak up.
@@ -143,7 +147,7 @@ TRAPS = [
     ("fade_last_move", "frozen_feed", {"REJECT"}, {"data_quality": "warn", "lookahead_static_lint": "pass"}),
     ("trend_bars", "feed_outages", {"REJECT"}, {"data_quality": "warn", "lookahead_static_lint": "pass"}),
 ]
-HONEST = {"high_turnover", "sma_cross", "momentum", "expanding_zscore", "resample_shifted", "expanding_rank", "cummax_drawdown",
+HONEST = {"tune_on_validation_gap", "high_turnover", "sma_cross", "momentum", "expanding_zscore", "resample_shifted", "expanding_rank", "cummax_drawdown",
           "ewm_cross", "convolve_causal", "rolling_quantile_band",
           "prev_hour_close_map", "bars_into_hour", "expanding_quantile_band",
           "cut_fixed_bins", "hour_running_high", "rolling_min_periods",
@@ -182,6 +186,25 @@ def test_trap_verdict(name: str, dataset: str, verdicts: set[str], required: dic
     if name in HONEST:
         # Honest code must never be accused of look-ahead (false positives kill trust).
         assert all(statuses[c] != "fail" for c in LOOKAHEAD_IDS), report["reasons"]
+    _arl_never_promotes(report, name, dataset)
+
+
+def _arl_never_promotes(report: dict, name: str, dataset: str) -> None:
+    """ARL and depth on the Trap Suite: a trap is never promoted, an edge-less honest strategy never reaches a high level."""
+    from monte_neo.readiness import readiness
+
+    arl = report["arl"]
+    assert arl["rules_version"] == "arl-rules/1" and arl["provisional"] is True
+    full = readiness(certificate=report)
+    assert (full["level"], full["depth"]) == (arl["level"], arl["depth"])
+    for lv in full["levels"]:
+        assert lv["counts"] or lv["depth"] == 0, (name, lv["level"])  # depth never skips a level
+        d4 = next(c for c in lv["depth_criteria"] if c["id"] == "D4")
+        assert d4["state"] != "met", (name, lv["level"])  # no sealed holdout was given: out-of-sample depth is not assessed
+    if any(statuses_fail in (report_row["id"] for report_row in report["checks"] if report_row["status"] == "fail") for statuses_fail in LOOKAHEAD_IDS):
+        assert arl["level"] <= 1, (name, arl["headline"])
+    if name in HONEST and dataset == "random_walk":
+        assert arl["level"] <= 4, (name, arl["headline"])
 
 
 def test_survivors_only_universe_is_flagged() -> None:

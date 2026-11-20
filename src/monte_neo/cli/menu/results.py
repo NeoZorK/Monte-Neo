@@ -42,7 +42,7 @@ def view_results_workflow(menu: InteractiveMenu) -> None:
 
 def _display_result_file(file_path):
     try:
-        with open(file_path) as f:
+        with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
 
         console.print(f"\n[bold cyan]📄 Results for {file_path.stem}[/]")
@@ -190,7 +190,7 @@ def _save_result(menu: InteractiveMenu, result) -> None:
         "mc_details": getattr(result, "mc_details", {}),
     }
 
-    with open(file_path, "w") as f:
+    with open(file_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4)
     console.print(f"[dim]Result saved to: results/{file_path.name}[/]")
 

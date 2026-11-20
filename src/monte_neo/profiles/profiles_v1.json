@@ -1,0 +1,1015 @@
+{
+ "schema": "strategy-profiles/1",
+ "version": "profiles/1",
+ "status": "provisional",
+ "note": "Profiles describe which checks matter for a strategy type. A profile never raises a verdict: it reports which required checks ran and what is not assessed. Not investment advice.",
+ "profiles": [
+  {
+   "id": "trend_cta",
+   "title": "Trend following / CTA",
+   "summary": "Time-series momentum on one or many instruments, long and short, usually with volatility targeting.",
+   "catalog_types": [
+    "trend_following",
+    "global_macro"
+   ],
+   "benchmark": "Buy-and-hold of the same instrument(s); beta-neutral residual",
+   "required_checks": [
+    "data_integrity",
+    "lookahead_truncation",
+    "repaint_history",
+    "net_profitability",
+    "deflated_sharpe",
+    "trials_disclosed",
+    "alpha_after_beta",
+    "benchmark",
+    "timing_significance",
+    "regime_stability",
+    "delay_sensitivity",
+    "cost_sensitivity",
+    "walk_forward_stability"
+   ],
+   "recommended_checks": [
+    "rebalance_timing_luck",
+    "parameter_plateau",
+    "regime_swap_null"
+   ],
+   "metrics_focus": [
+    "net Sharpe",
+    "alpha after beta",
+    "max drawdown",
+    "time under water",
+    "Sharpe at doubled costs"
+   ],
+   "not_assessed": [
+    {
+     "what": "Roll and carry on futures",
+     "why": "no continuous-contract roll data is read from OHLCV; a spliced back-adjusted series hides roll cost"
+    },
+    {
+     "what": "Crisis behaviour outside the sample",
+     "why": "one history cannot show the next crisis"
+    }
+   ],
+   "traps": [
+    {
+     "id": "centered_window",
+     "case": "centered_window",
+     "description": "A trend filter with a centred moving average reads bars after the decision.",
+     "expect": {
+      "any_check_fails_in": "lookahead"
+     }
+    },
+    {
+     "id": "whipsaw_overtrade",
+     "case": "overtrade",
+     "description": "Flipping position every bar looks active but costs eat the edge.",
+     "expect": {
+      "verdict": "REJECT"
+     }
+    }
+   ],
+   "controls": [
+    {
+     "id": "random_entry",
+     "case": "random_entry",
+     "description": "Random entries on random prices: no edge exists, so no pass level may be reached.",
+     "expect": {
+      "verdict_not": "PASS",
+      "no_check_fails_in": "lookahead"
+     }
+    },
+    {
+     "id": "honest_causal",
+     "case": "honest_causal",
+     "description": "A causal moving-average rule on random prices: not flagged for look-ahead, and no edge claimed.",
+     "expect": {
+      "verdict_not": "PASS",
+      "no_check_fails_in": "lookahead"
+     }
+    }
+   ],
+   "detect_hints": {
+    "positions": [
+     "both_signs_or_weights"
+    ],
+    "columns": []
+   }
+  },
+  {
+   "id": "mean_reversion",
+   "title": "Mean reversion",
+   "summary": "Fades short-term moves back to a mean (z-score, RSI, Bollinger style) on one instrument or a basket.",
+   "catalog_types": [
+    "mean_reversion"
+   ],
+   "benchmark": "Random entry with matched holding time",
+   "required_checks": [
+    "data_integrity",
+    "lookahead_truncation",
+    "repaint_history",
+    "net_profitability",
+    "deflated_sharpe",
+    "trials_disclosed",
+    "timing_significance",
+    "cost_sensitivity",
+    "delay_sensitivity",
+    "cost_realism",
+    "period_consistency"
+   ],
+   "recommended_checks": [
+    "capacity",
+    "regime_stability",
+    "tail_dependence"
+   ],
+   "metrics_focus": [
+    "win rate vs payoff",
+    "left tail",
+    "net Sharpe",
+    "break-even cost bps",
+    "worst day"
+   ],
+   "not_assessed": [
+    {
+     "what": "Ruin through averaging down",
+     "why": "a short sample rarely contains the sequence that ends the account"
+    },
+    {
+     "what": "Fill quality at extremes",
+     "why": "spreads widen when a z-score is extreme; only quotes can show it"
+    }
+   ],
+   "traps": [
+    {
+     "id": "full_sample_zscore",
+     "case": "full_sample_norm",
+     "description": "Z-score from the mean and deviation of the whole file uses the future.",
+     "expect": {
+      "any_check_fails_in": "lookahead"
+     }
+    },
+    {
+     "id": "overtrade",
+     "case": "overtrade",
+     "description": "High-turnover reversion with no cost margin.",
+     "expect": {
+      "verdict": "REJECT"
+     }
+    }
+   ],
+   "controls": [
+    {
+     "id": "random_entry",
+     "case": "random_entry",
+     "description": "Random entries on random prices: no edge exists, so no pass level may be reached.",
+     "expect": {
+      "verdict_not": "PASS",
+      "no_check_fails_in": "lookahead"
+     }
+    },
+    {
+     "id": "honest_causal",
+     "case": "honest_causal",
+     "description": "A causal moving-average rule on random prices: not flagged for look-ahead, and no edge claimed.",
+     "expect": {
+      "verdict_not": "PASS",
+      "no_check_fails_in": "lookahead"
+     }
+    }
+   ],
+   "detect_hints": {
+    "positions": [
+     "flat_often",
+     "both_signs"
+    ],
+    "columns": []
+   }
+  },
+  {
+   "id": "pairs_stat_arb",
+   "title": "Pairs and statistical arbitrage",
+   "summary": "Trades the spread of two or more related instruments, long one leg and short another.",
+   "catalog_types": [
+    "stat_arb_pairs",
+    "convertible_arb"
+   ],
+   "benchmark": "Zero (self-financing spread); per-leg buy-and-hold",
+   "required_checks": [
+    "data_integrity",
+    "lookahead_truncation",
+    "repaint_history",
+    "net_profitability",
+    "deflated_sharpe",
+    "trials_disclosed",
+    "structural_break_spread",
+    "legging_risk",
+    "borrow_risk",
+    "pair_selection",
+    "cost_sensitivity"
+   ],
+   "recommended_checks": [
+    "structural_break_hedge",
+    "spread_half_life",
+    "accounting_mismatch"
+   ],
+   "metrics_focus": [
+    "spread half-life",
+    "hedge-ratio stability",
+    "Sharpe after legging delay",
+    "pairs screened"
+   ],
+   "not_assessed": [
+    {
+     "what": "Borrow availability and recall",
+     "why": "needs a borrow history the verifier does not have; a fee and an unavailable share can be declared"
+    },
+    {
+     "what": "Corporate events on one leg",
+     "why": "declared actions only; no event feed is read"
+    }
+   ],
+   "traps": [
+    {
+     "id": "future_hedge_ratio",
+     "case": "full_sample_norm",
+     "description": "A hedge ratio fitted on the whole file uses the future.",
+     "expect": {
+      "any_check_fails_in": "lookahead"
+     }
+    },
+    {
+     "id": "pair_overtrade",
+     "case": "overtrade",
+     "description": "Spread flips every bar: cost eats the convergence.",
+     "expect": {
+      "verdict": "REJECT"
+     }
+    }
+   ],
+   "controls": [
+    {
+     "id": "random_entry",
+     "case": "random_entry",
+     "description": "Random entries on random prices: no edge exists, so no pass level may be reached.",
+     "expect": {
+      "verdict_not": "PASS",
+      "no_check_fails_in": "lookahead"
+     }
+    },
+    {
+     "id": "honest_causal",
+     "case": "honest_causal",
+     "description": "A causal moving-average rule on random prices: not flagged for look-ahead, and no edge claimed.",
+     "expect": {
+      "verdict_not": "PASS",
+      "no_check_fails_in": "lookahead"
+     }
+    }
+   ],
+   "detect_hints": {
+    "positions": [
+     "legs_columns"
+    ],
+    "columns": [
+     "px_",
+     "qty_"
+    ]
+   }
+  },
+  {
+   "id": "carry",
+   "title": "Carry (spot and perpetual, futures basis)",
+   "summary": "Earns a yield difference such as funding or basis while holding offsetting positions.",
+   "catalog_types": [
+    "carry",
+    "crypto_specific"
+   ],
+   "benchmark": "Spot buy-and-hold; cash",
+   "required_checks": [
+    "data_integrity",
+    "lookahead_truncation",
+    "repaint_history",
+    "net_profitability",
+    "deflated_sharpe",
+    "trials_disclosed",
+    "carry_decomposition",
+    "carry_margin",
+    "funding_borrow_stress",
+    "capacity",
+    "cost_sensitivity"
+   ],
+   "recommended_checks": [
+    "carry_margin_no_topup",
+    "carry_future_probe",
+    "regime_stability"
+   ],
+   "metrics_focus": [
+    "carry per year",
+    "funding share of P&L",
+    "margin utilisation",
+    "drawdown in a squeeze",
+    "break-even funding"
+   ],
+   "not_assessed": [
+    {
+     "what": "Exchange default and withdrawal risk",
+     "why": "counterparty events are not in price data"
+    },
+    {
+     "what": "Basis blow-out in a crisis",
+     "why": "only the sample's worst bars are seen"
+    }
+   ],
+   "traps": [
+    {
+     "id": "funding_known_early",
+     "case": "leak_next_close",
+     "description": "Position decided with the next bar's funding or price.",
+     "expect": {
+      "any_check_fails_in": "lookahead"
+     }
+    },
+    {
+     "id": "carry_overtrade",
+     "case": "overtrade",
+     "description": "Entering and leaving the pair every bar pays both legs' costs each time.",
+     "expect": {
+      "verdict": "REJECT"
+     }
+    }
+   ],
+   "controls": [
+    {
+     "id": "random_entry",
+     "case": "random_entry",
+     "description": "Random entries on random prices: no edge exists, so no pass level may be reached.",
+     "expect": {
+      "verdict_not": "PASS",
+      "no_check_fails_in": "lookahead"
+     }
+    },
+    {
+     "id": "honest_causal",
+     "case": "honest_causal",
+     "description": "A causal moving-average rule on random prices: not flagged for look-ahead, and no edge claimed.",
+     "expect": {
+      "verdict_not": "PASS",
+      "no_check_fails_in": "lookahead"
+     }
+    }
+   ],
+   "detect_hints": {
+    "positions": [
+     "any"
+    ],
+    "columns": [
+     "funding_rate",
+     "perp_close"
+    ]
+   }
+  },
+  {
+   "id": "cross_sectional",
+   "title": "Cross-sectional long-short (factor, momentum, equity L/S)",
+   "summary": "Ranks many instruments each period and goes long the top, short the bottom.",
+   "catalog_types": [
+    "xs_momentum",
+    "factor_premia",
+    "long_short_equity"
+   ],
+   "benchmark": "Market and factor regressions; equal-weight universe",
+   "required_checks": [
+    "data_integrity",
+    "lookahead_truncation",
+    "repaint_history",
+    "net_profitability",
+    "deflated_sharpe",
+    "trials_disclosed",
+    "alpha_after_beta",
+    "selection_vs_timing_basket",
+    "survivorship",
+    "universe_membership",
+    "rebalance_timing_luck"
+   ],
+   "recommended_checks": [
+    "publication_dates",
+    "execution_capacity",
+    "funding_borrow_stress"
+   ],
+   "metrics_focus": [
+    "alpha after beta",
+    "turnover",
+    "long vs short leg",
+    "breadth",
+    "capacity"
+   ],
+   "not_assessed": [
+    {
+     "what": "Point-in-time fundamentals and constituents",
+     "why": "no point-in-time database is shipped: the universe must be supplied as it was"
+    },
+    {
+     "what": "Short availability",
+     "why": "borrow history is not available; a fee and an unavailable share can be declared"
+    }
+   ],
+   "traps": [
+    {
+     "id": "future_rank",
+     "case": "full_sample_norm",
+     "description": "Ranking against the whole-sample mean uses the future.",
+     "expect": {
+      "any_check_fails_in": "lookahead"
+     }
+    },
+    {
+     "id": "rank_overtrade",
+     "case": "overtrade",
+     "description": "Daily full re-ranking with no cost margin.",
+     "expect": {
+      "verdict": "REJECT"
+     }
+    }
+   ],
+   "controls": [
+    {
+     "id": "random_entry",
+     "case": "random_entry",
+     "description": "Random entries on random prices: no edge exists, so no pass level may be reached.",
+     "expect": {
+      "verdict_not": "PASS",
+      "no_check_fails_in": "lookahead"
+     }
+    },
+    {
+     "id": "honest_causal",
+     "case": "honest_causal",
+     "description": "A causal moving-average rule on random prices: not flagged for look-ahead, and no edge claimed.",
+     "expect": {
+      "verdict_not": "PASS",
+      "no_check_fails_in": "lookahead"
+     }
+    }
+   ],
+   "detect_hints": {
+    "positions": [
+     "universe"
+    ],
+    "columns": [
+     "symbol"
+    ]
+   }
+  },
+  {
+   "id": "buy_and_hold",
+   "title": "Buy-and-hold / passive",
+   "summary": "Holds an asset or index; the null every active strategy must beat after costs and risk.",
+   "catalog_types": [
+    "passive_index",
+    "dca",
+    "calendar_anomaly"
+   ],
+   "benchmark": "Itself; the matching total-return index",
+   "required_checks": [
+    "data_integrity",
+    "lookahead_truncation",
+    "repaint_history",
+    "net_profitability",
+    "deflated_sharpe",
+    "trials_disclosed",
+    "benchmark",
+    "regime_stability",
+    "corporate_actions",
+    "data_quality"
+   ],
+   "recommended_checks": [
+    "survivorship",
+    "period_consistency"
+   ],
+   "metrics_focus": [
+    "CAGR",
+    "volatility",
+    "max drawdown",
+    "time under water"
+   ],
+   "not_assessed": [
+    {
+     "what": "Whether the sample is representative",
+     "why": "history is one draw"
+    },
+    {
+     "what": "Tax drag and index substitution",
+     "why": "not modelled"
+    }
+   ],
+   "traps": [
+    {
+     "id": "peek_entry",
+     "case": "leak_next_close",
+     "description": "Buying only before up days looks like a passive hold but reads tomorrow.",
+     "expect": {
+      "any_check_fails_in": "lookahead"
+     }
+    },
+    {
+     "id": "hold_overtrade",
+     "case": "overtrade",
+     "description": "A 'passive' book that trades every bar is not passive.",
+     "expect": {
+      "verdict": "REJECT"
+     }
+    }
+   ],
+   "controls": [
+    {
+     "id": "always_flat",
+     "case": "always_flat",
+     "description": "Never trades: nothing to verify, so no pass level may be reached.",
+     "expect": {
+      "verdict_not": "PASS"
+     }
+    },
+    {
+     "id": "random_entry",
+     "case": "random_entry",
+     "description": "Random entries on random prices: no edge exists, so no pass level may be reached.",
+     "expect": {
+      "verdict_not": "PASS",
+      "no_check_fails_in": "lookahead"
+     }
+    }
+   ],
+   "detect_hints": {
+    "positions": [
+     "all_long"
+    ],
+    "columns": []
+   }
+  },
+  {
+   "id": "allocation_risk_parity",
+   "title": "Allocation and risk parity",
+   "summary": "Fixed or risk-based weights across sleeves (60/40, inverse volatility, equal risk contribution, minimum variance).",
+   "catalog_types": [
+    "balanced_60_40",
+    "risk_parity",
+    "equal_weight",
+    "minimum_variance",
+    "vol_managed",
+    "rebalancing_policy"
+   ],
+   "benchmark": "60/40 and 1/N at matched volatility",
+   "required_checks": [
+    "data_integrity",
+    "lookahead_truncation",
+    "repaint_history",
+    "net_profitability",
+    "deflated_sharpe",
+    "trials_disclosed",
+    "benchmark",
+    "rebalance_timing_luck",
+    "regime_stability",
+    "correlation_breakdown_stress",
+    "cost_sensitivity"
+   ],
+   "recommended_checks": [
+    "tail_dependence",
+    "capacity",
+    "pbo"
+   ],
+   "metrics_focus": [
+    "volatility vs target",
+    "leverage used",
+    "risk contribution",
+    "drawdown in a correlation flip"
+   ],
+   "not_assessed": [
+    {
+     "what": "Cost and availability of the leverage",
+     "why": "financing terms are a declared input, not observed"
+    },
+    {
+     "what": "Future stock-bond correlation",
+     "why": "regimes change sign across eras"
+    }
+   ],
+   "traps": [
+    {
+     "id": "future_covariance",
+     "case": "full_sample_norm",
+     "description": "Weights from the covariance of the whole file use the future.",
+     "expect": {
+      "any_check_fails_in": "lookahead"
+     }
+    },
+    {
+     "id": "alloc_overtrade",
+     "case": "overtrade",
+     "description": "Re-weighting every bar creates turnover the allocation does not need.",
+     "expect": {
+      "verdict": "REJECT"
+     }
+    }
+   ],
+   "controls": [
+    {
+     "id": "random_entry",
+     "case": "random_entry",
+     "description": "Random entries on random prices: no edge exists, so no pass level may be reached.",
+     "expect": {
+      "verdict_not": "PASS",
+      "no_check_fails_in": "lookahead"
+     }
+    },
+    {
+     "id": "honest_causal",
+     "case": "honest_causal",
+     "description": "A causal moving-average rule on random prices: not flagged for look-ahead, and no edge claimed.",
+     "expect": {
+      "verdict_not": "PASS",
+      "no_check_fails_in": "lookahead"
+     }
+    }
+   ],
+   "detect_hints": {
+    "positions": [
+     "weights_sum_near_one"
+    ],
+    "columns": []
+   }
+  },
+  {
+   "id": "market_neutral",
+   "title": "Market-neutral",
+   "summary": "Aims at zero market exposure: long and short books of similar size, or hedged with an index.",
+   "catalog_types": [
+    "long_short_equity"
+   ],
+   "benchmark": "Zero; the market (beta must be near 0)",
+   "required_checks": [
+    "data_integrity",
+    "lookahead_truncation",
+    "repaint_history",
+    "net_profitability",
+    "deflated_sharpe",
+    "trials_disclosed",
+    "alpha_after_beta",
+    "selection_vs_timing_basket",
+    "tail_dependence",
+    "correlation_breakdown_stress",
+    "cost_sensitivity"
+   ],
+   "recommended_checks": [
+    "funding_borrow_stress",
+    "execution_capacity",
+    "regime_stability"
+   ],
+   "metrics_focus": [
+    "beta to the market",
+    "alpha t-stat",
+    "drawdown in a factor crash",
+    "gross vs net exposure"
+   ],
+   "not_assessed": [
+    {
+     "what": "Hidden factor exposure",
+     "why": "only the benchmark and reference asset passed in are tested"
+    },
+    {
+     "what": "Crowding and de-grossing events",
+     "why": "not visible in price history"
+    }
+   ],
+   "traps": [
+    {
+     "id": "future_hedge",
+     "case": "full_sample_norm",
+     "description": "The hedge is sized with the whole sample.",
+     "expect": {
+      "any_check_fails_in": "lookahead"
+     }
+    },
+    {
+     "id": "neutral_overtrade",
+     "case": "overtrade",
+     "description": "Rebalancing the hedge every bar costs the whole edge.",
+     "expect": {
+      "verdict": "REJECT"
+     }
+    }
+   ],
+   "controls": [
+    {
+     "id": "random_entry",
+     "case": "random_entry",
+     "description": "Random entries on random prices: no edge exists, so no pass level may be reached.",
+     "expect": {
+      "verdict_not": "PASS",
+      "no_check_fails_in": "lookahead"
+     }
+    },
+    {
+     "id": "honest_causal",
+     "case": "honest_causal",
+     "description": "A causal moving-average rule on random prices: not flagged for look-ahead, and no edge claimed.",
+     "expect": {
+      "verdict_not": "PASS",
+      "no_check_fails_in": "lookahead"
+     }
+    }
+   ],
+   "detect_hints": {
+    "positions": [
+     "both_signs_balanced"
+    ],
+    "columns": []
+   }
+  },
+  {
+   "id": "short_volatility",
+   "title": "Short volatility and tail selling",
+   "summary": "Collects a premium for selling insurance: small steady gains, rare large losses.",
+   "catalog_types": [
+    "short_volatility",
+    "options_overlay"
+   ],
+   "benchmark": "Equity index; put-write index",
+   "required_checks": [
+    "data_integrity",
+    "lookahead_truncation",
+    "repaint_history",
+    "net_profitability",
+    "deflated_sharpe",
+    "trials_disclosed",
+    "hidden_short_volatility",
+    "implausible_consistency",
+    "return_smoothing",
+    "drawdown_consistency",
+    "regime_stability"
+   ],
+   "recommended_checks": [
+    "tail_dependence",
+    "correlation_breakdown_stress",
+    "liquidity_stress"
+   ],
+   "metrics_focus": [
+    "skew",
+    "worst day and worst month",
+    "CVaR",
+    "time to recover",
+    "Sortino vs Sharpe"
+   ],
+   "not_assessed": [
+    {
+     "what": "Margin calls in a spike",
+     "why": "needs the margin rules of the broker"
+    },
+    {
+     "what": "The next vol event",
+     "why": "Feb 2018 and Mar 2020 style events are only tested when they are in the file"
+    }
+   ],
+   "traps": [
+    {
+     "id": "smooth_tail",
+     "case": "leak_next_close",
+     "description": "A book that avoids the loss days by reading tomorrow looks like a smooth premium.",
+     "expect": {
+      "any_check_fails_in": "lookahead"
+     }
+    },
+    {
+     "id": "premium_overtrade",
+     "case": "overtrade",
+     "description": "Constant trading is not a premium; costs eat it.",
+     "expect": {
+      "verdict": "REJECT"
+     }
+    }
+   ],
+   "controls": [
+    {
+     "id": "random_entry",
+     "case": "random_entry",
+     "description": "Random entries on random prices: no edge exists, so no pass level may be reached.",
+     "expect": {
+      "verdict_not": "PASS",
+      "no_check_fails_in": "lookahead"
+     }
+    },
+    {
+     "id": "honest_causal",
+     "case": "honest_causal",
+     "description": "A causal moving-average rule on random prices: not flagged for look-ahead, and no edge claimed.",
+     "expect": {
+      "verdict_not": "PASS",
+      "no_check_fails_in": "lookahead"
+     }
+    }
+   ],
+   "detect_hints": {
+    "positions": [
+     "small_steady_gains"
+    ],
+    "columns": [
+     "iv",
+     "vix"
+    ]
+   }
+  },
+  {
+   "id": "event_driven",
+   "title": "Event-driven (earnings, merger arbitrage, announcements)",
+   "summary": "Trades around dated events: earnings, announcements, mergers, macro releases.",
+   "catalog_types": [
+    "event_merger_arb"
+   ],
+   "benchmark": "Market plus risk-free; matched non-event periods",
+   "required_checks": [
+    "data_integrity",
+    "lookahead_truncation",
+    "repaint_history",
+    "net_profitability",
+    "deflated_sharpe",
+    "trials_disclosed",
+    "pit_events",
+    "publication_dates",
+    "timing_significance",
+    "cost_sensitivity",
+    "delay_sensitivity"
+   ],
+   "recommended_checks": [
+    "events_quality",
+    "capacity",
+    "survivorship"
+   ],
+   "metrics_focus": [
+    "event-window return",
+    "hit rate",
+    "time from publication to fill",
+    "deal-break loss"
+   ],
+   "not_assessed": [
+    {
+     "what": "Event data quality",
+     "why": "timestamps must be publication times: only a supplied table can be joined by publication time"
+    },
+    {
+     "what": "Deal-break tail",
+     "why": "a short sample has few breaks"
+    }
+   ],
+   "traps": [
+    {
+     "id": "event_time_join",
+     "case": "leak_next_close",
+     "description": "Acting on the event period end instead of its publication time reads the future.",
+     "expect": {
+      "any_check_fails_in": "lookahead"
+     }
+    },
+    {
+     "id": "event_overtrade",
+     "case": "overtrade",
+     "description": "Trading every bar around an event window pays costs for noise.",
+     "expect": {
+      "verdict": "REJECT"
+     }
+    }
+   ],
+   "controls": [
+    {
+     "id": "random_entry",
+     "case": "random_entry",
+     "description": "Random entries on random prices: no edge exists, so no pass level may be reached.",
+     "expect": {
+      "verdict_not": "PASS",
+      "no_check_fails_in": "lookahead"
+     }
+    },
+    {
+     "id": "honest_causal",
+     "case": "honest_causal",
+     "description": "A causal moving-average rule on random prices: not flagged for look-ahead, and no edge claimed.",
+     "expect": {
+      "verdict_not": "PASS",
+      "no_check_fails_in": "lookahead"
+     }
+    }
+   ],
+   "detect_hints": {
+    "positions": [
+     "any"
+    ],
+    "columns": [
+     "ev_",
+     "published_at"
+    ]
+   }
+  },
+  {
+   "id": "options",
+   "title": "Options (long and short premium, spreads)",
+   "summary": "Trades listed options: the table of trades with quotes, and when known the volatility used, the underlying price and the dates.",
+   "catalog_types": [
+    "options_overlay",
+    "short_volatility"
+   ],
+   "benchmark": "Underlying and a put-write or covered-call index at matched risk",
+   "required_checks": [
+    "bid_ask_fill",
+    "iv_asof",
+    "tail_stress",
+    "early_exercise_pin",
+    "margin_simplified",
+    "dividends"
+   ],
+   "recommended_checks": [
+    "options_chain"
+   ],
+   "metrics_focus": [
+    "P&L at the touch vs at the mid",
+    "stress loss share of equity",
+    "net dollar gamma",
+    "peak margin share of equity",
+    "short options near expiry"
+   ],
+   "not_assessed": [
+    {
+     "what": "Historical volatility surface and skew as of each date",
+     "why": "no historical option chain is read; only the volatility the table says was used"
+    },
+    {
+     "what": "Liquidity, open interest and tradable strikes",
+     "why": "not in a trade table"
+    },
+    {
+     "what": "Exact margin and assignment",
+     "why": "broker rules differ; the margin is a simplified Reg-T style estimate and assignment is a warning"
+    }
+   ],
+   "traps": [
+    {
+     "id": "mid_fill",
+     "case": "opt_mid_fill",
+     "description": "Every trade fills at the mid of a wide spread: the profit disappears at the touch.",
+     "expect": {
+      "check": "bid_ask_fill",
+      "status": "fail"
+     }
+    },
+    {
+     "id": "iv_from_future",
+     "case": "opt_iv_future",
+     "description": "The volatility used was observed after the decision date.",
+     "expect": {
+      "check": "iv_asof",
+      "status": "fail"
+     }
+    },
+    {
+     "id": "smooth_tail_sale",
+     "case": "opt_tail_sale",
+     "description": "Far out-of-the-money puts sold for steady small gains: a -20% move with volatility x2 wipes out the account.",
+     "expect": {
+      "check": "tail_stress",
+      "status": "fail"
+     }
+    }
+   ],
+   "controls": [
+    {
+     "id": "touch_fills_hedged",
+     "case": "opt_honest",
+     "description": "Fills at the touch, point-in-time volatility, a defined-risk spread: none of the three trap checks fails.",
+     "expect": {
+      "checks_not_failing": [
+       "bid_ask_fill",
+       "iv_asof",
+       "tail_stress"
+      ]
+     }
+    },
+    {
+     "id": "no_quotes",
+     "case": "opt_no_quotes",
+     "description": "A table with no quotes, no volatility and no underlying: every check is reported as not assessed and the verdict is not PASS.",
+     "expect": {
+      "verdict_not": "PASS",
+      "all_skipped": [
+       "bid_ask_fill",
+       "iv_asof",
+       "tail_stress"
+      ]
+     }
+    }
+   ],
+   "detect_hints": {
+    "positions": [],
+    "columns": [
+     "strike",
+     "expiry"
+    ]
+   }
+  }
+ ]
+}

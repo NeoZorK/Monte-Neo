@@ -1,0 +1,1001 @@
+{
+ "name": "r3_bab_beta",
+ "lab_trials": 98,
+ "trials_used": 99,
+ "holdout": "not read",
+ "economics": {
+  "base": {
+   "bars": 1461,
+   "sharpe": 0.716,
+   "total_return": 1.0275,
+   "max_drawdown": -0.4162,
+   "corr_btc": -0.274,
+   "beta_btc": -0.149,
+   "beta_share": 0.075,
+   "alpha_t_vs_btc": 1.93,
+   "deflated_sharpe": 0.176,
+   "btc_buyhold_sharpe": 0.782,
+   "corr_ew18": -0.307
+  },
+  "cost_x2": {
+   "bars": 1461,
+   "sharpe": 0.667,
+   "total_return": 0.8995,
+   "max_drawdown": -0.4164,
+   "corr_btc": -0.274,
+   "beta_btc": -0.149,
+   "beta_share": 0.075,
+   "alpha_t_vs_btc": 1.83,
+   "deflated_sharpe": 0.153,
+   "btc_buyhold_sharpe": 0.782,
+   "corr_ew18": -0.307
+  },
+  "survivors_added": {
+   "bars": 1461,
+   "sharpe": 0.872,
+   "total_return": 1.0741,
+   "max_drawdown": -0.3227,
+   "corr_btc": -0.284,
+   "beta_btc": -0.112,
+   "beta_share": 0.081,
+   "alpha_t_vs_btc": 2.28,
+   "deflated_sharpe": 0.234,
+   "btc_buyhold_sharpe": 0.782,
+   "corr_ew18": -0.322
+  },
+  "btc_hedged": {
+   "bars": 1461,
+   "sharpe": 1.186,
+   "total_return": 2.8555,
+   "max_drawdown": -0.408,
+   "corr_btc": 0.198,
+   "beta_btc": 0.108,
+   "beta_share": 0.039,
+   "alpha_t_vs_btc": 2.11,
+   "deflated_sharpe": 0.451,
+   "btc_buyhold_sharpe": 0.782,
+   "corr_ew18": 0.072
+  },
+  "offsets": {
+   "0": {
+    "bars": 1461,
+    "sharpe": 0.716,
+    "total_return": 1.0275,
+    "max_drawdown": -0.4162,
+    "corr_btc": -0.274,
+    "beta_btc": -0.149,
+    "beta_share": 0.075,
+    "alpha_t_vs_btc": 1.93,
+    "deflated_sharpe": 0.176,
+    "btc_buyhold_sharpe": 0.782,
+    "corr_ew18": -0.307
+   },
+   "1": {
+    "bars": 1461,
+    "sharpe": 0.547,
+    "total_return": 0.608,
+    "max_drawdown": -0.4354,
+    "corr_btc": -0.274,
+    "beta_btc": -0.148,
+    "beta_share": 0.075,
+    "alpha_t_vs_btc": 1.58,
+    "deflated_sharpe": 0.104,
+    "btc_buyhold_sharpe": 0.782,
+    "corr_ew18": -0.308
+   },
+   "2": {
+    "bars": 1461,
+    "sharpe": 0.618,
+    "total_return": 0.7678,
+    "max_drawdown": -0.4318,
+    "corr_btc": -0.272,
+    "beta_btc": -0.147,
+    "beta_share": 0.074,
+    "alpha_t_vs_btc": 1.73,
+    "deflated_sharpe": 0.133,
+    "btc_buyhold_sharpe": 0.782,
+    "corr_ew18": -0.311
+   },
+   "3": {
+    "bars": 1461,
+    "sharpe": 0.639,
+    "total_return": 0.8214,
+    "max_drawdown": -0.4545,
+    "corr_btc": -0.263,
+    "beta_btc": -0.142,
+    "beta_share": 0.069,
+    "alpha_t_vs_btc": 1.75,
+    "deflated_sharpe": 0.141,
+    "btc_buyhold_sharpe": 0.782,
+    "corr_ew18": -0.306
+   },
+   "4": {
+    "bars": 1461,
+    "sharpe": 0.57,
+    "total_return": 0.6636,
+    "max_drawdown": -0.4191,
+    "corr_btc": -0.275,
+    "beta_btc": -0.15,
+    "beta_share": 0.076,
+    "alpha_t_vs_btc": 1.63,
+    "deflated_sharpe": 0.112,
+    "btc_buyhold_sharpe": 0.782,
+    "corr_ew18": -0.317
+   },
+   "5": {
+    "bars": 1461,
+    "sharpe": 0.63,
+    "total_return": 0.8041,
+    "max_drawdown": -0.4191,
+    "corr_btc": -0.277,
+    "beta_btc": -0.151,
+    "beta_share": 0.077,
+    "alpha_t_vs_btc": 1.76,
+    "deflated_sharpe": 0.137,
+    "btc_buyhold_sharpe": 0.782,
+    "corr_ew18": -0.325
+   },
+   "6": {
+    "bars": 1461,
+    "sharpe": 0.535,
+    "total_return": 0.595,
+    "max_drawdown": -0.4375,
+    "corr_btc": -0.277,
+    "beta_btc": -0.154,
+    "beta_share": 0.077,
+    "alpha_t_vs_btc": 1.57,
+    "deflated_sharpe": 0.098,
+    "btc_buyhold_sharpe": 0.782,
+    "corr_ew18": -0.312
+   }
+  },
+  "offsets_survivors": {
+   "0": {
+    "bars": 1461,
+    "sharpe": 0.872,
+    "total_return": 1.0741,
+    "max_drawdown": -0.3227,
+    "corr_btc": -0.284,
+    "beta_btc": -0.112,
+    "beta_share": 0.081,
+    "alpha_t_vs_btc": 2.28,
+    "deflated_sharpe": 0.234,
+    "btc_buyhold_sharpe": 0.782,
+    "corr_ew18": -0.322
+   },
+   "1": {
+    "bars": 1461,
+    "sharpe": 0.643,
+    "total_return": 0.6427,
+    "max_drawdown": -0.3044,
+    "corr_btc": -0.301,
+    "beta_btc": -0.116,
+    "beta_share": 0.091,
+    "alpha_t_vs_btc": 1.85,
+    "deflated_sharpe": 0.121,
+    "btc_buyhold_sharpe": 0.782,
+    "corr_ew18": -0.331
+   },
+   "2": {
+    "bars": 1461,
+    "sharpe": 0.474,
+    "total_return": 0.3999,
+    "max_drawdown": -0.3607,
+    "corr_btc": -0.291,
+    "beta_btc": -0.113,
+    "beta_share": 0.085,
+    "alpha_t_vs_btc": 1.47,
+    "deflated_sharpe": 0.065,
+    "btc_buyhold_sharpe": 0.782,
+    "corr_ew18": -0.33
+   },
+   "3": {
+    "bars": 1461,
+    "sharpe": 0.554,
+    "total_return": 0.5076,
+    "max_drawdown": -0.3719,
+    "corr_btc": -0.291,
+    "beta_btc": -0.112,
+    "beta_share": 0.085,
+    "alpha_t_vs_btc": 1.63,
+    "deflated_sharpe": 0.089,
+    "btc_buyhold_sharpe": 0.782,
+    "corr_ew18": -0.332
+   },
+   "4": {
+    "bars": 1461,
+    "sharpe": 0.813,
+    "total_return": 0.9512,
+    "max_drawdown": -0.2773,
+    "corr_btc": -0.277,
+    "beta_btc": -0.108,
+    "beta_share": 0.077,
+    "alpha_t_vs_btc": 2.15,
+    "deflated_sharpe": 0.2,
+    "btc_buyhold_sharpe": 0.782,
+    "corr_ew18": -0.334
+   },
+   "5": {
+    "bars": 1461,
+    "sharpe": 0.758,
+    "total_return": 0.8695,
+    "max_drawdown": -0.3425,
+    "corr_btc": -0.313,
+    "beta_btc": -0.125,
+    "beta_share": 0.098,
+    "alpha_t_vs_btc": 2.11,
+    "deflated_sharpe": 0.171,
+    "btc_buyhold_sharpe": 0.782,
+    "corr_ew18": -0.364
+   },
+   "6": {
+    "bars": 1461,
+    "sharpe": 0.705,
+    "total_return": 0.7773,
+    "max_drawdown": -0.3374,
+    "corr_btc": -0.299,
+    "beta_btc": -0.12,
+    "beta_share": 0.089,
+    "alpha_t_vs_btc": 1.97,
+    "deflated_sharpe": 0.146,
+    "btc_buyhold_sharpe": 0.782,
+    "corr_ew18": -0.35
+   }
+  }
+ },
+ "alpha": {
+  "base_aum50k": {
+   "verdict": "NEEDS_MORE_EVIDENCE",
+   "arl": 4,
+   "blocked": 5,
+   "blocking": [
+    "hidden_short_volatility",
+    "residual_alpha"
+   ],
+   "checks": {
+    "ic": {
+     "status": "info",
+     "summary": "mean rank IC 0.0507 (t=3.1, ICIR 0.14): the signal predicts returns"
+    },
+    "signal_placebo": {
+     "status": "pass",
+     "summary": "real spread Sharpe 0.098/period beats permuted-score placebos (p=0.005)"
+    },
+    "market_impact": {
+     "status": "pass",
+     "summary": "at AUM 5e+04: gross 14.02%, impact 6.39%, net 7.15% per year"
+    },
+    "capacity_curve": {
+     "status": "info",
+     "summary": "net Sharpe halves at AUM 2.28e+05 and reaches zero at 2.28e+05"
+    },
+    "short_feasibility": {
+     "status": "warn",
+     "summary": "15% of short exposure in the least liquid 20%; borrow 2.90%/yr vs short-leg profit -78.84%/yr"
+    },
+    "rebalance_timing_luck": {
+     "status": "pass",
+     "summary": "annual net return by rebalance day: min 22.21%, median 30.93%, max 45.20% (k=21)"
+    },
+    "residual_alpha": {
+     "status": "warn",
+     "summary": "residual alpha t 2.1 is below the Harvey-Liu-Zhu hurdle of 3.0"
+    },
+    "hidden_short_volatility": {
+     "status": "warn",
+     "summary": "short-option payoff signs: skew -4.8, excess kurtosis 127.1"
+    },
+    "hlz_hurdle": {
+     "status": "info",
+     "summary": "t = 0.43, below 2 (the no-edge check owns this case)"
+    },
+    "min_backtest_length": {
+     "status": "fail",
+     "summary": "7.4 years of history; about 506.2 years needed to separate Sharpe 0.13 from the best of 99 luck-only variants"
+    },
+    "universe_subsampling": {
+     "status": "warn",
+     "summary": "88% of 100 random 70% subsets earn a positive net return (median Sharpe 0.18); top-5 symbols give 479% of the profit: the edge leans on a few names"
+    },
+    "start_date_sensitivity": {
+     "status": "warn",
+     "summary": "annual return over 13 start dates ranges 9.67% to 39.83%: the range exceeds the median absolute return"
+    },
+    "synthetic_market_null": {
+     "status": "fail",
+     "summary": "net Sharpe 0.13 vs 0.08 median on 100 synthetic markets (p = 0.446): not distinguishable from the market-only null"
+    },
+    "universe_lookahead": {
+     "status": "pass",
+     "summary": "every held symbol is inside its membership window"
+    }
+   }
+  },
+  "base_aum500k": {
+   "verdict": "REJECT",
+   "arl": 2,
+   "blocked": 3,
+   "blocking": [
+    "market_impact"
+   ],
+   "checks": {
+    "ic": {
+     "status": "info",
+     "summary": "mean rank IC 0.0507 (t=3.1, ICIR 0.14): the signal predicts returns"
+    },
+    "signal_placebo": {
+     "status": "pass",
+     "summary": "real spread Sharpe 0.098/period beats permuted-score placebos (p=0.005)"
+    },
+    "market_impact": {
+     "status": "fail",
+     "summary": "at AUM 5e+05: gross 14.02%, impact 20.20%, net -6.66% per year"
+    },
+    "capacity_curve": {
+     "status": "info",
+     "summary": "net Sharpe halves at AUM 2.28e+05 and reaches zero at 2.28e+05"
+    },
+    "short_feasibility": {
+     "status": "warn",
+     "summary": "15% of short exposure in the least liquid 20%; borrow 2.90%/yr vs short-leg profit -78.84%/yr"
+    },
+    "rebalance_timing_luck": {
+     "status": "pass",
+     "summary": "annual net return by rebalance day: min 22.21%, median 30.93%, max 45.20% (k=21)"
+    },
+    "residual_alpha": {
+     "status": "warn",
+     "summary": "residual alpha t 2.1 is below the Harvey-Liu-Zhu hurdle of 3.0"
+    },
+    "hidden_short_volatility": {
+     "status": "warn",
+     "summary": "short-option payoff signs: skew -4.8, excess kurtosis 127.1"
+    },
+    "hlz_hurdle": {
+     "status": "info",
+     "summary": "t = 0.43, below 2 (the no-edge check owns this case)"
+    },
+    "min_backtest_length": {
+     "status": "fail",
+     "summary": "7.4 years of history; about 506.2 years needed to separate Sharpe 0.13 from the best of 99 luck-only variants"
+    },
+    "universe_subsampling": {
+     "status": "warn",
+     "summary": "88% of 100 random 70% subsets earn a positive net return (median Sharpe 0.18); top-5 symbols give 479% of the profit: the edge leans on a few names"
+    },
+    "start_date_sensitivity": {
+     "status": "warn",
+     "summary": "annual return over 13 start dates ranges 9.67% to 39.83%: the range exceeds the median absolute return"
+    },
+    "synthetic_market_null": {
+     "status": "fail",
+     "summary": "net Sharpe 0.13 vs 0.08 median on 100 synthetic markets (p = 0.446): not distinguishable from the market-only null"
+    },
+    "universe_lookahead": {
+     "status": "pass",
+     "summary": "every held symbol is inside its membership window"
+    }
+   }
+  },
+  "base_aum5m": {
+   "verdict": "REJECT",
+   "arl": 2,
+   "blocked": 3,
+   "blocking": [
+    "market_impact"
+   ],
+   "checks": {
+    "ic": {
+     "status": "info",
+     "summary": "mean rank IC 0.0507 (t=3.1, ICIR 0.14): the signal predicts returns"
+    },
+    "signal_placebo": {
+     "status": "pass",
+     "summary": "real spread Sharpe 0.098/period beats permuted-score placebos (p=0.005)"
+    },
+    "market_impact": {
+     "status": "fail",
+     "summary": "at AUM 5e+06: gross 14.02%, impact 63.88%, net -50.34% per year"
+    },
+    "capacity_curve": {
+     "status": "info",
+     "summary": "net Sharpe halves at AUM 2.28e+05 and reaches zero at 2.28e+05"
+    },
+    "short_feasibility": {
+     "status": "warn",
+     "summary": "15% of short exposure in the least liquid 20%; borrow 2.90%/yr vs short-leg profit -78.84%/yr"
+    },
+    "rebalance_timing_luck": {
+     "status": "pass",
+     "summary": "annual net return by rebalance day: min 22.21%, median 30.93%, max 45.20% (k=21)"
+    },
+    "residual_alpha": {
+     "status": "warn",
+     "summary": "residual alpha t 2.1 is below the Harvey-Liu-Zhu hurdle of 3.0"
+    },
+    "hidden_short_volatility": {
+     "status": "warn",
+     "summary": "short-option payoff signs: skew -4.8, excess kurtosis 127.1"
+    },
+    "hlz_hurdle": {
+     "status": "info",
+     "summary": "t = 0.43, below 2 (the no-edge check owns this case)"
+    },
+    "min_backtest_length": {
+     "status": "fail",
+     "summary": "7.4 years of history; about 506.2 years needed to separate Sharpe 0.13 from the best of 99 luck-only variants"
+    },
+    "universe_subsampling": {
+     "status": "warn",
+     "summary": "88% of 100 random 70% subsets earn a positive net return (median Sharpe 0.18); top-5 symbols give 479% of the profit: the edge leans on a few names"
+    },
+    "start_date_sensitivity": {
+     "status": "warn",
+     "summary": "annual return over 13 start dates ranges 9.67% to 39.83%: the range exceeds the median absolute return"
+    },
+    "synthetic_market_null": {
+     "status": "fail",
+     "summary": "net Sharpe 0.13 vs 0.08 median on 100 synthetic markets (p = 0.446): not distinguishable from the market-only null"
+    },
+    "universe_lookahead": {
+     "status": "pass",
+     "summary": "every held symbol is inside its membership window"
+    }
+   }
+  },
+  "survivors_aum50k": {
+   "verdict": "NEEDS_MORE_EVIDENCE",
+   "arl": 4,
+   "blocked": 5,
+   "blocking": [
+    "hidden_short_volatility",
+    "residual_alpha"
+   ],
+   "checks": {
+    "ic": {
+     "status": "info",
+     "summary": "mean rank IC 0.0325 (t=2.3, ICIR 0.10): the signal predicts returns"
+    },
+    "signal_placebo": {
+     "status": "pass",
+     "summary": "real spread Sharpe 0.084/period beats permuted-score placebos (p=0.005)"
+    },
+    "market_impact": {
+     "status": "pass",
+     "summary": "at AUM 5e+04: gross 23.06%, impact 8.24%, net 14.28% per year"
+    },
+    "capacity_curve": {
+     "status": "info",
+     "summary": "net Sharpe halves at AUM 2.28e+05 and reaches zero at 5.18e+05"
+    },
+    "short_feasibility": {
+     "status": "warn",
+     "summary": "14% of short exposure in the least liquid 20%; borrow 2.90%/yr vs short-leg profit -70.38%/yr"
+    },
+    "rebalance_timing_luck": {
+     "status": "pass",
+     "summary": "annual net return by rebalance day: min 8.23%, median 32.06%, max 42.01% (k=21)"
+    },
+    "residual_alpha": {
+     "status": "warn",
+     "summary": "residual alpha t 2.1 is below the Harvey-Liu-Zhu hurdle of 3.0"
+    },
+    "hidden_short_volatility": {
+     "status": "warn",
+     "summary": "short-option payoff signs: skew -1.1, excess kurtosis 52.3"
+    },
+    "hlz_hurdle": {
+     "status": "info",
+     "summary": "t = 0.77, below 2 (the no-edge check owns this case)"
+    },
+    "min_backtest_length": {
+     "status": "fail",
+     "summary": "7.4 years of history; about 138.9 years needed to separate Sharpe 0.26 from the best of 99 luck-only variants"
+    },
+    "universe_subsampling": {
+     "status": "warn",
+     "summary": "91% of 100 random 70% subsets earn a positive net return (median Sharpe 0.26); top-5 symbols give 262% of the profit: the edge leans on a few names"
+    },
+    "start_date_sensitivity": {
+     "status": "pass",
+     "summary": "annual return over 13 start dates ranges 15.91% to 41.82%"
+    },
+    "synthetic_market_null": {
+     "status": "fail",
+     "summary": "net Sharpe 0.26 vs 0.13 median on 100 synthetic markets (p = 0.347): not distinguishable from the market-only null"
+    },
+    "universe_lookahead": {
+     "status": "pass",
+     "summary": "every held symbol is inside its membership window"
+    }
+   }
+  },
+  "offset0_aum50k": {
+   "verdict": "REJECT",
+   "arl": 2,
+   "blocked": 3,
+   "blocking": [
+    "market_impact"
+   ],
+   "checks": {
+    "ic": {
+     "status": "info",
+     "summary": "mean rank IC 0.0636 (t=2.8, ICIR 0.17): the signal predicts returns"
+    },
+    "signal_placebo": {
+     "status": "pass",
+     "summary": "real spread Sharpe 0.116/period beats permuted-score placebos (p=0.025)"
+    },
+    "market_impact": {
+     "status": "fail",
+     "summary": "at AUM 5e+04: gross 5.05%, impact 28.31%, net -25.19% per year"
+    },
+    "capacity_curve": {
+     "status": "info",
+     "summary": "net Sharpe is not positive even at the smallest AUM"
+    },
+    "short_feasibility": {
+     "status": "warn",
+     "summary": "15% of short exposure in the least liquid 20%; borrow 0.41%/yr vs short-leg profit -3.03%/yr"
+    },
+    "rebalance_timing_luck": {
+     "status": "warn",
+     "summary": "annual net return by rebalance day: min 0.00%, median 0.00%, max 45.20% (k=21)"
+    },
+    "residual_alpha": {
+     "status": "warn",
+     "summary": "no significant residual alpha (t 1.4)"
+    },
+    "hidden_short_volatility": {
+     "status": "pass",
+     "summary": "no short-volatility payoff (skew 0.8)"
+    },
+    "hlz_hurdle": {
+     "status": "info",
+     "summary": "t = 0.49, below 2 (the no-edge check owns this case)"
+    },
+    "min_backtest_length": {
+     "status": "fail",
+     "summary": "7.4 years of history; about 392.2 years needed to separate Sharpe 0.15 from the best of 99 luck-only variants"
+    },
+    "universe_subsampling": {
+     "status": "warn",
+     "summary": "75% of 100 random 70% subsets earn a positive net return (median Sharpe 0.17); top-5 symbols give 450% of the profit: the edge leans on a few names"
+    },
+    "start_date_sensitivity": {
+     "status": "warn",
+     "summary": "annual return over 13 start dates ranges 0.68% to 8.16%: the range exceeds the median absolute return"
+    },
+    "synthetic_market_null": {
+     "status": "fail",
+     "summary": "net Sharpe 0.15 vs 0.08 median on 100 synthetic markets (p = 0.426): not distinguishable from the market-only null"
+    },
+    "universe_lookahead": {
+     "status": "pass",
+     "summary": "every held symbol is inside its membership window"
+    }
+   }
+  },
+  "offset1_aum50k": {
+   "verdict": "REJECT",
+   "arl": 2,
+   "blocked": 3,
+   "blocking": [
+    "market_impact"
+   ],
+   "checks": {
+    "ic": {
+     "status": "info",
+     "summary": "mean rank IC 0.0579 (t=2.8, ICIR 0.16): the signal predicts returns"
+    },
+    "signal_placebo": {
+     "status": "pass",
+     "summary": "real spread Sharpe 0.078/period beats permuted-score placebos (p=0.085)"
+    },
+    "market_impact": {
+     "status": "fail",
+     "summary": "at AUM 5e+04: gross 23.56%, impact 28.33%, net -6.70% per year"
+    },
+    "capacity_curve": {
+     "status": "info",
+     "summary": "net Sharpe is not positive even at the smallest AUM"
+    },
+    "short_feasibility": {
+     "status": "pass",
+     "summary": "15% of short exposure in the least liquid 20%; borrow 0.41%/yr vs short-leg profit 1.95%/yr"
+    },
+    "rebalance_timing_luck": {
+     "status": "warn",
+     "summary": "annual net return by rebalance day: min 0.00%, median 0.00%, max 39.48% (k=21)"
+    },
+    "residual_alpha": {
+     "status": "pass",
+     "summary": "residual alpha t 3.5 clears the 3.0 hurdle"
+    },
+    "hidden_short_volatility": {
+     "status": "pass",
+     "summary": "no short-volatility payoff (skew 4.3)"
+    },
+    "hlz_hurdle": {
+     "status": "info",
+     "summary": "t = 1.97, below 2 (the no-edge check owns this case)"
+    },
+    "min_backtest_length": {
+     "status": "fail",
+     "summary": "7.4 years of history; about 27.2 years needed to separate Sharpe 0.58 from the best of 99 luck-only variants"
+    },
+    "universe_subsampling": {
+     "status": "warn",
+     "summary": "100% of 100 random 70% subsets earn a positive net return (median Sharpe 0.64); top-5 symbols give 126% of the profit: the edge leans on a few names"
+    },
+    "start_date_sensitivity": {
+     "status": "pass",
+     "summary": "annual return over 13 start dates ranges 16.25% to 28.85%"
+    },
+    "synthetic_market_null": {
+     "status": "pass",
+     "summary": "net Sharpe 0.58 vs 0.06 median on 100 synthetic markets (p = 0.030)"
+    },
+    "universe_lookahead": {
+     "status": "pass",
+     "summary": "every held symbol is inside its membership window"
+    }
+   }
+  },
+  "offset2_aum50k": {
+   "verdict": "REJECT",
+   "arl": 2,
+   "blocked": 3,
+   "blocking": [
+    "market_impact"
+   ],
+   "checks": {
+    "ic": {
+     "status": "info",
+     "summary": "mean rank IC 0.0445 (t=2.2, ICIR 0.12): the signal predicts returns"
+    },
+    "signal_placebo": {
+     "status": "pass",
+     "summary": "real spread Sharpe 0.097/period beats permuted-score placebos (p=0.045)"
+    },
+    "market_impact": {
+     "status": "fail",
+     "summary": "at AUM 5e+04: gross 0.27%, impact 28.47%, net -30.12% per year"
+    },
+    "capacity_curve": {
+     "status": "info",
+     "summary": "net Sharpe is not positive even at the smallest AUM"
+    },
+    "short_feasibility": {
+     "status": "warn",
+     "summary": "15% of short exposure in the least liquid 20%; borrow 0.41%/yr vs short-leg profit -12.82%/yr"
+    },
+    "rebalance_timing_luck": {
+     "status": "warn",
+     "summary": "annual net return by rebalance day: min 0.00%, median 0.00%, max 35.95% (k=21)"
+    },
+    "residual_alpha": {
+     "status": "warn",
+     "summary": "no significant residual alpha (t 0.1)"
+    },
+    "hidden_short_volatility": {
+     "status": "pass",
+     "summary": "no short-volatility payoff (skew 1.9)"
+    },
+    "hlz_hurdle": {
+     "status": "info",
+     "summary": "t = 0.02, below 2 (the no-edge check owns this case)"
+    },
+    "min_backtest_length": {
+     "status": "fail",
+     "summary": "7.4 years of history; about 162761.6 years needed to separate Sharpe 0.01 from the best of 99 luck-only variants"
+    },
+    "universe_subsampling": {
+     "status": "warn",
+     "summary": "85% of 100 random 70% subsets earn a positive net return (median Sharpe 0.17); top-5 symbols give 5467% of the profit: the edge leans on a few names"
+    },
+    "start_date_sensitivity": {
+     "status": "warn",
+     "summary": "annual return over 13 start dates ranges -4.01% to 2.13%: a later start loses while the full sample wins"
+    },
+    "synthetic_market_null": {
+     "status": "fail",
+     "summary": "net Sharpe 0.01 vs 0.06 median on 100 synthetic markets (p = 0.594): not distinguishable from the market-only null"
+    },
+    "universe_lookahead": {
+     "status": "pass",
+     "summary": "every held symbol is inside its membership window"
+    }
+   }
+  },
+  "offset3_aum50k": {
+   "verdict": "REJECT",
+   "arl": 2,
+   "blocked": 3,
+   "blocking": [
+    "market_impact"
+   ],
+   "checks": {
+    "ic": {
+     "status": "info",
+     "summary": "mean rank IC 0.0462 (t=2.2, ICIR 0.12): the signal predicts returns"
+    },
+    "signal_placebo": {
+     "status": "pass",
+     "summary": "real spread Sharpe 0.105/period beats permuted-score placebos (p=0.015)"
+    },
+    "market_impact": {
+     "status": "fail",
+     "summary": "at AUM 5e+04: gross 1.70%, impact 28.46%, net -28.68% per year"
+    },
+    "capacity_curve": {
+     "status": "info",
+     "summary": "net Sharpe is not positive even at the smallest AUM"
+    },
+    "short_feasibility": {
+     "status": "pass",
+     "summary": "16% of short exposure in the least liquid 20%; borrow 0.41%/yr vs short-leg profit 1.81%/yr"
+    },
+    "rebalance_timing_luck": {
+     "status": "warn",
+     "summary": "annual net return by rebalance day: min 0.00%, median 0.00%, max 40.97% (k=21)"
+    },
+    "residual_alpha": {
+     "status": "warn",
+     "summary": "no significant residual alpha (t 0.2)"
+    },
+    "hidden_short_volatility": {
+     "status": "warn",
+     "summary": "short-option payoff signs: skew -22.6, excess kurtosis 950.3"
+    },
+    "hlz_hurdle": {
+     "status": "info",
+     "summary": "t = 0.10, below 2 (the no-edge check owns this case)"
+    },
+    "min_backtest_length": {
+     "status": "fail",
+     "summary": "7.4 years of history; about 10398.9 years needed to separate Sharpe 0.03 from the best of 99 luck-only variants"
+    },
+    "universe_subsampling": {
+     "status": "fail",
+     "summary": "39% of 100 random 70% subsets earn a positive net return (median Sharpe -0.05); top-5 symbols give 1429% of the profit: the result does not hold on most subsets"
+    },
+    "start_date_sensitivity": {
+     "status": "warn",
+     "summary": "annual return over 13 start dates ranges -9.50% to 1.31%: a later start loses while the full sample wins"
+    },
+    "synthetic_market_null": {
+     "status": "fail",
+     "summary": "net Sharpe 0.03 vs 0.03 median on 100 synthetic markets (p = 0.515): not distinguishable from the market-only null"
+    },
+    "universe_lookahead": {
+     "status": "pass",
+     "summary": "every held symbol is inside its membership window"
+    }
+   }
+  },
+  "offset4_aum50k": {
+   "verdict": "REJECT",
+   "arl": 2,
+   "blocked": 3,
+   "blocking": [
+    "market_impact"
+   ],
+   "checks": {
+    "ic": {
+     "status": "warn",
+     "summary": "mean rank IC 0.0459 (t=2.0): no evidence the signal predicts returns"
+    },
+    "signal_placebo": {
+     "status": "pass",
+     "summary": "real spread Sharpe 0.123/period beats permuted-score placebos (p=0.010)"
+    },
+    "market_impact": {
+     "status": "fail",
+     "summary": "at AUM 5e+04: gross -2.74%, impact 28.51%, net -33.17% per year"
+    },
+    "capacity_curve": {
+     "status": "info",
+     "summary": "net Sharpe is not positive even at the smallest AUM"
+    },
+    "short_feasibility": {
+     "status": "warn",
+     "summary": "15% of short exposure in the least liquid 20%; borrow 0.41%/yr vs short-leg profit -30.76%/yr"
+    },
+    "rebalance_timing_luck": {
+     "status": "pass",
+     "summary": "annual net return by rebalance day: min 0.00%, median 0.00%, max 35.92% (k=21)"
+    },
+    "residual_alpha": {
+     "status": "warn",
+     "summary": "no significant residual alpha (t 1.1)"
+    },
+    "hidden_short_volatility": {
+     "status": "warn",
+     "summary": "short-option payoff signs: skew -5.9, excess kurtosis 211.6"
+    },
+    "hlz_hurdle": {
+     "status": "info",
+     "summary": "t = -0.22, below 2 (the no-edge check owns this case)"
+    },
+    "min_backtest_length": {
+     "status": "fail",
+     "summary": "7.4 years of history; Sharpe -0.07 is not positive, so no length of history separates it from luck"
+    },
+    "universe_subsampling": {
+     "status": "fail",
+     "summary": "13% of 100 random 70% subsets earn a positive net return (median Sharpe -0.17); top-5 symbols give no share of the profit (there is no gross profit): the result does not hold on most subsets"
+    },
+    "start_date_sensitivity": {
+     "status": "warn",
+     "summary": "annual return over 13 start dates ranges -1.94% to 5.41%: the range exceeds the median absolute return"
+    },
+    "synthetic_market_null": {
+     "status": "fail",
+     "summary": "net Sharpe -0.07 vs 0.07 median on 100 synthetic markets (p = 0.644): not distinguishable from the market-only null"
+    },
+    "universe_lookahead": {
+     "status": "pass",
+     "summary": "every held symbol is inside its membership window"
+    }
+   }
+  },
+  "offset5_aum50k": {
+   "verdict": "REJECT",
+   "arl": 2,
+   "blocked": 3,
+   "blocking": [
+    "market_impact"
+   ],
+   "checks": {
+    "ic": {
+     "status": "warn",
+     "summary": "mean rank IC 0.0416 (t=1.9): no evidence the signal predicts returns"
+    },
+    "signal_placebo": {
+     "status": "pass",
+     "summary": "real spread Sharpe 0.072/period beats permuted-score placebos (p=0.065)"
+    },
+    "market_impact": {
+     "status": "fail",
+     "summary": "at AUM 5e+04: gross 0.22%, impact 28.27%, net -29.98% per year"
+    },
+    "capacity_curve": {
+     "status": "info",
+     "summary": "net Sharpe is not positive even at the smallest AUM"
+    },
+    "short_feasibility": {
+     "status": "warn",
+     "summary": "15% of short exposure in the least liquid 20%; borrow 0.41%/yr vs short-leg profit -27.90%/yr"
+    },
+    "rebalance_timing_luck": {
+     "status": "warn",
+     "summary": "annual net return by rebalance day: min 0.00%, median 0.00%, max 30.93% (k=21)"
+    },
+    "residual_alpha": {
+     "status": "warn",
+     "summary": "no significant residual alpha (t 0.4)"
+    },
+    "hidden_short_volatility": {
+     "status": "pass",
+     "summary": "no short-volatility payoff (skew 5.1)"
+    },
+    "hlz_hurdle": {
+     "status": "info",
+     "summary": "t = 0.02, below 2 (the no-edge check owns this case)"
+    },
+    "min_backtest_length": {
+     "status": "fail",
+     "summary": "7.4 years of history; about 202544.3 years needed to separate Sharpe 0.01 from the best of 99 luck-only variants"
+    },
+    "universe_subsampling": {
+     "status": "fail",
+     "summary": "49% of 100 random 70% subsets earn a positive net return (median Sharpe -0.00); top-5 symbols give 9325% of the profit: the result does not hold on most subsets"
+    },
+    "start_date_sensitivity": {
+     "status": "warn",
+     "summary": "annual return over 13 start dates ranges 0.15% to 10.24%: the range exceeds the median absolute return"
+    },
+    "synthetic_market_null": {
+     "status": "fail",
+     "summary": "net Sharpe 0.01 vs 0.03 median on 100 synthetic markets (p = 0.535): not distinguishable from the market-only null"
+    },
+    "universe_lookahead": {
+     "status": "pass",
+     "summary": "every held symbol is inside its membership window"
+    }
+   }
+  },
+  "offset6_aum50k": {
+   "verdict": "REJECT",
+   "arl": 2,
+   "blocked": 3,
+   "blocking": [
+    "market_impact"
+   ],
+   "checks": {
+    "ic": {
+     "status": "info",
+     "summary": "mean rank IC 0.0551 (t=2.5, ICIR 0.15): the signal predicts returns"
+    },
+    "signal_placebo": {
+     "status": "pass",
+     "summary": "real spread Sharpe 0.097/period beats permuted-score placebos (p=0.020)"
+    },
+    "market_impact": {
+     "status": "fail",
+     "summary": "at AUM 5e+04: gross -14.04%, impact 28.38%, net -44.35% per year"
+    },
+    "capacity_curve": {
+     "status": "info",
+     "summary": "net Sharpe is not positive even at the smallest AUM"
+    },
+    "short_feasibility": {
+     "status": "warn",
+     "summary": "16% of short exposure in the least liquid 20%; borrow 0.41%/yr vs short-leg profit -8.08%/yr"
+    },
+    "rebalance_timing_luck": {
+     "status": "warn",
+     "summary": "annual net return by rebalance day: min 0.00%, median 0.00%, max 33.93% (k=21)"
+    },
+    "residual_alpha": {
+     "status": "warn",
+     "summary": "no significant residual alpha (t -1.4)"
+    },
+    "hidden_short_volatility": {
+     "status": "warn",
+     "summary": "short-option payoff signs: skew -1.8, excess kurtosis 53.8"
+    },
+    "hlz_hurdle": {
+     "status": "info",
+     "summary": "t = -1.55, below 2 (the no-edge check owns this case)"
+    },
+    "min_backtest_length": {
+     "status": "fail",
+     "summary": "7.4 years of history; Sharpe -0.48 is not positive, so no length of history separates it from luck"
+    },
+    "universe_subsampling": {
+     "status": "fail",
+     "summary": "1% of 100 random 70% subsets earn a positive net return (median Sharpe -0.32); top-5 symbols give no share of the profit (there is no gross profit): the result does not hold on most subsets"
+    },
+    "start_date_sensitivity": {
+     "status": "warn",
+     "summary": "annual return over 13 start dates ranges -10.83% to -4.10%: the range exceeds the median absolute return"
+    },
+    "synthetic_market_null": {
+     "status": "fail",
+     "summary": "net Sharpe -0.48 vs 0.02 median on 100 synthetic markets (p = 0.921): not distinguishable from the market-only null"
+    },
+    "universe_lookahead": {
+     "status": "pass",
+     "summary": "every held symbol is inside its membership window"
+    }
+   }
+  }
+ },
+ "basket_returns_cert": {
+  "verdict": "NEEDS_MORE_EVIDENCE",
+  "certificate_id": "ac86d10ed76723c1",
+  "arl": 1,
+  "arl_depth": 0,
+  "arl_headline": "ARL 1, depth 0/4 (arl-rules/1, provisional)",
+  "arl_provisional": true,
+  "arl_summary": "ARL 1/9 \u2014 not assessed beyond 1: the backtest is not broken (lookahead_truncation (not run), universe_lookahead (not run))",
+  "sharpe": 0.848367145723434,
+  "deflated_sharpe": 0.42053375973113355,
+  "ic_t_stat": null,
+  "mean_ic": null,
+  "total_return": null,
+  "max_drawdown": 0.6240368193188178,
+  "bars": null,
+  "timing_p": null,
+  "benchmark_sharpe": null,
+  "benchmark_total_return": null,
+  "checks": null,
+  "reasons": [
+   "zero_kink: small losses are missing: 419 small losses vs 576 small gains (expected about 494.8 losses, z=-4.8); losses may be deferred or rounded up",
+   "round_numbers: 3% of returns are exact multiples of 5 bps vs 0.0% expected: figures may be typed or rounded by hand",
+   "track_record_significance: track record is not significant: probabilistic Sharpe 0.98, deflated for 99 strategies 0.42; track record 7.4 years, 4.6 needed"
+  ]
+ }
+}

@@ -1,0 +1,202 @@
+{
+ "verdict": "NEEDS_MORE_EVIDENCE",
+ "certificate_id": "0be27e7c79d9d45e",
+ "arl": 3,
+ "arl_summary": "ARL 3/9 \u2014 blocked at 4: the signal predicts (timing_significance)",
+ "sharpe": 0.379222296539053,
+ "deflated_sharpe": 0.6347034646647286,
+ "ic_t_stat": null,
+ "mean_ic": null,
+ "total_return": 0.29159169392550544,
+ "max_drawdown": 0.5825486742832405,
+ "bars": 1461,
+ "checks": [
+  {
+   "id": "data_integrity",
+   "status": "pass",
+   "summary": "OHLCV is clean"
+  },
+  {
+   "id": "data_quality",
+   "status": "pass",
+   "summary": "no spikes, frozen prices, split jumps or gaps"
+  },
+  {
+   "id": "determinism",
+   "status": "pass",
+   "summary": "signal() is deterministic"
+  },
+  {
+   "id": "lookahead_truncation",
+   "status": "pass",
+   "summary": "truncation probe: no leak detected"
+  },
+  {
+   "id": "lookahead_perturbation",
+   "status": "pass",
+   "summary": "future-perturbation probe: no leak detected"
+  },
+  {
+   "id": "external_data",
+   "status": "pass",
+   "summary": "outside data: none read (df only)"
+  },
+  {
+   "id": "repaint_history",
+   "status": "pass",
+   "summary": "repaint (history): the signal of a closed bar never changed (19 prefixes, +50 bars, revised tail)"
+  },
+  {
+   "id": "repaint_live",
+   "status": "info",
+   "summary": "repaint (forming bar): decided at the close, flickers while the bar forms (22% of snapshots): act on it only after the bar closes"
+  },
+  {
+   "id": "lookahead_static_lint",
+   "status": "pass",
+   "summary": "static lint: clean"
+  },
+  {
+   "id": "implausible_accuracy",
+   "status": "pass",
+   "summary": "next-bar hit rate 0.522 over 358 bars (z 0.8)"
+  },
+  {
+   "id": "data_independence",
+   "status": "pass",
+   "summary": "data independence: positions follow the prices"
+  },
+  {
+   "id": "implausible_performance",
+   "status": "pass",
+   "summary": "annualized Sharpe 0.4 is within the usual range"
+  },
+  {
+   "id": "costs_modeled",
+   "status": "pass",
+   "summary": "15.00 bps per side modeled"
+  },
+  {
+   "id": "net_profitability",
+   "status": "pass",
+   "summary": "net total return +29.16% after costs"
+  },
+  {
+   "id": "cost_margin",
+   "status": "pass",
+   "summary": "break-even cost 75.47 bps per side vs 15.00 modeled"
+  },
+  {
+   "id": "delay_sensitivity",
+   "status": "warn",
+   "summary": "profit vanishes with 1 bar delay"
+  },
+  {
+   "id": "timing_significance",
+   "status": "warn",
+   "summary": "beats 41% of 200 shifted copies of its positions (p 0.592)"
+  },
+  {
+   "id": "sample_size",
+   "status": "fail",
+   "summary": "21 closed trades (min 30)"
+  },
+  {
+   "id": "deflated_sharpe",
+   "status": "warn",
+   "summary": "deflated Sharpe 0.635 over 6 trial(s)"
+  },
+  {
+   "id": "trials_disclosed",
+   "status": "pass",
+   "summary": "n_trials declared"
+  },
+  {
+   "id": "holdout_consistency",
+   "status": "warn",
+   "summary": "Sharpe/bar train +0.0367 vs holdout -0.0144"
+  },
+  {
+   "id": "period_consistency",
+   "status": "warn",
+   "summary": "profit comes from one period (2021); the other 3 return -33.76%"
+  },
+  {
+   "id": "walk_forward_stability",
+   "status": "info",
+   "summary": "3 of 6 equal windows (234 bars each) made money; worst -15.5%, best +31.9%"
+  },
+  {
+   "id": "sharpe_confidence",
+   "status": "info",
+   "summary": "Sharpe 95% interval -0.39 to +1.19 (return -70.3% to +491.1%); 83% of resamples have a positive Sharpe"
+  },
+  {
+   "id": "serial_correlation",
+   "status": "info",
+   "summary": "serial correlation of returns is small (lag-1 -0.09): Sharpe 0.38, corrected 0.50"
+  },
+  {
+   "id": "track_record",
+   "status": "info",
+   "summary": "needs 6,726 bars (about 18.43 years) to be positive at 95%; has 1,400: not enough history yet"
+  },
+  {
+   "id": "benchmark",
+   "status": "info",
+   "summary": "buy & hold +800.56% (Sharpe 1.09) vs strategy +29.16% (Sharpe 0.38)"
+  },
+  {
+   "id": "spread_estimate",
+   "status": "info",
+   "summary": "rough spread estimate from high and low: about 113.49 bps (56.75 bps per side); the model charges only 5 bps slippage per side, well below it: costs may be optimistic"
+  },
+  {
+   "id": "capacity",
+   "status": "info",
+   "summary": "capital that keeps 90% of 41 fills within a share of the bar's volume: 1%: 609K, 5%: 3.04M, 10%: 6.09M (median bar trades 526M)"
+  },
+  {
+   "id": "walk_forward_oos",
+   "status": "pass",
+   "summary": "walk-forward OOS Sharpe/bar +0.0194 vs in-sample best +0.0198"
+  },
+  {
+   "id": "parameter_plateau",
+   "status": "warn",
+   "summary": "neighbouring parameters keep 32% of the best Sharpe (median of 3)"
+  },
+  {
+   "id": "pbo",
+   "status": "warn",
+   "summary": "probability of backtest overfitting 0.794: the best combination in training ranks below the median in testing in 79% of 12,870 splits; its testing return is a loss in 51%"
+  },
+  {
+   "id": "reality_check",
+   "status": "warn",
+   "summary": "SPA p = 0.403 (Reality Check 0.418): with 6 combinations tried, luck cannot be excluded as the source of the best result"
+  },
+  {
+   "id": "romano_wolf",
+   "status": "info",
+   "summary": "0 of 6 combinations are significant after Romano-Wolf stepdown; the chosen best is not among them"
+  }
+ ],
+ "reasons": [
+  "sample_size: 21 closed trades (min 30)",
+  "delay_sensitivity: profit vanishes with 1 bar delay",
+  "timing_significance: beats 41% of 200 shifted copies of its positions (p 0.592)",
+  "deflated_sharpe: deflated Sharpe 0.635 over 6 trial(s)",
+  "holdout_consistency: Sharpe/bar train +0.0367 vs holdout -0.0144",
+  "period_consistency: profit comes from one period (2021); the other 3 return -33.76%",
+  "parameter_plateau: neighbouring parameters keep 32% of the best Sharpe (median of 3)",
+  "pbo: probability of backtest overfitting 0.794: the best combination in training ranks below the median in testing in 79% of 12,870 splits; its testing return is a loss in 51%"
+ ],
+ "slice": "disc",
+ "n_trials": 6,
+ "exit_code": 0,
+ "report_sha256": "f375514aacd646302cbcfd663e6d66ad96c6753c8dad4d7cb951d3b56e04ee12",
+ "grid_size": 6,
+ "finished_at": "2026-11-07T16:48:50+00:00",
+ "seconds": 1.9
+}

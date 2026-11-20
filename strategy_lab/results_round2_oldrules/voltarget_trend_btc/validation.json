@@ -1,0 +1,257 @@
+{
+ "verdict": "PASS_WITH_WARNINGS",
+ "certificate_id": "5b35e2e64a93927b",
+ "arl": 3,
+ "arl_summary": "ARL 3/9 \u2014 blocked at 4: the signal predicts (timing_significance)",
+ "sharpe": 1.2293456674019672,
+ "deflated_sharpe": 0.8053960312136609,
+ "ic_t_stat": null,
+ "mean_ic": null,
+ "total_return": 10.523377579403391,
+ "max_drawdown": 0.3429247494427695,
+ "bars": 2694,
+ "timing_p": 0.05472636815920398,
+ "benchmark_sharpe": 0.9050244845596248,
+ "benchmark_total_return": 15.212366023238378,
+ "checks": [
+  {
+   "id": "data_integrity",
+   "status": "pass",
+   "summary": "OHLCV is clean"
+  },
+  {
+   "id": "data_quality",
+   "status": "pass",
+   "summary": "no spikes, frozen prices, split jumps or gaps"
+  },
+  {
+   "id": "determinism",
+   "status": "pass",
+   "summary": "signal() is deterministic"
+  },
+  {
+   "id": "lookahead_truncation",
+   "status": "pass",
+   "summary": "truncation probe: no leak detected"
+  },
+  {
+   "id": "lookahead_perturbation",
+   "status": "pass",
+   "summary": "future-perturbation probe: no leak detected"
+  },
+  {
+   "id": "external_data",
+   "status": "pass",
+   "summary": "outside data: none read (df only)"
+  },
+  {
+   "id": "repaint_history",
+   "status": "pass",
+   "summary": "repaint (history): the signal of a closed bar never changed (18 prefixes, +50 bars, revised tail)"
+  },
+  {
+   "id": "repaint_live",
+   "status": "info",
+   "summary": "repaint (forming bar): decided at the close, flickers while the bar forms (62% of snapshots): act on it only after the bar closes"
+  },
+  {
+   "id": "lookahead_static_lint",
+   "status": "pass",
+   "summary": "static lint: clean"
+  },
+  {
+   "id": "implausible_accuracy",
+   "status": "pass",
+   "summary": "next-bar hit rate 0.524 over 1425 bars (z 1.8)"
+  },
+  {
+   "id": "data_independence",
+   "status": "pass",
+   "summary": "data independence: positions follow the prices"
+  },
+  {
+   "id": "implausible_performance",
+   "status": "pass",
+   "summary": "annualized Sharpe 1.2 is within the usual range"
+  },
+  {
+   "id": "costs_modeled",
+   "status": "pass",
+   "summary": "15.00 bps per side modeled"
+  },
+  {
+   "id": "net_profitability",
+   "status": "pass",
+   "summary": "net total return +1052.34% after costs"
+  },
+  {
+   "id": "cost_margin",
+   "status": "pass",
+   "summary": "break-even cost 200.00 bps per side vs 15.00 modeled"
+  },
+  {
+   "id": "delay_sensitivity",
+   "status": "pass",
+   "summary": "survives 1 bar execution delay"
+  },
+  {
+   "id": "timing_significance",
+   "status": "warn",
+   "summary": "beats 95% of 200 shifted copies of its positions (p 0.055)"
+  },
+  {
+   "id": "sample_size",
+   "status": "pass",
+   "summary": "47 closed trades (min 30)"
+  },
+  {
+   "id": "deflated_sharpe",
+   "status": "warn",
+   "summary": "deflated Sharpe 0.805 over 83 trial(s)"
+  },
+  {
+   "id": "trials_disclosed",
+   "status": "pass",
+   "summary": "n_trials declared"
+  },
+  {
+   "id": "holdout_consistency",
+   "status": "pass",
+   "summary": "Sharpe/bar train +0.0602 vs holdout +0.0733"
+  },
+  {
+   "id": "period_consistency",
+   "status": "pass",
+   "summary": "profitable in 6 of 8 periods"
+  },
+  {
+   "id": "walk_forward_stability",
+   "status": "info",
+   "summary": "5 of 6 equal windows (439 bars each) made money; worst -6.9%, best +165.2%"
+  },
+  {
+   "id": "sharpe_confidence",
+   "status": "info",
+   "summary": "Sharpe 95% interval +0.45 to +2.01 (return +94.6% to +8360.3%); 100% of resamples have a positive Sharpe"
+  },
+  {
+   "id": "serial_correlation",
+   "status": "info",
+   "summary": "returns are serially correlated (lag-1 +0.02): the annualized Sharpe 1.23 is about 0.92 after the correction (Lo), 25% lower"
+  },
+  {
+   "id": "track_record",
+   "status": "info",
+   "summary": "needs 619 bars (about 1.69 years) to be positive at 95%; has 2,633"
+  },
+  {
+   "id": "benchmark",
+   "status": "info",
+   "summary": "buy & hold +1521.24% (Sharpe 0.91) vs strategy +1052.34% (Sharpe 1.23)"
+  },
+  {
+   "id": "spread_estimate",
+   "status": "info",
+   "summary": "rough spread estimate from high and low: about 75.78 bps (37.89 bps per side); the model charges only 5 bps slippage per side, well below it: costs may be optimistic"
+  },
+  {
+   "id": "capacity",
+   "status": "info",
+   "summary": "capital that keeps 90% of 1,294 fills within a share of the bar's volume: 1%: 94.1M, 5%: 471M, 10%: 941M (median bar trades 997M)"
+  },
+  {
+   "id": "trial_ledger",
+   "status": "pass",
+   "summary": "4 variant(s) tried on this data (counted by the ledger)"
+  },
+  {
+   "id": "preregistration",
+   "status": "info",
+   "summary": "pre-registered at 2026-11-08T12:04:47.062540+00:00: the hypothesis was written before the first verification of this code"
+  }
+ ],
+ "reasons": [
+  "timing_significance: beats 95% of 200 shifted copies of its positions (p 0.055)",
+  "deflated_sharpe: deflated Sharpe 0.805 over 83 trial(s)"
+ ],
+ "slice": "pre",
+ "n_trials": 83,
+ "exit_code": 0,
+ "report_sha256": "99b0d0f635251d49ed71af174361b8969786128b93aee9fc52d1051597d9c711",
+ "economics": {
+  "validation": {
+   "bars": 1461,
+   "sharpe": 0.92,
+   "total_return": 1.6037,
+   "max_drawdown": -0.3216,
+   "corr_btc": 0.699,
+   "beta_btc": 0.352,
+   "beta_share": 0.489,
+   "alpha_t_vs_btc": 1.04,
+   "deflated_sharpe": 0.263,
+   "btc_buyhold_sharpe": 0.782
+  },
+  "discovery": {
+   "bars": 1233,
+   "sharpe": 1.567,
+   "total_return": 3.4347,
+   "max_drawdown": -0.3428,
+   "corr_btc": 0.61,
+   "beta_btc": 0.236,
+   "beta_share": 0.372,
+   "alpha_t_vs_btc": 2.06,
+   "deflated_sharpe": 0.669,
+   "btc_buyhold_sharpe": 1.114
+  },
+  "cost_x2_sharpe_validation": 0.857,
+  "cost_x2_sharpe_discovery": 1.518,
+  "by_year": {
+   "2017": {
+    "sharpe": 2.739,
+    "return": 0.309,
+    "btc_return": 2.201
+   },
+   "2018": {
+    "sharpe": -1.502,
+    "return": -0.225,
+    "btc_return": -0.73
+   },
+   "2019": {
+    "sharpe": 2.273,
+    "return": 1.11,
+    "btc_return": 0.943
+   },
+   "2020": {
+    "sharpe": 2.091,
+    "return": 1.072,
+    "btc_return": 3.02
+   },
+   "2021": {
+    "sharpe": 0.783,
+    "return": 0.239,
+    "btc_return": 0.598
+   },
+   "2022": {
+    "sharpe": -1.828,
+    "return": -0.183,
+    "btc_return": -0.642
+   },
+   "2023": {
+    "sharpe": 1.499,
+    "return": 0.597,
+    "btc_return": 1.556
+   },
+   "2024": {
+    "sharpe": 1.499,
+    "return": 0.61,
+    "btc_return": 1.213
+   }
+  },
+  "notes": [
+   "daily bars, fills at the next close, per-coin Binance fees + spread (VIP0), no funding on perpetual shorts, survivors-only universe"
+  ]
+ },
+ "gate_open": true,
+ "finished_at": "2026-11-08T12:04:49+00:00",
+ "seconds": 1.4
+}

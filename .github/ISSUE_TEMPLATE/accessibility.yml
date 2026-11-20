@@ -1,0 +1,42 @@
+name: Accessibility barrier
+description: Something in the CLI, an HTML report or the docs is hard or impossible to use
+labels: ["accessibility"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for telling us. See [ACCESSIBILITY.md](https://github.com/NeoZorK/Monte-Neo/blob/main/ACCESSIBILITY.md)
+        for what is supported today. You do not need to propose a fix.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where is the barrier?
+      options:
+        - Command line output
+        - HTML report
+        - Documentation site
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: task
+    attributes:
+      label: What were you trying to do?
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened instead?
+    validations:
+      required: true
+  - type: input
+    id: tools
+    attributes:
+      label: Assistive technology and settings
+      description: For example a screen reader, magnification, high contrast, keyboard only, NO_COLOR.
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      description: monte-neo version, operating system, terminal or browser.

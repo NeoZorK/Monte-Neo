@@ -5,3 +5,5 @@ Please read **[docs/development/contributing.md](docs/development/contributing.m
 TL;DR: branch from `main`, `uv sync --extra apple --extra plot --extra data --extra mcp --extra sign --group dev`, ruff + `pytest tests/unit`, open a PR.
 
 Security: [SECURITY.md](SECURITY.md) (private reports only).
+
+Conduct: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Accessibility: [ACCESSIBILITY.md](ACCESSIBILITY.md) (barriers can be reported with the accessibility issue form).

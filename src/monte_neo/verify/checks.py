@@ -14,13 +14,30 @@ from monte_neo.verify.stats import timestamp_series
 # Fix-it hints an agent can act on, keyed by check id.
 NEXT_ACTIONS: dict[str, str] = {
     "data_integrity": "Clean the OHLCV: sort bars oldest-first, drop duplicate timestamps, NaN rows, non-positive prices and broken bars (high < low, open or close outside high-low).",
+    "alpha_after_beta": "The return is not shown to be more than benchmark exposure: add a hedge against the benchmark (long-short, market-neutral) or test where the benchmark fell; do not call it alpha.",
+    "regime_stability": "The evidence comes from one market regime: extend the history to include falling and volatile markets, or add assets that were in other regimes, before trusting it.",
+    "regime_swap_null": "The return is tied to one market regime and loses in another: add a regime filter that is flat in the losing regime (fixed before the test), hedge the market exposure, or extend the history so the losing regime is tested properly.",
+    "regime_mix_bootstrap": "The Sharpe holds only because of how long each regime lasted in this sample: test on a longer history with the other regimes, or size down and hold a hedge for the regime that lost.",
+    "tail_dependence": "The strategies lose together in the tail: cluster them as one risk, cut the combined size, or add a strategy whose worst bars are not the others' worst bars.",
+    "correlation_breakdown_stress": "Diversification disappears when correlations rise: size the book by the stressed expected shortfall, not the calm-sample one.",
+    "liquidity_stress": "A dry market (thin volume, wide spread, higher impact) takes the profit: cut the size or the turnover, or trade only where volume stays deep.",
+    "corporate_actions": "Adjust the history for the declared actions (a split still in the prices is a fake move; dividends are missing from the return): use adjusted prices or monte_neo.verify.corporate_actions.total_return_adjust, declare every action, and re-run.",
+    "cost_sensitivity": "The edge disappears at doubled costs: lower turnover, trade less liquid-sensitive instruments only at lower size, or secure a lower fee tier before trusting the result.",
+    "cost_realism": "Modeled costs are below the real spread: re-run with slippage at least the measured half-spread (quotes_half_spread_bps) and the exchange fee tier (cost_profile).",
+    "rebalance_timing_luck": "The result depends on the rebalance day: rebalance every k days with staggered tranches (average over the phases, 4 sleeves) and judge the average; the headline is the worst phase.",
+    "selection_vs_timing_basket": "The profit is market timing, not stock selection: remove the net market exposure (long-short, beta-neutral weights) and test whether the selection term alone earns.",
+    "alpha_after_reference": "The return is beta to the basket and the reference asset (for example BTC): add a hedge of both betas and test the residual; do not call the beta alpha.",
+    "execution_capacity": "The size cannot be traded within the volume limit: cut the capital or the participation, spread orders over more bars, or trade more liquid names.",
+    "funding_borrow_stress": "Funding and borrow take the profit: shorten holding, avoid the crowded side, or price the funding series before trusting the result.",
+    "publication_dates": "A value is used before it was published: lag the data by its publication delay (use published_at, not the period end).",
+    "universe_membership": "A symbol is traded outside its membership interval: build the universe point-in-time from membership dates.",
     "data_quality": "Check the flagged bars against another source: one-bar spikes, frozen prices, unadjusted splits and gaps are data errors that create fake profits.",
     "determinism": "Make the signal deterministic: seed every RNG and avoid wall-clock or I/O inside signal().",
     "lookahead_truncation": "The signal at bar t changes when later bars are removed: compute features only from rows <= t (no shift(-k), centered windows, bfill or full-sample stats).",
     "lookahead_perturbation": "Past signals change when the future is rewritten: remove whole-series statistics (mean/std/min/max over all rows) and future-dependent fills.",
     "repaint_history": "The signal of a closed bar changes when later bars arrive (ZigZag, confirmed-later pivots, centred windows, whole-series statistics): use only information available at the bar, or confirm the pattern n bars later and shift the signal by n.",
     "repaint_live": "The signal is declared known at the open but depends on the bar's own high, low, close or volume: shift it by one bar, or declare signal_timing='close' and act only after the bar closed.",
-    "survivorship": "Build the universe point-in-time: include the symbols that were delisted or dropped during the test, or the backtest only trades survivors.",
+    "survivorship": "Add the symbols that were delisted or dropped during the test (their prices), or declare them with delisted=[...] so the bias is priced; until then the readiness level is capped at 4.",
     "external_data": "signal() must use only the df it is given: pass parameters as function defaults and do not load data from files or the network, which the look-ahead probes cannot see.",
     "lookahead_static_lint": "Fix the flagged source lines (negative shift, center=True, backward fill) and re-run verify.",
     "implausible_accuracy": "Next-bar hit rate is too high to be real: look for leakage of the next bar's close/open into the signal.",
@@ -340,9 +357,11 @@ def statistics_rows(
 def _extra_actions() -> dict[str, str]:
     """Fix-it hints of checks that live in their own modules (loaded lazily: they import this one)."""
     from monte_neo.verify.events_checks import NEXT_ACTIONS as EVENT_ACTIONS
+    from monte_neo.verify.ml_checks import NEXT_ACTIONS as ML_ACTIONS
     from monte_neo.verify.model_protocol import NEXT_ACTIONS as MODEL_ACTIONS
+    from monte_neo.verify.pairs_verify import NEXT_ACTIONS as PAIRS_ACTIONS
 
-    return {**EVENT_ACTIONS, **MODEL_ACTIONS}
+    return {**EVENT_ACTIONS, **MODEL_ACTIONS, **ML_ACTIONS, **PAIRS_ACTIONS}
 
 
 def next_actions(checks: list[dict[str, Any]]) -> list[str]:

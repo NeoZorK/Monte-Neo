@@ -200,7 +200,7 @@ def verify_grid(
         source = source if source is not None else read_source(runner.path)
     else:
         if timeout is not None or isolate or resolve_jobs(jobs) > 1:
-            raise ValueError("jobs, timeout and isolate need strategy code in a file (strategy='file.py')")
+            raise ValueError("jobs, timeout and isolate run the strategy in a worker, so they need strategy code in a file: pass --strategy file.py (with --signals the positions are already computed: drop --jobs/--timeout/--isolate)")
         with io_watch:
             if strategy is not None:
                 signal_fn, text = load_signal_fn(strategy)

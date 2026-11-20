@@ -78,7 +78,7 @@ def _merge_yaml_config(config: Config, path: Path) -> Config:
     if not path.exists():
         return config
 
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         yaml_config = yaml.safe_load(f) or {}
 
     # Data settings
@@ -148,5 +148,5 @@ def save_config(config: Config, path: str | Path) -> None:
         },
     }
 
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         yaml.dump(data, f, default_flow_style=False)

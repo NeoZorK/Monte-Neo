@@ -29,6 +29,13 @@ ECONOMIC_REPAIRS: dict[str, tuple[str, str, list[list[Step]]]] = {
     "timing_significance": ("R8", "the profit is market exposure, not timing", [[("neutral", {})]]),
     "implausible_performance": ("R11", "risk is unstable", [[("voltarget", {"annual": 0.10, "span": 60})]]),
     "period_consistency": ("R11", "one period makes the profit", [[("voltarget", {"annual": 0.10, "span": 60})]]),
+    "alpha_after_beta": ("R8", "the return is benchmark beta, not alpha: hedge the benchmark", [[("neutral", {})]]),
+    "alpha_after_reference": ("R8", "the return is beta to the basket and the reference asset: hedge them", [[("neutral", {})]]),
+    "selection_vs_timing_basket": ("R8", "the profit is market timing, not selection: remove net exposure", [[("neutral", {})]]),
+    "cost_sensitivity": ("R5", "the edge does not survive doubled costs: trade less often", [[("hold", {"bars": 5})], [("hold", {"bars": 20})], [("band", {"band": 0.25})]]),
+    "cost_realism": ("R5", "modeled costs are below the real spread: trade less often", [[("hold", {"bars": 5})], [("hold", {"bars": 20})]]),
+    "execution_capacity": ("R9", "the size cannot be traded within the volume", [[("cap", {"cap": 0.1})], [("liquidity", {"quantile": 0.2})]]),
+    "funding_borrow_stress": ("R5", "funding and borrow cost the profit: hold shorter and trade less", [[("hold", {"bars": 20})]]),
     "policy": ("R11", "the institution's limits are breached", [[("voltarget", {"annual": 0.10, "span": 60})], [("cap", {"cap": 0.5})]]),
 }
 REPAINT = {"repaint_history", "repaint_live"}
@@ -37,7 +44,10 @@ LOOKAHEAD = {"lookahead_truncation", "lookahead_perturbation", "lookahead_static
 NOT_REPAIRABLE: dict[str, str] = {
     "data_integrity": "fix the data (R13): broken bars are not a strategy defect",
     "data_quality": "check the flagged bars against another source (R13)",
-    "survivorship": "a point-in-time universe is needed (R13: membership data)",
+    "survivorship": "add the delisted or dropped symbols' prices, or declare them (delisted=...): no transform can add names that are missing (R13)",
+    "regime_stability": "extend the history to include falling and volatile markets (2018, 2022 for crypto) or add assets from other regimes: no transform creates evidence",
+    "publication_dates": "use values only after their publication time (shift by the publication lag in your pipeline)",
+    "universe_membership": "trade a symbol only inside its membership interval: filter the universe point-in-time",
     "external_data": "the strategy reads files or the network the probes cannot see: pass the data in df",
     "determinism": "seed every random generator: a non-deterministic signal cannot be verified",
     "data_independence": "the strategy ignores its input (cached or precomputed answers): rewrite it",
@@ -57,6 +67,11 @@ def candidates(checks: list[dict[str, Any]], rebalance_every: int | None = None,
         rid, why, options = ECONOMIC_REPAIRS[row["id"]]
         for steps in options:
             out.append({"id": rid, "for": row["id"], "why": why, "steps": steps})
+    for row in checks:  # staggered tranches at the cadence the check found
+        k = (row.get("details") or {}).get("k")
+        if row["id"] == "rebalance_timing_luck" and row["status"] in ("fail", "warn") and k and int(k) >= 2:
+            out.append({"id": "R7", "for": "rebalance_timing_luck", "why": "the result depends on the rebalance day",
+                        "steps": [("tranche", {"every": int(k), "sleeves": 4})]})
     if rebalance_every:
         out.append({"id": "R7", "for": "rebalance_timing_luck", "why": "the result depends on the rebalance day",
                     "steps": [("tranche", {"every": int(rebalance_every), "sleeves": 4})]})

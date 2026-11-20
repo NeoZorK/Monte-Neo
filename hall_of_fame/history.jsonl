@@ -1,0 +1,8 @@
+{"month": "2026-11", "ranking": [], "rules": "hall-of-fame/1", "scope": "carry"}
+{"month": "2026-11", "ranking": [], "rules": "hall-of-fame/1", "scope": "cross-sectional"}
+{"month": "2026-11", "ranking": [], "rules": "hall-of-fame/1", "scope": "mean-reversion"}
+{"month": "2026-11", "ranking": [], "rules": "hall-of-fame/1", "scope": "other"}
+{"month": "2026-11", "ranking": ["2026-11-10-donchian-breakout-btc-c371160b", "2026-11-10-time-series-momentum-btc-dce45d55", "2026-11-10-turn-of-month-btc-07eb3481"], "rules": "hall-of-fame/1", "scope": "overall"}
+{"month": "2026-11", "ranking": [], "rules": "hall-of-fame/1", "scope": "pairs"}
+{"month": "2026-11", "ranking": ["2026-11-10-turn-of-month-btc-07eb3481"], "rules": "hall-of-fame/1", "scope": "seasonality"}
+{"month": "2026-11", "ranking": ["2026-11-10-donchian-breakout-btc-c371160b", "2026-11-10-time-series-momentum-btc-dce45d55"], "rules": "hall-of-fame/1", "scope": "trend"}

@@ -12,7 +12,7 @@ not charged, or from choosing the best of many variants. We describe a verifier 
 untrusted program. It (1) tests causality directly by running the program on truncated and rewritten data,
 (2) charges costs and execution delay with its own engine, (3) prices selection with the Deflated Sharpe ratio,
 and (4) issues a reproducible, optionally signed certificate. A public suite of 80 strategies that are known to lie
-and 35 honest controls is run on every build, so the method's false negatives and false positives are tracked in
+and 36 honest controls is run on every build, so the method's false negatives and false positives are tracked in
 the open.
 
 ## 1. Problem
@@ -98,7 +98,7 @@ random walk (where no strategy has an edge, so any profit is an artefact) or on 
 
 - 80 strategies that lie, in families: shifted or reversed time, centred filters, gap filling, whole-sample
   statistics, machine-learning pipelines, calendar joins and resampling, universes with several symbols, bad data.
-- 35 honest controls: the same techniques written correctly (expanding windows, shifted joins, fits with a gap,
+- 36 honest controls: the same techniques written correctly (expanding windows, shifted joins, fits with a gap,
   point-in-time membership), plus a strategy with a real edge and a high hit rate. None may fail a look-ahead
   check.
 

@@ -1,0 +1,203 @@
+{
+ "verdict": "NEEDS_MORE_EVIDENCE",
+ "certificate_id": "81da5ea129ef1cd6",
+ "arl": 3,
+ "arl_summary": "ARL 3/9 \u2014 blocked at 4: the signal predicts (timing_significance)",
+ "sharpe": 0.5498307597864578,
+ "deflated_sharpe": 0.6758156291476507,
+ "ic_t_stat": null,
+ "mean_ic": null,
+ "total_return": 0.349902098476617,
+ "max_drawdown": 0.21993457384883375,
+ "bars": 1233,
+ "timing_p": 0.22885572139303484,
+ "benchmark_sharpe": 1.0377948245185113,
+ "benchmark_total_return": 4.01042814301443,
+ "checks": [
+  {
+   "id": "data_integrity",
+   "status": "pass",
+   "summary": "OHLCV is clean"
+  },
+  {
+   "id": "data_quality",
+   "status": "pass",
+   "summary": "no spikes, frozen prices, split jumps or gaps"
+  },
+  {
+   "id": "determinism",
+   "status": "pass",
+   "summary": "signal() is deterministic"
+  },
+  {
+   "id": "lookahead_truncation",
+   "status": "pass",
+   "summary": "truncation probe: no leak detected"
+  },
+  {
+   "id": "lookahead_perturbation",
+   "status": "pass",
+   "summary": "future-perturbation probe: no leak detected"
+  },
+  {
+   "id": "external_data",
+   "status": "pass",
+   "summary": "outside data: none read (df only)"
+  },
+  {
+   "id": "repaint_history",
+   "status": "pass",
+   "summary": "repaint (history): the signal of a closed bar never changed (19 prefixes, +50 bars, revised tail)"
+  },
+  {
+   "id": "repaint_live",
+   "status": "info",
+   "summary": "repaint (forming bar): decided at the close, flickers while the bar forms (19% of snapshots): act on it only after the bar closes"
+  },
+  {
+   "id": "lookahead_static_lint",
+   "status": "pass",
+   "summary": "static lint: clean"
+  },
+  {
+   "id": "implausible_accuracy",
+   "status": "pass",
+   "summary": "next-bar hit rate 0.635 over 104 bars (z 2.7)"
+  },
+  {
+   "id": "data_independence",
+   "status": "pass",
+   "summary": "data independence: positions follow the prices"
+  },
+  {
+   "id": "implausible_performance",
+   "status": "pass",
+   "summary": "annualized Sharpe 0.5 is within the usual range"
+  },
+  {
+   "id": "costs_modeled",
+   "status": "pass",
+   "summary": "15.00 bps per side modeled"
+  },
+  {
+   "id": "net_profitability",
+   "status": "pass",
+   "summary": "net total return +34.99% after costs"
+  },
+  {
+   "id": "cost_margin",
+   "status": "pass",
+   "summary": "break-even cost 70.45 bps per side vs 15.00 modeled"
+  },
+  {
+   "id": "delay_sensitivity",
+   "status": "pass",
+   "summary": "survives 1 bar execution delay"
+  },
+  {
+   "id": "timing_significance",
+   "status": "warn",
+   "summary": "beats 78% of 200 shifted copies of its positions (p 0.229)"
+  },
+  {
+   "id": "sample_size",
+   "status": "fail",
+   "summary": "27 closed trades (min 30)"
+  },
+  {
+   "id": "deflated_sharpe",
+   "status": "warn",
+   "summary": "deflated Sharpe 0.676 over 6 trial(s)"
+  },
+  {
+   "id": "trials_disclosed",
+   "status": "pass",
+   "summary": "n_trials declared"
+  },
+  {
+   "id": "holdout_consistency",
+   "status": "pass",
+   "summary": "Sharpe/bar train +0.0037 vs holdout +0.0991"
+  },
+  {
+   "id": "period_consistency",
+   "status": "warn",
+   "summary": "profit comes from one period (2020); the other 3 return -2.00%"
+  },
+  {
+   "id": "walk_forward_stability",
+   "status": "info",
+   "summary": "3 of 6 equal windows (196 bars each) made money; worst -11.3%, best +20.4%"
+  },
+  {
+   "id": "sharpe_confidence",
+   "status": "info",
+   "summary": "Sharpe 95% interval -0.36 to +1.55 (return -29.2% to +143.7%); 88% of resamples have a positive Sharpe"
+  },
+  {
+   "id": "serial_correlation",
+   "status": "info",
+   "summary": "serial correlation of returns is small (lag-1 -0.05): Sharpe 0.55, corrected 0.61"
+  },
+  {
+   "id": "track_record",
+   "status": "info",
+   "summary": "needs 3,371 bars (about 9.24 years) to be positive at 95%; has 1,172: not enough history yet"
+  },
+  {
+   "id": "benchmark",
+   "status": "info",
+   "summary": "buy & hold +401.04% (Sharpe 1.04) vs strategy +34.99% (Sharpe 0.55)"
+  },
+  {
+   "id": "spread_estimate",
+   "status": "info",
+   "summary": "rough spread estimate from high and low: about 86.19 bps (43.09 bps per side); the model charges only 5 bps slippage per side, well below it: costs may be optimistic"
+  },
+  {
+   "id": "capacity",
+   "status": "info",
+   "summary": "capital that keeps 90% of 54 fills within a share of the bar's volume: 1%: 2.44M, 5%: 12.2M, 10%: 24.4M (median bar trades 303M)"
+  },
+  {
+   "id": "walk_forward_oos",
+   "status": "pass",
+   "summary": "walk-forward OOS Sharpe/bar +0.0324 vs in-sample best +0.0288"
+  },
+  {
+   "id": "parameter_plateau",
+   "status": "pass",
+   "summary": "neighbouring parameters keep 68% of the best Sharpe (median of 2)"
+  },
+  {
+   "id": "pbo",
+   "status": "warn",
+   "summary": "probability of backtest overfitting 0.792: the best combination in training ranks below the median in testing in 79% of 12,870 splits; its testing return is a loss in 57%"
+  },
+  {
+   "id": "reality_check",
+   "status": "warn",
+   "summary": "SPA p = 0.312 (Reality Check 0.202): with 6 combinations tried, luck cannot be excluded as the source of the best result"
+  },
+  {
+   "id": "romano_wolf",
+   "status": "info",
+   "summary": "0 of 6 combinations are significant after Romano-Wolf stepdown; the chosen best is not among them"
+  }
+ ],
+ "reasons": [
+  "sample_size: 27 closed trades (min 30)",
+  "timing_significance: beats 78% of 200 shifted copies of its positions (p 0.229)",
+  "deflated_sharpe: deflated Sharpe 0.676 over 6 trial(s)",
+  "period_consistency: profit comes from one period (2020); the other 3 return -2.00%",
+  "pbo: probability of backtest overfitting 0.792: the best combination in training ranks below the median in testing in 79% of 12,870 splits; its testing return is a loss in 57%",
+  "reality_check: SPA p = 0.312 (Reality Check 0.202): with 6 combinations tried, luck cannot be excluded as the source of the best result"
+ ],
+ "slice": "disc",
+ "n_trials": 6,
+ "exit_code": 0,
+ "report_sha256": "5efe0ab53ce40aa2fc91ada33e2b015ea6e382c2c21f63d01ec8f438e55c238e",
+ "grid_size": 6,
+ "finished_at": "2026-11-08T12:04:42+00:00",
+ "seconds": 1.4
+}

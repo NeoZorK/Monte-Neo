@@ -13,6 +13,21 @@ monte-neo repair --ohlcv data.csv --strategy s.py --out repair/ [--commission-bp
 Optimisers maximise the return, so they overfit. `repair` minimises **defects**, from a short list of declared repairs,
 and lets a part of the history it has never seen decide.
 
+## Detect, explain, repair
+
+`repair` has three steps, and you can stop after any of them.
+
+1. **Detect:** `monte-neo verify ... --out cert.json` finds the problem.
+2. **Explain:** `monte-neo repair --explain cert.json` turns each failed or warned check into a plain explanation, why it matters and what
+   to do. It covers 16 common findings, `F01` to `F16`: look-ahead forms, repainting, zero costs, no `n_trials`, too much turnover, market
+   beta, capacity, survivorship, phantom profit and bad data.
+3. **Repair:** `monte-neo repair --preview F03 --ohlcv data.csv --strategy s.py` tries the automatic fix of one finding and prints a
+   before and after. `repair` without `--preview` runs the full protocol below.
+
+Rules that keep the repair honest: every fix counts as one more trial (`n_trials` goes up by one); the result is always a full
+re-verification, so a fix cannot raise a verdict by itself; findings that no transform can repair (bad data, survivorship, a Sharpe that
+does not survive the search) return what you must do instead of a patch.
+
 ## The protocol
 
 1. **Diagnose** the original on all the data, as `verify` does.

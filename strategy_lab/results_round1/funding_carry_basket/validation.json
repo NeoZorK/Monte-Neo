@@ -1,0 +1,62 @@
+{
+ "verdict": "PASS_WITH_WARNINGS",
+ "certificate_id": "0d5ff87178999b2c",
+ "arl": 0,
+ "arl_summary": "ARL 0/9 \u2014 not assessed beyond 0: idea on clean data (data_integrity (not run), ic (not run))",
+ "sharpe": 5.864194518331628,
+ "deflated_sharpe": 1.0,
+ "ic_t_stat": null,
+ "mean_ic": null,
+ "total_return": null,
+ "max_drawdown": 0.0338892894217897,
+ "bars": null,
+ "checks": [
+  {
+   "id": "returns_only_scope",
+   "status": "info",
+   "summary": "Return series only: smoothing, distribution and significance were checked; look-ahead, costs and data quality behind the returns cannot be checked without the strategy or positions."
+  },
+  {
+   "id": "return_smoothing",
+   "status": "warn",
+   "summary": "returns look smoothed (lag-1 autocorrelation 0.48, t=20.7): illiquid marks or stale pricing; the unsmoothed Sharpe is 3.50 (reported 5.86)"
+  },
+  {
+   "id": "zero_kink",
+   "status": "warn",
+   "summary": "small losses are missing: 133 small losses vs 803 small gains (expected about 450.1 losses, z=-20.7); losses may be deferred or rounded up"
+  },
+  {
+   "id": "implausible_consistency",
+   "status": "pass",
+   "summary": "53% positive periods vs 62% expected (z=-7.9)"
+  },
+  {
+   "id": "round_numbers",
+   "status": "warn",
+   "summary": "28% of returns are exact multiples of 5 bps vs 0.0% expected: figures may be typed or rounded by hand"
+  },
+  {
+   "id": "track_record_significance",
+   "status": "pass",
+   "summary": "probabilistic Sharpe 1.00, deflated for 65 strategies 1.00; track record 5.0 years, 0.1 needed"
+  },
+  {
+   "id": "drawdown_consistency",
+   "status": "pass",
+   "summary": "max drawdown 3.4% within the simulated range (5th percentile 0.5%)"
+  }
+ ],
+ "reasons": [
+  "return_smoothing: returns look smoothed (lag-1 autocorrelation 0.48, t=20.7): illiquid marks or stale pricing; the unsmoothed Sharpe is 3.50 (reported 5.86)",
+  "zero_kink: small losses are missing: 133 small losses vs 803 small gains (expected about 450.1 losses, z=-20.7); losses may be deferred or rounded up",
+  "round_numbers: 28% of returns are exact multiples of 5 bps vs 0.0% expected: figures may be typed or rounded by hand"
+ ],
+ "slice": "pre",
+ "n_trials": 65,
+ "exit_code": 0,
+ "report_sha256": "30c459e209000b62b3294bb5a9e0f03fc4dd5d103073a4d2334d8aa38b6c4893",
+ "gate_open": true,
+ "finished_at": "2026-11-07T16:48:54+00:00",
+ "seconds": 0.9
+}

@@ -1,0 +1,169 @@
+{
+ "schema": "carry-prereg/1",
+ "track": "delta-neutral funding carry (long spot / short USD-M perp)",
+ "written": "2026-11-08",
+ "idea": "Claude Sonnet 5.5",
+ "process": "Rostyslav Shcherbyna",
+ "not_investment_advice": true,
+ "validation_read_before_this_commit": false,
+ "data": {
+  "symbols": [
+   "BTCUSDT",
+   "ETHUSDT",
+   "BNBUSDT",
+   "XRPUSDT",
+   "ADAUSDT",
+   "LTCUSDT",
+   "LINKUSDT",
+   "DOGEUSDT",
+   "DOTUSDT",
+   "AVAXUSDT",
+   "ATOMUSDT",
+   "SOLUSDT"
+  ],
+  "funding_starts": "2020-01 (no funding before; discovery = 2020 only)",
+  "discovery": "< 2021-01-01",
+  "validation": "2021-01-01 .. 2024-12-31",
+  "holdout": "sealed, cut at load time in code (CUT = 2025-01-01)"
+ },
+ "mechanics": {
+  "direction": "always long spot / short perp; reverse leg (short spot / long perp on negative funding) NOT modelled: no borrow-rate data, so the strategy is flat when the forecast is low",
+  "signal": "mean daily funding over trailing L days (close t) vs enter/exit thresholds (hysteresis); decisions at the close of t, earn from t+1; rebalance every R days",
+  "sizing": "per-coin cap share of equity; equal units spot/perp (delta-neutral), no daily re-hedge; perp margin 25% of notional on top of spot notional",
+  "pnl": "units*(dSpot-dPerp) [basis incl. MTM] + units*mean-notional*published daily funding - trade costs - capital cost",
+  "costs": "spot 10 bps + perp 5 bps VIP0 taker plus per-coin spread (binance_costs.SLIP_BPS) on EVERY leg entry and exit; x2 sensitivity doubles fee and spread",
+  "capital_cost": "5% p.a. on deployed capital (spot+margin), charged always (conservative in the zero-rate years); a 0% sensitivity is reported",
+  "enter_threshold_logic": "0.0003/day (11% p.a.) ~ 2x round-trip cost (~50 bps) spread over a 30-day holding; exit threshold = a third of it"
+ },
+ "variants": {
+  "A_fast_daily": {
+   "L": 7,
+   "enter": 0.0003,
+   "exit": 0.0001,
+   "R": 1,
+   "cap": 0.16666666666666666,
+   "topk": null,
+   "symbols": "all 12"
+  },
+  "B_weekly": {
+   "L": 14,
+   "enter": 0.0003,
+   "exit": 0.0001,
+   "R": 7,
+   "cap": 0.16666666666666666,
+   "topk": null,
+   "symbols": "all 12"
+  },
+  "C_very_fast": {
+   "L": 3,
+   "enter": 0.0004,
+   "exit": 0.00015,
+   "R": 1,
+   "cap": 0.16666666666666666,
+   "topk": null,
+   "symbols": "all 12"
+  },
+  "D_top4_weekly": {
+   "L": 14,
+   "enter": 0.0003,
+   "exit": 0.0001,
+   "R": 7,
+   "cap": 0.25,
+   "topk": 4,
+   "symbols": "all 12"
+  },
+  "E_btc_eth_slow": {
+   "L": 30,
+   "enter": 0.0002,
+   "exit": 5e-05,
+   "R": 7,
+   "cap": 0.5,
+   "topk": null,
+   "symbols": [
+    "BTCUSDT",
+    "ETHUSDT"
+   ]
+  }
+ },
+ "plateau_grid_declared": {
+  "per_variant": "L x {0.5,1,2} times enter x {0.67,1,1.5} = 9 points; all 45 counted as trials"
+ },
+ "selection_rule": [
+  "1. discard a variant if discovery net Sharpe at cost x2 <= 0",
+  "2. among the rest pick the highest VALIDATION net Sharpe at cost x2 (not the unscaled one); report ALL variants regardless",
+  "3. deflated Sharpe with n_trials = all Lab variants + screening ledger + this track (45), also at the worst rebalance phase"
+ ],
+ "gates_for_holdout": [
+  "ARL >= 6 and depth >= 2 (arl-rules/1)",
+  "DSR >= 0.95 at the worst rebalance phase",
+  "profit at cost x2",
+  "alpha to BTC t >= 2, or beta ~ 0 with return t >= 2",
+  "capacity >= 250k USDT",
+  "tail events reported"
+ ],
+ "capacity_definition": "AUM at which a held position = 1% of trailing-30d median daily USD volume of the thinner of spot/perp; 10th percentile over held coin-days",
+ "disclosures": [
+  "Before this file: the yearly mean funding of all 12 coins (2020 .. 2024) was printed once for a data check, so market-level validation funding is known to the author; no variant parameter was derived from it (the parameters above were fixed from the cost arithmetic).",
+  "One max/min summary of the funding files was printed that included post-2025 values (a single extreme SOL number); it was not used and nothing else from 2025+ was read.",
+  "Survivors-only universe; delisted/collapsed coins (LUNA, FTT, UST) absent."
+ ],
+ "discovery_results_2020": {
+  "A_fast_daily": {
+   "first_trade": "2020-01-09",
+   "bars": 358,
+   "sharpe": 7.009,
+   "sharpe_cost_x2": 6.436,
+   "max_drawdown": -0.0095,
+   "beta_btc": -0.008,
+   "avg_deployed": 0.879
+  },
+  "B_weekly": {
+   "first_trade": "2020-01-19",
+   "bars": 348,
+   "sharpe": 7.929,
+   "sharpe_cost_x2": 7.213,
+   "max_drawdown": -0.0089,
+   "beta_btc": -0.007,
+   "avg_deployed": 0.801
+  },
+  "C_very_fast": {
+   "first_trade": "2020-01-08",
+   "bars": 359,
+   "sharpe": 7.896,
+   "sharpe_cost_x2": 6.251,
+   "max_drawdown": -0.0071,
+   "beta_btc": -0.005,
+   "avg_deployed": 0.719
+  },
+  "D_top4_weekly": {
+   "first_trade": "2020-01-19",
+   "bars": 348,
+   "sharpe": 5.255,
+   "sharpe_cost_x2": 4.134,
+   "max_drawdown": -0.0185,
+   "beta_btc": -0.009,
+   "avg_deployed": 0.808
+  },
+  "E_btc_eth_slow": {
+   "first_trade": "2020-02-02",
+   "bars": 334,
+   "sharpe": 8.849,
+   "sharpe_cost_x2": 8.623,
+   "max_drawdown": -0.0075,
+   "beta_btc": -0.007,
+   "avg_deployed": 1.121
+  }
+ },
+ "n_trials": 767,
+ "n_trials_parts": {
+  "strategy_files_grid_points": 104,
+  "files_parsed_by_text": 6,
+  "screen_ledger": 612,
+  "carry_track": 45
+ },
+ "addendum_after_validation_read": {
+  "written": "2026-11-08",
+  "note": "Validation was read after the commit of this file. The simulator accounting was then corrected (explicit perp margin account, top-ups, liquidation test, bad-tick filter on the perp high) and the margin raised from 0.25 to 0.50 after the 0.25 run showed many liquidations. Variants, thresholds and the selection rule are unchanged; the margin choice was influenced by validation. Full account in results/carry_track.md.",
+  "selected": "E_btc_eth_slow"
+ }
+}

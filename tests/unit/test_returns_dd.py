@@ -57,7 +57,7 @@ def test_report_shape_and_schema(series: dict[str, pd.Series]) -> None:
     assert rep["schema"] == "strategy-verdict/1" and rep["verdict"] in VERDICTS
     for c in rep["checks"]:
         assert {"id", "category", "status", "summary"} <= set(c)
-    assert _status(rep, "benchmark_relation") == "info"
+    assert _status(rep, "benchmark_relation") in ("pass", "warn")
     assert rep["reproducibility"]["n_trials"] == 3
     assert rep["reproducibility"]["settings"]["kind"] == "returns"
     assert {"n", "sharpe", "unsmoothed_sharpe", "max_drawdown", "psr", "dsr"} <= set(rep["metrics"])

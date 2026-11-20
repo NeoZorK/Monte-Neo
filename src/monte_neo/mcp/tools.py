@@ -10,6 +10,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from monte_neo._paths import strategy_file
 from monte_neo._version import __version__
 
 SERVER_INSTRUCTIONS = (
@@ -455,19 +456,32 @@ def verify_quotes(
     return _compact(report) if compact else report
 
 
-def suggest_fix(strategy_path: str) -> dict[str, Any]:
+def suggest_fix(strategy_path: str, certificate_path: str | None = None) -> dict[str, Any]:
     """Suggest a causal rewrite of a strategy file that reads the future (negative shifts, centred windows, whole-table statistics...).
 
     Returns the rewrites (rule, line, before, after), the patched source, a unified diff and the lint findings that
     remain. The patch keeps the shape of the strategy, not its meaning: verify it with verify_strategy before using it,
     and write the patched source to a new file yourself (nothing is written here). Comments are not kept.
+    With ``certificate_path`` (a verify certificate) the result also has ``advice``: for every failing or warning check
+    the fix-it text, the declared repair transforms (rebalance tranches, beta hedge, lower trading frequency) and what
+    only you can do (add delisted symbols, extend the history). Repairs are trials: use the repair tool, not hand tuning.
     """
-    from monte_neo.verify.fixes import suggest_fixes
+    from monte_neo.verify.fixes import advise, suggest_fixes
 
-    path = Path(strategy_path.split(":")[0])
+    path = Path(strategy_file(strategy_path))
     if not path.is_file():
         raise FileNotFoundError(f"strategy file not found: {path}")
-    return suggest_fixes(path.read_text(encoding="utf-8"))
+    result = suggest_fixes(path.read_text(encoding="utf-8"), filename=path.name)
+    if certificate_path is not None:
+        from monte_neo.verify.recheck import load_certificate
+
+        cert = load_certificate(certificate_path)
+        result["advice"] = advise(cert)
+        from monte_neo.readiness import readiness
+        from monte_neo.verify.fixes import advise_depth
+
+        result["depth_advice"] = advise_depth(readiness(certificate=cert))
+    return result
 
 
 def discover_indicator(
@@ -496,7 +510,7 @@ def register_hypothesis(hypothesis: str, strategy_path: str | None = None, param
     """
     from monte_neo.verify.register import Registry
 
-    source = Path(strategy_path.split(":")[0]).read_text(encoding="utf-8") if strategy_path else None
+    source = Path(strategy_file(strategy_path)).read_text(encoding="utf-8") if strategy_path else None
     entry = Registry().register(hypothesis, source=source, params=params, n_trials=n_trials)
     return {"id": f"reg-{entry['seq']}-{entry['hash'][:8]}", "registered_at": entry["at"], "variant": entry["variant"]}
 
@@ -527,7 +541,7 @@ def verify_portfolio(ohlcv_path: str, strategy_paths: list[str]) -> dict[str, An
     from monte_neo.verify import load_ohlcv
     from monte_neo.verify.portfolio import verify_portfolio as _portfolio
 
-    return _portfolio(load_ohlcv(ohlcv_path), list(strategy_paths), names=[Path(s.split(":")[0]).stem for s in strategy_paths])
+    return _portfolio(load_ohlcv(ohlcv_path), list(strategy_paths), names=[Path(strategy_file(s)).stem for s in strategy_paths])
 
 
 def diagnose_data(table_path: str, provider: str = "auto") -> dict[str, Any]:
@@ -548,6 +562,12 @@ def validate_alpha(
     factors_path: str | None = None,
     book_path: str | None = None,
     n_trials: int = 1,
+    funding_path: str | None = None,
+    aum_grid: list[float] | None = None,
+    min_capacity: float | None = None,
+    liquid_top: int | None = None,
+    terminal_returns: dict[str, float] | None = None,
+    rebalance_phase: str | None = None,
 ) -> dict[str, Any]:
     """Does a cross-sectional score predict returns, and can its top-minus-bottom portfolio be traded? (alpha-report/1)
 
@@ -567,6 +587,11 @@ def validate_alpha(
         factors_path: Factor returns file (date + factors); default: market, size, momentum, reversal and low-volatility factors built from the universe.
         book_path: Returns of the user's existing book (date + one column per strategy): marginal Sharpe, overlap.
         n_trials: Variants tried before this one (Harvey-Liu-Zhu hurdle, minimum backtest length, Sharpe haircut).
+        funding_path: Funding history (timestamp, symbol, funding_bps a long pays per bar): real funding on every perpetual leg.
+        aum_grid: AUMs for the capacity grid in one run; min_capacity is the AUM where the net return must stay positive.
+        liquid_top: Trade only the K most liquid symbols known before each date (point-in-time universe).
+        terminal_returns: Return of each delisted symbol on the bar after its last price ({symbol: return}); undeclared delistings are flagged.
+        rebalance_phase: K/H, run the report for one rebalance phase (scores held between rebalances).
 
     The report also covers attribution (is it a known factor, hidden short volatility), value to a book, multiple
     testing and risk (neutrality, concentration, named crises, tail risk).
@@ -575,7 +600,8 @@ def validate_alpha(
 
     return _validate(
         prices_path, scores_path, horizon=horizon, quantiles=quantiles, claimed_ir=claimed_ir, aum=aum, seed=seed,
-        factors=factors_path, book=book_path, n_trials=n_trials,
+        factors=factors_path, book=book_path, n_trials=n_trials, funding=funding_path, aum_grid=aum_grid, min_capacity=min_capacity,
+        liquid_top=liquid_top, terminal_returns=terminal_returns, rebalance_phase=rebalance_phase,
     )
 
 
@@ -623,6 +649,43 @@ def verify_legs(legs_path: str, tolerance: float = 0.05, pnl: str = "log", perio
     return _verify_legs(legs_path, tolerance=tolerance, pnl=pnl, periods_per_year=periods_per_year)
 
 
+def verify_pairs(
+    legs_path: str, pairs_tested: int | None = None, variants_per_pair: int = 1, legging_delay_bars: float | None = None,
+    legging_delay_ms: float | None = None, bar_ms: float | None = None, borrow_bps: float = 0.0, borrow_unavailable: float = 0.0,
+    break_date: str | None = None, tolerance: float = 0.05, pnl: str = "log", periods_per_year: float | None = None,
+) -> dict[str, Any]:
+    """Pairs / stat-arb verification: the accounting check of verify_legs plus econometrics.
+
+    Adds Engle-Granger + KPSS cointegration (Johansen for 3+ legs), half-life, hedge-ratio stability, rolling
+    cointegration, structural breaks of the spread and of the hedge ratio (CUSUM, sup-Wald, Bai-Perron; the row names
+    the date the link broke), Deflated Sharpe over the pairs screened, and the P&L with a late second leg and a borrow
+    fee. Relationship failures give NEEDS_MORE_EVIDENCE, never REJECT by themselves; the accounting mismatch still rejects.
+
+    Args:
+        legs_path: CSV/Parquet legs table, see verify_legs.
+        pairs_tested: Pairs screened before this one was picked (the Sharpe ratio is deflated by it).
+        variants_per_pair: Parameter variants tried per pair.
+        legging_delay_bars: Delay of the second leg in bars (default: scan, headline 1 bar).
+        legging_delay_ms: Delay in milliseconds (needs bar_ms).
+        bar_ms: Bar length in milliseconds.
+        borrow_bps: Annual borrow fee of the short side in bps.
+        borrow_unavailable: Share of bars (0-1) where the short cannot be borrowed.
+        break_date: Optional date for a Chow test of the spread level.
+        tolerance: Largest unexplained share of the P&L (default 0.05).
+        pnl: "log" or "simple", see verify_legs.
+        periods_per_year: Bars per year; inferred from the dates when omitted.
+    """
+    from monte_neo.verify.legs import verify_legs as _verify_legs
+    from monte_neo.verify.pairs_verify import PairsOptions
+
+    opts = PairsOptions(
+        pairs_tested=pairs_tested, variants_per_pair=variants_per_pair, legging_delay_bars=legging_delay_bars,
+        legging_delay_ms=legging_delay_ms, bar_ms=bar_ms, borrow_bps=borrow_bps, borrow_unavailable=borrow_unavailable,
+        break_date=break_date,
+    )
+    return _verify_legs(legs_path, tolerance=tolerance, pnl=pnl, periods_per_year=periods_per_year, pairs=opts)
+
+
 def build_dossier(
     certificate_path: str,
     out_dir: str,
@@ -668,6 +731,8 @@ def monitor_live(
     fills_path: str | None = None,
     slippage_bps: float | None = None,
     haircut: float = 0.5,
+    source: str | None = None,
+    custody: str | None = None,
 ) -> dict[str, Any]:
     """After launch: does the live (or paper) strategy behave like its backtest, and is the alpha dead? (live-monitor/1)
 
@@ -681,10 +746,100 @@ def monitor_live(
         fills_path: Optional fills file when live_path holds returns.
         slippage_bps: Modelled slippage to compare with (default: the certificate's).
         haircut: Share of the backtest edge expected live (default 0.5).
+        source: real_fills, paper, testnet or simulated. Only real_fills (with enough bars and fills) can support ARL 9.
+        custody: Statement that the fills are held at a real venue or broker (needed for ARL 9 depth D4).
     """
     from monte_neo.verify.live import verify_live
 
-    return verify_live(certificate_or_backtest_path, live_path, fills=fills_path, modelled_slippage_bps=slippage_bps, haircut=haircut)
+    return verify_live(certificate_or_backtest_path, live_path, fills=fills_path, modelled_slippage_bps=slippage_bps, haircut=haircut, source=source, custody=custody)
+
+
+def readiness_level(
+    certificate_path: str | None = None, alpha_path: str | None = None, live_path: str | None = None,
+    holdout_path: str | None = None, n_trials: int | None = None,
+) -> dict[str, Any]:
+    """The Alpha Readiness Level (ARL 1-9) and its depth (0-4) for the evidence given, with the rules version.
+
+    The ARL rates the evidence, not the investment. Each level has a depth: a criterion without evidence scores 0 and is
+    listed as not assessed with the command that would produce it. The rules are provisional until the owner freezes them.
+    """
+    import json
+
+    from monte_neo.readiness import readiness
+    from monte_neo.verify.sealed_holdout import SealedHoldout
+
+    def load(p: str | None) -> dict[str, Any] | None:
+        return json.loads(Path(p).read_text(encoding="utf-8")) if p else None
+
+    return readiness(load(certificate_path), load(alpha_path), load(live_path), n_trials=n_trials,
+                     holdout=SealedHoldout(holdout_path).evidence() if holdout_path else None)
+
+
+def research_search(
+    project: str, action: str, data_path: str | None = None, discovery_end: str | None = None, validation_end: str | None = None,
+    strategy_path: str | None = None, grid: dict[str, list[Any]] | None = None, params: dict[str, Any] | None = None, top: int | None = None,
+    min_sharpe: float = 0.0, candidates: list[str] | None = None, rule: str | None = None, batch: int | None = None,
+    candidate: str | None = None, override: bool = False, confirm: bool = False, returns_path: str | None = None,
+    grammar_path: str | None = None, profile: str | None = None, policy: dict[str, Any] | None = None, step: str | None = None,
+    certify_top: int = 0, max_seconds: float | None = None, dry_run: bool = False, dossier_dir: str | None = None, hall_dir: str | None = None,
+    author: str | None = None, category: str | None = None, tier: str = "C",
+) -> dict[str, Any]:
+    """One step of an honest strategy search; the protocol refuses steps that would let you fool yourself.
+
+    Also: init with grammar_path (a plugin file with SOURCE and GRID) and profile; screen without a strategy runs the whole grammar and resumes after an
+    interruption (max_seconds); promote (same as preregister: the list and its hash are written before validation); holdout (freezes candidate if needed
+    and opens once; confirm=True); status (progress, ETA, warnings, next step); report (research-report/1 with search statistics, FDR, effective tries,
+    detectable Sharpe, ARL per certified candidate with certify_top, diagnosis and next actions); forward with step freeze, record or status (hash-chained
+    forward journal of the frozen rule); handoff (dossier_dir and/or hall_dir for the frozen champion); init with dry_run runs everything on synthetic data.
+
+    Steps in order: init (data_path, discovery_end, validation_end: the split is fixed once), screen (strategy_path plus grid or params,
+    runs on discovery only), preregister (top=K or candidates, before validation is read), validate (once per batch; SPA, Reality Check,
+    Romano-Wolf and the Sharpe luck delivers for the number of candidates), freeze (candidate, confirm=True), open_holdout (confirm=True;
+    one opening only, a second one destroys D4 of the ARL depth for good), certify, funnel (counts per stage, publish losers too).
+    family (returns_path: a folder or wide table of candidate returns tried elsewhere; no project needed) gives Reality Check, SPA, Romano-Wolf and the luck level.
+    Never open the holdout to look; freeze one candidate and open it once.
+    """
+    from monte_neo.research.service import run_action
+
+    return run_action(project, action, data=data_path, discovery_end=discovery_end, validation_end=validation_end, strategy=strategy_path, grid=grid,
+                      params=params, top=top, min_sharpe=min_sharpe, candidates=candidates, rule=rule, batch=batch, candidate=candidate,
+                      override=override, confirm=confirm, returns=returns_path, grammar=grammar_path, profile=profile, policy=policy, step=step,
+                      certify_top=certify_top, max_seconds=max_seconds, dry_run=dry_run, dossier_dir=dossier_dir, hall_dir=hall_dir, author=author,
+                      category=category, tier=tier)
+
+
+def verify_carry(
+    carry_path: str, strategy_path: str, spot_cost_bps: float = 10.0, perp_cost_bps: float = 5.0, n_trials: int | None = None,
+    capital_cost_apr: float = 0.0, perp_leverage: float = 3.0, margin_policy: dict[str, float] | None = None,
+    universe_rule: dict[str, Any] | None = None, reference_symbol: str | None = None, capacity_spread_bars: int = 1,
+) -> dict[str, Any]:
+    """Verify a delta-neutral carry rule (spot long, perpetual short) with the full verifier; funding is explicit P&L.
+
+    Use it instead of verify_returns for carry: the signal-level checks (look-ahead, truncation, cost stress, significance)
+    run on the entry rule, and the certificate adds ``carry_decomposition`` (is the profit funding or the basis moving).
+
+    Args:
+        carry_path: Table (.csv / .parquet) of timestamp, spot_close, perp_close and funding_rate (fraction a long pays per bar) or funding_bps.
+        strategy_path: File with signal(df) returning 1 (hold the pair) or 0 (flat); df has spot_close, perp_close, basis, funding_rate.
+        spot_cost_bps: All-in cost of one spot fill, bps. Entry and exit pay both legs.
+        perp_cost_bps: All-in cost of one perpetual fill, bps.
+        n_trials: Variants tried to find this rule.
+        capital_cost_apr: Yearly cost of the capital tied up while the pair is held (0.05 = 5 %).
+        perp_leverage: Leverage of the short perpetual for the margin check; the spot leg is not collateral.
+        margin_policy: Declared collateral policy {trigger, delay_bars, cost_bps}; liquidation is tested on the bar high (column perp_high).
+        universe_rule: {top_n, lookback_bars, rebalance_every, on}: ex-ante composition of a basket that the verifier recomputes; only it can lift the survivorship cap.
+        reference_symbol: Coin used as the market for residual_alpha and hidden_short_volatility.
+        capacity_spread_bars: Bars an order may be spread over for capacity (quote volume of the thinner leg).
+
+    A symbol column in the table makes a basket of coins (one weight per row). Carry rules: accuracy is measured on the basis, the sample is the
+    effective number of independent accrual periods, the beta reference is the underlying, and carry_future_probe catches a rule that reads the
+    next funding or the next basis.
+    """
+    from monte_neo.verify.carry import verify_carry as _verify
+
+    return _compact(_verify(carry_path, strategy=strategy_path, spot_cost_bps=spot_cost_bps, perp_cost_bps=perp_cost_bps, n_trials=n_trials,
+                                 capital_cost_apr=capital_cost_apr, perp_leverage=perp_leverage, margin_policy=margin_policy,
+                                 universe_rule=universe_rule, reference_symbol=reference_symbol, capacity_spread_bars=capacity_spread_bars))
 
 
 def repair_strategy(
@@ -734,6 +889,7 @@ def verdict_schema() -> dict[str, Any]:
 def verifier_manifest() -> dict[str, Any]:
     """Execution semantics and check catalogue — read before building a backtest."""
     from monte_neo.verify.checks import NEXT_ACTIONS
+    from monte_neo.verify.pairs_verify import NEXT_ACTIONS as PAIRS_ACTIONS
 
     return {
         "engine": "monte-neo",
@@ -753,7 +909,7 @@ def verifier_manifest() -> dict[str, Any]:
             "NEEDS_MORE_EVIDENCE": "statistics too weak (few trades, Sharpe does not survive n_trials)",
             "REJECT": "backtest is broken or unprofitable after costs (look-ahead, bad data, losses)",
         },
-        "checks": {k: v for k, v in NEXT_ACTIONS.items()},
+        "checks": {**NEXT_ACTIONS, **PAIRS_ACTIONS},
         "instructions": SERVER_INSTRUCTIONS,
     }
 
@@ -777,8 +933,12 @@ TOOLS: tuple[Callable[..., dict[str, Any]], ...] = (
     validate_alpha,
     verify_returns,
     verify_legs,
+    verify_pairs,
     build_dossier,
     monitor_live,
+    readiness_level,
+    research_search,
+    verify_carry,
     repair_strategy,
     verdict_schema,
     verifier_manifest,
@@ -808,6 +968,7 @@ __all__ = [
     "verify_portfolio",
     "verify_quotes",
     "verify_legs",
+    "verify_pairs",
     "verify_returns",
     "verify_strategy",
 ]

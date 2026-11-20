@@ -1,0 +1,17 @@
+{
+ "slices": {
+  "disc": {
+   "bars": 366
+  },
+  "pre": {
+   "bars": 1827
+  },
+  "full": {
+   "bars": 2495
+  }
+ },
+ "registration": "reg-4-2b0dc5c2",
+ "planned_trials": 83,
+ "finished_at": "2026-11-08T16:54:55+00:00",
+ "seconds": 0.2
+}
