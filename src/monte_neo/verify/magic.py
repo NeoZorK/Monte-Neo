@@ -15,9 +15,10 @@ from __future__ import annotations
 
 import argparse
 import os
-import shlex
 import tempfile
 from typing import Any
+
+from monte_neo._paths import split_args
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -46,7 +47,7 @@ def verify_cell(line: str, cell: str) -> Any:
     from monte_neo.verify.notebook import Certificate
 
     try:
-        args = _parser().parse_args(shlex.split(line))
+        args = _parser().parse_args(split_args(line))
     except SystemExit as exc:
         raise ValueError("usage: %%verify --ohlcv data.csv [--n-trials N] [--commission-bps X] [--slippage-bps X]") from exc
     if not cell.strip():

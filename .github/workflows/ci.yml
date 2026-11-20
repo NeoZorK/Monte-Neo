@@ -40,7 +40,7 @@ jobs:
   # platform and Python versions users install it on, not only on the Apple research stack.
   verifier:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -62,7 +62,7 @@ jobs:
 
       - name: Verifier tests and Trap Suite
         run: >-
-          uv run pytest -W ignore tests/traps tests/unit/test_bench_*.py tests/unit/test_verify_*.py
+          uv run pytest -n auto -W ignore tests/traps tests/unit/test_bench_*.py tests/unit/test_verify_*.py
           tests/unit/test_integrations.py tests/unit/test_maintenance.py tests/unit/test_discover_cli.py
       - name: Hypothesis zoo (lite)
         run: uv run pytest -W ignore tests/zoo -q

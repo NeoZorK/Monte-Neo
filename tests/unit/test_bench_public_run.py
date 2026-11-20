@@ -90,7 +90,7 @@ def test_cli_prepare_and_collect(bench, tmp_path) -> None:
     assert code == 3 and "collect failed" in text
 
 
-@pytest.mark.skipif(shutil.which("bash") is None, reason="needs bash")
+@pytest.mark.skipif(shutil.which("bash") is None or os.name == "nt", reason="needs a POSIX bash (on Windows runners bash is the WSL launcher)")
 def test_runner_script_runs_agent_command_per_task(bench, tmp_path) -> None:
     ws = tmp_path / "ws"
     prepare(bench, ws, ["fake-agent"], rng=random.Random(3))

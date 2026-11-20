@@ -26,8 +26,17 @@ pytestmark = pytest.mark.skipif(NODE is None, reason="node is not installed")
 
 
 def _node(script: str, payload: dict) -> dict:
-    code = f"const v = require({json.dumps(str(JS))});\nconst input = JSON.parse(process.argv[1]);\n{script}"
-    out = subprocess.run([NODE, "-e", code, json.dumps(payload)], capture_output=True, text=True, check=True, timeout=60)
+    code = f"const v = require({json.dumps(str(JS))});\nconst input = JSON.parse(require('fs').readFileSync(0, 'utf8'));\n{script}"
+    # The payload goes through stdin: a Windows command line is limited to about 32 000 characters.
+    out = subprocess.run(
+        [NODE, "-e", code],
+        input=json.dumps(payload),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=True,
+        timeout=60,
+    )
     return json.loads(out.stdout)
 
 
@@ -43,7 +52,7 @@ def test_canonical_payload_and_signature_match(tmp_path) -> None:
     df = synthetic_ohlcv(600, seed=11)
     sig = (df["close"] > df["close"].rolling(20).mean()).astype(int).to_numpy()
     cert = json.loads(json.dumps(verify_strategy(df, signals=sig, n_trials=3)))
-    cert["notes"] = {"unicode": "Δ ü 日本  ", "ctrl": "tab\tnl\nq\"b\\", "floats": [1.0, 1e-7, -0.0, 2e16, math.pi]}
+    cert["notes"] = {"unicode": "Δ ü 日本  ", "ctrl": 'tab\tnl\nq"b\\', "floats": [1.0, 1e-7, -0.0, 2e16, math.pi]}
     keys = generate_keypair(tmp_path / "k")
     signed = sign_certificate(cert, keys["private_key"])
     pub = Path(keys["public_key"]).read_text().strip()
@@ -78,7 +87,10 @@ console.log(JSON.stringify(out));""",
         bad,  # type: ignore[arg-type]
     )
     assert res == ["rejected"] * len(bad)
-    ok = _node('console.log(JSON.stringify(input.map((t) => { v.parse(t); return "ok"; })))', ['{"a":[1,2,{"b":null}]}', "[1.5e3]"])  # type: ignore[arg-type]
+    ok = _node(
+        'console.log(JSON.stringify(input.map((t) => { v.parse(t); return "ok"; })))',
+        ['{"a":[1,2,{"b":null}]}', "[1.5e3]"],
+    )  # type: ignore[arg-type]
     assert ok == ["ok", "ok"]
     import monte_neo.verify.limits as limits
 

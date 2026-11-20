@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 
 import numpy as np
 import pytest
@@ -69,7 +70,8 @@ def test_tampering_and_wrong_key_are_detected(cert, keys, tmp_path) -> None:
 def test_key_files_and_errors(keys, tmp_path) -> None:
     with pytest.raises(FileExistsError):
         generate_keypair(tmp_path / "issuer")
-    assert oct((tmp_path / "issuer.key").stat().st_mode)[-3:] == "600"
+    if os.name != "nt":  # Windows has no POSIX file modes: the key file is protected by the user profile ACL
+        assert oct((tmp_path / "issuer.key").stat().st_mode)[-3:] == "600"
     with pytest.raises(ValueError, match="look like"):
         load_public_key(tmp_path / "issuer.key")
     with pytest.raises(ValueError, match="32 bytes"):

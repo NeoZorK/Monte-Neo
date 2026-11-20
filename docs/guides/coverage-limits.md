@@ -35,3 +35,10 @@ New in this release (library functions; pass their rows to `verify_strategy(extr
 * **Catalog results** are validation only with the holdout sealed; a verified row is one instance of a rule on one instrument and sample.
 * **Platforms:** macOS and Linux, Python 3.11 to 3.15 (3.15 beta-supported). **Windows is prepared but unverified**: see [Platforms](../setup/platforms.md).
 * Nothing here is investment advice, and no result predicts future returns.
+
+## High-frequency strategies (holding under one minute)
+
+Partly covered. `monte-neo verify --quotes` checks whether a profit survives the time each bid/ask quote really
+arrived (stamp plus latency). Queue position, partial fills and the order book are not modelled, on purpose: a rough
+formula would give false precision. A high-frequency strategy can therefore be rejected by the latency check, but it
+cannot be passed on the evidence Monte-Neo has. Catalog entries of this kind carry the tag "verifiable: partly".
