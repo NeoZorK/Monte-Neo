@@ -10,6 +10,7 @@ import math
 import random
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -26,9 +27,13 @@ pytestmark = pytest.mark.skipif(NODE is None, reason="node is not installed")
 
 
 def _node(script: str, payload: dict) -> dict:
-    code = f"const v = require({json.dumps(str(JS))});\nconst input = JSON.parse(require('fs').readFileSync(0, 'utf8'));\n{script}"
-    # The payload goes through stdin: a Windows command line is limited to about 32 000 characters.
-    out = subprocess.run([NODE, "-e", code], input=json.dumps(payload), capture_output=True, text=True, encoding="utf-8", check=True, timeout=60)
+    code = f"const v = require({json.dumps(str(JS))});\nconst input = JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'));\n{script}"
+    # The payload goes through a file: a Windows command line is limited to about 32 000 characters,
+    # and reading a stdin pipe from node can hang on Windows runners.
+    with tempfile.TemporaryDirectory() as tmp:
+        data = Path(tmp) / "payload.json"
+        data.write_text(json.dumps(payload), encoding="utf-8")
+        out = subprocess.run([NODE, "-e", code, str(data)], capture_output=True, text=True, encoding="utf-8", check=True, timeout=120)
     return json.loads(out.stdout)
 
 
