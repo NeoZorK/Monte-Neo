@@ -80,6 +80,8 @@ generated page lists the Markdown snippet to paste into your README. "Holds this
 
 ## Seed entries
 
-The first entries are Strategy Lab examples (author "Rostyslav Shcherbyna (process), idea: Claude Sonnet 5.5"), validation period only,
+The first entries are Strategy Lab examples (shown as "Strategy Lab example"), validation period only,
 holdout untouched, ARL 3-4 under the **provisional** `arl-rules/1`. Their data and code are not in this repository, so they are tier B. They are signed
 with a seed key listed in `hall_of_fame/maintainer_keys.json`; the maintainer replaces it with their own key and re-attests.
+`hall_of_fame/display.json` (unsigned) changes only what the tables and badges show as the author of listed entries; the signed
+entry keeps its own author field.

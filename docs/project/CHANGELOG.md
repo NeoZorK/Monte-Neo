@@ -16,6 +16,8 @@ Planned for v0.56.0.
   `scripts/catalog_migrate.py`: 70 from rules on the specification, 28 from the declared category (`unconfirmed`), two controls.
 
 ### Changed
+- **Hall of Fame display**: `hall_of_fame/display.json` (unsigned) changes only the author text the tables and badges show for listed
+  entries; the signed entries keep their author field. The three Strategy Lab examples are shown as "Strategy Lab example".
 - **ARL rules `arl-rules/2`** (provisional): level 4 also needs `selection_adjusted_sharpe`, the Deflated Sharpe of the certificate
   (or of the alpha report on net returns) at least 0.8, computed with at least the project's number of trials. Calibration on
   350 000 synthetic cases: with `arl-rules/1`, the best of 100 noise variants reached level 4 in 78 % of cases; with the new floor,

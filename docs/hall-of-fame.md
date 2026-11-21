@@ -11,9 +11,9 @@ How to join: [the guide](https://github.com/NeoZorK/Monte-Neo/blob/main/docs/gui
 
 | Rank | Strategy | Author | Category | ARL / depth | Deflated Sharpe | Tier | Holds this rank | Certificate SHA-256 |
 |---|---|---|---|---|---|---|---|---|
-| 🥇 1 | Donchian breakout BTC | Rostyslav Shcherbyna (process), idea: Claude Sonnet 5.5 | trend | ARL 4, depth 2/4 (provisional) | 0.856 | B privately verified | 2026-11 – 2026-11 | `c371160bb31fd49f…` |
-| 🥈 2 | Time-series momentum BTC | Rostyslav Shcherbyna (process), idea: Claude Sonnet 5.5 | trend | ARL 3, depth 2/4 (provisional) | 0.474 | B privately verified | 2026-11 – 2026-11 | `dce45d55c6a01706…` |
-| 🥉 3 | Turn-of-month BTC | Rostyslav Shcherbyna (process), idea: Claude Sonnet 5.5 | seasonality | ARL 3, depth 0/4 (provisional) | 0.153 | B privately verified | 2026-11 – 2026-11 | `07eb3481c117c632…` |
+| 🥇 1 | Donchian breakout BTC | Strategy Lab example | trend | ARL 4, depth 2/4 (provisional) | 0.856 | B privately verified | 2026-11 – 2026-11 | `c371160bb31fd49f…` |
+| 🥈 2 | Time-series momentum BTC | Strategy Lab example | trend | ARL 3, depth 2/4 (provisional) | 0.474 | B privately verified | 2026-11 – 2026-11 | `dce45d55c6a01706…` |
+| 🥉 3 | Turn-of-month BTC | Strategy Lab example | seasonality | ARL 3, depth 0/4 (provisional) | 0.153 | B privately verified | 2026-11 – 2026-11 | `07eb3481c117c632…` |
 
 Not investment advice: a research example, not a call to trade or a promise of profit. Simulated results do not predict future returns.
 
@@ -23,8 +23,8 @@ Not investment advice: a research example, not a call to trade or a promise of p
 
 | Rank | Strategy | Author | Category | ARL / depth | Deflated Sharpe | Tier | Holds this rank | Certificate SHA-256 |
 |---|---|---|---|---|---|---|---|---|
-| 🥇 1 | Donchian breakout BTC | Rostyslav Shcherbyna (process), idea: Claude Sonnet 5.5 | trend | ARL 4, depth 2/4 (provisional) | 0.856 | B privately verified | 2026-11 – 2026-11 | `c371160bb31fd49f…` |
-| 🥈 2 | Time-series momentum BTC | Rostyslav Shcherbyna (process), idea: Claude Sonnet 5.5 | trend | ARL 3, depth 2/4 (provisional) | 0.474 | B privately verified | 2026-11 – 2026-11 | `dce45d55c6a01706…` |
+| 🥇 1 | Donchian breakout BTC | Strategy Lab example | trend | ARL 4, depth 2/4 (provisional) | 0.856 | B privately verified | 2026-11 – 2026-11 | `c371160bb31fd49f…` |
+| 🥈 2 | Time-series momentum BTC | Strategy Lab example | trend | ARL 3, depth 2/4 (provisional) | 0.474 | B privately verified | 2026-11 – 2026-11 | `dce45d55c6a01706…` |
 
 Not investment advice: a research example, not a call to trade or a promise of profit. Simulated results do not predict future returns.
 
@@ -56,7 +56,7 @@ Not investment advice: a research example, not a call to trade or a promise of p
 
 | Rank | Strategy | Author | Category | ARL / depth | Deflated Sharpe | Tier | Holds this rank | Certificate SHA-256 |
 |---|---|---|---|---|---|---|---|---|
-| 🥇 1 | Turn-of-month BTC | Rostyslav Shcherbyna (process), idea: Claude Sonnet 5.5 | seasonality | ARL 3, depth 0/4 (provisional) | 0.153 | B privately verified | 2026-11 – 2026-11 | `07eb3481c117c632…` |
+| 🥇 1 | Turn-of-month BTC | Strategy Lab example | seasonality | ARL 3, depth 0/4 (provisional) | 0.153 | B privately verified | 2026-11 – 2026-11 | `07eb3481c117c632…` |
 
 Not investment advice: a research example, not a call to trade or a promise of profit. Simulated results do not predict future returns.
 
