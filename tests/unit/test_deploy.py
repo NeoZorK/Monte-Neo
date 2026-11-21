@@ -8,6 +8,7 @@ import json
 import math
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 import pytest
 
@@ -318,7 +319,7 @@ def test_anchor_falls_back_to_next_authority(tmp_path: Path, monkeypatch: pytest
 
     monkeypatch.setattr(anchor, "post", post)
     body = anchor.anchor(j, tmp_path / "anchors")
-    assert tried[0].startswith("https://freetsa.org") and "digicert" in body["tsa"] and len(tried) == 2
+    assert urlparse(tried[0]).hostname == "freetsa.org" and "digicert" in body["tsa"] and len(tried) == 2
     assert "skipped" in anchor.anchor(j, tmp_path / "anchors")  # one per day
     assert len(j.find("anchor")) == 1
 
@@ -349,7 +350,7 @@ def test_keys_never_printed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, cap
     secret_key, secret_val = "A1b2C3d4" * 5, "Z9y8X7w6" * 5
     monkeypatch.setenv(keys.ENV_KEY, secret_key)
     monkeypatch.setenv(keys.ENV_SECRET, secret_val)
-    monkeypatch.setattr(keys, "check_pair", lambda k, s: (False, "the spot testnet does not accept this pair (a mainnet key is never used)"))
+    monkeypatch.setattr(keys, "check_pair", lambda k, s: False)
     assert deploy_cmd.main(["keys", "--status"]) == 0
     # discovery in a file: names and paths are shown, values are not
     env = tmp_path / ".env"
@@ -381,5 +382,5 @@ def test_keys_resolve_prefers_env_and_checks_only_testnet(monkeypatch: pytest.Mo
         raise binance.ExchangeError("HTTP 401")
 
     monkeypatch.setattr(binance.SpotTestnet, "_signed", fake_signed)
-    ok, _ = keys.check_pair("k" * 40, "s" * 40)
+    ok = keys.check_pair("k" * 40, "s" * 40)
     assert not ok and hosts == [binance.SPOT_TESTNET]

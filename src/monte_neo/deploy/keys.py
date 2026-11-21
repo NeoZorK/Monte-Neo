@@ -104,17 +104,25 @@ def _pairs(p: Path) -> list[tuple[str, str, str, str]]:
     return out
 
 
-def candidates() -> list[dict[str, Any]]:
-    return [{"file": str(p), "names": [k, s], "pair": (kv, sv)} for p in _files() for k, kv, s, sv in _pairs(p)]
+ACCEPTED = "the spot testnet account answered"
+REFUSED = "the spot testnet does not accept this pair (a mainnet key is never used)"
 
 
-def check_pair(key: str, secret: str) -> tuple[bool, str]:
-    """Does the SPOT TESTNET accept this pair? Only the testnet host is called; a mainnet key is rejected there."""
+def candidates() -> list[tuple[dict[str, Any], tuple[str, str]]]:
+    """(where: file and variable names, pair): the description never holds a value, so it is safe to print."""
+    return [({"file": str(p), "names": [k, s]}, (kv, sv)) for p in _files() for k, kv, s, sv in _pairs(p)]
+
+
+def check_pair(key: str, secret: str) -> bool:
+    """Does the SPOT TESTNET accept this pair? Only the testnet host is called; a mainnet key is rejected there.
+
+    Returns a bool only: nothing derived from the pair is ever printed or logged (use ACCEPTED / REFUSED for messages).
+    """
     try:
-        bal = binance.SpotTestnet(key=key, secret=secret).balances()
+        binance.SpotTestnet(key=key, secret=secret).balances()
     except binance.ExchangeError:
-        return False, "the spot testnet does not accept this pair (a mainnet key is never used)"
-    return True, f"the spot testnet account answered ({len(bal)} assets)"
+        return False
+    return True
 
 
 def store(key: str, secret: str) -> None:
@@ -128,8 +136,8 @@ def status() -> dict[str, Any]:
     found = resolve()
     if not found:
         return {"found": False, "source": None, "testnet_accepts": None}
-    ok, why = check_pair(found[0], found[1])
-    return {"found": True, "source": found[2], "testnet_accepts": ok, "detail": why}
+    ok = check_pair(found[0], found[1])
+    return {"found": True, "source": found[2], "testnet_accepts": ok, "detail": ACCEPTED if ok else REFUSED}
 
 
 def find(interactive: bool = True, assume_yes: bool = False) -> int:
@@ -139,16 +147,15 @@ def find(interactive: bool = True, assume_yes: bool = False) -> int:
     if not found:
         print("no file with a Binance key and secret found in: " + ", ".join(PLACES))
         return 0
-    for c in found:
-        print(f"candidate: {c['file']}  ({' / '.join(c['names'])})")
+    for where, pair in found:
+        print(f"candidate: {where['file']}  ({' / '.join(where['names'])})")
         question = "  check this pair against the Binance spot TESTNET and store it in the Keychain? [y/N] "
         if not (assume_yes or (interactive and input(question).strip().lower() == "y")):
             continue
-        key, secret = c["pair"]
-        ok, why = check_pair(key, secret)
-        print(f"  {why}")
+        ok = check_pair(*pair)
+        print(f"  {ACCEPTED if ok else REFUSED}")
         if ok:
-            store(key, secret)
+            store(*pair)
             print(f"  stored in the Keychain as {KEYCHAIN_KEY} / {KEYCHAIN_SECRET}")
             stored += 1
     return stored
