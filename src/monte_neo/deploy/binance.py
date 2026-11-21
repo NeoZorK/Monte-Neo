@@ -70,9 +70,13 @@ def round_step(qty: float, step: float) -> float:
     return round(n * step, decimals)
 
 
-def client_order_id(day: str, symbol: str, side: str, tag: str = "t") -> str:
-    """Deterministic id (<= 36 chars): the same day, symbol and side always give the same id."""
-    return "nmd" + tag + hashlib.sha256(f"{day}|{symbol}|{side}".encode()).hexdigest()[:28]
+def client_order_id(day: str, symbol: str, side: str, run: str = "") -> str:
+    """Deterministic id (<= 36 chars): the same run, day, symbol and side always give the same id.
+
+    ``run`` (the hash of the run's start entry) keeps two strategies on one account from ever sharing an id: a resumed
+    order of one run must never be taken for an order of another.
+    """
+    return "nmd" + hashlib.sha256(f"{run}|{day}|{symbol}|{side}".encode()).hexdigest()[:29]
 
 
 class SpotTestnet:

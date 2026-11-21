@@ -20,7 +20,7 @@ Planned for v0.56.0.
   `dashboard` / `serve` give a static read-only page (local by default, `--host 0.0.0.0` for the LAN), `anchor` an RFC 3161 timestamp
   of the journal head, `report` an evidence report whose every number `report --verify` recomputes, `certify` the Monte-Neo verdict on
   the forward returns, `keys` finds testnet keys with consent (environment, macOS Keychain) and checks them only against the testnet.
-  `--target local` is the only target for now. Standard library only at run time. Guide: `docs/guides/deploy.md`.
+  `--target local` is the only target for now. Standard library only at run time. Several strategies can share one testnet account: client order ids include the run. Guide: `docs/guides/deploy.md`.
 - **Lessons from the Strategy Lab** (`docs/guides/research-lessons.md`): a strong validation that failed its sealed holdout,
   a literature-parameter ETF book that passed with a small result, why hidden trials must be documented, why short validation
   windows cannot certify slow premia, and what a demo forward record can and cannot prove.

@@ -92,7 +92,7 @@ def _trade(journal: Journal, ex: Any, cfg: dict[str, Any], book: str, day: dt.da
         return
     if isinstance(ex, binance.SimExchange):  # a dry run fills at the price of the day it replays, not at today's price
         ex.prices = {**(ex.prices or {}), symbol: mainnet_px}
-    cid = binance.client_order_id(d, symbol, side)
+    cid = binance.client_order_id(d, symbol, side, journal.find("start")[0]["hash"])
     if not journal.find("order", client_order_id=cid):
         journal.append("order", {"day": d, "symbol": symbol, "side": side, "qty": qty, "client_order_id": cid})
     o = ex.market_order(symbol, side, qty, cid)

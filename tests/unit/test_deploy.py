@@ -300,7 +300,8 @@ def test_testnet_order_is_looked_up_before_sending() -> None:
     assert calls == [("GET", "/api/v3/order"), ("GET", "/api/v3/myTrades")]
     assert o["fills"][0]["qty"] == "0.1"
     assert binance.client_order_id("d", "BTCUSDT", "BUY") == binance.client_order_id("d", "BTCUSDT", "BUY")
-    assert len(binance.client_order_id("d", "BTCUSDT", "BUY")) <= 36
+    assert len(binance.client_order_id("d", "BTCUSDT", "BUY", "f" * 64)) <= 36
+    assert binance.client_order_id("d", "BTCUSDT", "BUY", "run-a") != binance.client_order_id("d", "BTCUSDT", "BUY", "run-b")  # two strategies, one account
     assert binance.round_step(0.123456, 0.001) == 0.123
     assert "K" * 10 not in repr(ex)
 
