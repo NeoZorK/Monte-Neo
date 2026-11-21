@@ -10,6 +10,7 @@ from __future__ import annotations
 import functools
 import html
 import http.server
+import math
 from pathlib import Path
 from typing import Any
 
@@ -69,6 +70,22 @@ table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid var(--li
 """
 
 
+
+def _sequential_html(q: dict[str, Any]) -> str:
+    """The sequential forward test: decision, evidence against the threshold, and an honest note on what weeks can show."""
+    cls = {"PASS": "ok", "FAIL_EARLY": "bad", "INCONCLUSIVE": "bad"}.get(q["decision"], "wait")
+    paths = {"evidence of an edge": [math.log10(max(v, 1e-12)) for v in q["path_edge"]],
+             "evidence of a shortfall": [math.log10(max(v, 1e-12)) for v in q["path_shortfall"]]}
+    need = q.get("days_needed_for_target")
+    note = (f"For scale: showing an annual Sharpe ratio of {q['params']['target_sharpe']} above zero takes about {need:,.0f} days of daily data. "
+            "A forward record of weeks therefore checks that nothing is broken and that the record does not contradict the backtest; "
+            "the evidence of an edge comes from the long, pre-registered history and from markets the search never used.") if need else ""
+    chart = _svg_lines(paths, {"evidence of an edge": "#3b6fd8", "evidence of a shortfall": "#d9822b"}) if q["path_edge"] else ""
+    return (f'<section><h2>Sequential forward test</h2><p><b class="{cls}">{_esc(q["decision"])}</b>: {_esc(q["explain"])}.</p>'
+            f'<p class="muted">Evidence (e-values, valid under daily checking): edge {q["e_edge"]:.2f}, shortfall {q["e_shortfall"]:.2f}; '
+            f'decision at {q["threshold"]:,.0f} (= candidates under test {q["n_trials"]} / alpha {q["params"]["alpha"]}). '
+            f'Chart: log10 of the evidence; the threshold is at {math.log10(q["threshold"]):.1f}.</p>{chart}<p class="muted">{_esc(note)}</p></section>')
+
 def render(entries: list[dict[str, Any]], chain: dict[str, Any]) -> str:
     start = next((e["body"] for e in entries if e["kind"] == "start"), {})
     s = metrics.summary(entries)
@@ -107,6 +124,7 @@ def render(entries: list[dict[str, Any]], chain: dict[str, Any]) -> str:
 </div>
 {'<section><h2 class="bad">Kill switch active: trading stopped</h2></section>' if s['killed'] else ''}
 <section><h2>Net asset value</h2>{_svg_lines(navs, colors)}</section>
+{_sequential_html(s['sequential'])}
 <section><h2>Risk</h2><p class="muted">Sharpe {_num(s['sharpe'])} · worst week {_pct(s['worst_week'])} · one-day VaR 95 {_pct(s['one_day_var_95'])} · ES 95 {_pct(s['one_day_es_95'])} · tracking error demo vs paper {_pct(s['tracking_error'])} a year · kill switch at {_pct(start.get('kill_drawdown'))}</p></section>
 <section><h2>Eligibility</h2><p>Certificate <code>{_esc(cert.get('id', 'n/a'))}</code> · verdict {_esc(cert.get('verdict', 'n/a'))} · ARL {_esc(cert.get('arl', 'n/a'))} · strategy SHA-256 <code>{_esc(strat.get('sha256', 'n/a'))}</code></p><ul>{warn_html}</ul>
 <p class="muted">Forward-return verdict (latest certify): {_esc(s['forward_verdict'] or 'not certified yet')}</p></section>
