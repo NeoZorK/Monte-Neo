@@ -47,6 +47,12 @@ def _parser() -> argparse.ArgumentParser:
     cp.add_argument("--positions", help="wide CSV of signed positions (detects short selling and market neutrality)")
     cp.add_argument("--leverage", type=float, help="gross leverage the strategy needs (default from the spec, else 1)")
     cp.add_argument("--json", action="store_true")
+    nv = sub.add_parser("novelty", help="is a strategy new to a catalog: correlation with every strategy and marginal Sharpe")
+    nv.add_argument("--returns", required=True, help="CSV: date + one return column (the candidate)")
+    nv.add_argument("--catalog", required=True, help="wide CSV: date + one return column per catalog strategy")
+    nv.add_argument("--max-corr", type=float, default=0.3)
+    nv.add_argument("--periods-per-year", type=float, default=252.0)
+    nv.add_argument("--json", action="store_true")
     return p
 
 
@@ -70,6 +76,17 @@ def main(argv: list[str] | None = None) -> int:
         if args.cmd == "categories":
             for code, name in rules()["categories"]:
                 print(f"{code:4} {name}")
+            return 0
+        if args.cmd == "novelty":
+            from monte_neo.catalog.novelty import novelty
+
+            r = _wide(args.returns).iloc[:, 0]
+            res = novelty(r, _wide(args.catalog), args.periods_per_year, args.max_corr)
+            if args.json:
+                print(json.dumps(res, indent=2, default=str))
+            else:
+                print(("NOVEL" if res["novel"] else "NOT NOVEL") + (": " + "; ".join(res["why_not"]) if res["why_not"] else
+                      f": max |correlation| {abs(res['max_abs_corr']):.2f} ({res['closest']}), it lifts the catalog book's Sharpe"))
             return 0
         if args.cmd == "mask":
             print(json.dumps(decode(args.mask), indent=2))
