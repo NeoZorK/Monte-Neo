@@ -117,6 +117,7 @@ A simplified guide to the Monte-Neo file structure.
 - docs/catalog/IMPLEMENTATION_PLAN.md - implementation plan
 - docs/catalog/strategies.yaml, types.yaml, traps.yaml, build_catalog.py - catalog data and the generator of the cards
 - docs/catalog/strategies_mn.yaml - catalog extension MN-1: market-neutral and arbitrage strategies with worst scenarios
+- docs/catalog/strategies_x2.yaml - catalog extension X-2: coverage gaps (market making, order flow, ML, long volatility, portfolio construction, controls)
 - docs/catalog/cards/accruals.md - catalog card
 - docs/catalog/cards/adx_trend.md - catalog card
 - docs/catalog/cards/all_weather.md - catalog card
@@ -124,6 +125,26 @@ A simplified guide to the Monte-Neo file structure.
 - docs/catalog/cards/avellaneda_lee_pca.md - catalog card
 - docs/catalog/cards/avellaneda_stoikov.md - catalog card
 - docs/catalog/cards/bab.md - catalog card
+- docs/catalog/cards/gueant_mm.md - catalog card (extension X-2)
+- docs/catalog/cards/grid_mm_crypto.md - catalog card (extension X-2)
+- docs/catalog/cards/rebate_capture.md - catalog card (extension X-2)
+- docs/catalog/cards/obi_signal.md - catalog card (extension X-2)
+- docs/catalog/cards/vpin_filter.md - catalog card (extension X-2)
+- docs/catalog/cards/lead_lag_crypto.md - catalog card (extension X-2)
+- docs/catalog/cards/index_arb.md - catalog card (extension X-2)
+- docs/catalog/cards/dispersion_trade.md - catalog card (extension X-2)
+- docs/catalog/cards/gkx_trees.md - catalog card (extension X-2)
+- docs/catalog/cards/tail_hedge_puts.md - catalog card (extension X-2)
+- docs/catalog/cards/vix_term_timing.md - catalog card (extension X-2)
+- docs/catalog/cards/black_litterman.md - catalog card (extension X-2)
+- docs/catalog/cards/kelly_fraction.md - catalog card (extension X-2)
+- docs/catalog/cards/beta_hedge_overlay.md - catalog card (extension X-2)
+- docs/catalog/cards/mvrv_onchain.md - catalog card (extension X-2)
+- docs/catalog/cards/listing_effect.md - catalog card (extension X-2)
+- docs/catalog/cards/dex_cex_arb.md - catalog card (extension X-2)
+- docs/catalog/cards/copy_top_traders.md - catalog card (extension X-2)
+- docs/catalog/cards/martingale_control.md - catalog card (extension X-2)
+- docs/catalog/cards/averaging_down_control.md - catalog card (extension X-2)
 - docs/catalog/cards/crypto_basis_reversion.md - catalog card (extension MN-1)
 - docs/catalog/cards/crypto_pairs_basket.md - catalog card (extension MN-1)
 - docs/catalog/cards/cross_exchange_basis.md - catalog card (extension MN-1)

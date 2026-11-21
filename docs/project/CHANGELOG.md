@@ -30,6 +30,11 @@ Planned for v0.57.0.
   sources (basis reversion, pairs basket, cross-exchange and triangular arbitrage, cross-sectional funding carry, crypto
   betting-against-beta, calendar spread, delta-hedged short volatility, stablecoin peg, ETH/BTC ratio trend); verified with
   `n_trials` = 110. Every market-neutral and arbitrage card has a "Worst scenario" section.
+- **Strategy catalog extension X-2** (`docs/catalog/strategies_x2.yaml`) and three new types (`order_flow`, `ml_forecast`,
+  `long_volatility`): 20 strategies for subcategories that were empty or thin (market making, order flow, machine learning,
+  long volatility, Black-Litterman and Kelly sizing, beta-hedge overlay, on-chain and listing events, DEX-CEX arbitrage)
+  and three failing controls (copy trading, martingale, averaging down). The catalog now holds 130 entries in 27 types;
+  extensions are verified with `n_trials` = 130.
 - Strategy Lab ideas `r5_basis_reversion` and `r5_pairs_basket` (parameters fixed before data; not run yet), and the
   deploy example `examples/deploy/relative_momentum_neutral.py`.
 - Guides: `docs/guides/fast-evidence.md`, `docs/guides/catalog-tools.md`.

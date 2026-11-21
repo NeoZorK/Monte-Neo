@@ -127,7 +127,7 @@ Hold N assets with weight 1/N, periodically rebalanced.
 <a id="minimum_variance"></a>
 ## Minimum variance / max diversification / HRP
 
-*Family: allocation. Catalog entries: 4.*
+*Family: allocation. Catalog entries: 5.*
 
 Optimizer-based weights from a covariance estimate (minimum variance, most-diversified, hierarchical risk parity).
 
@@ -289,7 +289,7 @@ Buy oversold / sell overbought using oscillators, z-scores or bands, with a quic
 <a id="stat_arb_pairs"></a>
 ## Statistical arbitrage and pairs trading
 
-*Family: relative_value. Catalog entries: 8.*
+*Family: relative_value. Catalog entries: 10.*
 
 Trade the spread between related assets that is assumed stationary (distance, cointegration, Ornstein-Uhlenbeck, PCA residuals).
 
@@ -322,7 +322,7 @@ Trade the spread between related assets that is assumed stationary (distance, co
 <a id="market_making"></a>
 ## Market making / liquidity provision
 
-*Family: microstructure. Catalog entries: 1.*
+*Family: microstructure. Catalog entries: 4.*
 
 Quote both sides, earn the spread, manage inventory and adverse selection.
 
@@ -385,7 +385,7 @@ Earn the yield differential or roll return from holding higher-yielding exposure
 <a id="short_volatility"></a>
 ## Volatility selling / short vol
 
-*Family: volatility. Catalog entries: 5.*
+*Family: volatility. Catalog entries: 6.*
 
 Collect the variance risk premium by selling options or shorting volatility products; payoff is concave with a severe left tail.
 
@@ -449,7 +449,7 @@ Hold the underlying and add short calls/puts or protective puts on a fixed rule.
 <a id="event_merger_arb"></a>
 ## Merger arbitrage and event-driven
 
-*Family: event. Catalog entries: 3.*
+*Family: event. Catalog entries: 4.*
 
 Buy the target of an announced deal at a discount to the offer; collect the spread when the deal closes. Related: PEAD, index inclusion.
 
@@ -608,7 +608,7 @@ Systematic return patterns by day of week, month, holiday, or overnight vs intra
 <a id="vol_managed"></a>
 ## Volatility targeting / managed portfolios
 
-*Family: overlay. Catalog entries: 2.*
+*Family: overlay. Catalog entries: 3.*
 
 Scale exposure inversely to recent realized volatility to hold risk constant.
 
@@ -639,7 +639,7 @@ Scale exposure inversely to recent realized volatility to hold risk constant.
 <a id="rebalancing_policy"></a>
 ## Rebalancing and glide-path policies (constant-mix, CPPI, target-date)
 
-*Family: allocation. Catalog entries: 3.*
+*Family: allocation. Catalog entries: 4.*
 
 Rule-based change of weights over time or with wealth/risk (constant-mix, portfolio insurance, glide path to retirement date).
 
@@ -700,7 +700,7 @@ Invest a fixed amount per period (DCA) or follow a target-path of portfolio valu
 <a id="crypto_specific"></a>
 ## Crypto-specific (perpetual funding, basis, cross-sectional crypto momentum)
 
-*Family: carry. Catalog entries: 8.*
+*Family: carry. Catalog entries: 10.*
 
 Strategies exploiting perpetual swap funding, spot-futures basis, or cross-sectional crypto returns.
 
@@ -734,7 +734,7 @@ Strategies exploiting perpetual swap funding, spot-futures basis, or cross-secti
 <a id="controls"></a>
 ## Negative controls and null strategies
 
-*Family: control. Catalog entries: 4.*
+*Family: control. Catalog entries: 7.*
 
 Random entry with matched holding time, always-flat, and ruinous retail patterns (martingale, grid) included to calibrate the verifier and show what failure looks like.
 
@@ -759,4 +759,96 @@ Random entry with matched holding time, always-flat, and ruinous retail patterns
 - Nothing special; they exist to measure verifier calibration
 
 **Key references:** Bailey Lopez de Prado 2014 "The Deflated Sharpe Ratio" JPM, Bailey Borwein Lopez de Prado Zhu 2017 "The Probability of Backtest Overfitting" JCF
+
+<a id="order_flow"></a>
+## Order flow and microstructure signals
+
+*Family: microstructure. Catalog entries: 2.*
+
+Forecast short-horizon price moves from the order book and the trade tape (imbalance, toxicity, trade signs).
+
+**How it is measured**
+
+- Metrics: Net Sharpe after fees and spread, markout by horizon, hit rate, turnover, latency sensitivity
+- Benchmark: Zero; random entry with the same holding time
+- Horizon: Seconds to hours; many trades; out-of-sample days separated
+
+**Typical traps**
+
+- Unrealistic execution model: Fills at mid, no queue position, no partial fills, no latency.
+- Look-ahead bias: Signal uses information not available at decision time (same-bar close, restated data, future-dated fundamentals).
+- Costs: Edge disappears under realistic transaction costs, spread, borrow and funding.
+- Capacity / liquidity: Strategy cannot be traded at size without moving the price.
+- Stale prices / illiquid quotes: Last trade used as executable price in thin markets.
+
+**Monte-Neo checks to apply:** verify_quotes (existing), execution_model_audit, latency_shift
+
+**Data needed:** Level-2 book snapshots or trade tape with exchange timestamps
+
+**Monte-Neo cannot verify:**
+
+- Queue position and hidden liquidity without full message data; daily bars are not enough
+
+**Key references:** Cont Kukanov Stoikov 2014 J. Financial Econometrics "The price impact of order book events", Easley Lopez de Prado O'Hara 2012 RFS (VPIN)
+
+<a id="ml_forecast"></a>
+## Machine-learning forecast
+
+*Family: model. Catalog entries: 1.*
+
+A statistical-learning model (trees, networks, linear with many features) maps features to expected returns; positions follow the forecast.
+
+**How it is measured**
+
+- Metrics: Out-of-sample IC and its t-stat, net Sharpe, refit gap (train vs test), feature leakage audit, turnover
+- Benchmark: The same portfolio rule on a linear model with few features; zero
+- Horizon: Walk-forward with purged and embargoed folds
+
+**Typical traps**
+
+- Look-ahead bias: Signal uses information not available at decision time (same-bar close, restated data, future-dated fundamentals).
+- Parameter overfitting: Parameters tuned on the same sample used to report performance.
+- Data snooping / multiple testing: Many variants tried; the best one looks significant by chance.
+- Regime dependence: Works only in one market regime (e.g. a bull market) in the sample.
+- Costs: Edge disappears under realistic transaction costs, spread, borrow and funding.
+
+**Monte-Neo checks to apply:** ml_refit_gap (existing), purged_cv, dsr, model_cutoff (existing)
+
+**Data needed:** Point-in-time features and returns; model training dates
+
+**Monte-Neo cannot verify:**
+
+- What the model learned; whether a foundation model saw the test period
+
+**Key references:** Gu Kelly Xiu 2020 RFS "Empirical asset pricing via machine learning", Lopez de Prado 2018 Advances in Financial Machine Learning
+
+<a id="long_volatility"></a>
+## Long volatility and tail hedging
+
+*Family: volatility. Catalog entries: 2.*
+
+Hold convex payoffs (puts, VIX calls, trend overlays) that lose small amounts most of the time and pay in crashes.
+
+**How it is measured**
+
+- Metrics: Cost of carry per year, payoff in stress windows, effect on the portfolio's drawdown and CAGR, convexity
+- Benchmark: The portfolio without the hedge; a cash-equivalent reduction of exposure
+- Horizon: Must include several crashes; judged on the portfolio, not alone
+
+**Typical traps**
+
+- Small sample / few independent bets: Too few trades or independent observations for a significance claim.
+- Regime dependence: Works only in one market regime (e.g. a bull market) in the sample.
+- Futures roll yield: Continuous contract built by naive stitching hides roll cost or gain.
+- Costs: Edge disappears under realistic transaction costs, spread, borrow and funding.
+
+**Monte-Neo checks to apply:** portfolio_effect, stress_windows, dsr
+
+**Data needed:** Option or VIX futures quotes, the portfolio being hedged
+
+**Monte-Neo cannot verify:**
+
+- Crashes larger than any in the sample; option liquidity in the crash itself
+
+**Key references:** Bhansali 2014 Tail Risk Hedging, Israelov 2017 FAJ "Pathetic protection"
 

@@ -312,3 +312,42 @@
   data: [Daily OHLCV]
   cannot: [Nothing special; they exist to measure verifier calibration]
   refs: "Bailey Lopez de Prado 2014 \"The Deflated Sharpe Ratio\" JPM, Bailey Borwein Lopez de Prado Zhu 2017 \"The Probability of Backtest Overfitting\" JCF"
+- id: order_flow
+  name: Order flow and microstructure signals
+  family: microstructure
+  what: "Forecast short-horizon price moves from the order book and the trade tape (imbalance, toxicity, trade signs)."
+  measure:
+    metrics: [Net Sharpe after fees and spread, markout by horizon, hit rate, turnover, latency sensitivity]
+    benchmark: "Zero; random entry with the same holding time"
+    horizon: "Seconds to hours; many trades; out-of-sample days separated"
+  traps: [execution_model, lookahead, costs, capacity, stale_price]
+  checks: [verify_quotes (existing), execution_model_audit, latency_shift]
+  data: [Level-2 book snapshots or trade tape with exchange timestamps]
+  cannot: [Queue position and hidden liquidity without full message data; daily bars are not enough]
+  refs: "Cont Kukanov Stoikov 2014 J. Financial Econometrics \"The price impact of order book events\", Easley Lopez de Prado O'Hara 2012 RFS (VPIN)"
+- id: ml_forecast
+  name: Machine-learning forecast
+  family: model
+  what: "A statistical-learning model (trees, networks, linear with many features) maps features to expected returns; positions follow the forecast."
+  measure:
+    metrics: [Out-of-sample IC and its t-stat, net Sharpe, refit gap (train vs test), feature leakage audit, turnover]
+    benchmark: "The same portfolio rule on a linear model with few features; zero"
+    horizon: "Walk-forward with purged and embargoed folds"
+  traps: [lookahead, overfit_params, data_snooping, regime_dependence, costs]
+  checks: [ml_refit_gap (existing), purged_cv, dsr, model_cutoff (existing)]
+  data: [Point-in-time features and returns; model training dates]
+  cannot: [What the model learned; whether a foundation model saw the test period]
+  refs: "Gu Kelly Xiu 2020 RFS \"Empirical asset pricing via machine learning\", Lopez de Prado 2018 Advances in Financial Machine Learning"
+- id: long_volatility
+  name: Long volatility and tail hedging
+  family: volatility
+  what: "Hold convex payoffs (puts, VIX calls, trend overlays) that lose small amounts most of the time and pay in crashes."
+  measure:
+    metrics: [Cost of carry per year, payoff in stress windows, effect on the portfolio's drawdown and CAGR, convexity]
+    benchmark: "The portfolio without the hedge; a cash-equivalent reduction of exposure"
+    horizon: "Must include several crashes; judged on the portfolio, not alone"
+  traps: [small_sample, regime_dependence, roll_yield, costs]
+  checks: [portfolio_effect, stress_windows, dsr]
+  data: [Option or VIX futures quotes, the portfolio being hedged]
+  cannot: [Crashes larger than any in the sample; option liquidity in the crash itself]
+  refs: "Bhansali 2014 Tail Risk Hedging, Israelov 2017 FAJ \"Pathetic protection\""

@@ -35,6 +35,9 @@ WORST = {
 }
 NEUTRAL_STRUCT = {"MN", "BAS", "SPR", "OPT"}
 EXT_CAP = 30
+EXTENSIONS = [("MN-1", "strategies_mn.yaml", "market-neutral and arbitrage"),
+              ("X-2", "strategies_x2.yaml", "coverage gaps: market making, order flow, machine learning, long volatility, "
+                                            "portfolio construction, overlays, crypto events, and controls")]
 
 
 def validate(strats, types, traps):
@@ -47,12 +50,15 @@ def validate(strats, types, traps):
     ext = [s for s in strats if s.get("_ext")]
     if len(main) > 100:
         errs.append(f"catalog has {len(main)} > 100 entries")
-    if len(ext) > EXT_CAP:
-        errs.append(f"extension MN-1 has {len(ext)} > {EXT_CAP} entries")
+    for label, _f, _w in EXTENSIONS:
+        n = sum(1 for s in ext if s["_ext"] == label)
+        if n > EXT_CAP:
+            errs.append(f"extension {label} has {n} > {EXT_CAP} entries")
     for s in ext:
-        for f in ("structure", "worst"):
-            if f not in s:
-                errs.append(f"{s['id']}: extension entries need {f}")
+        if "structure" not in s:
+            errs.append(f"{s['id']}: extension entries need structure")
+        if s["_ext"] == "MN-1" and "worst" not in s:
+            errs.append(f"{s['id']}: MN-1 entries need worst")
     for s in strats:
         if s["type"] not in tmap:
             errs.append(f"{s['id']}: unknown type {s['type']}")
@@ -121,12 +127,13 @@ def write_index(strats):
     for s in strats:
         arl, sh = lab_results.index_cells(s["id"], found)
         idx.append(f"| [{s['id']}](cards/{s['id']}.md) | {s['name']} | {s['type']} | {s['tier']} | {s['source']} | {s['verification'].split(':')[0]} | {arl} | {sh} |")
-    if ext:
-        idx += ["", "## Extension MN-1: market-neutral and arbitrage", "",
-                f"{len(ext)} strategies from `strategies_mn.yaml`, verified with n_trials = {100 + len(ext)} (the 100 above plus these). "
-                "Each card has a worst-scenario section: hedged is not risk-free.", "",
+    for label, fname, what in EXTENSIONS:
+        part = [s for s in ext if s["_ext"] == label]
+        idx += ["", f"## Extension {label}: {what}", "",
+                f"{len(part)} strategies from `{fname}`. Extensions are verified with n_trials = {100 + len(ext)} (the 100 above "
+                "plus every extension entry). Hedged cards have a worst-scenario section: hedged is not risk-free.", "",
                 "| id | name | type | structure | tier | source | ARL / depth | net Sharpe |", "|---|---|---|---|---|---|---|---|"]
-        for s in ext:
+        for s in part:
             arl, sh = lab_results.index_cells(s["id"], found)
             idx.append(f"| [{s['id']}](cards/{s['id']}.md) | {s['name']} | {s['type']} | {s['structure']} | {s['tier']} | {s['source']} | {arl} | {sh} |")
     (ROOT / "INDEX.md").write_text("\n".join(idx) + "\n", encoding="utf-8")
@@ -161,7 +168,8 @@ def write_results(strats):
 
 def main() -> int:
     traps, types, strats = load("traps.yaml"), load("types.yaml"), load("strategies.yaml")
-    strats += [{**s, "_ext": True} for s in load("strategies_mn.yaml")]
+    for label, fname, _what in EXTENSIONS:
+        strats += [{**s, "_ext": label} for s in load(fname)]
     errs = validate(strats, types, traps)
     if errs:
         print("\n".join(errs))
