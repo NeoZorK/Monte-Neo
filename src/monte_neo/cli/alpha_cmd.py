@@ -38,6 +38,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--factors", help="Factor returns (.csv / .parquet: date + one column per factor) for attribution; default: built from the universe")
     p.add_argument("--book", help="Returns of your existing book (.csv / .parquet: date + one column per strategy): what does this signal add?")
     p.add_argument("--n-trials", type=int, default=1, help="Variants tried before this one (default 1)")
+    p.add_argument(
+        "--ledger", nargs="?", const="1", default=None, metavar="PATH",
+        help="Count the score variants tried on these prices in an append-only ledger (default .monte-neo/ledger.jsonl); "
+        "the larger of the count and --n-trials is used, and ARL levels 4 and above need this evidence",
+    )
     p.add_argument("--membership", help="When each symbol was in the universe (.csv: symbol, start, end): catches today's members used for the past")
     p.add_argument("--groups", help="Sector or country per symbol (.csv: symbol, group[, as_of]): robustness by group")
     p.add_argument("--exchanges", help="Exchange per symbol (.csv: symbol, exchange such as XNYS, XLON, XTKS): closes of different markets")
@@ -92,7 +97,7 @@ def main(argv: list[str]) -> int:
     args = build_parser().parse_args(argv)
     console = Console(file=sys.stdout, soft_wrap=True)
     kw = {"horizon": args.horizon, "quantiles": args.quantiles, "claimed_ir": args.claim_ir, "seed": args.seed, "aum": args.aum,
-          "factors": args.factors, "book": args.book, "n_trials": args.n_trials, "families": not args.signal_only,
+          "factors": args.factors, "book": args.book, "n_trials": args.n_trials, "ledger": (True if args.ledger == "1" else args.ledger), "families": not args.signal_only,
           "membership": args.membership, "groups": args.groups, "exchanges": args.exchanges, "discovery_date": args.discovery_date,
           "existing": args.existing_scores, "funding": args.funding, "min_capacity": args.min_capacity,
           "aum_grid": [float(x) for x in args.aum_grid.split(",")] if args.aum_grid else None,

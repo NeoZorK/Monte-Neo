@@ -10,6 +10,7 @@ from __future__ import annotations
 import zlib
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -346,10 +347,17 @@ def declare_universe(case: Case) -> Case:
 
 
 def run_case(case: Case, seed: int = 0) -> dict[str, Any]:
-    """Run ``validate_alpha`` on a case; returns the report (statuses via :func:`statuses`)."""
+    """Run ``validate_alpha`` on a case; returns the report (statuses via :func:`statuses`).
+
+    Trap and twin both keep a fresh trial ledger (an honest researcher's record of one variant), so ARL levels 4 and above
+    are decided by the checks, not by missing evidence of the trials (arl-rules/2).
+    """
+    import tempfile
+
     from monte_neo.alpha import validate_alpha
 
-    return validate_alpha(case.prices, case.scores, seed=seed, **case.kwargs)
+    with tempfile.TemporaryDirectory() as tmp:
+        return validate_alpha(case.prices, case.scores, seed=seed, ledger=Path(tmp) / "ledger.jsonl", **case.kwargs)
 
 
 def statuses(report: dict[str, Any]) -> dict[str, str]:

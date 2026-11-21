@@ -117,6 +117,9 @@ def markdown_caps(rules: dict[str, Any] | None = None) -> str:
     lines = [f"- A failed look-ahead check caps the level at {c['lookahead_fail_max_level']}."]
     lines += [f"- `{x['check']}` warning or failing caps the level at {x['max_level']}: {x['why']}." for x in c["ceilings"]]
     lines += [f"- `{x['check']}` that ran and warned or failed blocks level {x['level']}: {x['why']}." for x in c["blockers"]]
+    te = c.get("trial_evidence")
+    if te:
+        lines.append(f"- Without evidence of the number of trials ({', '.join(te['accepts'])}) the level is capped at {te['max_level']}: {te['why']}.")
     ns = c["non_real_sources"]
     lines.append(f"- Live data from {', '.join(ns['sources'])} (or an unstated source) caps the level at {ns['max_level']}: {ns['why']}.")
     return "\n".join(lines)

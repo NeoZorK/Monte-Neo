@@ -113,6 +113,7 @@ def validate_alpha(
     liquid_lookback: int = 30,
     terminal_returns: dict[str, float] | None = None,
     rebalance_phase: str | None = None,
+    ledger: bool | str | Path | None = None,
 ) -> dict[str, Any]:
     """Check whether a cross-sectional score has real predictive power and whether its portfolio can be traded.
 
@@ -150,6 +151,18 @@ def validate_alpha(
     """
     if quantiles < 2:
         raise ValueError("quantiles must be >= 2")
+    trial_book, ledger_rows, data_id, variant = None, [], "", ""
+    if ledger:  # count every score variant tried on these prices; levels 4 and above need this evidence (arl-rules/2)
+        from monte_neo.verify.ledger import Ledger, ledger_row
+
+        trial_book = Ledger(None if ledger is True else ledger)
+        data_id, variant = str(data_sha256(prices))[:16], "scores:" + str(data_sha256(scores))[:16]
+        counted = trial_book.count_with(variant, data_id)
+        lrow = ledger_row(counted, n_trials, trial_book.check(), trial_book.path)
+        n_trials = max(int(n_trials or 1), counted)
+        if lrow["status"] != "pass":
+            lrow["status"] = "info"  # context only: a recheck has no ledger, so it must not move the verdict
+        ledger_rows = [lrow]
     panel = build_panel(prices, scores)
     from monte_neo.alpha import universe_tools as ut
 
@@ -159,7 +172,7 @@ def validate_alpha(
     half_life = next((c["details"].get("half_life") for c in checks if c["id"] == "ic_decay"), None)
     from monte_neo.alpha.funding_cost import load_funding
 
-    checks += extra_rows
+    checks += extra_rows + ledger_rows
     from monte_neo.alpha.executable import cost_sensitivity_row, executable_returns
     from monte_neo.alpha.implementability_run import portfolio_weights
 
@@ -212,6 +225,11 @@ def validate_alpha(
     from monte_neo.verify.verdict import certificate_id
 
     report["certificate_id"] = certificate_id(report["reproducibility"], report["verdict"])
+    if trial_book is not None:
+        m = report["metrics"]
+        sharpe = m.get("net_sharpe", m.get("sharpe", 0.0))
+        trial_book.record(variant=variant, data_id=data_id, sharpe=float(sharpe or 0.0), verdict=report["verdict"],
+                          certificate_id=report["certificate_id"])
     from monte_neo.readiness import readiness
 
     report["readiness"] = readiness(alpha=report)

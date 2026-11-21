@@ -142,3 +142,18 @@ def test_deterministic_and_cli(tmp_path: Path, capsys: pytest.CaptureFixture[str
     assert catalog_main(["classify", str(spec), "--json"]) == 3  # nothing declared and nothing measured
     assert catalog_main(["mask", a["type_mask"]]) == 0 and '"main": "TSM"' in capsys.readouterr().out
     assert catalog_main(["categories"]) == 0 and "HFT" in capsys.readouterr().out
+
+
+def test_catalog_records_are_labelled_and_the_file_is_current() -> None:
+    import importlib.util
+
+    root = Path(__file__).resolve().parents[2]
+    spec = importlib.util.spec_from_file_location("catalog_migrate", root / "scripts" / "catalog_migrate.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert (root / "docs" / "catalog" / "labels.json").read_text(encoding="utf-8") == mod.render()
+    rows = json.loads(mod.render())["labels"]
+    assert len(rows) == 100 and sum(1 for r in rows if r.get("control")) == 2
+    labelled = [r for r in rows if not r.get("control")]
+    assert all(r["type_tag"].startswith("#") and r["type_mask"].startswith("tm1:") for r in labelled)
+    assert not [r["id"] for r in labelled if "label_mismatch" in r["flags"]]

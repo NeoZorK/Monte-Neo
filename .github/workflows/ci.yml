@@ -1,7 +1,9 @@
 name: CI
 
 on:
+  # Branches run CI through their pull request; a push to a branch alone would run the whole matrix twice.
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 

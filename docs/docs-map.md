@@ -102,7 +102,8 @@ A simplified guide to the Monte-Neo file structure.
 - docs/catalog/README.md - strategy catalog overview: 24 types, 100 strategies, how to read it
 - docs/catalog/INDEX.md - catalog index
 - docs/catalog/TYPES.md - the 24 strategy types
-- docs/catalog/TAXONOMY.md - planned catalog taxonomy: 24 categories, depth 4, facets, type tag and type mask
+- docs/catalog/TAXONOMY.md - catalog taxonomy: 24 categories, depth 4, facets, type tag and type mask, labelling command
+- docs/catalog/labels.json, scripts/catalog_migrate.py - labels of the catalog records by catalog-rules/1 and their generator
 - docs/catalog/REGISTRY.md - public strategy registry: what it holds and how records get there
 - docs/catalog/RESULTS.md - verified results per catalog strategy (generated from Strategy Lab data via lab_map.json)
 - docs/catalog/WHAT_DID_NOT_WORK.md - rejected and no-evidence results with computed reasons (generated)

@@ -96,7 +96,7 @@ def test_source_column_and_validation() -> None:
 def _cert(live_source: str | None) -> dict:
     ids = ["data_integrity", "lookahead_truncation", "net_profitability", "timing_significance", "selection_adjusted_sharpe", "residual_alpha",
            "hidden_short_volatility", "deflated_sharpe", "market_impact", "synthetic_market_null", "universe_subsampling",
-           "start_date_sensitivity", "rebalance_timing_luck", "marginal_sharpe", "live_vs_backtest", "alpha_death_monitor"]
+           "start_date_sensitivity", "rebalance_timing_luck", "marginal_sharpe", "live_vs_backtest", "alpha_death_monitor", "trial_ledger"]
     rows = [{"id": i, "status": "pass", "category": "x"} for i in ids]
     if live_source:
         rows.append({"id": "live_source", "status": live_source, "category": "integrity", "summary": "testnet: not executable proof"})

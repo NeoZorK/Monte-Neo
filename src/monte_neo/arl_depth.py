@@ -122,8 +122,8 @@ def _ev(rule: dict[str, Any], e: Evidence) -> tuple[str, str]:
         row = e.rows.get("trial_ledger")
         if row is None:
             return NA, "no trial ledger"
-        d = row["details"]
-        if d.get("declared") is None:
+        d = row.get("details") or {}
+        if d.get("declared") is None or d.get("counted") is None:
             return UNMET, "n_trials was not declared next to the ledger"
         return (MET, f"declared {d['declared']} >= counted {d['counted']}") if d["declared"] >= d["counted"] else (UNMET, f"declared {d['declared']} < counted {d['counted']}")
     if t == "ratio":

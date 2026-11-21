@@ -395,6 +395,28 @@ def _beta_reference(market: Any, bench: dict[str, Any], warmup: int) -> np.ndarr
     return bar_returns(bench["equity"], start=warmup)
 
 
+def _attribution_rows(rets: np.ndarray, reference: np.ndarray, ppy: float, extra: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
+    """Rows ``residual_alpha`` and ``hidden_short_volatility`` of one strategy against what it trades (ARL level 5).
+
+    Skipped when a specialised path (carry, a basket) already gives them in ``extra``.
+    """
+    have = {c.get("id") for c in (extra or [])}
+    if {"residual_alpha", "hidden_short_volatility"} <= have:
+        return []
+    from monte_neo.alpha.attribution import check_residual_alpha
+    from monte_neo.alpha.attribution_tail import check_hidden_short_vol
+
+    n = min(rets.size, reference.size)
+    r, ref = np.asarray(rets[-n:], dtype=np.float64), np.asarray(reference[-n:], dtype=np.float64)
+    ok = np.isfinite(r) & np.isfinite(ref)
+    f = pd.DataFrame({"market": ref[ok]})
+    out = [check_residual_alpha(r[ok], f, ppy), check_hidden_short_vol(r[ok], f)]
+    for row in out:  # like alpha_after_beta: it blocks ARL level 5, it does not turn a beta strategy into a failed backtest
+        if row["status"] == "fail":
+            row["status"] = "warn"
+    return [row for row in out if row["id"] not in have]
+
+
 def _local_strategy(strategy: Any, src: str | None, isolate: bool, has_events: bool) -> Any:
     """The strategy in this process, only when a check needs it here (events, fit/predict) and isolation allows it."""
     looks_like_model = bool(src) and "def fit(" in src and "def predict(" in src and "def signal(" not in src
@@ -536,6 +558,7 @@ def _checks_and_report(
         *([claim_row(settings["claim"], _verified(dsr, run, n_closed, journal_stats))] if "claim" in settings else []),
         rows.benchmark_row(total_return, dsr["sharpe_annualized"], bench),
         alpha_after_beta_row(rets, _beta_reference(market, bench, model.warmup_bars), ppy),
+        *_attribution_rows(rets, _beta_reference(market, bench, model.warmup_bars), ppy, extra_checks),
         regime_stability_row(by_regime, total_return),
         *dynamic_rows,
         rebalance_phase_row(ohlc, sig, model, settings.get("rebalance_every")),

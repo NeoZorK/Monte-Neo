@@ -568,6 +568,7 @@ def validate_alpha(
     liquid_top: int | None = None,
     terminal_returns: dict[str, float] | None = None,
     rebalance_phase: str | None = None,
+    ledger: bool = False,
 ) -> dict[str, Any]:
     """Does a cross-sectional score predict returns, and can its top-minus-bottom portfolio be traded? (alpha-report/1)
 
@@ -592,6 +593,8 @@ def validate_alpha(
         liquid_top: Trade only the K most liquid symbols known before each date (point-in-time universe).
         terminal_returns: Return of each delisted symbol on the bar after its last price ({symbol: return}); undeclared delistings are flagged.
         rebalance_phase: K/H, run the report for one rebalance phase (scores held between rebalances).
+        ledger: Count the score variants tried on these prices in .monte-neo/ledger.jsonl (hash-chained); the larger of
+            the count and n_trials is used. ARL levels 4 and above need this (or another record of the trials).
 
     The report also covers attribution (is it a known factor, hidden short volatility), value to a book, multiple
     testing and risk (neutrality, concentration, named crises, tail risk).
@@ -601,7 +604,7 @@ def validate_alpha(
     return _validate(
         prices_path, scores_path, horizon=horizon, quantiles=quantiles, claimed_ir=claimed_ir, aum=aum, seed=seed,
         factors=factors_path, book=book_path, n_trials=n_trials, funding=funding_path, aum_grid=aum_grid, min_capacity=min_capacity,
-        liquid_top=liquid_top, terminal_returns=terminal_returns, rebalance_phase=rebalance_phase,
+        liquid_top=liquid_top, terminal_returns=terminal_returns, rebalance_phase=rebalance_phase, ledger=ledger or None,
     )
 
 
