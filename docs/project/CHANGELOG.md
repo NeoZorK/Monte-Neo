@@ -5,6 +5,30 @@ Version source of truth: `src/monte_neo/_version.py`.
 
 ## [Unreleased]
 
+Planned for v0.57.0.
+
+### Added
+- **`monte-neo research transfer`**: cross-market replication. The frozen rule runs unchanged on markets that took no part in
+  the search (markets from the search are refused); each gets a full verdict, and the equal-weight portfolio of the rule on
+  all of them is tested with the effective number of independent markets. Check row `cross_market_replication`.
+- **Sequential forward test in `monte-neo deploy`**: two anytime-valid e-processes on the daily net returns at doubled costs
+  (evidence of an edge, evidence of a shortfall below the target Sharpe), thresholds Bonferroni-adjusted for every candidate
+  under test; decisions `PASS`, `FAIL_EARLY`, `INCONCLUSIVE`, `CONTINUE`, with the days a target Sharpe would need. On the
+  dashboard and in `deploy status`. Simulation: 0.6 % false passes on null records over 26 weeks of daily checking.
+- **`monte-neo catalog compat`**: requirements of a strategy (asset classes, instrument types, short selling, leverage,
+  intraday) matched to a provisional venue table (`venues/1`), with the reasons a venue does not fit, an indicative fee,
+  the demo environment and the connector status.
+- **`monte-neo catalog novelty`**: correlation with every catalog strategy (also in the worst days) and the marginal Sharpe
+  of adding the strategy to the catalog book.
+- Guides: `docs/guides/fast-evidence.md`, `docs/guides/catalog-tools.md`.
+
+### Changed
+- **`research freeze` also needs a profitable walk-forward of the parameter family**: every screened variant of the same
+  code, parameters re-chosen on each past window of the discovery period and judged on the next (anchored, 4 folds). Without
+  it the holdout stays closed unless `--override` (written down); the result is stored in the freeze record.
+
+## [0.56.0] - unreleased (merged in #130, #132, #133)
+
 Planned for v0.56.0.
 
 ### Added
