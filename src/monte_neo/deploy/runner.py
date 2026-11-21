@@ -3,7 +3,8 @@
 ``run_day(D)`` can be called any number of times for the same UTC day D: every step first looks for its own journal
 entry and skips when it is there, so a restart after a power or network cut continues where it stopped. Days that were
 missed are recorded late with ``late: true`` (never back-filled silently). Signals use only mainnet daily bars that
-closed before D; orders go to the spot testnet (or the dry-run exchange) with deterministic client ids.
+closed before D; orders go to the run's venue testnet (or the dry-run exchange) with deterministic client ids.
+On a perpetual-futures venue every mark also charges both books the funding of the day before, from mainnet history.
 """
 
 from __future__ import annotations
@@ -13,7 +14,7 @@ import hashlib
 import json
 from typing import Any
 
-from monte_neo.deploy import account, binance, plugin
+from monte_neo.deploy import account, binance, connectors, plugin
 from monte_neo.deploy.journal import Journal
 
 LOOKBACK = 500  # daily bars handed to the plug-in
@@ -48,21 +49,47 @@ def is_rebalance_day(cfg: dict[str, Any], day: dt.date) -> bool:
     return cfg["rebalance"] == "daily" or day.weekday() == int(cfg.get("weekday", 0))
 
 
-def _bars(symbol: str, day: dt.date, n: int) -> list[tuple[int, float]]:
-    """Complete daily bars that closed before ``day`` (UTC), oldest first."""
-    end_ms = int(dt.datetime(day.year, day.month, day.day, tzinfo=dt.UTC).timestamp() * 1000) - 1
-    return binance.daily_klines(symbol, limit=n, end_ms=end_ms)
+def _day_ms(day: dt.date) -> int:
+    return int(dt.datetime(day.year, day.month, day.day, tzinfo=dt.UTC).timestamp() * 1000)
 
 
-def _mark(journal: Journal, day: dt.date, symbols: list[str], late: bool) -> dict[str, Any]:
+def _bars(symbol: str, day: dt.date, n: int, venue: connectors.Venue | None = None) -> list[tuple[int, float]]:
+    """Complete daily bars that closed before ``day`` (UTC), oldest first, of the instrument the venue trades."""
+    return connectors.klines_fn(venue or connectors.VENUES["binance_spot"])(symbol, limit=n, end_ms=_day_ms(day) - 1)
+
+
+def _funding(journal: Journal, cfg: dict[str, Any], day: dt.date, prices: dict[str, float]) -> None:
+    """Charge each book the funding paid during the day before ``day`` on the positions it held then (once per day)."""
+    d = day.isoformat()
+    if journal.find("funding", day=d):
+        return
+    end = _day_ms(day) - 1
+    events = {s: binance.funding_rates(s, end - 86_400_000 + 1, end) for s in cfg["symbols"]}
+    for book in books_for(cfg["mode"]):
+        pos = account.replay(journal.entries(), book)["positions"]
+        per = {s: connectors.funding_payment(q, events.get(s, []), prices.get(s, 0.0)) for s, q in pos.items() if q}
+        journal.append("funding", {"day": d, "book": book, "amount_usdt": sum(per.values()), "by_symbol": per,
+                                   "events": {s: len(e) for s, e in events.items()}})
+
+
+def _mark(journal: Journal, day: dt.date, symbols: list[str], late: bool, venue: connectors.Venue | None = None) -> dict[str, Any]:
     prices: dict[str, float] = {}
     bars: dict[str, int] = {}
     for s in symbols:
-        rows = _bars(s, day, 3)
+        rows = _bars(s, day, 3, venue)
         if not rows:
             raise RunError(f"no complete daily bar for {s} before {day}")
         bars[s], prices[s] = rows[-1][0], rows[-1][1]
     return journal.append("mark", {"day": day.isoformat(), "prices": prices, "bar_open_ms": bars, "late": late})
+
+
+def _mark_day(journal: Journal, cfg: dict[str, Any], day: dt.date, late: bool) -> None:
+    """Funding first (it belongs to the day before, on the positions held then), then the mark that values both books."""
+    v = connectors.venue(cfg)
+    marks = journal.find("mark")
+    if v.funding and marks:  # nothing is held before the first mark; the last mark's prices value events without a mark price
+        _funding(journal, cfg, day, marks[-1]["body"]["prices"])
+    _mark(journal, day, cfg["symbols"], late, v)
 
 
 def _peak_drawdown(journal: Journal) -> float:
@@ -98,7 +125,7 @@ def _trade(journal: Journal, ex: Any, cfg: dict[str, Any], book: str, day: dt.da
     o = ex.market_order(symbol, side, qty, cid)
     if journal.find("fill", client_order_id=cid):  # fills of this order are already recorded (resumed run)
         return
-    px_now = mainnet_px if isinstance(ex, binance.SimExchange) else binance.mainnet_price(symbol)
+    px_now = mainnet_px if isinstance(ex, binance.SimExchange) else connectors.price_fn(connectors.venue(cfg))(symbol)
     base = symbol[:-4]
     for fl in o.get("fills", []):
         fee = float(fl["commission"])
@@ -111,13 +138,14 @@ def _trade(journal: Journal, ex: Any, cfg: dict[str, Any], book: str, day: dt.da
 
 def _rebalance(journal: Journal, ex: Any, cfg: dict[str, Any], fn: plugin.WeightsFn, day: dt.date, late: bool) -> None:
     symbols, books = cfg["symbols"], books_for(cfg["mode"])
-    closes = {s: [c for _, c in _bars(s, day, cfg.get("lookback", LOOKBACK))] for s in symbols}
+    v = connectors.venue(cfg)
+    closes = {s: [c for _, c in _bars(s, day, cfg.get("lookback", LOOKBACK), v)] for s in symbols}
     px = {s: c[-1] for s, c in closes.items()}
     prior = journal.find("signal", day=day.isoformat())
     if prior:  # a resumed rebalance reuses the recorded decision and NAVs instead of asking the plug-in again
         weights, navs = prior[0]["body"]["weights"], prior[0]["body"]["nav_before"]
     else:
-        weights = plugin.call(fn, closes, symbols)
+        weights = plugin.call(fn, closes, symbols, allow_short=v.short, max_gross=float(cfg.get("max_gross", 1.0)))
         navs = {b: account.nav(account.replay(journal.entries(), b), px) for b in books}
         digest = hashlib.sha256(json.dumps(closes, sort_keys=True).encode()).hexdigest()
         journal.append("signal", {"day": day.isoformat(), "weights": weights, "inputs_sha256": digest, "nav_before": navs,
@@ -132,12 +160,12 @@ def _rebalance(journal: Journal, ex: Any, cfg: dict[str, Any], fn: plugin.Weight
 
 
 def _kill(journal: Journal, ex: Any, cfg: dict[str, Any], day: dt.date, dd: float) -> None:
-    symbols = cfg["symbols"]
-    px = {s: _bars(s, day, 3)[-1][1] for s in symbols}
+    symbols, v = cfg["symbols"], connectors.venue(cfg)
+    px = {s: _bars(s, day, 3, v)[-1][1] for s in symbols}
     for book in books_for(cfg["mode"]):
         acc = account.replay(journal.entries(), book)
         for s, q in acc["positions"].items():
-            if q > 0:
+            if q != 0 and abs(q) * px.get(s, 0.0) > 1e-6:  # longs and shorts are closed
                 _trade(journal, ex, cfg, book, day, s, -q, px[s])
     journal.append("kill", {"day": day.isoformat(), "drawdown": dd, "threshold": cfg["kill_drawdown"]})
 
@@ -150,11 +178,11 @@ def run_day(journal: Journal, ex: Any, fn: plugin.WeightsFn, day: dt.date | None
     done: list[str] = []
     if journal.find("kill"):
         if not journal.find("mark", day=day.isoformat()):
-            _mark(journal, day, cfg["symbols"], late)
+            _mark_day(journal, cfg, day, late)
             done.append("mark")
         return {"day": day.isoformat(), "done": done, "note": "kill switch active: no trading"}
     if not journal.find("mark", day=day.isoformat()):
-        _mark(journal, day, cfg["symbols"], late)
+        _mark_day(journal, cfg, day, late)
         done.append("mark")
     dd = _peak_drawdown(journal)
     if dd <= cfg["kill_drawdown"]:

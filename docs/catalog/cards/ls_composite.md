@@ -35,3 +35,11 @@ Horizon: Multi-year, includes crashes.
 ## What Monte-Neo cannot verify
 
 - Stock-picking skill from narrative; locates and recalls
+
+## Worst scenario (hedged is not risk-free)
+
+- the long and short books fall together in a deleveraging (August 2007 quant crisis)
+- a short squeeze on a crowded short
+- Counterparty: a hedge does not protect the capital held at a venue that fails.
+
+Measure it on the strategy's net returns and legs: `monte-neo catalog worst --returns r.csv --legs legs.csv` (measured losses, leg correlation in stress, and stated shocks with their formulas).

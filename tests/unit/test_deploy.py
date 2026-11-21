@@ -351,7 +351,7 @@ def test_keys_never_printed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, cap
     secret_key, secret_val = "A1b2C3d4" * 5, "Z9y8X7w6" * 5
     monkeypatch.setenv(keys.ENV_KEY, secret_key)
     monkeypatch.setenv(keys.ENV_SECRET, secret_val)
-    monkeypatch.setattr(keys, "check_pair", lambda k, s: False)
+    monkeypatch.setattr(keys, "check_pair", lambda k, s, venue="binance_spot": False)
     assert deploy_cmd.main(["keys", "--status"]) == 0
     # discovery in a file: names and paths are shown, values are not
     env = tmp_path / ".env"
@@ -359,7 +359,7 @@ def test_keys_never_printed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, cap
     monkeypatch.setattr(keys, "PLACES", [str(tmp_path)])
     assert deploy_cmd.main(["keys", "--list"]) == 0
     stored: list[tuple[str, str]] = []
-    monkeypatch.setattr(keys, "store", lambda k, s: stored.append((k, s)))
+    monkeypatch.setattr(keys, "store", lambda k, s, venue="binance_spot": stored.append((k, s)))
     assert deploy_cmd.main(["keys", "--yes"]) == 0
     assert not stored  # a pair the testnet rejects is never stored
     out = capsys.readouterr()

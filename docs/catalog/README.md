@@ -8,6 +8,7 @@ The catalog has four parts:
 |---|---|
 | [TYPES.md](TYPES.md) | 24 strategy and benchmark types (passive, 60/40, risk parity, factors, trend/CTA, mean reversion, stat-arb, carry, short vol, merger arb, macro, ...): how each is measured, its typical traps, which Monte-Neo checks apply, what data it needs, and what Monte-Neo cannot verify |
 | [INDEX.md](INDEX.md), [strategies.yaml](strategies.yaml), [cards/](cards/) | 100 popular strategies with canonical, frozen parameters from the source, and one card per strategy |
+| [strategies_mn.yaml](strategies_mn.yaml) | Extension MN-1: 10 market-neutral and arbitrage strategies (structure and a worst scenario per entry), verified with `n_trials` = 100 + the extension size |
 | [PROTOCOL.md](PROTOCOL.md) | The honest protocol for verifying all 100 at once (pre-registration, `n_trials` = catalog size, sealed holdout, how failures are published) |
 | [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) | Historical design plan for type-aware verification profiles. The shipped feature is `monte-neo verify --profile ID` ([profiles guide](../guides/profiles.md)); the `monte-neo catalog` command in the plan does not exist |
 
@@ -24,4 +25,4 @@ Data tiers: **A** = daily OHLCV from open data (62 strategies), **B** = needs ot
 
 - Definitions and parameters were written from the literature. In the 2026-11-08 check, 3 definitions were confirmed against secondary sources, 6 partially, and the other 91 are marked `unverified` (see the `verification` field). No primary full text was read. Each card must be verified before the strategy is run (phase 2, first task).
 - Reference links and access dates are **not yet verified**; the type references are citations (author, year, title, venue) only.
-- `build_catalog.py` validates the YAML (ids, types, trap codes, 100-entry cap) and regenerates `cards/`, `INDEX.md` and `TYPES.md`. Edit the YAML, never the generated files. Requires PyYAML.
+- `build_catalog.py` validates the YAML (ids, types, trap codes, 100-entry cap, 30-entry cap of the extension) and regenerates `cards/`, `INDEX.md` and `TYPES.md`. Edit the YAML, never the generated files. Requires PyYAML.

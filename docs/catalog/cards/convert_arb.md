@@ -35,3 +35,11 @@ Horizon: Includes 2008 and 2020.
 ## What Monte-Neo cannot verify
 
 - Reproducing a convertible book from public OHLCV; model-dependent marks
+
+## Worst scenario (hedged is not risk-free)
+
+- credit spreads widen and liquidity vanishes together (2005, 2008)
+- short borrow on the stock is recalled
+- Counterparty: a hedge does not protect the capital held at a venue that fails.
+
+Measure it on the strategy's net returns and legs: `monte-neo catalog worst --returns r.csv --legs legs.csv` (measured losses, leg correlation in stress, and stated shocks with their formulas).

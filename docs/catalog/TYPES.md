@@ -157,7 +157,7 @@ Optimizer-based weights from a covariance estimate (minimum variance, most-diver
 <a id="factor_premia"></a>
 ## Factor / smart-beta (value, momentum, quality, low-vol, size)
 
-*Family: factor. Catalog entries: 10.*
+*Family: factor. Catalog entries: 11.*
 
 Long-only or long-short portfolios sorted on a characteristic (book-to-market, past return, profitability, beta, market cap).
 
@@ -191,7 +191,7 @@ Long-only or long-short portfolios sorted on a characteristic (book-to-market, p
 <a id="trend_following"></a>
 ## Trend following / time-series momentum / CTA
 
-*Family: trend. Catalog entries: 18.*
+*Family: trend. Catalog entries: 19.*
 
 Go long assets with positive past return (or price above a moving average / breakout), short or flat otherwise, often volatility-scaled and diversified across many markets.
 
@@ -289,7 +289,7 @@ Buy oversold / sell overbought using oscillators, z-scores or bands, with a quic
 <a id="stat_arb_pairs"></a>
 ## Statistical arbitrage and pairs trading
 
-*Family: relative_value. Catalog entries: 7.*
+*Family: relative_value. Catalog entries: 8.*
 
 Trade the spread between related assets that is assumed stationary (distance, cointegration, Ornstein-Uhlenbeck, PCA residuals).
 
@@ -353,7 +353,7 @@ Quote both sides, earn the spread, manage inventory and adverse selection.
 <a id="carry"></a>
 ## Carry (FX, commodity roll, bond roll-down, crypto funding/basis)
 
-*Family: carry. Catalog entries: 4.*
+*Family: carry. Catalog entries: 7.*
 
 Earn the yield differential or roll return from holding higher-yielding exposure funded by lower-yielding exposure.
 
@@ -385,7 +385,7 @@ Earn the yield differential or roll return from holding higher-yielding exposure
 <a id="short_volatility"></a>
 ## Volatility selling / short vol
 
-*Family: volatility. Catalog entries: 4.*
+*Family: volatility. Catalog entries: 5.*
 
 Collect the variance risk premium by selling options or shorting volatility products; payoff is concave with a severe left tail.
 
@@ -700,7 +700,7 @@ Invest a fixed amount per period (DCA) or follow a target-path of portfolio valu
 <a id="crypto_specific"></a>
 ## Crypto-specific (perpetual funding, basis, cross-sectional crypto momentum)
 
-*Family: carry. Catalog entries: 5.*
+*Family: carry. Catalog entries: 8.*
 
 Strategies exploiting perpetual swap funding, spot-futures basis, or cross-sectional crypto returns.
 

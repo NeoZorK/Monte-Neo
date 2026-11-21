@@ -17,7 +17,7 @@ import math
 from pathlib import Path
 from typing import Any
 
-from monte_neo.deploy import account, binance, metrics, plugin, runner
+from monte_neo.deploy import account, metrics, plugin, runner
 from monte_neo.deploy import journal as jr
 from monte_neo.disclaimer import html_footer
 from monte_neo.verify.report_html import CSP
@@ -99,15 +99,18 @@ def _period_returns(marks: list[dict[str, Any]], key: int) -> list[tuple[str, fl
 
 
 # ---------------------------------------------------------------- backtest replay of the frozen strategy
-def _history(symbol: str, start: str, end: str, lookback: int) -> list[tuple[str, float]]:
-    """Mainnet daily closes from ``lookback`` + 35 days before ``start`` to ``end``."""
+def _history(symbol: str, start: str, end: str, lookback: int, venue: str = "binance_spot") -> list[tuple[str, float]]:
+    """Mainnet daily closes (of the run's venue) from ``lookback`` + 35 days before ``start`` to ``end``."""
+    from monte_neo.deploy import connectors
+
+    klines = connectors.klines_fn(connectors.venue(venue))
     s = dt.date.fromisoformat(start) - dt.timedelta(days=lookback + 35)
     e = dt.date.fromisoformat(end)
     out: dict[str, float] = {}
     cursor = e
     while cursor > s:
         end_ms = int(dt.datetime(cursor.year, cursor.month, cursor.day, tzinfo=dt.UTC).timestamp() * 1000) + 86_399_999
-        rows = binance.daily_klines(symbol, limit=1000, end_ms=end_ms)
+        rows = klines(symbol, limit=1000, end_ms=end_ms)
         if not rows:
             break
         for ms, c in rows:
@@ -120,9 +123,16 @@ def _history(symbol: str, start: str, end: str, lookback: int) -> list[tuple[str
 
 
 def replay(cfg: dict[str, Any], fn: plugin.WeightsFn, start: str, end: str) -> dict[str, Any]:
-    """Run the frozen strategy on [start, end]: rebalance on the run's schedule with closes up to the previous day and the run's costs."""
+    """Run the frozen strategy on [start, end]: rebalance on the run's schedule with closes up to the previous day and the run's costs.
+
+    On a perpetual-futures venue the replay leaves funding out (the stress windows predate most funding history); the
+    forward books charge it.
+    """
+    from monte_neo.deploy import connectors
+
+    v = connectors.venue(cfg)
     symbols, lookback, capital = cfg["symbols"], int(cfg.get("lookback", runner.LOOKBACK)), float(cfg["capital"])
-    hist = {s: dict(_history(s, start, end, lookback)) for s in symbols}
+    hist = {s: dict(_history(s, start, end, lookback, v.id)) for s in symbols}
     days = sorted(set.intersection(*(set(h) for h in hist.values()))) if hist else []
     if not any(d >= start for d in days):
         return {"start": start, "end": end, "error": "no common history for all symbols in this window"}
@@ -137,7 +147,7 @@ def replay(cfg: dict[str, Any], fn: plugin.WeightsFn, start: str, end: str) -> d
             nav_prev = cash + sum(pos[s] * px_prev[s] for s in symbols)
             if runner.is_rebalance_day(cfg, dt.date.fromisoformat(d)):
                 closes = {s: [hist[s][x] for x in days[:i]][-lookback:] for s in symbols}
-                w = plugin.call(fn, closes, symbols)
+                w = plugin.call(fn, closes, symbols, allow_short=v.short, max_gross=float(cfg.get("max_gross", 1.0)))
                 for s in symbols:
                     delta = w[s] * nav_prev / px_prev[s] - pos[s]
                     cash -= delta * px_prev[s] + abs(delta) * px_prev[s] * cost

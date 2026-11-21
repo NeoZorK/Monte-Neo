@@ -20,6 +20,18 @@ Planned for v0.57.0.
   the demo environment and the connector status.
 - **`monte-neo catalog novelty`**: correlation with every catalog strategy (also in the worst days) and the marginal Sharpe
   of adding the strategy to the catalog book.
+- **`monte-neo deploy --market usdm`**: a connector for the Binance USD-M perpetual futures testnet. Weights may be negative
+  (shorts) with gross exposure up to `--leverage` (at most 2), so market-neutral books can run forward; signals and marks
+  use mainnet perpetual closes; both books are charged funding from mainnet history; the kill switch closes shorts too.
+  Separate futures testnet keys (`deploy keys --venue binance_usdm`). Connector table in `monte_neo.deploy.connectors`.
+- **`monte-neo catalog worst`**: the worst-scenario card of a hedged book: measured losses, leg correlation in stress, the
+  long leg alone, and stated shocks (short squeeze, spread break, funding spike, venue failure) with their formulas.
+- **Strategy catalog extension MN-1** (`docs/catalog/strategies_mn.yaml`): 10 market-neutral and arbitrage strategies with
+  sources (basis reversion, pairs basket, cross-exchange and triangular arbitrage, cross-sectional funding carry, crypto
+  betting-against-beta, calendar spread, delta-hedged short volatility, stablecoin peg, ETH/BTC ratio trend); verified with
+  `n_trials` = 110. Every market-neutral and arbitrage card has a "Worst scenario" section.
+- Strategy Lab ideas `r5_basis_reversion` and `r5_pairs_basket` (parameters fixed before data; not run yet), and the
+  deploy example `examples/deploy/relative_momentum_neutral.py`.
 - Guides: `docs/guides/fast-evidence.md`, `docs/guides/catalog-tools.md`.
 
 ### Changed

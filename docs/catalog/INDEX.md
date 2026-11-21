@@ -108,3 +108,20 @@ Verified results, with every metric: [RESULTS.md](RESULTS.md). Failures: [WHAT_D
 | [avellaneda_stoikov](cards/avellaneda_stoikov.md) | Avellaneda-Stoikov market making | market_making | C | Avellaneda Stoikov 2008 | unverified | not yet verified | - |
 | [tail_trend_vol_scaled](cards/tail_trend_vol_scaled.md) | Volatility-scaled trend with 10% target | trend_following | A | Baltas Kosowski 2013; Kim Tse Wald 2016 | unverified | not yet verified | - |
 | [mean_variance_naive](cards/mean_variance_naive.md) | Mean-variance (Markowitz) with sample estimates | minimum_variance | A | Markowitz 1952; DeMiguel et al. 2009 benchmark | unverified | not yet verified | - |
+
+## Extension MN-1: market-neutral and arbitrage
+
+10 strategies from `strategies_mn.yaml`, verified with n_trials = 110 (the 100 above plus these). Each card has a worst-scenario section: hedged is not risk-free.
+
+| id | name | type | structure | tier | source | ARL / depth | net Sharpe |
+|---|---|---|---|---|---|---|---|
+| [crypto_basis_reversion](cards/crypto_basis_reversion.md) | Spot-perpetual basis reversion | carry | BAS | A | He Manela Ross von Wachter 2022 'Fundamentals of perpetual futures' (arXiv 2212.06888); law of one price | not yet verified | - |
+| [crypto_pairs_basket](cards/crypto_pairs_basket.md) | Basket of crypto pairs (rolling hedge) | stat_arb_pairs | MN | A | Gatev Goetzmann Rouwenhorst 2006 RFS (distance pairs) applied to a basket of related perpetuals | not yet verified | - |
+| [cross_exchange_basis](cards/cross_exchange_basis.md) | Cross-exchange price arbitrage | crypto_specific | SPR | C | Makarov Schoar 2020 JFE 'Trading and arbitrage in cryptocurrency markets' | not yet verified | - |
+| [triangular_crypto](cards/triangular_crypto.md) | Triangular arbitrage ETH/BTC vs USDT legs | crypto_specific | SPR | C | Law of one price; Makarov Schoar 2020 JFE | not yet verified | - |
+| [funding_xs_neutral](cards/funding_xs_neutral.md) | Cross-sectional funding carry (dollar-neutral) | carry | MN | A | Schmeling Schrimpf Todorov 2023 'Crypto carry' (BIS Working Paper 1087) | not yet verified | - |
+| [crypto_bab](cards/crypto_bab.md) | Betting against beta in crypto | factor_premia | MN | A | Frazzini Pedersen 2014 JFE, applied to crypto perpetuals | not yet verified | - |
+| [futures_calendar_spread](cards/futures_calendar_spread.md) | Dated-futures calendar spread carry | carry | SPR | B | Koijen Moskowitz Pedersen Vrugt 2018 JFE 'Carry' | not yet verified | - |
+| [delta_hedged_short_vol](cards/delta_hedged_short_vol.md) | Delta-hedged short straddle (variance risk premium) | short_volatility | OPT | C | Carr Wu 2009 RFS 'Variance risk premiums' | not yet verified | - |
+| [stablecoin_depeg_arb](cards/stablecoin_depeg_arb.md) | Stablecoin peg arbitrage | crypto_specific | SPR | C | Lyons Viswanath-Natraj 2023 JIMF 'What keeps stablecoins stable?' | not yet verified | - |
+| [ratio_trend_btc_eth](cards/ratio_trend_btc_eth.md) | ETH/BTC ratio trend (dollar-neutral) | trend_following | MN | A | Moskowitz Ooi Pedersen 2012 JFE (time-series momentum) applied to a relative price | not yet verified | - |

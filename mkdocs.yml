@@ -116,7 +116,7 @@ nav:
       - Honest strategy search: guides/research.md
       - Lessons from the Strategy Lab: guides/research-lessons.md
       - Faster honest evidence: guides/fast-evidence.md
-      - Catalog tools (venues, novelty): guides/catalog-tools.md
+      - Catalog tools (venues, novelty, worst case): guides/catalog-tools.md
       - Deploy to a demo testnet: guides/deploy.md
       - Try a public strategy (registry): guides/registry.md
       - Indicator search: guides/discover.md

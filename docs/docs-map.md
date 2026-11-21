@@ -116,6 +116,7 @@ A simplified guide to the Monte-Neo file structure.
 - docs/catalog/PROTOCOL.md - test protocol for catalog strategies
 - docs/catalog/IMPLEMENTATION_PLAN.md - implementation plan
 - docs/catalog/strategies.yaml, types.yaml, traps.yaml, build_catalog.py - catalog data and the generator of the cards
+- docs/catalog/strategies_mn.yaml - catalog extension MN-1: market-neutral and arbitrage strategies with worst scenarios
 - docs/catalog/cards/accruals.md - catalog card
 - docs/catalog/cards/adx_trend.md - catalog card
 - docs/catalog/cards/all_weather.md - catalog card
@@ -123,6 +124,16 @@ A simplified guide to the Monte-Neo file structure.
 - docs/catalog/cards/avellaneda_lee_pca.md - catalog card
 - docs/catalog/cards/avellaneda_stoikov.md - catalog card
 - docs/catalog/cards/bab.md - catalog card
+- docs/catalog/cards/crypto_basis_reversion.md - catalog card (extension MN-1)
+- docs/catalog/cards/crypto_pairs_basket.md - catalog card (extension MN-1)
+- docs/catalog/cards/cross_exchange_basis.md - catalog card (extension MN-1)
+- docs/catalog/cards/triangular_crypto.md - catalog card (extension MN-1)
+- docs/catalog/cards/funding_xs_neutral.md - catalog card (extension MN-1)
+- docs/catalog/cards/crypto_bab.md - catalog card (extension MN-1)
+- docs/catalog/cards/futures_calendar_spread.md - catalog card (extension MN-1)
+- docs/catalog/cards/delta_hedged_short_vol.md - catalog card (extension MN-1)
+- docs/catalog/cards/stablecoin_depeg_arb.md - catalog card (extension MN-1)
+- docs/catalog/cards/ratio_trend_btc_eth.md - catalog card (extension MN-1)
 - docs/catalog/cards/bh_btc.md - catalog card
 - docs/catalog/cards/bh_eth.md - catalog card
 - docs/catalog/cards/bh_spy.md - catalog card
