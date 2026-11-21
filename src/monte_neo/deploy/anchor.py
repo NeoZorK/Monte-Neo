@@ -30,8 +30,10 @@ def make_query(text: Path, tsq: Path) -> None:
 
 
 def post(tsa: str, data: bytes) -> bytes:
+    if not tsa.startswith(("https://", "http://")):  # RFC 3161 authorities are plain HTTP(S); never file: or custom schemes
+        raise ValueError(f"refusing a non-HTTP time-stamping URL: {tsa}")
     req = urllib.request.Request(tsa, data=data, method="POST", headers={"Content-Type": "application/timestamp-query", "User-Agent": UA})  # noqa: S310
-    with urllib.request.urlopen(req, timeout=60) as r:  # noqa: S310 (fixed hosts, listed above)
+    with urllib.request.urlopen(req, timeout=60) as r:  # noqa: S310  # nosec B310 - scheme checked above
         return r.read()  # type: ignore[no-any-return]
 
 

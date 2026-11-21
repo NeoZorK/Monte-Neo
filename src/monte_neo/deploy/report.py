@@ -19,6 +19,8 @@ from typing import Any
 
 from monte_neo.deploy import account, binance, metrics, plugin, runner
 from monte_neo.deploy import journal as jr
+from monte_neo.disclaimer import html_footer
+from monte_neo.verify.report_html import CSP
 
 DEFAULT_STRESS = {"COVID crash": ("2020-02-10", "2020-04-30"), "Terra/Luna collapse": ("2022-04-25", "2022-07-15"),
                   "FTX collapse": ("2022-10-31", "2022-12-31")}
@@ -218,7 +220,7 @@ def render(n: dict[str, Any]) -> str:
     ops = n["operations"]
     el = run.get("certificate") or {}
     warn = "".join(f"<li>{_e(w)}</li>" for w in (run.get("warnings") or [])) or "<li>none</li>"
-    return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="{CSP}"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Forward record evidence report</title><style>
 body{{font:13px/1.5 Georgia,serif;color:#141922;max-width:900px;margin:24px auto;padding:0 16px}}h1{{font-size:22px}}h2{{font-size:16px;border-bottom:1px solid #ccd;padding-bottom:3px;margin-top:22px}}
 table{{border-collapse:collapse;width:100%;font:12px Helvetica,Arial,sans-serif}}td,th{{border-bottom:1px solid #e3e6ea;padding:4px 6px;text-align:left}}.m{{color:#5b6573}}code{{font-size:11px}}
@@ -246,7 +248,7 @@ footer{{margin-top:24px;font:11px Helvetica,Arial,sans-serif;color:#5b6573;borde
 <tr><td>Orders skipped (below exchange minimum)</td><td>{ops['skip']}</td><td>RFC 3161 anchors</td><td>{j['anchors']}</td></tr></table>
 <p class=m>Cost model {_e(json.dumps(run['cost_model']))} per side.</p>
 <h2>9. Limitations</h2><ol>{lim}</ol>
-<footer>{_e(foot)}.</footer></body></html>"""
+<footer>{_e(foot)}.</footer>{html_footer()}</body></html>"""
 
 
 def _digest(n: dict[str, Any]) -> str:

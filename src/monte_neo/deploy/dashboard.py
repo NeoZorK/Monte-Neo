@@ -15,6 +15,8 @@ from typing import Any
 
 from monte_neo.deploy import account, metrics
 from monte_neo.deploy import journal as jr
+from monte_neo.disclaimer import html_footer
+from monte_neo.verify.report_html import CSP
 
 
 def _pct(x: float | None, d: int = 2) -> str:
@@ -91,7 +93,7 @@ def render(entries: list[dict[str, Any]], chain: dict[str, Any]) -> str:
     dev_html = "".join(f"<li>{_esc(e['ts'])}: {_esc(e['body'].get('why', ''))}</li>" for e in devs) or "<li class=muted>none</li>"
     warn_html = "".join(f"<li>{_esc(w)}</li>" for w in start.get("warnings", [])) or "<li class=muted>none</li>"
     title = "Monte-Neo deploy: forward record"
-    return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="{CSP}"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="refresh" content="300"><title>{title}</title><style>{CSS}</style></head><body><main>
 <h1>{title}</h1>
 <div class="muted">Strategy <code>{_esc(strat.get('file', 'n/a'))}</code> · mode {_esc(start.get('mode', 'n/a'))} · rebalance {_esc(start.get('rebalance', 'n/a'))} · first day {_esc(start.get('first_day', 'n/a'))} · last entry {_esc(last_ts)} UTC</div>
@@ -114,7 +116,7 @@ def render(entries: list[dict[str, Any]], chain: dict[str, Any]) -> str:
 <section><h2>Journal integrity</h2><p class="{'ok' if chain['ok'] else 'bad'}">{'chain intact' if chain['ok'] else 'CHAIN BROKEN: ' + _esc(chain['problem'])} · {chain['entries']} entries · {len(anchors)} RFC 3161 anchors</p>
 <p class="muted">Head <code>{_esc(chain['head'])}</code></p></section>
 <p class="muted">Forward record on Binance demo (testnet) execution and mainnet market data. Not live trading and not investment advice.</p>
-</main></body></html>"""
+{html_footer()}</main></body></html>"""
 
 
 def build(journal_path: Path | str, out: Path) -> Path:

@@ -55,7 +55,7 @@ def http_get(url: str) -> bytes:
         raise RegistryError(f"refusing a non-HTTPS URL: {url}", 3)
     req = urllib.request.Request(url, headers={"User-Agent": user_agent()})  # noqa: S310 (scheme checked above)
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:  # noqa: S310
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:  # noqa: S310  # nosec B310 - scheme checked above
             data: bytes = r.read(MAX_BYTES + 1)
     except urllib.error.HTTPError as exc:
         raise RegistryError(f"{url} answered HTTP {exc.code}", 2) from None

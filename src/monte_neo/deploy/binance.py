@@ -28,11 +28,13 @@ class ExchangeError(RuntimeError):
 
 
 def _get_json(url: str, headers: dict[str, str] | None = None, method: str = "GET", data: bytes | None = None, tries: int = 5) -> Any:
+    if not url.startswith("https://"):  # Binance REST only, over HTTPS
+        raise ValueError(f"refusing a non-HTTPS URL: {url}")
     last: Exception | None = None
     for attempt in range(tries):
         req = urllib.request.Request(url, data=data, method=method, headers={"User-Agent": UA, **(headers or {})})  # noqa: S310
         try:
-            with urllib.request.urlopen(req, timeout=30) as r:  # noqa: S310 (fixed https hosts)
+            with urllib.request.urlopen(req, timeout=30) as r:  # noqa: S310  # nosec B310 - scheme checked above
                 return json.loads(r.read().decode())
         except urllib.error.HTTPError as e:
             body = e.read().decode(errors="replace")[:300]
