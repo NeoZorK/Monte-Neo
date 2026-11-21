@@ -13,7 +13,7 @@ def _rep(**statuses: str) -> dict:
 
 
 FULL = dict(
-    data_integrity="pass", lookahead_truncation="pass", net_profitability="pass", ic="info", signal_placebo="pass",
+    data_integrity="pass", lookahead_truncation="pass", net_profitability="pass", cost_margin="pass", ic="info", signal_placebo="pass",
     selection_adjusted_sharpe="pass", trial_ledger="pass", residual_alpha="pass", hidden_short_volatility="pass", deflated_sharpe="pass", market_impact="pass",
     synthetic_market_null="pass", universe_subsampling="pass", start_date_sensitivity="pass",
     rebalance_timing_luck="pass", marginal_sharpe="pass", live_vs_backtest="pass", alpha_death_monitor="info", live_source="pass",
@@ -27,9 +27,9 @@ def test_all_evidence_gives_nine() -> None:
 
 def test_first_gap_stops_the_level() -> None:
     ev = dict(FULL)
-    ev["rebalance_timing_luck"] = "warn"
+    ev["synthetic_market_null"] = "warn"  # rebalance_timing_luck has an alternative (cost_margin), this one has none here
     r = readiness(_rep(**ev))
-    assert r["level"] == 6 and "blocked at 7" in r["summary"] and "rebalance_timing_luck" in r["summary"]
+    assert r["level"] == 6 and "blocked at 7" in r["summary"] and "synthetic_market_null" in r["summary"]
     assert r["levels"][6]["state"] == "failed" and r["levels"][7]["state"] == "met"  # higher levels are shown, not counted
 
 
@@ -99,3 +99,10 @@ def test_levels_above_three_need_evidence_of_the_trials() -> None:
     hyg["checks"].append({"id": "research_hygiene", "category": "statistics", "status": "info",
                           "details": {"score": 2, "missing": ["registered", "holdout_used"], "ledger_variants": 40}})
     assert readiness(hyg)["level"] == 9
+
+
+def test_level_three_needs_a_cost_margin_on_the_single_strategy_path() -> None:
+    thin = readiness(_rep(**{**FULL, "cost_margin": "warn"}))
+    assert thin["level"] == 2 and thin["levels"][2]["state"] == "failed" and "cost_margin" in thin["levels"][2]["blocking"]
+    from monte_neo.verify.checks import COST_MARGIN_MIN
+    assert COST_MARGIN_MIN == 3.0

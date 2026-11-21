@@ -8,6 +8,9 @@ Version source of truth: `src/monte_neo/_version.py`.
 Planned for v0.56.0.
 
 ### Added
+- **Lessons from the Strategy Lab** (`docs/guides/research-lessons.md`): a strong validation that failed its sealed holdout,
+  a literature-parameter ETF book that passed with a small result, why hidden trials must be documented, why short validation
+  windows cannot certify slow premia, and what a demo forward record can and cannot prove.
 - **Catalog labelling** (`monte-neo catalog classify`, `catalog-rules/1`, provisional): the main category of 24, components
   (filter, overlay, blend, sleeve), tags, a 73-bit type mask (`type-mask/1`) and a readable type tag such as `#TSM.FX+f:VOL`,
   derived by twelve ordered rules from the specification and the measured positions, never by hand. Declared and measured
@@ -16,6 +19,10 @@ Planned for v0.56.0.
   `scripts/catalog_migrate.py`: 70 from rules on the specification, 28 from the declared category (`unconfirmed`), two controls.
 
 ### Changed
+- **ARL level 3 needs a cost margin** (`arl-rules/2`). `cost_margin` passes only when the break-even cost is at least 3x the
+  modeled cost per side (was 2x), and level 3 on the single-strategy path needs it. Calibration: a strategy whose gross edge is
+  smaller than its costs reached level 3 by luck in 10 % of cases (23 % with one year of data); with the margin, about 2 %.
+  Planted edges keep level 3 in about 85 % of cases instead of 91 %. A strategy with a thin margin now gets `PASS_WITH_WARNINGS`.
 - **Hall of Fame display**: `hall_of_fame/display.json` (unsigned) changes only the author text the tables and badges show for listed
   entries; the signed entries keep their author field. The three Strategy Lab examples are shown as "Strategy Lab example".
 - **ARL rules `arl-rules/2`** (provisional): level 4 also needs `selection_adjusted_sharpe`, the Deflated Sharpe of the certificate

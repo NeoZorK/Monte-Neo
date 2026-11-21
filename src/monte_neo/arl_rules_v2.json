@@ -69,6 +69,10 @@
       [
        "net_profitability",
        "OK"
+      ],
+      [
+       "cost_margin",
+       "PASS"
       ]
      ],
      [
@@ -1129,6 +1133,7 @@
   "arl-rules/2 (from arl-rules/1): level 4 also needs selection_adjusted_sharpe (Deflated Sharpe of the certificate >= 0.8, computed with at least the project's number of trials).",
   "arl-rules/2: level 5 is also blocked when one of these checks ran and warned or failed: universe_subsampling, noise_injection, short_feasibility, residual_vs_book, cross_market_close_alignment, post_discovery_decay, claim_consistency. Calibration (350 000 cases): cross-sectional traps at level 5 or above 39 % -> 8 %, planted edge 65 % -> 59 %.",
   "arl-rules/2: level 5 is blocked when universe_lookahead warns (a cross-section whose universe looks like today's members). A point-in-time membership file lifts it; for a fixed universe (FX, futures) the file lists every symbol for the whole period.",
-  "arl-rules/2: levels 4 and above need evidence of the number of trials (the trial ledger, a pre-registration that protects the result, or for an alpha report research hygiene with a ledger or an early registration); without it the level is capped at 3. Calibration (350 000 cases): a best-of-100 noise strategy reported as one trial reached level 4 in 93 % of cases, and no check on a single curve can see the hidden variants."
+  "arl-rules/2: levels 4 and above need evidence of the number of trials (the trial ledger, a pre-registration that protects the result, or for an alpha report research hygiene with a ledger or an early registration); without it the level is capped at 3. Calibration (350 000 cases): a best-of-100 noise strategy reported as one trial reached level 4 in 93 % of cases, and no check on a single curve can see the hidden variants.",
+  "arl-rules/2: level 3 on the single-strategy path also needs cost_margin to pass, and cost_margin passes only when the break-even cost is at least 3x the modeled cost per side (was 2x). Calibration (350 000 cases): a strategy whose gross edge is smaller than its costs reached level 3 by luck in 10 % of cases (23 % with one year of data), with a break-even cost of only 2 to 2.6x the modeled cost; with the new floor about 2 %, while planted edges keep level 3 in about 85 % of cases instead of 91 %."
  ]
 }

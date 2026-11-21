@@ -126,7 +126,7 @@ def test_every_numeric_threshold_appears_in_its_documented_text() -> None:
 
 def test_readiness_reads_only_the_rules_file(monkeypatch: pytest.MonkeyPatch) -> None:
     rows = {"checks": [{"id": "data_integrity", "status": "pass", "category": "integrity"}, {"id": "lookahead_truncation", "status": "pass", "category": "lookahead"},
-                       {"id": "net_profitability", "status": "pass", "category": "economics"}]}
+                       {"id": "net_profitability", "status": "pass", "category": "economics"}, {"id": "cost_margin", "status": "pass", "category": "economics"}]}
     assert readiness_mod.readiness(rows)["level"] == 3
     changed = copy.deepcopy(load_rules())
     changed["levels"][2]["requirements"] = [[[["market_impact", "OK"]]]]  # level 3 now needs a different check
