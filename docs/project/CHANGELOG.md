@@ -34,6 +34,11 @@ Planned for v0.56.0.
   trials imported from an experiment tracker (`--trials-from`), a pre-registration made before the first verification of the code,
   or for an alpha report research hygiene with a ledger or an early registration. `monte-neo alpha` and the `validate_alpha` MCP tool
   gain `--ledger` / `ledger`, which counts the score variants tried on the same prices. The certificate id does not change.
+- **`verify` attributes a single strategy to what it trades**: new rows `residual_alpha` (annual alpha after the beta to the
+  underlying, HAC t) and `hidden_short_volatility` (skew, tail and convexity: is it selling insurance?). ARL level 5 needs both;
+  before, they existed only for carry and cross-sectional reports, so a single-asset strategy could never pass level 4 (calibration:
+  0 of 112 000 planted single-asset edges above level 4). Like `alpha_after_beta`, they warn at most: a strategy that is all beta
+  stops at level 4 and gets `PASS_WITH_WARNINGS`, not a failed backtest.
 
 ## [v0.55.0] — 2026-11-20
 
