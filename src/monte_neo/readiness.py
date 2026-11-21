@@ -69,7 +69,7 @@ def _project_trials(n_trials: int | None, certificate: dict[str, Any] | None, al
     if alpha:
         seen.append(int(((alpha.get("reproducibility") or {}).get("settings") or {}).get("n_trials") or 1))
     if "trial_ledger" in rows:
-        seen.append(int(rows["trial_ledger"]["details"].get("counted") or 1))
+        seen.append(int((rows["trial_ledger"].get("details") or {}).get("counted") or 1))
     return max(seen)
 
 
@@ -104,6 +104,24 @@ def _derived(
             status, summary = "fail", f"{dv['metric']} {value:.3f} < {dv['min']}: {dv['next_action']}"
         rows[dv["id"]] = {"id": dv["id"], "category": dv.get("category", "statistics"), "status": status, "summary": summary,
                           "details": {"metric": dv["metric"], "value": value, "min": dv["min"], "trials": cert_trials, "why": dv["why"]}}
+
+
+def _trials_evidenced(rows: dict[str, dict[str, Any]], accepts: list[str]) -> bool:
+    """True when the number of variants tried is backed by a record, not only by the n_trials the caller typed."""
+    led = rows.get("trial_ledger")
+    if "trial_ledger" in accepts and led:
+        chain_ok = (led.get("details") or {}).get("chain_ok")
+        if chain_ok is True or (chain_ok is None and led["status"] in ("pass", "warn")):  # an edited ledger is not evidence
+            return True
+    imp = rows.get("trials_imported")
+    if "trials_imported" in accepts and imp and imp["status"] in ("pass", "warn"):
+        return True
+    reg = (rows.get("preregistration") or {}).get("details") or {}
+    if "preregistration" in accepts and reg.get("found") and reg.get("same_code") and reg.get("before_first_verification"):
+        return True
+    hyg = (rows.get("research_hygiene") or {}).get("details") or {}
+    missing = hyg.get("missing") or []
+    return "research_hygiene" in accepts and bool(hyg) and ("trial_ledger" not in missing or "registered_before_first_run" not in missing)
 
 
 def readiness(
@@ -159,6 +177,9 @@ def readiness(
         else:
             stopped = True
     capped = sorted((c["check"], c["max_level"], c["why"]) for c in caps["ceilings"] if c["check"] in rows and rows[c["check"]]["status"] in ("warn", "fail"))
+    te = caps.get("trial_evidence")
+    if te and not _trials_evidenced(rows, te["accepts"]):
+        capped.append(("trial_evidence", te["max_level"], te["why"]))
     live_src = ((live or {}).get("metrics") or {}).get("source")
     ns = caps["non_real_sources"]
     if live and live_src != "real_fills" and (live_src in ns["sources"] or live_src is None):

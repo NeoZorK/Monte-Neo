@@ -142,7 +142,7 @@ def _live(source: str | None, custody: str | None = None, **more: object) -> dic
 def _eight() -> dict:
     ids = ["data_integrity", "lookahead_truncation", "net_profitability", "timing_significance", "selection_adjusted_sharpe", "residual_alpha", "hidden_short_volatility",
            "deflated_sharpe", "market_impact", "synthetic_market_null", "universe_subsampling", "start_date_sensitivity",
-           "rebalance_timing_luck", "marginal_sharpe"]
+           "rebalance_timing_luck", "marginal_sharpe", "trial_ledger"]
     return _cert(*[_row(i, category="lookahead" if i.startswith("look") else "statistics") for i in ids])
 
 

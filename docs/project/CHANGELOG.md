@@ -28,6 +28,12 @@ Planned for v0.56.0.
   from 39 % to 8 %; planted edges from 65 % to 59 %. A cross-section whose universe looks like today's members (`universe_lookahead` warns: no name added or
   delisted) stops at level 4 until a point-in-time membership file is given (`--membership`); a fixed universe (FX, futures) lists
   every symbol for the whole period.
+- **ARL levels 4 and above need evidence of the number of trials** (`arl-rules/2`). The full calibration (350 000 cases) showed that
+  the best of 100 noise strategies, reported as a single trial, still reached level 4 in 93 % of cases: no check on one equity curve
+  can see the variants tried before it. The level is now capped at 3 unless the trials are on record: the trial ledger (`--ledger`),
+  trials imported from an experiment tracker (`--trials-from`), a pre-registration made before the first verification of the code,
+  or for an alpha report research hygiene with a ledger or an early registration. `monte-neo alpha` and the `validate_alpha` MCP tool
+  gain `--ledger` / `ledger`, which counts the score variants tried on the same prices. The certificate id does not change.
 
 ## [v0.55.0] — 2026-11-20
 

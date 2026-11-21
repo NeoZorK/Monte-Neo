@@ -14,7 +14,7 @@ def _rep(**statuses: str) -> dict:
 
 FULL = dict(
     data_integrity="pass", lookahead_truncation="pass", net_profitability="pass", ic="info", signal_placebo="pass",
-    selection_adjusted_sharpe="pass", residual_alpha="pass", hidden_short_volatility="pass", deflated_sharpe="pass", market_impact="pass",
+    selection_adjusted_sharpe="pass", trial_ledger="pass", residual_alpha="pass", hidden_short_volatility="pass", deflated_sharpe="pass", market_impact="pass",
     synthetic_market_null="pass", universe_subsampling="pass", start_date_sensitivity="pass",
     rebalance_timing_luck="pass", marginal_sharpe="pass", live_vs_backtest="pass", alpha_death_monitor="info", live_source="pass",
 )
@@ -79,3 +79,23 @@ def test_level_five_blockers_of_arl_rules_2() -> None:
         assert r["level"] == 4 and check in r["levels"][4]["blocking"], check
     both = readiness(_rep(**{**FULL, "noise_injection": "fail", "post_discovery_decay": "warn"}))
     assert both["levels"][4]["blocking"] == ["noise_injection", "post_discovery_decay"]
+
+
+def test_levels_above_three_need_evidence_of_the_trials() -> None:
+    bare = {k: v for k, v in FULL.items() if k != "trial_ledger"}
+    r = readiness(_rep(**bare))
+    assert r["level"] == 3 and r["ceilings"][0]["check"] == "trial_evidence" and r["levels"][3]["state"] == "capped"
+    assert readiness(_rep(**{**bare, "trial_ledger": "warn"}))["level"] == 9  # a ledger that corrected n_trials is still evidence
+    assert readiness(_rep(**{**bare, "trial_ledger": "fail"}))["level"] == 3  # a changed ledger is not
+    reg = _rep(**bare)
+    reg["checks"].append({"id": "preregistration", "category": "statistics", "status": "info",
+                          "details": {"found": True, "same_code": True, "before_first_verification": True}})
+    assert readiness(reg)["level"] == 9
+    late = _rep(**bare)
+    late["checks"].append({"id": "preregistration", "category": "statistics", "status": "info",
+                           "details": {"found": True, "same_code": True, "before_first_verification": False}})
+    assert readiness(late)["level"] == 3
+    hyg = _rep(**bare)
+    hyg["checks"].append({"id": "research_hygiene", "category": "statistics", "status": "info",
+                          "details": {"score": 2, "missing": ["registered", "holdout_used"], "ledger_variants": 40}})
+    assert readiness(hyg)["level"] == 9

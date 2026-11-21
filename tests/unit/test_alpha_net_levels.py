@@ -35,7 +35,7 @@ def _alpha(*rows):
 # ---------------------------------------------------------------- the rules themselves
 @pytest.mark.parametrize(("hlz", "met"), [("info", False), ("warn", False), ("pass", True)])
 def test_level_6_needs_a_passing_hurdle_not_an_information_row(hlz, met) -> None:
-    rep = readiness(alpha=_alpha(("hlz_hurdle", hlz, None), ("min_backtest_length", "pass", {"years_available": 5.0})))
+    rep = readiness(alpha=_alpha(("hlz_hurdle", hlz, None), ("min_backtest_length", "pass", {"years_available": 5.0}), ("trial_ledger", "pass", None)))
     assert (next(lv for lv in rep["levels"] if lv["level"] == 6)["state"] == "met") is met
 
 
@@ -57,10 +57,10 @@ def test_signal_eaten_by_costs_gets_neither_level_3_nor_6() -> None:
 
 
 # ---------------------------------------------------------------- an honest strong portfolio still gets them
-def test_honest_strong_portfolio_reaches_level_6() -> None:
+def test_honest_strong_portfolio_reaches_level_6(tmp_path) -> None:
     # a fixed universe declares its members for the whole period (arl-rules/2: otherwise it stops at level 4)
     members = pd.DataFrame({"symbol": sorted(set(PRICES["symbol"])), "start": "", "end": ""})
-    rep, ids = _rep(1e4, membership=members)
+    rep, ids = _rep(1e4, membership=members, ledger=tmp_path / "ledger.jsonl")  # levels 4+ need evidence of the trials
     assert ids["cost_sensitivity"]["status"] == "pass" and ids["deflated_sharpe"]["status"] == "pass" and ids["hlz_hurdle"]["status"] == "pass"
     assert rep["readiness"]["level"] >= 6
 
@@ -109,3 +109,16 @@ def test_executable_returns_and_row_boundaries() -> None:
     del stamps
     assert cost_sensitivity_row(w, close, vol, 1e6, 252.0)["status"] in ("pass", "warn", "fail")
     assert net_deflated_sharpe_row(np.zeros(100) + 1e-4 * np.arange(100) % 3, 1, 252.0, "x")["status"] in ("pass", "warn", "fail")
+
+
+def test_the_alpha_ledger_counts_variants_and_lifts_the_trial_cap(tmp_path) -> None:
+    members = pd.DataFrame({"symbol": sorted(set(PRICES["symbol"])), "start": "", "end": ""})
+    bare, _ = _rep(1e4, membership=members)
+    assert bare["readiness"]["level"] == 3 and bare["readiness"]["ceilings"][0]["check"] == "trial_evidence"
+    path = tmp_path / "ledger.jsonl"
+    first, ids = _rep(1e4, membership=members, ledger=path)
+    assert ids["trial_ledger"]["status"] == "pass" and ids["trial_ledger"]["details"]["counted"] == 1
+    assert first["readiness"]["level"] >= 6 and first["certificate_id"] == bare["certificate_id"]
+    noise = REAL.assign(score=np.random.default_rng(1).standard_normal(len(REAL)))
+    second = validate_alpha(PRICES, noise, aum=1e4, placebos=30, seed=0, membership=members, ledger=path)
+    assert next(c for c in second["checks"] if c["id"] == "trial_ledger")["details"]["counted"] == 2

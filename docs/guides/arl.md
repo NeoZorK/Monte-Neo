@@ -98,6 +98,7 @@ Caps:
 - `post_discovery_decay` that ran and warned or failed blocks level 5: the edge disappears after its discovery date.
 - `claim_consistency` that ran and warned or failed blocks level 5: the claimed numbers are better than the verified ones.
 - `universe_lookahead` that ran and warned or failed blocks level 5: the universe looks like today's members (no name added or delisted): pass a point-in-time membership file (--membership); a fixed universe declares every symbol for the whole period.
+- Without evidence of the number of trials (trial_ledger, trials_imported, preregistration, research_hygiene) the level is capped at 3: the number of variants tried is not evidenced: one equity curve cannot show how many variants were tried before it, so levels 4 and above need the trial ledger (--ledger), trials imported from an experiment tracker (--trials-from), a pre-registration made before the first verification of this code, or for an alpha report research hygiene with a trial ledger or a registration before the first run.
 - Live data from paper, testnet, simulated (or an unstated source) caps the level at 8: paper, testnet and simulated fills are not live.
 <!-- arl:caps:end -->
 
