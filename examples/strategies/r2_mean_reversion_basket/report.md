@@ -1,6 +1,6 @@
 # Short-term mean reversion basket, long-short, 18 coins: automatic review
 
-Idea: Claude Sonnet 5.5. Process, design and verification: Rostyslav Shcherbyna. Not investment advice: a research example, not a call to trade or a promise of profit. Simulated results do not predict future returns.
+Not investment advice: a research example, not a call to trade or a promise of profit. Simulated results do not predict future returns.
 
 Family: mean_reversion. Fixed parameters (chosen before any data was read): `{"lookback": 5, "horizon": 3}`. Costs: Binance taker fees (VIP0: spot 10 bps, perpetual 5 bps) + 2-12 bps spread/slippage per coin, fills on the next bar; also doubled.
 

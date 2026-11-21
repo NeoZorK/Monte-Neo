@@ -1,6 +1,6 @@
 # Donchian channel position basket, 18 coins: automatic review
 
-Idea: Claude Sonnet 5.5. Process, design and verification: Rostyslav Shcherbyna. Not investment advice: a research example, not a call to trade or a promise of profit. Simulated results do not predict future returns.
+Not investment advice: a research example, not a call to trade or a promise of profit. Simulated results do not predict future returns.
 
 Family: trend_basket. Fixed parameters (chosen before any data was read): `{"window": 55, "horizon": 7}`. Costs: Binance taker fees (VIP0: spot 10 bps, perpetual 5 bps) + 2-12 bps spread/slippage per coin, fills on the next bar; also doubled.
 

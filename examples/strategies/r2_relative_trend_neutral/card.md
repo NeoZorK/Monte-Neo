@@ -1,6 +1,6 @@
 # Trend versus market: long-short on distance above SMA relative to BTC
 
-**Idea author:** Claude Sonnet 5.5. **Process, design and verification:** Rostyslav Shcherbyna. **Round 2** of the Strategy Lab (pre-registered before any run).
+**Round 2** of the Strategy Lab (pre-registered before any run).
 
 > Not investment advice. A research example for testing a verification pipeline, not a call to trade or a promise of profit. Simulated results do not predict future returns.
 

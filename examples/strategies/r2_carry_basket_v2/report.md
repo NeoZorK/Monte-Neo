@@ -1,6 +1,6 @@
 # Funding carry v2: long spot / short perpetual, 12 coins, per-coin costs: automatic review
 
-Idea: Claude Sonnet 5.5. Process, design and verification: Rostyslav Shcherbyna. Not investment advice: a research example, not a call to trade or a promise of profit. Simulated results do not predict future returns.
+Not investment advice: a research example, not a call to trade or a promise of profit. Simulated results do not predict future returns.
 
 Family: carry. Fixed parameters (chosen before any data was read): `{"lookback": 14, "threshold": 0.0002}`. Costs: Binance taker fees (VIP0: spot 10 bps, perpetual 5 bps) + 2-12 bps spread/slippage per coin, fills on the next bar; also doubled.
 

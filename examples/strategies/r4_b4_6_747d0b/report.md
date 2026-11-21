@@ -1,6 +1,6 @@
 # Search candidate 747d0bb3: voltrend {'lookback': 14, 'volume_window': 60} sign 1, top 30 liquid coins: automatic review
 
-Idea: Claude Sonnet 5.5. Process, design and verification: Rostyslav Shcherbyna. Not investment advice: a research example, not a call to trade or a promise of profit. Simulated results do not predict future returns.
+Not investment advice: a research example, not a call to trade or a promise of profit. Simulated results do not predict future returns.
 
 Family: search_voltrend. Fixed parameters (chosen before any data was read): `{}`. Costs: 10 bps commission + 5 bps slippage per side, fills on the next bar.
 
