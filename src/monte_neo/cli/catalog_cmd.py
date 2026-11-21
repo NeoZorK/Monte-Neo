@@ -42,6 +42,11 @@ def _parser() -> argparse.ArgumentParser:
     mk = sub.add_parser("mask", help="decode a type mask")
     mk.add_argument("mask")
     sub.add_parser("categories", help="list the categories of catalog-rules/1")
+    cp = sub.add_parser("compat", help="which venues and connectors can run this strategy (indicative, not a recommendation)")
+    cp.add_argument("spec")
+    cp.add_argument("--positions", help="wide CSV of signed positions (detects short selling and market neutrality)")
+    cp.add_argument("--leverage", type=float, help="gross leverage the strategy needs (default from the spec, else 1)")
+    cp.add_argument("--json", action="store_true")
     return p
 
 
@@ -71,6 +76,23 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         spec = json.loads(Path(args.spec).read_text(encoding="utf-8"))
         measured = None
+        if args.cmd == "compat":
+            from monte_neo.catalog.compat import compat
+
+            m = measure(_wide(args.positions), None, bar_seconds=float(spec.get("bar_seconds", 86400))) if args.positions else None
+            res = compat(spec, m, args.leverage)
+            if args.json:
+                print(json.dumps(res, indent=2, default=str))
+                return 0
+            req = res["requirements"]
+            print(f"needs: {', '.join(req['asset_classes'])} via {', '.join(req['instruments'])}; short selling {'yes' if req['short'] else 'no'}"
+                  f"; leverage {req['leverage']:g}x; intraday {'yes' if req['intraday'] else 'no'}")
+            for r in res["venues"]:
+                mark = "OK " if r["compatible"] else "-- "
+                extra = f"taker ~{r['taker_bps']:g} bps, demo: {r['demo'] or 'none'}, connector: {r['connector']}" if r["compatible"] else "; ".join(r["why_not"])
+                print(f"{mark}{r['name']:<32} {extra}")
+            print(f"\n{res['note']}")
+            return 0
         if args.positions:
             bench = None
             if args.benchmark:
