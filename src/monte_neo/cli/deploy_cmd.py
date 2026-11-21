@@ -220,7 +220,7 @@ def _keys(a: argparse.Namespace) -> int:
         _dump(ks.status())
     elif a.list:
         for where, _pair in ks.candidates():
-            print(where["file"], where["names"])
+            print(where["file"])
     else:
         ks.find(interactive=sys.stdin.isatty(), assume_yes=a.yes)
     return 0

@@ -148,7 +148,7 @@ def find(interactive: bool = True, assume_yes: bool = False) -> int:
         print("no file with a Binance key and secret found in: " + ", ".join(PLACES))
         return 0
     for where, pair in found:
-        print(f"candidate: {where['file']}  ({' / '.join(where['names'])})")
+        print(f"candidate: {where['file']}")  # the file only: variable names and values are never printed
         question = "  check this pair against the Binance spot TESTNET and store it in the Keychain? [y/N] "
         if not (assume_yes or (interactive and input(question).strip().lower() == "y")):
             continue
@@ -156,6 +156,6 @@ def find(interactive: bool = True, assume_yes: bool = False) -> int:
         print(f"  {ACCEPTED if ok else REFUSED}")
         if ok:
             store(*pair)
-            print(f"  stored in the Keychain as {KEYCHAIN_KEY} / {KEYCHAIN_SECRET}")
+            print("  stored in the macOS login Keychain")
             stored += 1
     return stored
