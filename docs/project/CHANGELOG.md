@@ -8,6 +8,11 @@ Version source of truth: `src/monte_neo/_version.py`.
 Planned for v0.56.0.
 
 ### Added
+- **`monte-neo registry`**: `list`, `show`, `import` and `try` a public strategy from the Protocolith
+  [trading-strategy registry](https://github.com/Protocolith/trading-strategy-registry). `import` downloads the record, the
+  specification and the code, and refuses any file whose SHA-256 differs from the registry index or that no ledger record
+  references. `try` downloads the public daily bars, re-runs `verify` with the record's trials and cost model, writes the
+  certificate and prints the registry's numbers next to yours, then the `monte-neo deploy` command. Guide: `docs/guides/registry.md`.
 - **`monte-neo deploy`**: a forward record of a verified strategy on the Binance spot demo testnet. `init` checks eligibility
   (a Monte-Neo certificate that is not `REJECT`, spot, long-only, daily or weekly rebalance) and freezes the strategy file by hash;
   `run` records every missing day (idempotent, resumable, late days marked) into a hash-chained journal: mainnet daily bars, signals,
@@ -27,6 +32,9 @@ Planned for v0.56.0.
   `scripts/catalog_migrate.py`: 70 from rules on the specification, 28 from the declared category (`unconfirmed`), two controls.
 
 ### Changed
+- **Static lint: `last_row` is not flagged inside `target_weights`**, the `monte-neo deploy` entry point, which receives only
+  completed bars and reads the latest one by contract. It still fails inside `signal`; the dynamic look-ahead probes are unchanged.
+- **Examples**: the Strategy Lab example files no longer carry idea-author lines.
 - **ARL level 3 needs a cost margin** (`arl-rules/2`). `cost_margin` passes only when the break-even cost is at least 3x the
   modeled cost per side (was 2x), and level 3 on the single-strategy path needs it. Calibration: a strategy whose gross edge is
   smaller than its costs reached level 3 by luck in 10 % of cases (23 % with one year of data); with the margin, about 2 %.

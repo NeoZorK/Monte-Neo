@@ -28,6 +28,7 @@ Commands:
   doctor   known problems of a data provider's export
   discover search for a causal indicator and verify the winner (monte-neo discover --help)
   deploy   forward record of a verified strategy on the Binance spot demo testnet (monte-neo deploy --help)
+  registry import a public strategy from the Protocolith registry, try it, deploy it (monte-neo registry --help)
   init-ci  write a GitHub Actions workflow that verifies your strategy (monte-neo init-ci --help)
   bench    Honesty Bench: score agent submissions (monte-neo bench --help)
   mcp      run the MCP server for coding agents (monte-neo mcp --help)
@@ -85,6 +86,10 @@ def main() -> int:
         from monte_neo.cli.deploy_cmd import main as deploy_main
 
         return deploy_main(sys.argv[2:])
+    if command == "registry":
+        from monte_neo.cli.registry_cmd import main as registry_main
+
+        return registry_main(sys.argv[2:])
     if command == "init-ci":
         from monte_neo.cli.init_ci_cmd import main as init_ci_main
 
@@ -112,7 +117,7 @@ def main() -> int:
         print(
             f"{what}The interactive research CLI needs extra packages ({exc.name or exc}): "
             "pip install 'monte-neo[research]'.\n"
-            "Commands in the base install: monte-neo verify | alpha | policy | hall | repair | dossier | monitor | readiness | research | catalog | discover | history | register | oracle | portfolio | doctor | deploy | init-ci | bench | mcp | --version (monte-neo --help lists them)",
+            "Commands in the base install: monte-neo verify | alpha | policy | hall | repair | dossier | monitor | readiness | research | catalog | discover | history | register | oracle | portfolio | doctor | deploy | registry | init-ci | bench | mcp | --version (monte-neo --help lists them)",
             file=sys.stderr,
         )
         return 2

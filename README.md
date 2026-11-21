@@ -446,6 +446,24 @@ sensitivity to costs, trade statistics, the evidence for a leak (bars and source
 by period and market regime, and the hashes to reproduce the run. It prints to PDF from the browser.
 See the [example reports](https://neozork.github.io/Monte-Neo/gallery/).
 
+## Try a public strategy, then run it on a demo testnet
+
+The [trading-strategy registry](https://github.com/Protocolith/trading-strategy-registry) publishes strategies with
+their pre-registered gate, Monte-Neo verdict and ARL on a hash-chained ledger, failures included. Records with public
+code can be imported, re-verified on your machine and deployed as a demo forward record:
+
+```bash
+monte-neo registry list                      # what is in the registry
+monte-neo registry try MN-TSM-CRY-002        # import (every hash checked against the ledger) and re-verify on public data
+monte-neo deploy init --strategy strategies/MN-TSM-CRY-002/strategy.py \
+  --certificate strategies/MN-TSM-CRY-002/certificate.json --symbols BTCUSDT --rebalance daily --mode dry
+monte-neo deploy run && monte-neo deploy serve   # forward record and dashboard on http://127.0.0.1:8787/
+```
+
+Guides: [try a public strategy](https://neozork.github.io/Monte-Neo/guides/registry/) and
+[deploy to a demo testnet](https://neozork.github.io/Monte-Neo/guides/deploy/). If Monte-Neo is useful to you,
+please [star it on GitHub](https://github.com/NeoZorK/Monte-Neo): stars are how others find it.
+
 ## Use it from your coding agent
 
 **Claude Code** (plugin with the MCP server, the `verify-strategy` skill and `/verify`):

@@ -116,6 +116,7 @@ nav:
       - Honest strategy search: guides/research.md
       - Lessons from the Strategy Lab: guides/research-lessons.md
       - Deploy to a demo testnet: guides/deploy.md
+      - Try a public strategy (registry): guides/registry.md
       - Indicator search: guides/discover.md
       - Discover calibration: guides/discover-calibration.md
       - Real data and wild scan: guides/real-data-and-wild-corpus.md

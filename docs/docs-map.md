@@ -52,6 +52,7 @@ A simplified guide to the Monte-Neo file structure.
 - docs/guides/research.md - Honest strategy search: fixed split, ledger, pre-registered batches, family statistics, one sealed holdout, breadth
 - docs/guides/research-lessons.md - Lessons from the Strategy Lab (November 2026): failed and passed holdouts, hidden trials, single-strategy attribution, testnet evidence
 - docs/guides/deploy.md - `monte-neo deploy`: forward record of a verified strategy on the Binance spot demo testnet, evidence journal, dashboard, anchors
+- docs/guides/registry.md - `monte-neo registry`: list, show, import (hashes checked against the Protocolith ledger) and try a public strategy, then deploy it
 - docs/guides/arrival-time.md - Latency audit guide: arrival look-ahead, the delay where the profit vanishes, latency Monte Carlo, recorder, limits
 - docs/marketing/launch-kit.md - Ready-to-post launch texts, GitHub About text, catalogue entries
 - docs/marketing/article-six-ways.md - Article draft: six ways an agent's backtest lies
