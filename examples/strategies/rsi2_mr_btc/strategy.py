@@ -1,4 +1,4 @@
-"""Strategy Lab idea (author of the idea: Claude Sonnet 5.5; process and verification: Rostyslav Shcherbyna).
+"""Strategy Lab idea.
 
 Not investment advice. Parameters are fixed BEFORE any data is looked at; see card.md.
 """

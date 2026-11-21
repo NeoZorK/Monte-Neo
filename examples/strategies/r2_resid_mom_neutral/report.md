@@ -1,6 +1,6 @@
 # BTC-neutral residual momentum, long-short, 18 coins: automatic review
 
-Idea: Claude Sonnet 5.5. Process, design and verification: Rostyslav Shcherbyna. Not investment advice: a research example, not a call to trade or a promise of profit. Simulated results do not predict future returns.
+Not investment advice: a research example, not a call to trade or a promise of profit. Simulated results do not predict future returns.
 
 Family: market_neutral. Fixed parameters (chosen before any data was read): `{"lookback": 60, "skip": 1, "beta_window": 90, "horizon": 7}`. Costs: Binance taker fees (VIP0: spot 10 bps, perpetual 5 bps) + 2-12 bps spread/slippage per coin, fills on the next bar; also doubled.
 

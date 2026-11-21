@@ -62,7 +62,7 @@ with the version the certificate recorded.
 |---|------|------------------------------------------------|
 | 1 | Idea on clean data | `data_integrity` or `ic` |
 | 2 | The backtest is not broken | `lookahead_truncation` or `universe_lookahead` |
-| 3 | It earns after costs | `net_profitability` or `market_impact` + `cost_sensitivity` |
+| 3 | It earns after costs | `net_profitability` + `cost_margin` or `market_impact` + `cost_sensitivity` |
 | 4 | The signal predicts | `ic` + `signal_placebo` or `timing_significance`; `selection_adjusted_sharpe` |
 | 5 | It is new alpha | `residual_alpha` + `hidden_short_volatility` |
 | 6 | It survives the search | `deflated_sharpe` or `hlz_hurdle` + `min_backtest_length` |

@@ -276,6 +276,7 @@ class _Visitor(ast.NodeVisitor):
         # Group aggregates followed by a positive shift use completed groups only.
         self._shifted_aggs: set[int] = set()
         self._functions = 0  # depth of function bodies: module level is 0
+        self._live = 0  # depth inside target_weights: the deploy entry point reads the LATEST bar on purpose
         self._shifted: set[int] = set()  # resample aggregates that are shifted afterwards
 
     def _add(self, node: ast.AST, rule: str, severity: str, message: str) -> None:
@@ -319,10 +320,12 @@ class _Visitor(ast.NodeVisitor):
                     "passes the truncation probe without being causal",
                 )
         self._functions += 1
+        self._live += node.name == "target_weights"
         try:
             return self._windowed(node) if node.name in self._window_names else self.generic_visit(node)
         finally:
             self._functions -= 1
+            self._live -= node.name == "target_weights"
 
     visit_AsyncFunctionDef = visit_FunctionDef  # noqa: N815 (the name is ast.NodeVisitor's dispatch key)
 
@@ -529,7 +532,7 @@ class _Visitor(ast.NodeVisitor):
             isinstance(target, ast.Call) and isinstance(target.func, ast.Attribute) and target.func.attr == "to_numpy"
         )
         last = _const_number(idx)
-        if is_positional and last is not None and last < 0:
+        if is_positional and last is not None and last < 0 and not self._live:
             self._add(node, "last_row", "fail", "indexing from the end reads the last (future) bars of the dataset")
         if isinstance(idx, ast.BinOp) and isinstance(idx.op, ast.Add):
             step = _const_number(idx.right)

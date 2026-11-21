@@ -351,3 +351,15 @@ def test_the_repository_hall_is_consistent() -> None:
     for i in its:  # the seeds are examples: low ARL, provisional rules, not self-reported, never a return claim
         assert i["summary"]["arl"] <= 4 and i["summary"]["provisional"] is True and i["entry"]["tier"] == "B"
         assert i["entry"]["author"] == "Rostyslav Shcherbyna (process), idea: Claude Sonnet 5.5"
+
+
+def test_display_file_hides_the_author_on_pages_not_in_the_signed_entry(tmp_path: Path, key: dict[str, str]) -> None:
+    root, readme, docs = setup_repo(tmp_path, key)
+    add(root, fake_cert(arl=4, sig="a"), key, tier="B", name="Gold one", author="Ann")
+    entry_file = next((root / "entries").glob("*.json"))
+    eid = json.loads(entry_file.read_text())["id"]
+    (root / "display.json").write_text(json.dumps({"hide_author": [eid], "shown_as": "Strategy Lab example"}))
+    hb.write(hb.build(root, readme, docs, "2026-11"))
+    text = readme.read_text() + docs.read_text() + "".join(p.read_text() for p in (root / "badges").glob("*.svg"))
+    assert "Ann" not in text and "Strategy Lab example" in text
+    assert json.loads(entry_file.read_text())["author"] == "Ann"  # the signed entry is unchanged

@@ -1,6 +1,6 @@
 # Betting against beta: long low-beta, short high-beta coins (BTC-hedged): automatic review
 
-Idea: Claude Sonnet 5.5. Process, design and verification: Rostyslav Shcherbyna. Not investment advice: a research example, not a call to trade or a promise of profit. Simulated results do not predict future returns.
+Not investment advice: a research example, not a call to trade or a promise of profit. Simulated results do not predict future returns.
 
 Family: cross_section. Fixed parameters (chosen before any data was read): `{"beta_window": 90, "horizon": 7}`. Costs: 10 bps commission + 5 bps slippage per side, fills on the next bar.
 

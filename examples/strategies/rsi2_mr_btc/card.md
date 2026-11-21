@@ -1,6 +1,5 @@
 # RSI(2) mean reversion in an uptrend, BTC
 
-**Idea author:** Claude Sonnet 5.5. **Process, design and verification:** Rostyslav Shcherbyna.
 
 > Not investment advice. A research example for testing a verification pipeline, not a call to trade or a promise of profit. Simulated results do not predict future returns.
 

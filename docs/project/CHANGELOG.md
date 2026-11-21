@@ -8,6 +8,22 @@ Version source of truth: `src/monte_neo/_version.py`.
 Planned for v0.56.0.
 
 ### Added
+- **`monte-neo registry`**: `list`, `show`, `import` and `try` a public strategy from the Protocolith
+  [trading-strategy registry](https://github.com/Protocolith/trading-strategy-registry). `import` downloads the record, the
+  specification and the code, and refuses any file whose SHA-256 differs from the registry index or that no ledger record
+  references. `try` downloads the public daily bars, re-runs `verify` with the record's trials and cost model, writes the
+  certificate and prints the registry's numbers next to yours, then the `monte-neo deploy` command. Guide: `docs/guides/registry.md`.
+- **`monte-neo deploy`**: a forward record of a verified strategy on the Binance spot demo testnet. `init` checks eligibility
+  (a Monte-Neo certificate that is not `REJECT`, spot, long-only, daily or weekly rebalance) and freezes the strategy file by hash;
+  `run` records every missing day (idempotent, resumable, late days marked) into a hash-chained journal: mainnet daily bars, signals,
+  a paper book at mainnet prices with the stated cost model, and testnet orders and fills with the mainnet price at each fill.
+  `dashboard` / `serve` give a static read-only page (local by default, `--host 0.0.0.0` for the LAN), `anchor` an RFC 3161 timestamp
+  of the journal head, `report` an evidence report whose every number `report --verify` recomputes, `certify` the Monte-Neo verdict on
+  the forward returns, `keys` finds testnet keys with consent (environment, macOS Keychain) and checks them only against the testnet.
+  `--target local` is the only target for now. Standard library only at run time. Several strategies can share one testnet account: client order ids include the run. Guide: `docs/guides/deploy.md`.
+- **Lessons from the Strategy Lab** (`docs/guides/research-lessons.md`): a strong validation that failed its sealed holdout,
+  a literature-parameter ETF book that passed with a small result, why hidden trials must be documented, why short validation
+  windows cannot certify slow premia, and what a demo forward record can and cannot prove.
 - **Catalog labelling** (`monte-neo catalog classify`, `catalog-rules/1`, provisional): the main category of 24, components
   (filter, overlay, blend, sleeve), tags, a 73-bit type mask (`type-mask/1`) and a readable type tag such as `#TSM.FX+f:VOL`,
   derived by twelve ordered rules from the specification and the measured positions, never by hand. Declared and measured
@@ -16,6 +32,15 @@ Planned for v0.56.0.
   `scripts/catalog_migrate.py`: 70 from rules on the specification, 28 from the declared category (`unconfirmed`), two controls.
 
 ### Changed
+- **Static lint: `last_row` is not flagged inside `target_weights`**, the `monte-neo deploy` entry point, which receives only
+  completed bars and reads the latest one by contract. It still fails inside `signal`; the dynamic look-ahead probes are unchanged.
+- **Examples**: the Strategy Lab example files no longer carry idea-author lines.
+- **ARL level 3 needs a cost margin** (`arl-rules/2`). `cost_margin` passes only when the break-even cost is at least 3x the
+  modeled cost per side (was 2x), and level 3 on the single-strategy path needs it. Calibration: a strategy whose gross edge is
+  smaller than its costs reached level 3 by luck in 10 % of cases (23 % with one year of data); with the margin, about 2 %.
+  Planted edges keep level 3 in about 85 % of cases instead of 91 %. A strategy with a thin margin now gets `PASS_WITH_WARNINGS`.
+- **Hall of Fame display**: `hall_of_fame/display.json` (unsigned) changes only the author text the tables and badges show for listed
+  entries; the signed entries keep their author field. The three Strategy Lab examples are shown as "Strategy Lab example".
 - **ARL rules `arl-rules/2`** (provisional): level 4 also needs `selection_adjusted_sharpe`, the Deflated Sharpe of the certificate
   (or of the alpha report on net returns) at least 0.8, computed with at least the project's number of trials. Calibration on
   350 000 synthetic cases: with `arl-rules/1`, the best of 100 noise variants reached level 4 in 78 % of cases; with the new floor,

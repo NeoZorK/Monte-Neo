@@ -108,7 +108,7 @@ def test_ledger_audit_criterion() -> None:
 def test_sealed_holdout_is_the_only_source_of_d4() -> None:
     assert _state(3, "D4", _ev(_row("net_profitability"))) == NA  # an in-sample pass is not out of sample
     assert _state(3, "D4", _ev(holdout=_hold(_row("net_profitability")))) == MET
-    assert _state(3, "D4", _ev(holdout=_hold(_row("net_profitability", "fail")))) == UNMET
+    assert _state(3, "D4", _ev(holdout=_hold(_row("net_profitability", "cost_margin", "fail")))) == UNMET
     assert _state(3, "D4", _ev(holdout=_hold())) == NA
     assert _state(6, "D4", _ev(holdout=_hold(_row("deflated_sharpe", deflated_sharpe=0.95)))) == MET
     assert _state(6, "D4", _ev(holdout=_hold(_row("deflated_sharpe", deflated_sharpe=0.94)))) == UNMET
@@ -126,7 +126,7 @@ def test_reopened_holdout_zeroes_d4_everywhere() -> None:
 
 
 def test_lookahead_failure_caps_the_level_at_one() -> None:
-    rows = [_row("data_integrity", category="integrity"), _row("lookahead_truncation", category="lookahead"), _row("net_profitability", category="economics")]
+    rows = [_row("data_integrity", category="integrity"), _row("lookahead_truncation", category="lookahead"), _row("net_profitability", category="economics"), _row("cost_margin", category="economics")]
     assert readiness(_cert(*rows))["level"] == 3
     bad = [*rows[:1], _row("lookahead_perturbation", "fail", category="lookahead"), *rows[1:]]
     r = readiness(_cert(*bad))
@@ -140,7 +140,7 @@ def _live(source: str | None, custody: str | None = None, **more: object) -> dic
 
 
 def _eight() -> dict:
-    ids = ["data_integrity", "lookahead_truncation", "net_profitability", "timing_significance", "selection_adjusted_sharpe", "residual_alpha", "hidden_short_volatility",
+    ids = ["data_integrity", "lookahead_truncation", "net_profitability", "cost_margin", "timing_significance", "selection_adjusted_sharpe", "residual_alpha", "hidden_short_volatility",
            "deflated_sharpe", "market_impact", "synthetic_market_null", "universe_subsampling", "start_date_sensitivity",
            "rebalance_timing_luck", "marginal_sharpe", "trial_ledger"]
     return _cert(*[_row(i, category="lookahead" if i.startswith("look") else "statistics") for i in ids])
@@ -178,7 +178,7 @@ def test_depth_never_lifts_the_level() -> None:
     rich = readiness(base, holdout=_hold(_row("net_profitability")), evidence={"fresh_fetch_hash": True, "book_stress": True, "live_regimes": True}, n_trials=1)
     assert plain["level"] == rich["level"]
     capped = readiness(_cert(_row("data_integrity", category="integrity"), _row("lookahead_truncation", category="lookahead"),
-                             _row("net_profitability", category="economics"), _row("deflated_sharpe", deflated_sharpe=0.999, n_trials=1)))
+                             _row("net_profitability", category="economics"), _row("cost_margin", category="economics"), _row("deflated_sharpe", deflated_sharpe=0.999, n_trials=1)))
     assert capped["level"] == 3 and capped["levels"][5]["depth"] == 0  # level 6 is not reached: depth 0 whatever the criteria say
     assert capped["levels"][5]["depth_if_reached"] >= 1 and not capped["levels"][5]["counts"]
     for rep in (plain, rich, capped):

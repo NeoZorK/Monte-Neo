@@ -1,6 +1,6 @@
 # Search candidate c3f413c5: comp_LHZ {'parts': ['L', 'H', 'Z']} sign 1, top 30 liquid coins: automatic review
 
-Idea: Claude Sonnet 5.5. Process, design and verification: Rostyslav Shcherbyna. Not investment advice: a research example, not a call to trade or a promise of profit. Simulated results do not predict future returns.
+Not investment advice: a research example, not a call to trade or a promise of profit. Simulated results do not predict future returns.
 
 Family: search_comp_LHZ. Fixed parameters (chosen before any data was read): `{}`. Costs: 10 bps commission + 5 bps slippage per side, fills on the next bar.
 

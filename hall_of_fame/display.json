@@ -1,0 +1,9 @@
+{
+ "hide_author": [
+  "2026-11-10-donchian-breakout-btc-c371160b",
+  "2026-11-10-time-series-momentum-btc-dce45d55",
+  "2026-11-10-turn-of-month-btc-07eb3481"
+ ],
+ "shown_as": "Strategy Lab example",
+ "note": "Display only: the signed entries keep their author field."
+}

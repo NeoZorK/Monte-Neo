@@ -1,4 +1,4 @@
-"""Strategy Lab round 2 (idea: Claude Sonnet 5.5; process and verification: Rostyslav Shcherbyna).
+"""Strategy Lab round 2.
 
 Not investment advice. Parameters are fixed BEFORE any data is looked at (pre-registered, see card.md).
 """

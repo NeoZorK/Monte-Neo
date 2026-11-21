@@ -1,7 +1,6 @@
 # Strategy Lab
 
-A reproducible pipeline that finds and honestly verifies example strategies with Monte-Neo. Idea author: Claude Sonnet 5.5.
-Process, design and verification: Rostyslav Shcherbyna. **Not investment advice.** Nothing here trades; no keys, no paper or testnet.
+A reproducible pipeline that finds and honestly verifies example strategies with Monte-Neo. **Not investment advice.** Nothing here trades; no keys, no paper or testnet.
 
 Round 1 (ten ideas, validation 2023-2024 only; archived in `results_round1/`, none passed the gates) and round 2 (below) live in `examples/strategies/<name>/` (`strategy.py`, `card.md`, generated `report.md`): time-series momentum,
 SMA trend, Donchian breakout, RSI(2) and Bollinger mean reversion, volatility-targeted trend, cross-sectional momentum,

@@ -65,6 +65,9 @@ NEXT_ACTIONS: dict[str, str] = {
 }
 
 
+
+COST_MARGIN_MIN = 3.0  # break-even cost must be at least this many times the modeled cost per side (ARL level 3, calibrated)
+
 def check(
     check_id: str, category: str, status: str, summary: str, details: dict[str, Any] | None = None
 ) -> dict[str, Any]:
@@ -264,7 +267,7 @@ def economics_rows(
     if total_return <= 0.0:
         margin = check("cost_margin", "economics", "skip", "not profitable after costs", breakeven)
     else:
-        thin = be < 2.0 * max(side_cost, 1.0)
+        thin = be < COST_MARGIN_MIN * max(side_cost, 1.0)
         margin = check(
             "cost_margin", "economics", "warn" if thin else "pass",
             f"break-even cost {be:.2f} bps per side vs {side_cost:.2f} modeled", breakeven,
