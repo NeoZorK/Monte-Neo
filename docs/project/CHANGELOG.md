@@ -8,6 +8,14 @@ Version source of truth: `src/monte_neo/_version.py`.
 Planned for v0.56.0.
 
 ### Added
+- **`monte-neo deploy`**: a forward record of a verified strategy on the Binance spot demo testnet. `init` checks eligibility
+  (a Monte-Neo certificate that is not `REJECT`, spot, long-only, daily or weekly rebalance) and freezes the strategy file by hash;
+  `run` records every missing day (idempotent, resumable, late days marked) into a hash-chained journal: mainnet daily bars, signals,
+  a paper book at mainnet prices with the stated cost model, and testnet orders and fills with the mainnet price at each fill.
+  `dashboard` / `serve` give a static read-only page (local by default, `--host 0.0.0.0` for the LAN), `anchor` an RFC 3161 timestamp
+  of the journal head, `report` an evidence report whose every number `report --verify` recomputes, `certify` the Monte-Neo verdict on
+  the forward returns, `keys` finds testnet keys with consent (environment, macOS Keychain) and checks them only against the testnet.
+  `--target local` is the only target for now. Standard library only at run time. Guide: `docs/guides/deploy.md`.
 - **Lessons from the Strategy Lab** (`docs/guides/research-lessons.md`): a strong validation that failed its sealed holdout,
   a literature-parameter ETF book that passed with a small result, why hidden trials must be documented, why short validation
   windows cannot certify slow premia, and what a demo forward record can and cannot prove.

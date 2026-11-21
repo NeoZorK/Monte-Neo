@@ -50,6 +50,8 @@ A simplified guide to the Monte-Neo file structure.
 - docs/assets/demo-arrival.gif - Animated demo: a strategy that lives on data it could not have seen, and an honest one (scripts/make_arrival_gif.py)
 - docs/guides/carry.md - Delta-neutral carry in the full verifier: funding as P&L, basis accuracy, accrual sample, future-funding probe, margin, baskets
 - docs/guides/research.md - Honest strategy search: fixed split, ledger, pre-registered batches, family statistics, one sealed holdout, breadth
+- docs/guides/research-lessons.md - Lessons from the Strategy Lab (November 2026): failed and passed holdouts, hidden trials, single-strategy attribution, testnet evidence
+- docs/guides/deploy.md - `monte-neo deploy`: forward record of a verified strategy on the Binance spot demo testnet, evidence journal, dashboard, anchors
 - docs/guides/arrival-time.md - Latency audit guide: arrival look-ahead, the delay where the profit vanishes, latency Monte Carlo, recorder, limits
 - docs/marketing/launch-kit.md - Ready-to-post launch texts, GitHub About text, catalogue entries
 - docs/marketing/article-six-ways.md - Article draft: six ways an agent's backtest lies
