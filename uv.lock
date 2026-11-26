@@ -13,10 +13,10 @@ resolution-markers = [
     "python_full_version == '3.14.*' and platform_python_implementation == 'CPython' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version == '3.14.*' and platform_python_implementation != 'CPython' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version == '3.13.*' and sys_platform == 'win32'",
-    "python_full_version == '3.12.*' and sys_platform == 'win32'",
     "python_full_version == '3.13.*' and sys_platform == 'emscripten'",
-    "python_full_version == '3.12.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.13.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version == '3.12.*' and sys_platform == 'win32'",
+    "python_full_version == '3.12.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.12.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version < '3.12' and sys_platform == 'win32'",
     "python_full_version < '3.12' and sys_platform == 'emscripten'",
@@ -456,10 +456,10 @@ resolution-markers = [
     "python_full_version == '3.14.*' and platform_python_implementation == 'CPython' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version == '3.14.*' and platform_python_implementation != 'CPython' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version == '3.13.*' and sys_platform == 'win32'",
-    "python_full_version == '3.12.*' and sys_platform == 'win32'",
     "python_full_version == '3.13.*' and sys_platform == 'emscripten'",
-    "python_full_version == '3.12.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.13.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version == '3.12.*' and sys_platform == 'win32'",
+    "python_full_version == '3.12.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.12.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
@@ -1554,6 +1554,7 @@ apple = [
 ]
 data = [
     { name = "binance-connector" },
+    { name = "pyarrow" },
 ]
 dev = [
     { name = "binance-connector" },
@@ -1723,6 +1724,7 @@ requires-dist = [
     { name = "prompt-toolkit", marker = "extra == 'research'", specifier = ">=3.0" },
     { name = "psycopg2-binary", marker = "extra == 'full'", specifier = ">=2.9.12" },
     { name = "psycopg2-binary", marker = "extra == 'server'", specifier = ">=2.9.12" },
+    { name = "pyarrow", marker = "extra == 'data'", specifier = ">=23.0.1" },
     { name = "pyarrow", marker = "extra == 'dev'", specifier = ">=23.0.1" },
     { name = "pyarrow", marker = "extra == 'full'", specifier = ">=23.0.1" },
     { name = "pyarrow", marker = "extra == 'parquet'", specifier = ">=23.0.1" },
@@ -3305,10 +3307,10 @@ resolution-markers = [
     "python_full_version == '3.14.*' and platform_python_implementation == 'CPython' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version == '3.14.*' and platform_python_implementation != 'CPython' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version == '3.13.*' and sys_platform == 'win32'",
-    "python_full_version == '3.12.*' and sys_platform == 'win32'",
     "python_full_version == '3.13.*' and sys_platform == 'emscripten'",
-    "python_full_version == '3.12.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.13.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version == '3.12.*' and sys_platform == 'win32'",
+    "python_full_version == '3.12.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.12.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [

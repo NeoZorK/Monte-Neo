@@ -8,6 +8,9 @@ Monte-Neo is the open reference implementation of the Alpha Readiness Level (ARL
 Maintained: bug fixes, security updates, dependency and Python version support, and ARL calibration updates
 (`arl-rules/N`). Issues and pull requests with fixes are welcome. Unchecked items below are frozen and not scheduled.
 
+## v0.57.1 — maintenance release (2026-11-26)
+- [x] Fixes from the post-release check of v0.57.0: parquet engine in `[data]`, `deploy keys` without a terminal, asset-class codes in `catalog`, `hall build --root`, breadth with names listed later
+
 ## v0.57.0 — final feature release (2026-11-26)
 - [x] Everything merged for 0.56 (#130, #132, #133): `arl-rules/2` calibrated on 350,000 cases, trial evidence for ARL 4+, single-strategy attribution, `registry`, `deploy` (Binance spot demo testnet), catalog labels, cost margin at level 3
 - [x] `research transfer`, sequential forward test in `deploy`, `catalog compat` / `novelty` / `worst`, `deploy --market usdm`, walk-forward gate in `research freeze`

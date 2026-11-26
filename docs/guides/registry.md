@@ -31,7 +31,9 @@ monte-neo registry import MN-TSM-CRY-002
 ```
 
 This writes `strategies/MN-TSM-CRY-002/` (or the folder in `--dir`) with `strategy.py`, `spec.json`, `record.json`,
-`provenance.json` (URLs, hashes, ledger entry, import time) and a `README.md` with the next commands.
+`provenance.json` (URLs, hashes, ledger entry, import time) and a `README.md` with the next commands. `import` does not
+verify anything, so it writes no `certificate.json`; `registry try` (step 4) runs the verification and writes it, and
+`deploy init` needs that certificate.
 
 ## 4. Try it yourself
 

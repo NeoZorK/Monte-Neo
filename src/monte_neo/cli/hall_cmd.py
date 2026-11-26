@@ -36,9 +36,9 @@ def _parser() -> argparse.ArgumentParser:
     sub = p.add_subparsers(dest="action", required=True)
     b = sub.add_parser("build", help="write the README table, docs page, badges and history")
     b.add_argument("--root", default="hall_of_fame")
-    b.add_argument("--readme", default="README.md")
-    b.add_argument("--docs", default="docs/hall-of-fame.md")
-    b.add_argument("--guide", default="docs/guides/hall-of-fame.md")
+    b.add_argument("--readme", help="README with the table (default: README.md next to the --root folder)")
+    b.add_argument("--docs", help="docs page (default: docs/hall-of-fame.md next to the --root folder)")
+    b.add_argument("--guide", help="guide synced with the rules (default: docs/guides/hall-of-fame.md next to the --root folder)")
     b.add_argument("--month", help="snapshot month YYYY-MM (default: this month; with --check: the latest in the history)")
     b.add_argument("--check", action="store_true", help="write nothing; exit 1 when a file is out of date")
     for name, text in (("submit", "check a certificate offline and prepare the entry for a pull request"),
@@ -71,7 +71,10 @@ def _build(args: argparse.Namespace) -> int:
         hist = root / "history.jsonl"
         last = sorted(json.loads(x)["month"] for x in hist.read_text(encoding="utf-8").splitlines() if x.strip()) if args.check and hist.exists() else []
         month = last[-1] if last else datetime.now(UTC).strftime("%Y-%m")
-    res = build(root, Path(args.readme), Path(args.docs), month)
+    base = root.resolve().parent  # the repository that holds the hall folder: README and docs live next to it
+    readme = Path(args.readme) if args.readme else base / "README.md"
+    docs = Path(args.docs) if args.docs else base / "docs" / "hall-of-fame.md"
+    res = build(root, readme, docs, month)
     if res.errors:
         print("hall: refused, fix these first:\n" + "\n".join(f"  - {e}" for e in res.errors), file=sys.stderr)
         return 3
@@ -80,7 +83,7 @@ def _build(args: argparse.Namespace) -> int:
         print("hall: up to date" if not bad else "hall: out of date, run `monte-neo hall build`:\n" + "\n".join(f"  - {p}" for p in bad))
         return 1 if bad else 0
     changed = write(res)
-    guide = Path(args.guide)
+    guide = Path(args.guide) if args.guide else base / "docs" / "guides" / "hall-of-fame.md"
     if guide.exists() and sync_guide(guide):
         changed.append(guide)
     print(f"hall: {len(res.files)} files written ({len(changed)} changed)\n{SHORT}")

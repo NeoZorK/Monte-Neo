@@ -27,12 +27,14 @@ def effective_breadth(returns: pd.DataFrame | np.ndarray) -> dict[str, Any]:
     x = np.asarray(returns, dtype=float)
     if x.ndim != 2 or x.shape[0] < MIN_DATES or x.shape[1] < 1:
         raise ValueError(f"effective_breadth needs a (dates, names) table with at least {MIN_DATES} dates")
-    x = x[:, np.isfinite(x).all(axis=0)]
-    x = x[:, x.std(axis=0) > 0]
+    # names listed later have NaN before their first bar: keep every name with enough finite returns, correlate pairwise
+    x = x[:, np.isfinite(x).sum(axis=0) >= MIN_DATES]
+    x = x[:, np.nanstd(x, axis=0) > 0] if x.shape[1] else x
     n = x.shape[1]
     if n < 2:
         return {"n_names": int(n), "n_eff": float(max(n, 1)), "mean_abs_corr": None, "dates": int(x.shape[0])}
-    corr = np.corrcoef(x, rowvar=False)
+    corr = pd.DataFrame(x).corr(min_periods=MIN_DATES).fillna(0.0).to_numpy(copy=True)
+    np.fill_diagonal(corr, 1.0)
     lam = np.clip(np.linalg.eigvalsh(corr), 0.0, None)
     n_eff = float(lam.sum() ** 2 / np.sum(lam**2))
     off = corr[~np.eye(n, dtype=bool)]
@@ -89,10 +91,17 @@ def breadth_report(signal: pd.DataFrame, forward_returns: pd.DataFrame, asset_re
             "ir_annual_naive": mean * math.sqrt(n_names) * ann, "bar": T_BAR}
 
 
+def _names_text(rep: dict[str, Any]) -> str:
+    n = int(rep["n_names"])
+    if n < 2:
+        return f"{n} name{'' if n == 1 else 's'} with enough returns to measure breadth (counted as 1 bet)"
+    return f"{n} names act like {rep['n_eff']:.1f} independent bets"
+
+
 def breadth_row(rep: dict[str, Any]) -> dict[str, Any]:
     """Check row ``breadth_significance``: warn when the result is significant only if names were independent bets."""
     sig, naive = rep["significance"], rep["z_naive"]
-    body = (f"IC {rep['ic_mean']:+.3f} over {rep['n_dates']} dates; {rep['n_names']} names are {rep['n_eff']:.1f} independent bets; "
+    body = (f"IC {rep['ic_mean']:+.3f} over {rep['n_dates']} dates; {_names_text(rep)}; "
             f"significance {sig:.2f} (naive, names independent: {naive:.2f})")
     if sig >= T_BAR:
         return check("breadth_significance", "statistics", "pass", body, rep)

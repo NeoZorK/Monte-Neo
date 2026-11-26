@@ -459,7 +459,7 @@ code can be imported, re-verified on your machine and deployed as a demo forward
 
 ```bash
 monte-neo registry list                      # what is in the registry
-monte-neo registry try MN-TSM-CRY-002        # import (every hash checked against the ledger) and re-verify on public data
+monte-neo registry try MN-TSM-CRY-002        # import (every hash checked against the ledger), re-verify on public data, write certificate.json
 monte-neo deploy init --strategy strategies/MN-TSM-CRY-002/strategy.py \
   --certificate strategies/MN-TSM-CRY-002/certificate.json --symbols BTCUSDT --rebalance daily --mode dry
 monte-neo deploy run && monte-neo deploy serve   # forward record and dashboard on http://127.0.0.1:8787/
@@ -509,7 +509,7 @@ MCP tools (27): `verify_strategy`, `verify_grid`, `verify_quotes`, `verify_portf
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.57.0
+- uses: NeoZorK/Monte-Neo@v0.57.1
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py
