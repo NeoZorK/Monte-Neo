@@ -13,6 +13,10 @@
   Catch look-ahead bias, hidden trading costs and overfitting before a backtest reaches your money.
 </p>
 
+> **Status: feature-complete, maintenance mode (v0.57.0).** Monte-Neo is the open reference implementation of the
+> Alpha Readiness Level (ARL) standard. Bug fixes, security and calibration updates continue; new features are not planned.
+> See the [roadmap](docs/project/ROADMAP.md).
+
 <p align="center">
   <a href="https://pypi.org/project/monte-neo/"><img src="https://img.shields.io/pypi/v/monte-neo?label=PyPI&color=0a7bbb" alt="PyPI version"/></a>
   <a href="https://pepy.tech/projects/monte-neo"><img src="https://static.pepy.tech/badge/monte-neo" alt="Total downloads"/></a>
@@ -504,7 +508,7 @@ MCP tools (27): `verify_strategy`, `verify_grid`, `verify_quotes`, `verify_portf
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.55.0
+- uses: NeoZorK/Monte-Neo@v0.57.0
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py

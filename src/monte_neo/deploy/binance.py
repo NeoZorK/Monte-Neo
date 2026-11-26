@@ -1,4 +1,7 @@
-"""Binance REST: public mainnet data (signals) and the signed spot testnet (execution). Standard library only.
+"""Binance REST: public mainnet data (signals) and the signed testnets (execution). Standard library only.
+
+Two venues: spot (:class:`SpotTestnet`, long-only) and USD-M perpetual futures (:class:`FuturesTestnet`, long and short,
+for market-neutral books). Signed requests go only to the two testnet hosts; mainnet hosts receive public reads only.
 
 Keys are passed in by the caller (see :mod:`monte_neo.deploy.keys`); they are never logged or written. Orders carry a
 deterministic ``newClientOrderId`` and the order is looked up BEFORE it is sent, so a retry after a network error never
@@ -20,6 +23,9 @@ from typing import Any
 
 MAINNET = "https://api.binance.com"  # public market data only: no key is ever sent here
 SPOT_TESTNET = "https://testnet.binance.vision"  # the only host that receives signed requests
+FUTURES_MAINNET = "https://fapi.binance.com"  # public USD-M futures data only
+FUTURES_TESTNET = "https://testnet.binancefuture.com"  # the only futures host that receives signed requests
+SIGNED_HOSTS = (SPOT_TESTNET, FUTURES_TESTNET)
 UA = "monte-neo-deploy/1"
 
 
@@ -47,18 +53,42 @@ def _get_json(url: str, headers: dict[str, str] | None = None, method: str = "GE
     raise ExchangeError(f"giving up after {tries} tries: {last}")
 
 
-def daily_klines(symbol: str, limit: int = 500, end_ms: int | None = None) -> list[tuple[int, float]]:
-    """(open time ms, close) of COMPLETE mainnet daily bars, oldest first (the bar still forming is dropped)."""
+def _klines(base: str, path: str, symbol: str, limit: int, end_ms: int | None) -> list[tuple[int, float]]:
     q: dict[str, Any] = {"symbol": symbol, "interval": "1d", "limit": limit}
     if end_ms is not None:
         q["endTime"] = end_ms
-    rows = _get_json(f"{MAINNET}/api/v3/klines?{urllib.parse.urlencode(q)}")
+    rows = _get_json(f"{base}{path}?{urllib.parse.urlencode(q)}")
     now_ms = int(time.time() * 1000)
     return [(int(r[0]), float(r[4])) for r in rows if int(r[6]) < now_ms]
 
 
+def daily_klines(symbol: str, limit: int = 500, end_ms: int | None = None) -> list[tuple[int, float]]:
+    """(open time ms, close) of COMPLETE mainnet spot daily bars, oldest first (the bar still forming is dropped)."""
+    return _klines(MAINNET, "/api/v3/klines", symbol, limit, end_ms)
+
+
 def mainnet_price(symbol: str) -> float:
     return float(_get_json(f"{MAINNET}/api/v3/ticker/price?symbol={symbol}")["price"])
+
+
+def futures_daily_klines(symbol: str, limit: int = 500, end_ms: int | None = None) -> list[tuple[int, float]]:
+    """(open time ms, close) of COMPLETE mainnet USD-M perpetual daily bars, oldest first (max 1500 per call)."""
+    return _klines(FUTURES_MAINNET, "/fapi/v1/klines", symbol, min(limit, 1500), end_ms)
+
+
+def futures_price(symbol: str) -> float:
+    return float(_get_json(f"{FUTURES_MAINNET}/fapi/v1/ticker/price?symbol={symbol}")["price"])
+
+
+def funding_rates(symbol: str, start_ms: int, end_ms: int) -> list[tuple[int, float, float | None]]:
+    """Mainnet funding events ``(time ms, rate, mark price or None)`` in [start_ms, end_ms]; a long pays a positive rate."""
+    q = {"symbol": symbol, "startTime": start_ms, "endTime": end_ms, "limit": 1000}
+    rows = _get_json(f"{FUTURES_MAINNET}/fapi/v1/fundingRate?{urllib.parse.urlencode(q)}")
+    out = []
+    for r in rows:
+        mp = r.get("markPrice")
+        out.append((int(r["fundingTime"]), float(r["fundingRate"]), float(mp) if mp not in (None, "") else None))
+    return out
 
 
 def round_step(qty: float, step: float) -> float:
@@ -142,6 +172,76 @@ class SpotTestnet:
         if order.get("fills"):
             return order
         trades = self._signed("GET", "/api/v3/myTrades", {"symbol": order["symbol"], "orderId": order["orderId"]})
+        order["fills"] = [{"price": t["price"], "qty": t["qty"], "commission": t["commission"], "commissionAsset": t["commissionAsset"]}
+                          for t in trades]
+        return order
+
+
+class FuturesTestnet(SpotTestnet):
+    """Signed USD-M futures testnet client (demo money only): market orders in one-way mode, shorts allowed.
+
+    Leverage is not raised by this client: the book's gross exposure is set by the weights (at most ``max_gross`` of
+    capital) and the testnet account's margin covers it. Keys are the futures testnet pair (a separate account from the
+    spot testnet): ``MONTE_NEO_FUTURES_TESTNET_KEY`` / ``_SECRET`` or the Keychain.
+    """
+
+    def __init__(self, base: str = FUTURES_TESTNET, key: str | None = None, secret: str | None = None) -> None:
+        key = key or os.environ.get("MONTE_NEO_FUTURES_TESTNET_KEY", "")
+        secret = secret or os.environ.get("MONTE_NEO_FUTURES_TESTNET_SECRET", "")
+        if not key or not secret:
+            raise ExchangeError("no futures testnet keys: set MONTE_NEO_FUTURES_TESTNET_KEY and MONTE_NEO_FUTURES_TESTNET_SECRET, or store them in the Keychain (monte-neo deploy keys --venue binance_usdm)")
+        super().__init__(base=base, key=key, secret=secret)
+
+    def __repr__(self) -> str:
+        return f"FuturesTestnet(base={self.base!r})"
+
+    def filters(self, symbol: str) -> dict[str, float]:
+        if symbol not in self._filters:
+            info = [x for x in _get_json(f"{self.base}/fapi/v1/exchangeInfo")["symbols"] if x["symbol"] == symbol]
+            if not info:
+                raise ExchangeError(f"{symbol} is not listed on the futures testnet")
+            f = {x["filterType"]: x for x in info[0]["filters"]}
+            lot = f.get("MARKET_LOT_SIZE") or f["LOT_SIZE"]
+            notional = f.get("MIN_NOTIONAL") or {}
+            self._filters[symbol] = {"step": float(lot["stepSize"]), "min_qty": float(lot["minQty"]),
+                                     "min_notional": float(notional.get("notional", notional.get("minNotional", 0)) or 0)}
+        return self._filters[symbol]
+
+    def balances(self) -> dict[str, float]:
+        """Wallet balance per asset plus the signed size of every open position (symbol -> quantity)."""
+        acc = self._signed("GET", "/fapi/v2/account", {})
+        out = {a["asset"]: float(a["walletBalance"]) for a in acc.get("assets", []) if float(a["walletBalance"])}
+        out.update({p["symbol"]: float(p["positionAmt"]) for p in acc.get("positions", []) if float(p["positionAmt"])})
+        return out
+
+    def find_order(self, symbol: str, cid: str) -> dict[str, Any] | None:
+        try:
+            return self._signed("GET", "/fapi/v1/order", {"symbol": symbol, "origClientOrderId": cid})  # type: ignore[no-any-return]
+        except ExchangeError as e:
+            if "-2013" in str(e):
+                return None
+            raise
+
+    def market_order(self, symbol: str, side: str, qty: float, cid: str) -> dict[str, Any]:
+        existing = self.find_order(symbol, cid)
+        if existing is not None:
+            return self._with_fills(existing)
+        try:
+            o = self._signed("POST", "/fapi/v1/order", {"symbol": symbol, "side": side, "type": "MARKET",
+                                                         "quantity": f"{qty:.8f}".rstrip("0").rstrip("."),
+                                                         "newClientOrderId": cid, "newOrderRespType": "RESULT"})
+        except ExchangeError:
+            found = self.find_order(symbol, cid)
+            if found is None:
+                raise
+            o = found
+        return self._with_fills(o)
+
+    def _with_fills(self, order: dict[str, Any]) -> dict[str, Any]:
+        """Futures order answers carry no fills: take them (price, qty, commission) from the account's trades of that order."""
+        if order.get("fills"):
+            return order
+        trades = self._signed("GET", "/fapi/v1/userTrades", {"symbol": order["symbol"], "orderId": order["orderId"]})
         order["fills"] = [{"price": t["price"], "qty": t["qty"], "commission": t["commission"], "commissionAsset": t["commissionAsset"]}
                           for t in trades]
         return order

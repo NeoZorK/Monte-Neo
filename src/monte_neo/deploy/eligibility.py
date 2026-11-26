@@ -1,6 +1,7 @@
 """Who may deploy: a Monte-Neo certificate whose verdict is not REJECT, and settings the machinery supports.
 
-Supported: Binance spot, long-only, daily or weekly rebalance, target ``local``. Everything else is refused with a message.
+Supported: Binance spot (long-only, no leverage) and Binance USD-M perpetual futures (long and short, gross exposure up
+to 2), daily or weekly rebalance, target ``local``. Everything else is refused with a message.
 """
 
 from __future__ import annotations
@@ -72,13 +73,18 @@ def parse_weekday(text: str) -> int:
 def check_settings(*, market: str = "spot", leverage: float = 1.0, long_only: bool = True, rebalance: str = "weekly", mode: str = "testnet",
                    capital: float = 10_000.0, symbols: list[str] | None = None, fee_bps: float = 10.0, slippage_bps: float = 5.0,
                    kill_drawdown: float = -0.15) -> None:
-    """Refuse every setting the machinery does not support."""
-    if market != "spot":
-        raise EligibilityError(f"only the Binance spot market is supported (got {market!r}); no futures, margin or options")
-    if leverage != 1.0:
-        raise EligibilityError("leverage is not supported: weights are shares of capital, at most 1 in total")
-    if not long_only:
-        raise EligibilityError("only long-only strategies are supported")
+    """Refuse every setting the machinery does not support. ``leverage`` is the gross exposure limit (sum of |weights|)."""
+    from monte_neo.deploy.connectors import BY_MARKET
+
+    if market not in BY_MARKET:
+        raise EligibilityError(f"market must be one of {', '.join(sorted(BY_MARKET))} (got {market!r}); no margin or options")
+    v = BY_MARKET[market]
+    if not v.short and leverage != 1.0:
+        raise EligibilityError("leverage is not supported on spot: weights are shares of capital, at most 1 in total")
+    if not 0 < leverage <= v.max_gross:
+        raise EligibilityError(f"leverage (gross exposure limit) must be above 0 and at most {v.max_gross:g} on {v.id}")
+    if not long_only and not v.short:
+        raise EligibilityError("short positions need a venue that allows them: use --market usdm (USD-M futures testnet)")
     if rebalance not in ("daily", "weekly"):
         raise EligibilityError(f"rebalance must be daily or weekly (got {rebalance!r}); intraday rebalancing is not supported")
     if mode not in ("testnet", "paper", "dry"):

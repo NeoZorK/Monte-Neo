@@ -1,6 +1,7 @@
 """Virtual books replayed from the journal: the paper book (mainnet prices, modelled costs) and the testnet book (real fills).
 
-Both start from the capital of the ``start`` entry and change only through ``paper_fill`` / ``fill`` entries, so every
+Both start from the capital of the ``start`` entry and change only through ``paper_fill`` / ``fill`` entries (and, on a
+perpetual-futures venue, ``funding`` entries for that book), so every
 number is derived from the journal and can be recomputed by anyone who has it. Testnet balance resets by Binance do not
 touch the virtual testnet book.
 """
@@ -26,6 +27,8 @@ def replay(entries: Iterable[dict[str, Any]], book: str) -> dict[str, Any]:
             pos[b["symbol"]] = pos.get(b["symbol"], 0.0) + sign * float(b["qty"])
             cash -= sign * float(b["qty"]) * float(b["price"]) + float(b["fee_usdt"])
             fees += float(b["fee_usdt"])
+        elif e["kind"] == "funding" and b.get("book") == book:
+            cash += float(b["amount_usdt"])
         elif e["kind"] == "mark":
             px = b["prices"]
             nav_now = cash + sum(q * px[s] for s, q in pos.items() if s in px)

@@ -78,6 +78,11 @@ def summary(entries: list[dict[str, Any]]) -> dict[str, Any]:
     r2 = costs_x2_returns(entries)
     certs = [e["body"] for e in entries if e["kind"] == "certify"]
     es = var_es(pr)
+    start = next((e["body"] for e in entries if e["kind"] == "start"), {})
+    n_trials = int(((start.get("eligibility") or {}).get("certificate") or start.get("certificate") or {}).get("n_trials") or 1)
+    from monte_neo.deploy.sequential import evaluate as _sequential
+
+    seq = _sequential(r2, n_trials=n_trials, target_sharpe=float(start.get("target_sharpe", 0.5)))
     return {
         "days": len(pn), "weeks": len(pn) / 7.0, "paper_nav": pn[-1] if pn else None,
         "paper_return": (pn[-1] / pn[0] - 1.0) if len(pn) > 1 else None,
@@ -87,4 +92,5 @@ def summary(entries: list[dict[str, Any]]) -> dict[str, Any]:
         "paper_fees": paper["fees"], "testnet_fees": test["fees"] if tn else None,
         "killed": any(e["kind"] == "kill" for e in entries),
         "forward_verdict": certs[-1].get("verdict") if certs else None,
+        "sequential": seq,
     }

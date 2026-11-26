@@ -43,12 +43,20 @@ def _keychain(service: str) -> str:
     return out.stdout.strip() if out.returncode == 0 else ""
 
 
-def resolve() -> tuple[str, str, str] | None:
-    """``(key, secret, source)`` from the environment or the Keychain, or None. ``source`` is ``env`` or ``keychain``."""
-    k, s = os.environ.get(ENV_KEY, ""), os.environ.get(ENV_SECRET, "")
+def resolve(venue: str = "binance_spot") -> tuple[str, str, str] | None:
+    """``(key, secret, source)`` from the environment or the Keychain, or None. ``source`` is ``env`` or ``keychain``.
+
+    Each venue has its own pair (the spot and futures testnets are separate accounts), see
+    :data:`monte_neo.deploy.connectors.VENUES`.
+    """
+    from monte_neo.deploy.connectors import VENUES
+
+    v = VENUES[venue]
+    env, chain = ((ENV_KEY, ENV_SECRET), (KEYCHAIN_KEY, KEYCHAIN_SECRET)) if venue == "binance_spot" else (v.key_env, v.keychain)
+    k, s = os.environ.get(env[0], ""), os.environ.get(env[1], "")
     if k and s:
         return k, s, "env"
-    k, s = _keychain(KEYCHAIN_KEY), _keychain(KEYCHAIN_SECRET)
+    k, s = _keychain(chain[0]), _keychain(chain[1])
     if k and s:
         return k, s, "keychain"
     return None
@@ -104,8 +112,8 @@ def _pairs(p: Path) -> list[tuple[str, str, str, str]]:
     return out
 
 
-ACCEPTED = "the spot testnet account answered"
-REFUSED = "the spot testnet does not accept this pair (a mainnet key is never used)"
+ACCEPTED = "the testnet account answered"
+REFUSED = "the testnet does not accept this pair (a mainnet key is never used)"
 
 
 def candidates() -> list[tuple[dict[str, Any], tuple[str, str]]]:
@@ -113,34 +121,42 @@ def candidates() -> list[tuple[dict[str, Any], tuple[str, str]]]:
     return [({"file": str(p), "names": [k, s]}, (kv, sv)) for p in _files() for k, kv, s, sv in _pairs(p)]
 
 
-def check_pair(key: str, secret: str) -> bool:
-    """Does the SPOT TESTNET accept this pair? Only the testnet host is called; a mainnet key is rejected there.
+def check_pair(key: str, secret: str, venue: str = "binance_spot") -> bool:
+    """Does the venue's TESTNET accept this pair? Only the testnet host is called; a mainnet key is rejected there.
 
     Returns a bool only: nothing derived from the pair is ever printed or logged (use ACCEPTED / REFUSED for messages).
     """
+    cls = binance.FuturesTestnet if venue == "binance_usdm" else binance.SpotTestnet
     try:
-        binance.SpotTestnet(key=key, secret=secret).balances()
+        cls(key=key, secret=secret).balances()
     except binance.ExchangeError:
         return False
     return True
 
 
-def store(key: str, secret: str) -> None:
-    """Put the pair into the macOS Keychain."""
-    for service, value in ((KEYCHAIN_KEY, key), (KEYCHAIN_SECRET, secret)):
+def _services(venue: str) -> tuple[str, str]:
+    from monte_neo.deploy.connectors import VENUES
+
+    return (KEYCHAIN_KEY, KEYCHAIN_SECRET) if venue == "binance_spot" else VENUES[venue].keychain
+
+
+def store(key: str, secret: str, venue: str = "binance_spot") -> None:
+    """Put the pair into the macOS Keychain under the venue's services."""
+    k_service, s_service = _services(venue)
+    for service, value in ((k_service, key), (s_service, secret)):
         subprocess.run(["security", "add-generic-password", "-U", "-s", service, "-a", KEYCHAIN_ACCOUNT, "-w", value], check=True, capture_output=True)  # noqa: S607
 
 
-def status() -> dict[str, Any]:
-    """Where keys come from and whether the testnet accepts them (no values)."""
-    found = resolve()
+def status(venue: str = "binance_spot") -> dict[str, Any]:
+    """Where the venue's keys come from and whether its testnet accepts them (no values)."""
+    found = resolve(venue)
     if not found:
-        return {"found": False, "source": None, "testnet_accepts": None}
-    ok = check_pair(found[0], found[1])
-    return {"found": True, "source": found[2], "testnet_accepts": ok, "detail": ACCEPTED if ok else REFUSED}
+        return {"venue": venue, "found": False, "source": None, "testnet_accepts": None}
+    ok = check_pair(found[0], found[1], venue)
+    return {"venue": venue, "found": True, "source": found[2], "testnet_accepts": ok, "detail": ACCEPTED if ok else REFUSED}
 
 
-def find(interactive: bool = True, assume_yes: bool = False) -> int:
+def find(interactive: bool = True, assume_yes: bool = False, venue: str = "binance_spot") -> int:
     """Scan, ask, check against the testnet, store in the Keychain; returns how many pairs were stored."""
     stored = 0
     found = candidates()
@@ -149,13 +165,13 @@ def find(interactive: bool = True, assume_yes: bool = False) -> int:
         return 0
     for where, pair in found:
         print(f"candidate: {where['file']}")  # the file only: variable names and values are never printed
-        question = "  check this pair against the Binance spot TESTNET and store it in the Keychain? [y/N] "
+        question = f"  check this pair against the {venue} TESTNET and store it in the Keychain? [y/N] "
         if not (assume_yes or (interactive and input(question).strip().lower() == "y")):
             continue
-        ok = check_pair(*pair)
+        ok = check_pair(*pair, venue=venue)
         print(f"  {ACCEPTED if ok else REFUSED}")
         if ok:
-            store(*pair)
+            store(*pair, venue=venue)
             print("  stored in the macOS login Keychain")
             stored += 1
     return stored

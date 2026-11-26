@@ -37,3 +37,12 @@ Horizon: Includes regime breaks; formation and trading windows separated.
 ## What Monte-Neo cannot verify
 
 - Fundamental reason a spread should hold; legging risk without intraday data
+
+## Worst scenario (hedged is not risk-free)
+
+- the relationship breaks and the spread never returns
+- both legs gap together in a crash while the hedge ratio is stale
+- short borrow is recalled or its rate jumps
+- Counterparty: a hedge does not protect the capital held at a venue that fails.
+
+Measure it on the strategy's net returns and legs: `monte-neo catalog worst --returns r.csv --legs legs.csv` (measured losses, leg correlation in stress, and stated shocks with their formulas).

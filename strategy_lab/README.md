@@ -41,7 +41,7 @@ and one row in `results/summary.json` (ARL, deflated Sharpe, timing p, beta shar
 uv run python scripts/strategy_lab/lab.py                      # interactive: live table, progress, ETA, RAM/CPU/disk/power, keys
 ```
 
-Under `nohup` or over ssh (for example on `mbp2014`), no terminal needed:
+Under `nohup` or over ssh, no terminal needed:
 
 ```bash
 mkdir -p strategy_lab/logs
@@ -84,16 +84,8 @@ Reason: statistical power comes from long data across markets, not from more var
 - `n_trials` for the ETF certificates = the ETF grid points + every crypto variant of the Lab (all rounds). Verification through Monte-Neo (`verify_returns` / `alpha` / `research`), ARL by `arl-rules/1`.
 - Nothing is tuned after the first look at validation; a failed candidate is published as a reviewed case.
 
-## Track 3: forward record (no trading, no keys)
+## Track 3: forward record
 
-From **2026-11-10** `scripts/strategy_lab/forward_record.py` records once a day, on public data, the signals and HYPOTHETICAL positions of a list of candidates
-frozen in `strategy_lab/forward/frozen.json` (SHA-256 of the code, the strategy files and the parameters; `run` refuses if anything differs).
-It is neither a paper-trading account nor a testnet: no orders, no exchange account, no keys. The journal `strategy_lab/forward/journal.jsonl` is hash-chained;
-a missed day is filled on the next run and flagged `late`.
-
-- Crypto alpha: r4_b4_2, r4_b3_1, r4_b2_1, r4_b1_5 (long top third / short bottom third of the point-in-time liquid set, 3-day rebalance; the BTC hedge is not modelled).
-- Carry E_pit (BTC..SOL pool, weekly decisions). Funding comes from OKX as a PROXY: fapi.binance.com is not reachable from the owner's location and the Binance bulk archive has funding only per finished month.
-- ETF: risk parity, bond trend + carry, time-series momentum (the three best by validation Sharpe / discovery DSR; none passed the gates, they are recorded as forward evidence only).
-- Crypto warm-up history is fetched from 2025-10-01 because the signals need 365-day windows. It is input only; no performance is computed on any date before the start day, and the
-  crypto sealed holdout (2025+) of the historical candidates is not evaluated.
-- Daily run and launchd: `scripts/strategy_lab/forward_daily.sh`; a launchd plist is prepared in `scripts/strategy_lab/launchd/` (not installed).
+From 2026-11-10 to 2026-11-25 a daily forward record of hypothetical positions ran here. Since v0.57.0 the forward record of
+live candidates is kept in the authors' private research infrastructure and is not part of this repository; the
+historical rounds, their pre-registrations and results above stay public as a reproducible research record.

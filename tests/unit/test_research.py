@@ -473,3 +473,24 @@ def test_family_on_a_folder_a_wide_table_and_errors(tmp_path, capsys) -> None:
     pd.DataFrame({"x": [1, 2]}).to_csv(bad / "a.csv", index=False)
     with pytest.raises(ValueError, match="needs a date column"):
         run_family(bad)
+
+
+def test_freeze_needs_a_profitable_walk_forward_of_the_parameter_family(tmp_path, monkeypatch) -> None:
+    p = _project(tmp_path)
+    fam = [Candidate(SRC, {"side": 1, "k": k}, f"k{k}") for k in (1, 2, 3)]
+    ids = [r["candidate"] for r in p.screen(DF, fam)]
+    wf = p._family_walk_forward(p._candidate(ids[0]))
+    assert wf is not None and wf["folds"] == 4 and wf["oos_sharpe"] > 0  # the same real edge in every variant: re-choosing works
+    p.preregister(ids[:1], "best")
+    p.validate(DF)
+    monkeypatch.setattr(p, "_family_walk_forward", lambda c: {"oos_sharpe": -0.01, "folds": 4})
+    with pytest.raises(ValueError, match="walk-forward of its parameter family"):
+        p.freeze(DF, ids[0])
+    fr = p.freeze(DF, ids[0], override=True)  # written down: the override is visible in the record
+    assert fr["gate_open"] is False and fr["override"] is True and fr["walk_forward"]["oos_sharpe"] < 0
+
+
+def test_a_family_too_small_for_walk_forward_relies_on_validation(tmp_path) -> None:
+    p, (win, _lose), _ = _validated(tmp_path)
+    assert p._family_walk_forward(p._candidate(win)) is None  # side 1 and side -1 are one variant each of the family; 2 < 3
+    assert p.freeze(DF, win)["walk_forward"] is None

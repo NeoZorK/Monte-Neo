@@ -45,7 +45,7 @@ def _parser() -> argparse.ArgumentParser:
     s.add_argument("--strategy", required=True, help="Python file defining target_weights(closes_by_symbol)")
     s.add_argument("--certificate", required=True, help="Monte-Neo certificate JSON for this strategy (verdict must not be REJECT)")
     s.add_argument("--capital", type=float, default=10_000.0)
-    s.add_argument("--symbols", default="BTCUSDT,ETHUSDT", help="comma-separated USDT spot pairs")
+    s.add_argument("--symbols", default="BTCUSDT,ETHUSDT", help="comma-separated USDT pairs (spot pairs, or perpetuals with --market usdm)")
     s.add_argument("--first-day", default=None, help="first UTC day to record, YYYY-MM-DD (default today)")
     s.add_argument("--mode", default="testnet", help="testnet (demo orders), paper (no orders) or dry (simulated orders, no keys)")
     s.add_argument("--rebalance", default="weekly", help="daily or weekly")
@@ -53,8 +53,8 @@ def _parser() -> argparse.ArgumentParser:
     s.add_argument("--fee-bps", type=float, default=10.0, help="fee per side in basis points of the cost model")
     s.add_argument("--slippage-bps", type=float, default=5.0, help="slippage per side in basis points of the cost model")
     s.add_argument("--kill-drawdown", type=float, default=-0.15, help="paper drawdown from peak that stops trading (default -0.15)")
-    s.add_argument("--market", default="spot", help="only spot is supported")
-    s.add_argument("--leverage", type=float, default=1.0, help="only 1 is supported")
+    s.add_argument("--market", default="spot", help="spot (Binance spot testnet, long-only) or usdm (Binance USD-M futures testnet, long and short)")
+    s.add_argument("--leverage", type=float, default=1.0, help="gross exposure limit, the sum of |weights|: 1 on spot, up to 2 on usdm (default 1)")
     r = sub.add_parser("run", parents=[c], help="record every missing day up to today (idempotent)")
     r.add_argument("--until", default=None, help="last UTC day to record, YYYY-MM-DD (default today)")
     sub.add_parser("status", parents=[c], help="metrics and the journal check as JSON")
@@ -74,6 +74,7 @@ def _parser() -> argparse.ArgumentParser:
     ky.add_argument("--list", action="store_true", help="only list candidate files (names, never values)")
     ky.add_argument("--yes", action="store_true", help="consent given: check and store every candidate without asking")
     ky.add_argument("--status", action="store_true", help="where keys come from and whether the testnet accepts them")
+    ky.add_argument("--venue", default="binance_spot", help="binance_spot (spot testnet) or binance_usdm (futures testnet): separate accounts and keys")
     return ap
 
 
@@ -98,14 +99,12 @@ def _date(text: str | None, what: str) -> dt.date:
 
 
 def _exchange(cfg: dict[str, Any]) -> Any:
-    from monte_neo.deploy import binance, keys
+    from monte_neo.deploy import connectors, keys
 
-    if cfg["mode"] == "testnet":
-        found = keys.resolve()
-        if not found:
-            raise ValueError("mode testnet needs testnet keys: set MONTE_NEO_TESTNET_KEY and MONTE_NEO_TESTNET_SECRET, or run `monte-neo deploy keys`")
-        return binance.SpotTestnet(key=found[0], secret=found[1])
-    return binance.SimExchange(cash=float(cfg["capital"]), slippage_bps=cfg["cost_model"]["slippage_bps"], fee_bps=cfg["cost_model"]["fee_bps"])
+    v = connectors.venue(cfg)
+    found = keys.resolve(v.id) if cfg["mode"] == "testnet" else None
+    return connectors.exchange(v, cfg["mode"], capital=float(cfg["capital"]), fee_bps=cfg["cost_model"]["fee_bps"],
+                               slippage_bps=cfg["cost_model"]["slippage_bps"], keys=found[:2] if found else None)
 
 
 def _frozen(folder: Path, cfg: dict[str, Any]) -> Path:
@@ -128,8 +127,11 @@ def _init(a: argparse.Namespace) -> int:
     from monte_neo.deploy.plugin import ENTRYPOINT, load
 
     symbols = [x.strip().upper() for x in a.symbols.split(",") if x.strip()]
-    check_settings(market=a.market, leverage=a.leverage, rebalance=a.rebalance, mode=a.mode, capital=a.capital, symbols=symbols,
-                   fee_bps=a.fee_bps, slippage_bps=a.slippage_bps, kill_drawdown=a.kill_drawdown)
+    from monte_neo.deploy.connectors import venue
+
+    check_settings(market=a.market, leverage=a.leverage, long_only=a.market == "spot", rebalance=a.rebalance, mode=a.mode,
+                   capital=a.capital, symbols=symbols, fee_bps=a.fee_bps, slippage_bps=a.slippage_bps, kill_drawdown=a.kill_drawdown)
+    v = venue(a.market)
     weekday = parse_weekday(a.weekday)
     first_day = _date(a.first_day, "--first-day")
     strategy = Path(a.strategy)
@@ -143,7 +145,7 @@ def _init(a: argparse.Namespace) -> int:
     frozen = folder / "strategy.py"
     shutil.copyfile(strategy, frozen)
     entry = runner.start_entry(journal, {
-        "capital": a.capital, "symbols": symbols, "mode": a.mode, "target": "local", "rebalance": a.rebalance, "weekday": weekday,
+        "capital": a.capital, "symbols": symbols, "mode": a.mode, "target": "local", "venue": v.id, "max_gross": a.leverage, "rebalance": a.rebalance, "weekday": weekday,
         "cost_model": {"fee_bps": a.fee_bps, "slippage_bps": a.slippage_bps}, "kill_drawdown": a.kill_drawdown,
         "first_day": first_day.isoformat(), "lookback": runner.LOOKBACK,
         "strategy": {"file": strategy.name, "sha256": file_sha256(frozen), "entrypoint": ENTRYPOINT},
@@ -215,14 +217,16 @@ def _report(a: argparse.Namespace) -> int:
 
 def _keys(a: argparse.Namespace) -> int:
     from monte_neo.deploy import keys as ks
+    from monte_neo.deploy.connectors import venue
 
+    v = venue(a.venue).id
     if a.status:
-        _dump(ks.status())
+        _dump(ks.status(v))
     elif a.list:
         for where, _pair in ks.candidates():
             print(where["file"])
     else:
-        ks.find(interactive=sys.stdin.isatty(), assume_yes=a.yes)
+        ks.find(interactive=sys.stdin.isatty(), assume_yes=a.yes, venue=v)
     return 0
 
 

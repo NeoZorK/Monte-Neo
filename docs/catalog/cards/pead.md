@@ -38,3 +38,10 @@ Horizon: Includes a merger-boom and a bust; deal-level sample size.
 ## What Monte-Neo cannot verify
 
 - Legal and regulatory risk; deal-specific information
+
+## Worst scenario (hedged is not risk-free)
+
+- the deal breaks: the target falls back to its stand-alone price, many times the spread earned
+- Counterparty: a hedge does not protect the capital held at a venue that fails.
+
+Measure it on the strategy's net returns and legs: `monte-neo catalog worst --returns r.csv --legs legs.csv` (measured losses, leg correlation in stress, and stated shocks with their formulas).

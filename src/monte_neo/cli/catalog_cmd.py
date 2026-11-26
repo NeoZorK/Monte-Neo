@@ -42,6 +42,26 @@ def _parser() -> argparse.ArgumentParser:
     mk = sub.add_parser("mask", help="decode a type mask")
     mk.add_argument("mask")
     sub.add_parser("categories", help="list the categories of catalog-rules/1")
+    cp = sub.add_parser("compat", help="which venues and connectors can run this strategy (indicative, not a recommendation)")
+    cp.add_argument("spec")
+    cp.add_argument("--positions", help="wide CSV of signed positions (detects short selling and market neutrality)")
+    cp.add_argument("--leverage", type=float, help="gross leverage the strategy needs (default from the spec, else 1)")
+    cp.add_argument("--json", action="store_true")
+    nv = sub.add_parser("novelty", help="is a strategy new to a catalog: correlation with every strategy and marginal Sharpe")
+    nv.add_argument("--returns", required=True, help="CSV: date + one return column (the candidate)")
+    nv.add_argument("--catalog", required=True, help="wide CSV: date + one return column per catalog strategy")
+    nv.add_argument("--max-corr", type=float, default=0.3)
+    nv.add_argument("--periods-per-year", type=float, default=252.0)
+    nv.add_argument("--json", action="store_true")
+    wc = sub.add_parser("worst", help="worst-scenario card: measured losses, hedge behaviour and stated shocks (for hedged books)")
+    wc.add_argument("--returns", required=True, help="CSV: date + one net return column")
+    wc.add_argument("--legs", help="CSV: date + long-leg return + short-leg return (instrument returns, not negated)")
+    wc.add_argument("--short-weight", type=float, default=0.5, help="weight of the short leg in capital (default 0.5)")
+    wc.add_argument("--venue-share", type=float, default=1.0, help="share of capital held at one venue (default 1.0)")
+    wc.add_argument("--squeeze-jump", type=float, default=0.5, help="one-bar jump of the short leg (default 0.5 = +50%%)")
+    wc.add_argument("--funding-bps-day", type=float, default=30.0, help="stressed funding paid by the short side, bps per day")
+    wc.add_argument("--out", help="write the card as Markdown here")
+    wc.add_argument("--json", action="store_true")
     return p
 
 
@@ -66,11 +86,53 @@ def main(argv: list[str] | None = None) -> int:
             for code, name in rules()["categories"]:
                 print(f"{code:4} {name}")
             return 0
+        if args.cmd == "novelty":
+            from monte_neo.catalog.novelty import novelty
+
+            r = _wide(args.returns).iloc[:, 0]
+            res = novelty(r, _wide(args.catalog), args.periods_per_year, args.max_corr)
+            if args.json:
+                print(json.dumps(res, indent=2, default=str))
+            else:
+                print(("NOVEL" if res["novel"] else "NOT NOVEL") + (": " + "; ".join(res["why_not"]) if res["why_not"] else
+                      f": max |correlation| {abs(res['max_abs_corr']):.2f} ({res['closest']}), it lifts the catalog book's Sharpe"))
+            return 0
+        if args.cmd == "worst":
+            from monte_neo.catalog import worst_case
+
+            r = _wide(args.returns).iloc[:, 0]
+            legs = None
+            if args.legs:
+                lg = _wide(args.legs)
+                legs = (lg.iloc[:, 0], lg.iloc[:, 1])
+            c = worst_case.card(r, legs, short_weight=args.short_weight, venue_share=args.venue_share,
+                                squeeze_jump=args.squeeze_jump, funding_spike_bps_day=args.funding_bps_day)
+            if args.out:
+                Path(args.out).write_text(worst_case.markdown(c), encoding="utf-8")
+            print(json.dumps(c, indent=2, default=str) if args.json else worst_case.markdown(c))
+            return 0
         if args.cmd == "mask":
             print(json.dumps(decode(args.mask), indent=2))
             return 0
         spec = json.loads(Path(args.spec).read_text(encoding="utf-8"))
         measured = None
+        if args.cmd == "compat":
+            from monte_neo.catalog.compat import compat
+
+            m = measure(_wide(args.positions), None, bar_seconds=float(spec.get("bar_seconds", 86400))) if args.positions else None
+            res = compat(spec, m, args.leverage)
+            if args.json:
+                print(json.dumps(res, indent=2, default=str))
+                return 0
+            req = res["requirements"]
+            print(f"needs: {', '.join(req['asset_classes'])} via {', '.join(req['instruments'])}; short selling {'yes' if req['short'] else 'no'}"
+                  f"; leverage {req['leverage']:g}x; intraday {'yes' if req['intraday'] else 'no'}")
+            for r in res["venues"]:
+                mark = "OK " if r["compatible"] else "-- "
+                extra = f"taker ~{r['taker_bps']:g} bps, demo: {r['demo'] or 'none'}, connector: {r['connector']}" if r["compatible"] else "; ".join(r["why_not"])
+                print(f"{mark}{r['name']:<32} {extra}")
+            print(f"\n{res['note']}")
+            return 0
         if args.positions:
             bench = None
             if args.benchmark:

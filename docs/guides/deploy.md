@@ -29,8 +29,15 @@ It is not live trading and not investment advice. Demo orders use play money; th
    warning in the journal.
 2. If the certificate carries a source hash, it must match your strategy file. If it has none (for example a returns-only
    certificate), the journal records a warning that the pairing was not proven.
-3. The settings are supported: Binance **spot**, **long-only**, no leverage, **daily or weekly** rebalance, USDT pairs.
-   Anything else is refused with a message.
+3. The settings are supported: a venue with a connector (below), **daily or weekly** rebalance, USDT pairs. Anything else
+   is refused with a message.
+
+| `--market` | venue | positions | gross exposure (`--leverage`) | funding |
+|---|---|---|---|---|
+| `spot` (default) | Binance spot testnet | long-only | 1 | none |
+| `usdm` | Binance USD-M perpetual futures testnet | long and short | up to 2 (default 1) | charged to both books from mainnet history |
+
+Other venues of `monte-neo catalog compat` are listed there as `planned`.
 
 The strategy file is copied into the run folder and its hash is checked on every `run`. If the copy changes after start,
 the run stops: begin a new run instead.
@@ -52,6 +59,26 @@ def target_weights(closes_by_symbol: dict[str, list[float]]) -> dict[str, float]
 output is validated on every call: a non-dict, an unknown symbol, a negative or non-finite weight, a weight above 1 or a sum
 above 1 stops the run with a clear error. The file is loaded with the same loader as `monte-neo verify --strategy`, so it
 runs with your permissions: deploy only code you would run yourself.
+
+### Market-neutral books (`--market usdm`)
+
+On USD-M futures a weight may be negative (a short) and the sum of absolute weights is at most `--leverage` (the gross
+exposure limit, 1 by default, 2 at most). A book of `{"BTCUSDT": 0.5, "ETHUSDT": -0.5}` is market-neutral at gross 1.
+
+```bash
+monte-neo deploy init --strategy examples/deploy/relative_momentum_neutral.py --certificate cert.json \
+  --market usdm --symbols BTCUSDT,ETHUSDT --rebalance daily --mode dry --run mn
+monte-neo deploy run --run mn
+```
+
+- Signals and marks use mainnet **perpetual** daily closes (not spot).
+- Every mark charges both books the funding of the day before on the positions held then (`funding` entries in the
+  journal): a long pays a positive rate, a short receives it.
+- The kill switch closes longs and shorts.
+- Keys: the futures testnet (testnet.binancefuture.com) is a separate account with its own pair:
+  `MONTE_NEO_FUTURES_TESTNET_KEY` / `MONTE_NEO_FUTURES_TESTNET_SECRET`, or `monte-neo deploy keys --venue binance_usdm`.
+- The stress replays of `report` leave funding out; the forward books charge it.
+- A hedged book is not risk-free: write its worst-scenario card with `monte-neo catalog worst` (see the catalog tools guide).
 
 ## Quick start (no keys, no orders)
 
@@ -127,7 +154,7 @@ or a VPN.
   from the journal).
 - **P&L is measured at mainnet prices with the cost model** (`--fee-bps`, `--slippage-bps` per side), not at the demo's fills.
   The report also shows Sharpe with those costs paid twice.
-- Spot and long-only; daily or weekly rebalance; Binance only (venue risk is not diversified).
+- Binance spot (long-only) and USD-M futures (long and short) only; daily or weekly rebalance (venue risk is not diversified).
 - A short forward record says little by itself. Read the verdict of `certify` for its significance, not the raw return.
 - The journal proves nothing was edited after the fact; it cannot prove that you did not run other strategies in other runs.
   Keep every run folder.

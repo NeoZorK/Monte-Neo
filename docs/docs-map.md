@@ -1,4 +1,4 @@
-# Monte-Neo v0.55.0
+# Monte-Neo v0.57.0
 
 A simplified guide to the Monte-Neo file structure.
 
@@ -51,6 +51,8 @@ A simplified guide to the Monte-Neo file structure.
 - docs/guides/carry.md - Delta-neutral carry in the full verifier: funding as P&L, basis accuracy, accrual sample, future-funding probe, margin, baskets
 - docs/guides/research.md - Honest strategy search: fixed split, ledger, pre-registered batches, family statistics, one sealed holdout, breadth
 - docs/guides/research-lessons.md - Lessons from the Strategy Lab (November 2026): failed and passed holdouts, hidden trials, single-strategy attribution, testnet evidence
+- docs/guides/fast-evidence.md - replication on markets outside the search, walk-forward gate of the parameter family, sequential forward test, honest horizons
+- docs/guides/catalog-tools.md - `catalog compat` (venues and connectors from the requirements) and `catalog novelty` (correlation and marginal Sharpe to a catalog)
 - docs/guides/deploy.md - `monte-neo deploy`: forward record of a verified strategy on the Binance spot demo testnet, evidence journal, dashboard, anchors
 - docs/guides/registry.md - `monte-neo registry`: list, show, import (hashes checked against the Protocolith ledger) and try a public strategy, then deploy it
 - docs/guides/arrival-time.md - Latency audit guide: arrival look-ahead, the delay where the profit vanishes, latency Monte Carlo, recorder, limits
@@ -114,6 +116,8 @@ A simplified guide to the Monte-Neo file structure.
 - docs/catalog/PROTOCOL.md - test protocol for catalog strategies
 - docs/catalog/IMPLEMENTATION_PLAN.md - implementation plan
 - docs/catalog/strategies.yaml, types.yaml, traps.yaml, build_catalog.py - catalog data and the generator of the cards
+- docs/catalog/strategies_mn.yaml - catalog extension MN-1: market-neutral and arbitrage strategies with worst scenarios
+- docs/catalog/strategies_x2.yaml - catalog extension X-2: coverage gaps (market making, order flow, ML, long volatility, portfolio construction, controls)
 - docs/catalog/cards/accruals.md - catalog card
 - docs/catalog/cards/adx_trend.md - catalog card
 - docs/catalog/cards/all_weather.md - catalog card
@@ -121,6 +125,36 @@ A simplified guide to the Monte-Neo file structure.
 - docs/catalog/cards/avellaneda_lee_pca.md - catalog card
 - docs/catalog/cards/avellaneda_stoikov.md - catalog card
 - docs/catalog/cards/bab.md - catalog card
+- docs/catalog/cards/gueant_mm.md - catalog card (extension X-2)
+- docs/catalog/cards/grid_mm_crypto.md - catalog card (extension X-2)
+- docs/catalog/cards/rebate_capture.md - catalog card (extension X-2)
+- docs/catalog/cards/obi_signal.md - catalog card (extension X-2)
+- docs/catalog/cards/vpin_filter.md - catalog card (extension X-2)
+- docs/catalog/cards/lead_lag_crypto.md - catalog card (extension X-2)
+- docs/catalog/cards/index_arb.md - catalog card (extension X-2)
+- docs/catalog/cards/dispersion_trade.md - catalog card (extension X-2)
+- docs/catalog/cards/gkx_trees.md - catalog card (extension X-2)
+- docs/catalog/cards/tail_hedge_puts.md - catalog card (extension X-2)
+- docs/catalog/cards/vix_term_timing.md - catalog card (extension X-2)
+- docs/catalog/cards/black_litterman.md - catalog card (extension X-2)
+- docs/catalog/cards/kelly_fraction.md - catalog card (extension X-2)
+- docs/catalog/cards/beta_hedge_overlay.md - catalog card (extension X-2)
+- docs/catalog/cards/mvrv_onchain.md - catalog card (extension X-2)
+- docs/catalog/cards/listing_effect.md - catalog card (extension X-2)
+- docs/catalog/cards/dex_cex_arb.md - catalog card (extension X-2)
+- docs/catalog/cards/copy_top_traders.md - catalog card (extension X-2)
+- docs/catalog/cards/martingale_control.md - catalog card (extension X-2)
+- docs/catalog/cards/averaging_down_control.md - catalog card (extension X-2)
+- docs/catalog/cards/crypto_basis_reversion.md - catalog card (extension MN-1)
+- docs/catalog/cards/crypto_pairs_basket.md - catalog card (extension MN-1)
+- docs/catalog/cards/cross_exchange_basis.md - catalog card (extension MN-1)
+- docs/catalog/cards/triangular_crypto.md - catalog card (extension MN-1)
+- docs/catalog/cards/funding_xs_neutral.md - catalog card (extension MN-1)
+- docs/catalog/cards/crypto_bab.md - catalog card (extension MN-1)
+- docs/catalog/cards/futures_calendar_spread.md - catalog card (extension MN-1)
+- docs/catalog/cards/delta_hedged_short_vol.md - catalog card (extension MN-1)
+- docs/catalog/cards/stablecoin_depeg_arb.md - catalog card (extension MN-1)
+- docs/catalog/cards/ratio_trend_btc_eth.md - catalog card (extension MN-1)
 - docs/catalog/cards/bh_btc.md - catalog card
 - docs/catalog/cards/bh_eth.md - catalog card
 - docs/catalog/cards/bh_spy.md - catalog card

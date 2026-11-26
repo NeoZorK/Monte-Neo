@@ -159,6 +159,25 @@ class ResearchProject:
             raise ValueError("this is not the data the project was created with")
         return df
 
+    def _family_walk_forward(self, c: Candidate) -> dict[str, Any] | None:
+        """Anchored walk-forward over the screened variants of the same code (its parameter grid), on the discovery period.
+
+        Parameters are re-chosen on each past window and judged on the next one. ``None`` when fewer than three variants of
+        the same code were screened with stored returns of equal length (then the gate relies on validation alone).
+        """
+        from monte_neo.verify.grid import walk_forward
+
+        mats = []
+        for cid in self.screened():
+            f = self.path / "candidates" / f"{_safe(cid)}.json"
+            r = self.path / "disc_returns" / f"{_safe(cid)}.npy"
+            if f.is_file() and r.is_file() and json.loads(f.read_text(encoding="utf-8"))["source"] == c.source:
+                mats.append(np.load(r).astype(float))
+        n = {m.size for m in mats}
+        if len(mats) < 3 or len(n) != 1 or next(iter(n)) < 40:
+            return None
+        return walk_forward(np.vstack(mats), folds=4)
+
     def _candidate(self, cid: str) -> Candidate:
         f = self.path / "candidates" / f"{_safe(cid)}.json"
         if not f.is_file():
@@ -376,11 +395,18 @@ class ResearchProject:
         stats = self._entries("validate")[-1]["stats"]
         row = next(c for c in stats["candidates"] if c["id"] == candidate)
         gate = bool(row["stepdown_significant"] and row["beats_search_null"] and row["sharpe_annual"] > 0)
-        if not gate and not override:
-            self._refuse("freeze", "the validation gate is closed for this candidate (needs Romano-Wolf significance and a Sharpe above what luck delivers for this search)")
         c = self._candidate(candidate)
+        wf = self._family_walk_forward(c)
+        wf_ok = wf is None or wf["oos_sharpe"] > 0.0
+        if not (gate and wf_ok) and not override:
+            why = ("the validation gate is closed for this candidate (needs Romano-Wolf significance and a Sharpe above what luck delivers for this search)"
+                   if not gate else f"the walk-forward of its parameter family is not profitable out of sample (OOS Sharpe/bar {wf['oos_sharpe']:+.4f}): "
+                   "re-choosing the parameters on the past did not work on the next period")  # type: ignore[index]
+            self._refuse("freeze", why)
+        gate = gate and wf_ok
         entry = self._holdout().freeze(df, frozen_source(c.source, c.params), n_trials=self.n_trials, cut=self.splits.holdout_cut(df))
-        out = self.log.append({"kind": "freeze", "candidate": candidate, "gate_open": gate, "override": bool(override and not gate), "holdout_hash": entry["hash"]})
+        out = self.log.append({"kind": "freeze", "candidate": candidate, "gate_open": gate, "override": bool(override and not gate), "holdout_hash": entry["hash"],
+                               "walk_forward": wf})
         self._save(stage="frozen")
         return out
 

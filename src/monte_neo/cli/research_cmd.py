@@ -19,7 +19,7 @@ HELP_STEPS = "init -> screen -> promote -> validate -> holdout -> certify -> rep
 
 def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="monte-neo research", description=f"Honest strategy search. Steps: {HELP_STEPS}.")
-    p.add_argument("action", choices=(*ACTIONS, "breadth"))
+    p.add_argument("action", choices=(*ACTIONS, "breadth", "transfer"))
     p.add_argument("step", nargs="?", help="forward: freeze, record or status")
     p.add_argument("--project", default=".monte-neo/research", help="project folder (default .monte-neo/research)")
     p.add_argument("--data", help="OHLCV table (the same file at every step)")
@@ -38,6 +38,11 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--override", action="store_true", help="freeze: open the holdout although the validation gate is closed (recorded)")
     p.add_argument("--confirm", action="store_true", help="freeze and open_holdout cannot be undone")
     p.add_argument("--signal", help="breadth: dates x names signal table (.csv or .parquet)")
+    p.add_argument("--markets", help="transfer: folder of OHLCV files (one per market, named MARKET.csv or .parquet) that took no part in the search")
+    p.add_argument("--discovery", help="transfer: comma-separated markets used in the search (refused as replication markets)")
+    p.add_argument("--n-trials", type=int, default=1, help="transfer: every variant tried in the project")
+    p.add_argument("--fee-bps", type=float, default=10.0)
+    p.add_argument("--slippage-bps", type=float, default=5.0)
     p.add_argument("--forward-returns", help="breadth: dates x names forward return table")
     p.add_argument("--returns", help="family: a folder of return files (date, return) or one wide table (date + one column per candidate)")
     p.add_argument("--periods-per-year", type=float, default=None, help="breadth and family: observations per year (breadth default 252, family inferred from the dates)")
@@ -70,7 +75,24 @@ def main(argv: list[str] | None = None) -> int:
     except SystemExit as exc:
         return 3 if exc.code == 2 else int(exc.code or 0)
     try:
-        if a.action == "breadth":
+        if a.action == "transfer":
+            from pathlib import Path
+
+            from monte_neo.research.transfer import replicate
+
+            if not (a.strategy and a.markets):
+                raise ValueError("transfer needs --strategy and --markets")
+            files = {f.stem.upper(): f for f in sorted(Path(a.markets).iterdir()) if f.suffix.lower() in (".csv", ".parquet")}
+            out = replicate(a.strategy, files, discovery=[d.strip() for d in (a.discovery or "").split(",") if d.strip()], n_trials=a.n_trials,
+                            fee_bps=a.fee_bps, slippage_bps=a.slippage_bps, periods_per_year=a.periods_per_year or 365.0)
+            if a.format != "json":
+                for m in out["markets"]:
+                    sh = "n/a" if m["net_sharpe"] is None else f"{m['net_sharpe']:.2f}"
+                    print(f"{m['market']:<12} net Sharpe {sh:>6}  net return {m['net_total_return']:+.1%}  verdict {m.get('verdict', '-')}")
+                c = out["check"]
+                print(f"\ncross_market_replication: {c['status'].upper()} - {c['summary']}")
+                return 0
+        elif a.action == "breadth":
             if not (a.signal and a.forward_returns):
                 raise ValueError("breadth needs --signal and --forward-returns")
             out = run_breadth(a.signal, a.forward_returns, periods_per_year=a.periods_per_year or 252.0)

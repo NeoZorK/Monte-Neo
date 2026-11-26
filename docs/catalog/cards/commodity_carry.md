@@ -36,3 +36,11 @@ Horizon: Includes a crisis (2008 FX, 2020 and 2022 crypto).
 ## What Monte-Neo cannot verify
 
 - Counterparty/exchange default; margin calls from intraday spikes
+
+## Worst scenario (hedged is not risk-free)
+
+- the carry flips sign (funding, curve or rate) when it is most crowded
+- the hedge leg's margin is called in a fast move
+- Counterparty: a hedge does not protect the capital held at a venue that fails.
+
+Measure it on the strategy's net returns and legs: `monte-neo catalog worst --returns r.csv --legs legs.csv` (measured losses, leg correlation in stress, and stated shocks with their formulas).

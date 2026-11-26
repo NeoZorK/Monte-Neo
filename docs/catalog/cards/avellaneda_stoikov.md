@@ -36,3 +36,11 @@ Horizon: Intraday to weeks; many fills.
 ## What Monte-Neo cannot verify
 
 - Queue position without full order-book data; daily bars are not enough
+
+## Worst scenario (hedged is not risk-free)
+
+- adverse selection: the quotes fill only on the side that keeps moving
+- a gap through the inventory limit
+- Counterparty: a hedge does not protect the capital held at a venue that fails.
+
+Measure it on the strategy's net returns and legs: `monte-neo catalog worst --returns r.csv --legs legs.csv` (measured losses, leg correlation in stress, and stated shocks with their formulas).

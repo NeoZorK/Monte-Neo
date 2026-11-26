@@ -5,6 +5,52 @@ Version source of truth: `src/monte_neo/_version.py`.
 
 ## [Unreleased]
 
+Maintenance mode: bug fixes and calibration updates only.
+
+## [v0.57.0] — 2026-11-26
+
+Final feature release. Monte-Neo is feature-complete as the reference implementation of the ARL standard and enters
+maintenance mode (bug fixes, security updates and calibration updates only). This release also contains every change
+listed below under 0.56.0, which was merged but never released on its own.
+
+### Added
+- **`monte-neo research transfer`**: cross-market replication. The frozen rule runs unchanged on markets that took no part in
+  the search (markets from the search are refused); each gets a full verdict, and the equal-weight portfolio of the rule on
+  all of them is tested with the effective number of independent markets. Check row `cross_market_replication`.
+- **Sequential forward test in `monte-neo deploy`**: two anytime-valid e-processes on the daily net returns at doubled costs
+  (evidence of an edge, evidence of a shortfall below the target Sharpe), thresholds Bonferroni-adjusted for every candidate
+  under test; decisions `PASS`, `FAIL_EARLY`, `INCONCLUSIVE`, `CONTINUE`, with the days a target Sharpe would need. On the
+  dashboard and in `deploy status`. Simulation: 0.6 % false passes on null records over 26 weeks of daily checking.
+- **`monte-neo catalog compat`**: requirements of a strategy (asset classes, instrument types, short selling, leverage,
+  intraday) matched to a provisional venue table (`venues/1`), with the reasons a venue does not fit, an indicative fee,
+  the demo environment and the connector status.
+- **`monte-neo catalog novelty`**: correlation with every catalog strategy (also in the worst days) and the marginal Sharpe
+  of adding the strategy to the catalog book.
+- **`monte-neo deploy --market usdm`**: a connector for the Binance USD-M perpetual futures testnet. Weights may be negative
+  (shorts) with gross exposure up to `--leverage` (at most 2), so market-neutral books can run forward; signals and marks
+  use mainnet perpetual closes; both books are charged funding from mainnet history; the kill switch closes shorts too.
+  Separate futures testnet keys (`deploy keys --venue binance_usdm`). Connector table in `monte_neo.deploy.connectors`.
+- **`monte-neo catalog worst`**: the worst-scenario card of a hedged book: measured losses, leg correlation in stress, the
+  long leg alone, and stated shocks (short squeeze, spread break, funding spike, venue failure) with their formulas.
+- **Strategy catalog extension MN-1** (`docs/catalog/strategies_mn.yaml`): 10 market-neutral and arbitrage strategies with
+  sources (basis reversion, pairs basket, cross-exchange and triangular arbitrage, cross-sectional funding carry, crypto
+  betting-against-beta, calendar spread, delta-hedged short volatility, stablecoin peg, ETH/BTC ratio trend); verified with
+  `n_trials` = 110. Every market-neutral and arbitrage card has a "Worst scenario" section.
+- **Strategy catalog extension X-2** (`docs/catalog/strategies_x2.yaml`) and three new types (`order_flow`, `ml_forecast`,
+  `long_volatility`): 20 strategies for subcategories that were empty or thin (market making, order flow, machine learning,
+  long volatility, Black-Litterman and Kelly sizing, beta-hedge overlay, on-chain and listing events, DEX-CEX arbitrage)
+  and three failing controls (copy trading, martingale, averaging down). The catalog now holds 130 entries in 27 types;
+  extensions are verified with `n_trials` = 130.
+- Deploy example `examples/deploy/relative_momentum_neutral.py` (a market-neutral book for `deploy --market usdm`).
+- Guides: `docs/guides/fast-evidence.md`, `docs/guides/catalog-tools.md`.
+
+### Changed
+- **`research freeze` also needs a profitable walk-forward of the parameter family**: every screened variant of the same
+  code, parameters re-chosen on each past window of the discovery period and judged on the next (anchored, 4 folds). Without
+  it the holdout stays closed unless `--override` (written down); the result is stored in the freeze record.
+
+## [0.56.0] - included in v0.57.0 (merged in #130, #132, #133; never released on its own)
+
 Planned for v0.56.0.
 
 ### Added

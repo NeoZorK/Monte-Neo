@@ -23,6 +23,9 @@ Any change after the first result is a new protocol version: the old results sta
 
 `n_trials = 100` for the Deflated Sharpe Ratio of every catalog strategy (Bailey and Lopez de Prado 2014), plus any variants added later. This penalizes every strategy for the existence of the other 99. That is intentional and is not reduced for correlated strategies.
 
+Extensions MN-1 (`strategies_mn.yaml`, market-neutral and arbitrage) and X-2 (`strategies_x2.yaml`, coverage gaps and
+controls) are variants added later: their entries are verified with `n_trials` = 100 + every extension entry (130 today), and the 100 keep the protocol they were registered under.
+
 As a secondary, clearly labelled statistic only, the report may add an effective trial count from clustering the strategy return matrix (Lopez de Prado). The headline verdict uses 100.
 
 Probability of backtest overfitting (CSCV, Bailey et al. 2017) is computed on the matrix of all 100 return streams and reported for the catalog as a whole.

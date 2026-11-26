@@ -108,3 +108,47 @@ Verified results, with every metric: [RESULTS.md](RESULTS.md). Failures: [WHAT_D
 | [avellaneda_stoikov](cards/avellaneda_stoikov.md) | Avellaneda-Stoikov market making | market_making | C | Avellaneda Stoikov 2008 | unverified | not yet verified | - |
 | [tail_trend_vol_scaled](cards/tail_trend_vol_scaled.md) | Volatility-scaled trend with 10% target | trend_following | A | Baltas Kosowski 2013; Kim Tse Wald 2016 | unverified | not yet verified | - |
 | [mean_variance_naive](cards/mean_variance_naive.md) | Mean-variance (Markowitz) with sample estimates | minimum_variance | A | Markowitz 1952; DeMiguel et al. 2009 benchmark | unverified | not yet verified | - |
+
+## Extension MN-1: market-neutral and arbitrage
+
+10 strategies from `strategies_mn.yaml`. Extensions are verified with n_trials = 130 (the 100 above plus every extension entry). Hedged cards have a worst-scenario section: hedged is not risk-free.
+
+| id | name | type | structure | tier | source | ARL / depth | net Sharpe |
+|---|---|---|---|---|---|---|---|
+| [crypto_basis_reversion](cards/crypto_basis_reversion.md) | Spot-perpetual basis reversion | carry | BAS | A | He Manela Ross von Wachter 2022 'Fundamentals of perpetual futures' (arXiv 2212.06888); law of one price | not yet verified | - |
+| [crypto_pairs_basket](cards/crypto_pairs_basket.md) | Basket of crypto pairs (rolling hedge) | stat_arb_pairs | MN | A | Gatev Goetzmann Rouwenhorst 2006 RFS (distance pairs) applied to a basket of related perpetuals | not yet verified | - |
+| [cross_exchange_basis](cards/cross_exchange_basis.md) | Cross-exchange price arbitrage | crypto_specific | SPR | C | Makarov Schoar 2020 JFE 'Trading and arbitrage in cryptocurrency markets' | not yet verified | - |
+| [triangular_crypto](cards/triangular_crypto.md) | Triangular arbitrage ETH/BTC vs USDT legs | crypto_specific | SPR | C | Law of one price; Makarov Schoar 2020 JFE | not yet verified | - |
+| [funding_xs_neutral](cards/funding_xs_neutral.md) | Cross-sectional funding carry (dollar-neutral) | carry | MN | A | Schmeling Schrimpf Todorov 2023 'Crypto carry' (BIS Working Paper 1087) | not yet verified | - |
+| [crypto_bab](cards/crypto_bab.md) | Betting against beta in crypto | factor_premia | MN | A | Frazzini Pedersen 2014 JFE, applied to crypto perpetuals | not yet verified | - |
+| [futures_calendar_spread](cards/futures_calendar_spread.md) | Dated-futures calendar spread carry | carry | SPR | B | Koijen Moskowitz Pedersen Vrugt 2018 JFE 'Carry' | not yet verified | - |
+| [delta_hedged_short_vol](cards/delta_hedged_short_vol.md) | Delta-hedged short straddle (variance risk premium) | short_volatility | OPT | C | Carr Wu 2009 RFS 'Variance risk premiums' | not yet verified | - |
+| [stablecoin_depeg_arb](cards/stablecoin_depeg_arb.md) | Stablecoin peg arbitrage | crypto_specific | SPR | C | Lyons Viswanath-Natraj 2023 JIMF 'What keeps stablecoins stable?' | not yet verified | - |
+| [ratio_trend_btc_eth](cards/ratio_trend_btc_eth.md) | ETH/BTC ratio trend (dollar-neutral) | trend_following | MN | A | Moskowitz Ooi Pedersen 2012 JFE (time-series momentum) applied to a relative price | not yet verified | - |
+
+## Extension X-2: coverage gaps: market making, order flow, machine learning, long volatility, portfolio construction, overlays, crypto events, and controls
+
+20 strategies from `strategies_x2.yaml`. Extensions are verified with n_trials = 130 (the 100 above plus every extension entry). Hedged cards have a worst-scenario section: hedged is not risk-free.
+
+| id | name | type | structure | tier | source | ARL / depth | net Sharpe |
+|---|---|---|---|---|---|---|---|
+| [gueant_mm](cards/gueant_mm.md) | Inventory-constrained market making | market_making | MN | C | Gueant Lehalle Fernandez-Tapia 2013 Math. Financial Economics | not yet verified | - |
+| [grid_mm_crypto](cards/grid_mm_crypto.md) | Crypto grid market making | market_making | MN | C | Exchange grid-bot practice; Avellaneda Stoikov 2008 for the inventory view | not yet verified | - |
+| [rebate_capture](cards/rebate_capture.md) | Passive rebate capture at the touch | market_making | MN | C | Maker-taker pricing literature; Foucault Kadan Kandel 2013 JF | not yet verified | - |
+| [obi_signal](cards/obi_signal.md) | Order-book imbalance signal | order_flow | SPR | C | Cont Kukanov Stoikov 2014 J. Financial Econometrics | not yet verified | - |
+| [vpin_filter](cards/vpin_filter.md) | VPIN toxicity filter | order_flow | SPR | C | Easley Lopez de Prado O'Hara 2012 RFS | not yet verified | - |
+| [lead_lag_crypto](cards/lead_lag_crypto.md) | BTC-to-altcoin lead-lag | stat_arb_pairs | MN | C | Lead-lag literature (Lo MacKinlay 1990 RFS); crypto variants | not yet verified | - |
+| [index_arb](cards/index_arb.md) | Index (ETF vs constituents) arbitrage | stat_arb_pairs | SPR | C | ETF creation-redemption mechanism; Ben-David Franzoni Moussawi 2018 JF | not yet verified | - |
+| [dispersion_trade](cards/dispersion_trade.md) | Dispersion trading | short_volatility | OPT | C | Driessen Maenhout Vilkov 2009 JF (price of correlation risk) | not yet verified | - |
+| [gkx_trees](cards/gkx_trees.md) | Gradient-boosted cross-sectional forecast | ml_forecast | MN | B | Gu Kelly Xiu 2020 RFS | not yet verified | - |
+| [tail_hedge_puts](cards/tail_hedge_puts.md) | Rolling out-of-the-money put hedge | long_volatility | OPT | B | Israelov 2017 FAJ "Pathetic protection"; Bhansali 2014 | not yet verified | - |
+| [vix_term_timing](cards/vix_term_timing.md) | VIX term-structure timing | long_volatility | SPR | B | Simon Campasano 2014 J. Derivatives "The VIX futures basis" | not yet verified | - |
+| [black_litterman](cards/black_litterman.md) | Black-Litterman with momentum views | minimum_variance | LO | A | Black Litterman 1992 FAJ; He Litterman 1999 | not yet verified | - |
+| [kelly_fraction](cards/kelly_fraction.md) | Fractional Kelly sizing | rebalancing_policy | LO | A | Kelly 1956; Thorp 2006 (Handbook of Asset and Liability Management) | not yet verified | - |
+| [beta_hedge_overlay](cards/beta_hedge_overlay.md) | Beta-hedge overlay | vol_managed | MN | A | Standard portfolio practice; Frazzini Pedersen 2014 for beta estimation | not yet verified | - |
+| [mvrv_onchain](cards/mvrv_onchain.md) | MVRV on-chain valuation timing | crypto_specific | LO | B | Mahmudov Puell 2018 (MVRV ratio); on-chain analytics literature | not yet verified | - |
+| [listing_effect](cards/listing_effect.md) | Exchange listing announcement effect | event_merger_arb | LO | B | Event-study literature on crypto exchange listings | not yet verified | - |
+| [dex_cex_arb](cards/dex_cex_arb.md) | DEX-CEX price arbitrage | crypto_specific | SPR | C | Daian et al. 2020 IEEE S&P ("Flash Boys 2.0"); Makarov Schoar 2020 | not yet verified | - |
+| [copy_top_traders](cards/copy_top_traders.md) | Copying top leaderboard traders | controls | LO | C | Exchange copy-trading products; Apesteguia Oechssler Weidenholzer 2020 Management Science | not yet verified | - |
+| [martingale_control](cards/martingale_control.md) | Martingale doubling | controls | LO | A | Classical gambling system; CONTROL | not yet verified | - |
+| [averaging_down_control](cards/averaging_down_control.md) | Averaging down without stop | controls | LO | A | Retail practice; CONTROL | not yet verified | - |

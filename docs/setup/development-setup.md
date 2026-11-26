@@ -10,17 +10,10 @@
 
 ## Initial Setup
 
-1. **Clone from NeoZorK gitserver** (private):
+1. **Clone the repository**:
 
    ```bash
-   git clone /Users/rostsh/git-server/NeoZorK/Monte-Neo.git
-   cd Monte-Neo
-   ```
-
-   From LAN:
-
-   ```bash
-   git clone ssh://rost@2014/Users/rost/git-server/NeoZorK/Monte-Neo.git
+   git clone https://github.com/NeoZorK/Monte-Neo.git
    cd Monte-Neo
    ```
 
@@ -42,10 +35,3 @@
 - **Testing**: `uv run pytest tests -n auto`
 - **Linting**: `uv run ruff check` and `uv run black .`
 - **Pre-commit**: `uv run pre-commit install`
-
-## Remotes (R-REMOTE)
-
-- `origin` → `/Users/rostsh/git-server/NeoZorK/Monte-Neo.git`
-- `lan` → `ssh://rost@2014/Users/rost/git-server/NeoZorK/Monte-Neo.git` (optional)
-
-Push tags with branches: `git push origin --all && git push origin --tags`
