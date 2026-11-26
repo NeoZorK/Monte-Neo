@@ -30,7 +30,9 @@ def venues() -> dict[str, Any]:
 
 def requirements(spec: dict[str, Any], measured: dict[str, Any] | None = None, leverage: float | None = None) -> dict[str, Any]:
     inst = spec.get("instruments") or []
-    classes = sorted({str(i.get("asset_class", "")).upper() for i in inst if i.get("asset_class")})
+    from monte_neo.catalog.classify import asset_code
+
+    classes = sorted({asset_code(i["asset_class"]) for i in inst if i.get("asset_class")})
     types = sorted({str(i.get("type", "spot")).lower() for i in inst})
     m = measured or {}
     short_reasons = []

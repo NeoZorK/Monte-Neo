@@ -178,7 +178,8 @@ All changes: [changelog](https://github.com/NeoZorK/Monte-Neo/blob/main/docs/pro
 
 A pairs rule booked as `position * diff(spread)` earns on two unrelated random walks. `verify --legs` re-derives the
 profit from the legs you could trade, `verify --null-test` runs your rule unchanged on independent random walks, and
-`verify --demo-phantom` shows both in one command. [Guide](https://neozork.github.io/Monte-Neo/guides/phantom-profit/)
+`verify --demo-phantom` shows both in one command. [Guide](https://neozork.github.io/Monte-Neo/guides/phantom-profit/) ·
+preprint: [Phantom Mean Reversion](https://doi.org/10.5281/zenodo.24561375) (doi:10.5281/zenodo.24561375)
 
 ## Since v0.53: from a rejected backtest to a committee
 
@@ -458,7 +459,7 @@ code can be imported, re-verified on your machine and deployed as a demo forward
 
 ```bash
 monte-neo registry list                      # what is in the registry
-monte-neo registry try MN-TSM-CRY-002        # import (every hash checked against the ledger) and re-verify on public data
+monte-neo registry try MN-TSM-CRY-002        # import (every hash checked against the ledger), re-verify on public data, write certificate.json
 monte-neo deploy init --strategy strategies/MN-TSM-CRY-002/strategy.py \
   --certificate strategies/MN-TSM-CRY-002/certificate.json --symbols BTCUSDT --rebalance daily --mode dry
 monte-neo deploy run && monte-neo deploy serve   # forward record and dashboard on http://127.0.0.1:8787/
@@ -508,7 +509,7 @@ MCP tools (27): `verify_strategy`, `verify_grid`, `verify_quotes`, `verify_portf
 ## GitHub Action
 
 ```yaml
-- uses: NeoZorK/Monte-Neo@v0.57.0
+- uses: NeoZorK/Monte-Neo@v0.57.1
   with:
     ohlcv: data/btc_1h.csv
     strategy: strategies/momentum.py
@@ -644,7 +645,9 @@ Report security issues privately: [SECURITY.md](https://github.com/NeoZorK/Monte
 
 ## Citation
 
-The method is described in the [technical note](https://neozork.github.io/Monte-Neo/paper/methodology/).
+The method is described in the [technical note](https://neozork.github.io/Monte-Neo/paper/methodology/). The phantom-profit
+checks are described in the preprint [Phantom Mean Reversion: How Rolling Hedge Ratios Manufacture Profits in
+Pairs-Trading Backtests](https://doi.org/10.5281/zenodo.24561375) (Shcherbyna, 2026, doi:10.5281/zenodo.24561375).
 
 If Monte-Neo helps your research, please cite it. GitHub shows the citation under
 **Cite this repository** ([CITATION.cff](https://github.com/NeoZorK/Monte-Neo/blob/main/CITATION.cff)).

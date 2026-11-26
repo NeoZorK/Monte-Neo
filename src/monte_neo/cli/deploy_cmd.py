@@ -226,6 +226,11 @@ def _keys(a: argparse.Namespace) -> int:
         for where, _pair in ks.candidates():
             print(where["file"])
     else:
+        if not (sys.stdin.isatty() or a.yes):
+            print("deploy keys: no terminal to ask for consent. Use --list to see the candidate files, --status to check the "
+                  "current keys, or --yes to check every candidate against the testnet.", file=sys.stderr)
+            return 2
+        print("scanning for files with a Binance key and secret (names only, values are never printed) ...", flush=True)
         ks.find(interactive=sys.stdin.isatty(), assume_yes=a.yes, venue=v)
     return 0
 

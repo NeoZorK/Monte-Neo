@@ -7,6 +7,26 @@ Version source of truth: `src/monte_neo/_version.py`.
 
 Maintenance mode: bug fixes and calibration updates only.
 
+## [v0.57.1] — 2026-11-26
+
+Maintenance release: fixes found by the post-release check of v0.57.0 (a clean install from PyPI that ran every command).
+
+### Fixed
+- **`monte-neo[data]` now installs a parquet engine** (`pyarrow`): parquet inputs to `verify`, `doctor` and `alpha` failed with
+  an ImportError after `pip install "monte-neo[data]"`.
+- **`deploy keys` no longer hangs without a terminal**: with no `--yes`, `--list` or `--status` and no terminal to ask for
+  consent it now exits at once with a hint, instead of scanning the home folder silently and waiting for an answer.
+- **`catalog classify` and `catalog compat` check the asset class**: common names (`crypto`, `equity`, `fx`, ...) map to their
+  codes (`CRY`, `EQ`, `FX`, ...) and an unknown value is an error. Before, `"CRYPTO"` was taken silently, `classify` returned
+  `MULTI` and `compat` found no venue.
+- **`hall build --root DIR`** finds `README.md` and the docs pages next to `DIR` (they were resolved from the current folder).
+- **`research` breadth** keeps names that start trading later (pairwise correlation over the dates they have) and the
+  wording says "N names act like K independent bets"; a table where every name had a gap reported "0 names".
+
+### Docs
+- `registry import` writes no `certificate.json` (it verifies nothing); `registry try` writes it, and `deploy init` needs it.
+- The published preprint "Phantom Mean Reversion" (doi:10.5281/zenodo.24561375) is linked from the README and guides.
+
 ## [v0.57.0] — 2026-11-26
 
 Final feature release. Monte-Neo is feature-complete as the reference implementation of the ARL standard and enters

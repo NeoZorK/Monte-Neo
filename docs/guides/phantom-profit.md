@@ -20,7 +20,7 @@ no trader can earn it. A least-squares refit pulls the new residual towards zero
 position and produces profit from nothing. On independent random walks (pairs with no relationship at all) the wrong
 accounting of a standard z-score rule has a median annualised Sharpe ratio between +4 and +15, positive on 100 % of the
 pairs, while the same positions booked correctly earn nothing. The artifact is invisible to statistics on the return
-series, because the series itself is wrong. The derivation, a simulation that reproduces every number, and the same artifact with exponentially weighted and Kalman hedges are in the preprint "Phantom Mean Reversion" (sources and code in `paper/phantom-mean-reversion/`).
+series, because the series itself is wrong. The derivation, a simulation that reproduces every number, and the same artifact with exponentially weighted and Kalman hedges are in the preprint "Phantom Mean Reversion" ([doi:10.5281/zenodo.24561375](https://doi.org/10.5281/zenodo.24561375); sources and code in `paper/phantom-mean-reversion/`).
 
 Monte-Neo has two checks for it. Both need the strategy's legs, not only its returns.
 

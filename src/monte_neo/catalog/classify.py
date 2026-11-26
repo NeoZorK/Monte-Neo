@@ -40,8 +40,31 @@ def spec_hash(spec: dict[str, Any]) -> str:
     return "sha256:" + hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
+ASSET_ALIASES = {
+    "CRYPTO": "CRY", "CRYPTOCURRENCY": "CRY", "CRYPTOCURRENCIES": "CRY", "DIGITAL ASSETS": "CRY",
+    "EQUITY": "EQ", "EQUITIES": "EQ", "STOCK": "EQ", "STOCKS": "EQ", "SHARES": "EQ",
+    "INDEX": "IDX", "INDICES": "IDX", "INDEXES": "IDX",
+    "RATES": "RAT", "BOND": "RAT", "BONDS": "RAT", "FIXED INCOME": "RAT", "FIXED_INCOME": "RAT",
+    "FOREX": "FX", "CURRENCY": "FX", "CURRENCIES": "FX",
+    "COMMODITY": "CMD", "COMMODITIES": "CMD",
+    "VOLATILITY": "VLX", "VOL": "VLX",
+    "CREDIT": "CRD",
+}
+
+
+def asset_code(value: Any) -> str:
+    """The catalog code of an ``asset_class`` value: a code (``CRY``) or a common name (``crypto``); anything else is an error."""
+    v = str(value).strip().upper()
+    codes = rules()["asset_classes"]
+    if v in codes:
+        return v
+    if v in ASSET_ALIASES:
+        return ASSET_ALIASES[v]
+    raise ValueError(f"unknown asset_class {value!r}: use one of {', '.join(codes)} (or a common name such as crypto, equity, fx)")
+
+
 def _asset_classes(spec: dict[str, Any]) -> list[str]:
-    classes = sorted({str(i.get("asset_class", "")).upper() for i in spec.get("instruments", []) if i.get("asset_class")})
+    classes = sorted({asset_code(i["asset_class"]) for i in spec.get("instruments", []) if i.get("asset_class")})
     order = rules()["asset_classes"]
     return [a for a in order if a in classes] or ["MULTI"]
 
