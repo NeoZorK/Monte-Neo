@@ -1,6 +1,18 @@
-# Monte-Neo Roadmap (v0.55.0 released)
+# Monte-Neo Roadmap (v0.57.0 final, maintenance mode)
 
 Product direction: verifier for agent-built strategies.
+
+## Status: feature-complete, maintenance mode (since v0.57.0, 2026-11-26)
+
+Monte-Neo is the open reference implementation of the Alpha Readiness Level (ARL) standard. New features are not planned.
+Maintained: bug fixes, security updates, dependency and Python version support, and ARL calibration updates
+(`arl-rules/N`). Issues and pull requests with fixes are welcome. Unchecked items below are frozen and not scheduled.
+
+## v0.57.0 — final feature release (2026-11-26)
+- [x] Everything merged for 0.56 (#130, #132, #133): `arl-rules/2` calibrated on 350,000 cases, trial evidence for ARL 4+, single-strategy attribution, `registry`, `deploy` (Binance spot demo testnet), catalog labels, cost margin at level 3
+- [x] `research transfer`, sequential forward test in `deploy`, `catalog compat` / `novelty` / `worst`, `deploy --market usdm`, walk-forward gate in `research freeze`
+- [x] Catalog: 130 strategies in 27 types (extensions MN-1 and X-2)
+- [x] CI: macOS runs once per pull request; Intel macOS 11 and Apple Silicon checked locally before the release
 
 ## v0.18.0 — verifier core + agent distribution
 - [x] `export_signals()` — bring-your-own positions

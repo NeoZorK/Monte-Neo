@@ -11,7 +11,11 @@ permissions:
   contents: read
 
 jobs:
+  # Full Apple research stack (MLX/Metal extras, all unit tests). macOS runners are expensive: this job runs on pushes to
+  # main and on manual runs, not on every pull request; the portable matrix below keeps one macOS job per pull request.
+  # Intel macOS 11 (Big Sur) and Apple Silicon are also checked locally before every release.
   test:
+    if: github.event_name != 'pull_request'
     runs-on: macos-15
     timeout-minutes: 20
 
@@ -69,9 +73,9 @@ jobs:
       - name: Hypothesis zoo (lite)
         run: uv run pytest -W ignore tests/zoo -q
 
-  # Cross-OS and cross-version check of the portable part (verifier, CLI, MCP server): Linux, macOS (arm64) and
-  # Windows, Python 3.11-3.15. Python 3.15 is a beta-supported line: a failure there is reported but does not
-  # fail the run. The MLX/Metal extra is installed on macOS only.
+  # Cross-OS and cross-version check of the portable part (verifier, CLI, MCP server): Linux and Windows on Python
+  # 3.11-3.15, macOS (arm64) on one Python version (3.13) to save macOS minutes. Python 3.15 is a beta-supported line:
+  # a failure there is reported but does not fail the run. The MLX/Metal extra is installed on macOS only.
   portable:
     name: portable (${{ matrix.os }}, py${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
@@ -83,10 +87,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-15, windows-latest]
+        os: [ubuntu-latest, windows-latest]
         python-version: ["3.11", "3.12", "3.13", "3.14", "3.15"]
         include:
           - os: macos-15
+            python-version: "3.13"
             extras: "--extra apple"
         exclude:
           # NumPy for Python 3.15 on Windows is an experimental MinGW build that crashes on import-time use

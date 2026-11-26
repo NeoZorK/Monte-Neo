@@ -5,7 +5,13 @@ Version source of truth: `src/monte_neo/_version.py`.
 
 ## [Unreleased]
 
-Planned for v0.57.0.
+Maintenance mode: bug fixes and calibration updates only.
+
+## [v0.57.0] — 2026-11-26
+
+Final feature release. Monte-Neo is feature-complete as the reference implementation of the ARL standard and enters
+maintenance mode (bug fixes, security updates and calibration updates only). This release also contains every change
+listed below under 0.56.0, which was merged but never released on its own.
 
 ### Added
 - **`monte-neo research transfer`**: cross-market replication. The frozen rule runs unchanged on markets that took no part in
@@ -35,8 +41,7 @@ Planned for v0.57.0.
   long volatility, Black-Litterman and Kelly sizing, beta-hedge overlay, on-chain and listing events, DEX-CEX arbitrage)
   and three failing controls (copy trading, martingale, averaging down). The catalog now holds 130 entries in 27 types;
   extensions are verified with `n_trials` = 130.
-- Strategy Lab ideas `r5_basis_reversion` and `r5_pairs_basket` (parameters fixed before data; not run yet), and the
-  deploy example `examples/deploy/relative_momentum_neutral.py`.
+- Deploy example `examples/deploy/relative_momentum_neutral.py` (a market-neutral book for `deploy --market usdm`).
 - Guides: `docs/guides/fast-evidence.md`, `docs/guides/catalog-tools.md`.
 
 ### Changed
@@ -44,7 +49,7 @@ Planned for v0.57.0.
   code, parameters re-chosen on each past window of the discovery period and judged on the next (anchored, 4 folds). Without
   it the holdout stays closed unless `--override` (written down); the result is stored in the freeze record.
 
-## [0.56.0] - unreleased (merged in #130, #132, #133)
+## [0.56.0] - included in v0.57.0 (merged in #130, #132, #133; never released on its own)
 
 Planned for v0.56.0.
 

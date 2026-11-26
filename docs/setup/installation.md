@@ -16,7 +16,7 @@ monte-neo --version
 python -c "import monte_neo; print(monte_neo.__version__)"
 ```
 
-Current release: **v0.55.0** on [PyPI](https://pypi.org/project/monte-neo/).
+Current release: **v0.57.0** (final feature release; maintenance mode) on [PyPI](https://pypi.org/project/monte-neo/).
 
 Docs site: [neozork.github.io/Monte-Neo](https://neozork.github.io/Monte-Neo/).
 
@@ -72,6 +72,9 @@ See [Development setup](development-setup.md), [Contributing](../development/con
 ## Requirements
 
 - **OS**: macOS Apple Silicon recommended for Metal; Linux OK for `cpu_numba` research path
+- **Intel Macs on macOS 11 (Big Sur)**: checked for v0.57.0. The newest `llvmlite` has no wheel for macOS 11 x86_64 and its
+  source build fails, so ask for binary wheels: `uv pip install --only-binary numba --only-binary llvmlite monte-neo`
+  (or `pip install --prefer-binary monte-neo`); this resolves to numba 0.62.1, which works
 - **Python**: 3.11 to 3.15 (see [Platforms](platforms.md))
 - **Memory**: 8–16GB-class hosts are the design center for large sweeps
 
@@ -85,7 +88,7 @@ Safe rehearsal:
 # download the wheel only from TestPyPI, install without resolving deps there
 pip download --no-deps -d /tmp/mn-wheels \
   --index-url https://test.pypi.org/simple/ \
-  monte-neo==0.55.0
+  monte-neo==0.57.0
 pip install --no-deps /tmp/mn-wheels/monte_neo-*.whl
 # runtime deps still come from real PyPI:
 pip install numpy pandas pyarrow numba rich questionary prompt-toolkit pyyaml python-dotenv pybind11
