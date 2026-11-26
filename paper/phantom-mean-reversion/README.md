@@ -3,6 +3,8 @@
 Sources of the preprint "Phantom Mean Reversion: How Rolling Hedge Ratios Manufacture Profits in Pairs-Trading
 Backtests" (Rostyslav Shcherbyna, Zaporizhzhia, Ukraine).
 
+Published preprint: [doi:10.5281/zenodo.24561375](https://doi.org/10.5281/zenodo.24561375) (Zenodo, version 1.0, 2026-11-26).
+
 | File | What |
 |------|------|
 | `main.tex` | The manuscript (LaTeX, bibliography inside) |
