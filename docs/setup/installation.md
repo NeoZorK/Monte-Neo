@@ -74,7 +74,9 @@ See [Development setup](development-setup.md), [Contributing](../development/con
 - **OS**: macOS Apple Silicon recommended for Metal; Linux OK for `cpu_numba` research path
 - **Intel Macs on macOS 11 (Big Sur)**: checked for v0.57.0. The newest `llvmlite` has no wheel for macOS 11 x86_64 and its
   source build fails, so ask for binary wheels: `uv pip install --only-binary numba --only-binary llvmlite monte-neo`
-  (or `pip install --prefer-binary monte-neo`); this resolves to numba 0.62.1, which works
+  (or `pip install --prefer-binary monte-neo`); this resolves to numba 0.62.1, which works. The verifier, ARL, catalog,
+  deploy and MCP server pass their tests there. The legacy interactive research CLI and its parquet storage need
+  `pyarrow`, which has no wheel for macOS 11; for that part use macOS 12 or later, or Apple Silicon
 - **Python**: 3.11 to 3.15 (see [Platforms](platforms.md))
 - **Memory**: 8–16GB-class hosts are the design center for large sweeps
 
