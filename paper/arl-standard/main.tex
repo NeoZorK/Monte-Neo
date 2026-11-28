@@ -1,0 +1,1028 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage[authoryear,round]{natbib}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\setlength{\emergencystretch}{3em}
+\usepackage[hidelinks]{hyperref}
+
+% Calibration numbers: see the Zenodo deposit.
+
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\newcommand{\chk}[1]{\texttt{#1}}
+\newcommand{\term}[1]{\item[\textbf{#1}]}
+\newcommand{\lvl}[2]{\subsubsection*{ARL #1: #2}}
+
+\title{The Alpha Readiness Level: A Calibrated Evidence Scale\\ for Trading-Strategy Backtests}
+\author{Rostyslav Shcherbyna\\ Independent researcher, Zaporizhzhia, Ukraine\\
+ORCID: \href{https://orcid.org/0009-0000-3773-5789}{0009-0000-3773-5789}}
+\date{28 November 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A backtest shows how a trading strategy would have performed on past data. Its headline number, usually the Sharpe
+ratio, says how good the result looked, but not how much evidence stands behind it. This paper proposes the Alpha
+Readiness Level (ARL), an ordinal scale from 1 to 9 modelled on technology readiness levels. Each level is a named
+claim, such as ``it earns after costs'' or ``it survives the search'', with requirements that software can check. A
+level counts only if every level below it is met. I calibrate the scale on cases whose truth is known: deliberate
+traps, strategies with no edge, and strategies with an edge of controlled size. Development on 350,000 cases exposed
+two structural failures: the best of 100 or 1,000 random strategies, reported as a single attempt, reached level 4 in
+93\,\% of cases, and no strategy with a real single-asset edge could reach level 5. I then froze the revised rules,
+pre-registered four predictions and ran 350,000 new cases; all four were met. Strategies with no edge exceeded their
+maximum level in 0.82\,\% of cases (95\,\% interval 0.76--0.89; 1.81\,\% on real market bars), and real single-asset
+and cross-sectional edges reached level 6 in 29.0\,\% and 52.8\,\% of cases. The share of traps promoted too far
+depends on what the user declares: 0.80\,\% when traps that hide trials keep no record of them and cross-sectional traps
+are given no added universe file, but 8.29\,\% (8.10--8.48) when every trap that can take them is given a new trial
+record and, if cross-sectional, a universe declaration. A new record that omits the search lets the hidden-trials trap
+reach level 4 or above in 46.9\,\% of cases. An ARL level is therefore evidence on the condition that the declarations
+behind it are truthful. The rules and the verification software are open source.
+\end{abstract}
+
+\noindent\textbf{Keywords:} backtesting; overfitting; multiple testing; deflated Sharpe ratio; pre-registration;
+research protocol; technology readiness level; quantitative finance
+
+\subsection*{Summary for the general reader}
+
+\paragraph{The problem.} A computer can test thousands of trading rules on past prices in minutes. Some of them will
+look excellent by pure luck. A reader who sees only the best result cannot tell luck from skill.
+
+\paragraph{The proposal.} ARL answers a narrower and more honest question than ``is this strategy good?''. It asks:
+\emph{how far has the evidence been taken?} Level 1 means that an idea was tried on usable data. Level 6 means that the
+result still holds after accounting for the number of attempts. Level 9 means that it was confirmed with real orders
+and real money.
+
+\paragraph{The main findings.}
+\begin{enumerate}
+\item Hidden attempts cannot be detected from one result. They have to be recorded while the research is done.
+\item With the final rules, strategies with no edge were rarely promoted too far: about 1 case in 120.
+\item Real but weak edges need long samples. A low level often means ``not enough data yet'', not ``no edge''.
+\item The scale believes what the user declares. A false or empty declaration can raise the level, and in such cases the
+rate of wrongly promoted traps rose from 0.80\,\% to 8.29\,\%.
+\item A level should therefore always be read together with the evidence that supports it.
+\end{enumerate}
+
+\paragraph{What ARL is not.} It is not a forecast of profit, not a rating of a strategy's quality, and not investment
+advice. It is also not yet an accepted industry standard: it is an open proposal that others can apply, test and
+criticise.
+
+\section{Introduction}
+
+Most strategies that look profitable in a backtest do not survive contact with new data. The reasons are well
+documented: errors that let the code see the future, costs that were left out, and above all the selection of the best
+of many variants \citep{bailey2014deflated,harvey2016cross,arnott2019backtesting}. Each failure has a remedy in the
+literature, but the remedies are scattered, and a reader of a backtest report rarely knows which of them were applied.
+
+Consider two reports that both state an annual Sharpe ratio of 1.5. The first strategy was fixed in advance, tested
+once, charged realistic costs and later traded with real money. The second is the best of 1,000 variants, tested
+without costs. The headline number is the same; the evidence is not. A single Sharpe ratio hides this difference.
+
+Engineering faced a similar problem with new technologies and answered it with technology readiness levels
+\citep{mankins1995trl}: an ordered scale in which each level names a concrete demonstration, from a principle observed
+to a system proven in operation. The scale does not say that a technology is good; it says how far the evidence goes.
+This paper proposes the same idea for trading strategies. The Alpha Readiness Level (ARL) orders the questions that a
+sceptical reviewer asks of a backtest, attaches requirements that software can check, and reports the highest level
+whose requirements are met together with those of every level below it.
+
+A scale of this kind is useful only if it does not promote what it should not. I therefore treat its thresholds as
+hypotheses and test them on cases whose truth is known, most of them synthetic: traps with a known maximum level,
+strategies without any edge, and edges of controlled size planted in the data. This calibration did more than tune
+thresholds. It exposed two failures of structure that no threshold could repair, and their remedies are the main
+practical result of the paper.
+
+The contributions are:
+\begin{enumerate}
+\item the scale itself, with nine levels, ceilings, blockers, a depth sub-scale and rules of honest use
+(Section~\ref{sec:scale}), illustrated by worked examples (Section~\ref{sec:example});
+\item a calibration design with three populations of cases and two verification tracks (Section~\ref{sec:calib});
+\item development results for three versions of the rules, including two structural repairs and their side effects
+(Section~\ref{sec:results});
+\item a pre-registered confirmatory run of the frozen final rules on new cases (Section~\ref{sec:confirm});
+\item a recommended way of reporting an ARL level (Section~\ref{sec:use}) and an open, reproducible implementation in
+which the rules are data rather than program code (Section~\ref{sec:impl}).
+\end{enumerate}
+
+\section{Related work}
+
+\paragraph{Selection and multiple testing.} The deflated Sharpe ratio corrects a Sharpe ratio for the number of trials
+and for returns that are not normally distributed \citep{bailey2014deflated}. The probability of backtest overfitting
+estimates how often the configuration that is best in sample underperforms out of sample \citep{bailey2017pbo}.
+\citet{harvey2016cross} raise the t-statistic hurdle for new factors to about 3. Earlier, \citet{white2000reality} and
+\citet{hansen2005spa} gave tests of the best of many models against a benchmark. All of these need the number of trials,
+which the analyst reports.
+
+\paragraph{Statistics of the Sharpe ratio and of track records.} \citet{lo2002sharpe} derives the sampling distribution
+of the Sharpe ratio under serial correlation; \citet{getmansky2004} show how smoothed returns inflate it.
+\citet{bailey2014pseudo} derive the minimum backtest length for a given number of trials.
+
+\paragraph{Research protocols.} \citet{arnott2019backtesting} list rules for a credible backtest. Pre-registration,
+standard in clinical research and promoted for science at large \citep{nosek2018prereg}, fixes the hypothesis before the
+data are seen. \citet{mclean2016} find that published anomalies lose much of their return after publication.
+
+\paragraph{Readiness and disclosure.} Technology readiness levels have been adapted to machine-learning systems
+\citep{lavin2022mltrl}, and \citet{fabozzi2018honest} propose a template for disclosing the number of tests behind a
+backtest.
+
+ARL does not replace these tools. It arranges them into a sequence of claims and states which evidence each claim
+needs. To my knowledge, no graded evidence scale for trading-strategy backtests has been published together with a
+calibration on cases of known truth.
+
+\section{Concepts and definitions}\label{sec:defs}
+
+This section defines the terms used in the rest of the paper. Readers familiar with quantitative research may skip to
+Section~\ref{sec:scale}.
+
+\subsection{From backtest to live trading}\label{sec:modes}
+
+A strategy can be exercised in several environments. They differ in who decides whether an order is filled, at what
+price, and whether money is at stake. A \emph{fill} is the execution of an order: its quantity, price and time.
+
+\begin{description}
+\term{Backtest.} The strategy is replayed on historical data. No order is sent anywhere. Fills are computed from
+assumptions, for example ``buy at the next open and pay 10 basis points''.
+\term{Simulated fills.} Any fills produced by a model of the market, including a backtest or a replay. They can only be
+as realistic as the model.
+\term{Paper trading.} The strategy runs on current market data as time passes, but its orders are only written down.
+Software decides how they would have been filled. No money is involved. Paper trading shows that the strategy can
+produce decisions in time on data it has never seen; it does not show that the market would have filled them.
+\term{Broker demo account.} A practice account that a broker offers with virtual money. Orders go to the broker's demo
+system, which decides the fills by its own rules. It exercises the connection to the broker and the order handling.
+Prices may resemble live prices, but no real counterparty takes the other side, so slippage, partial fills and
+rejections can differ from live trading.
+\term{Exchange testnet.} A separate test copy of an exchange, with test balances that have no value. An example is the
+Binance Spot Test Network\footnote{\url{https://developers.binance.com/en/docs/products/spot/testnet/general-info},
+accessed 28 November 2026.}: its funds are virtual and cannot be transferred out, its trading interface mirrors that of
+the real exchange, and it is reset to a blank state from time to time. Orders meet only the orders and liquidity of the
+test system. It proves that the code can place, change and cancel orders; it does not prove that those orders could be
+executed at the same prices and sizes on the real market.
+\term{Live trading.} Orders with real money reach the real market. Fills, fees, queue position, market impact,
+rejections and outages are real, and so are the losses.
+\end{description}
+
+\begin{table}[ht]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}p{0.17\linewidth}LLp{0.14\linewidth}p{0.12\linewidth}@{}}
+\toprule
+Environment & Market data & Who decides the fill & Money & Highest ARL \\
+\midrule
+Backtest & historical & the researcher's model & none & 8 \\
+Paper trading & current & software of the user & none & 8 \\
+Broker demo & current, from the broker & the broker's demo system & virtual & 8 \\
+Exchange testnet & the test system's own & the test exchange & test assets & 8 \\
+Live trading & current, real & the real market & real & 9 \\
+\bottomrule
+\end{tabularx}
+\caption{Environments in which a strategy can be exercised. The verifier accepts four declared sources of forward
+results: \chk{real\_fills}, \chk{paper}, \chk{testnet} and \chk{simulated}; a broker demo account is not real fills and
+is declared as paper or simulated. Only real fills can support level 9.}\label{tab:modes}
+\end{table}
+
+\subsection{Ways in which a backtest misleads}
+
+\begin{description}
+\term{Look-ahead bias.} The strategy uses information that was not available at the time of the decision. Example:
+deciding today's position from tomorrow's closing price, or standardising a series with the mean of the whole sample.
+\term{Survivorship bias.} The assets tested are those that still exist. Example: testing today's index members over six
+years ignores the companies that were removed, often after large losses.
+\term{Point-in-time universe.} The remedy: a \emph{membership file} that states for every asset the dates on which it
+belonged to the tradable set.
+\term{Costs, spread and slippage.} A trade pays commission and the difference between buying and selling prices, and is
+often filled worse than expected. Costs are given in \emph{basis points} (bps); 1~bps is 0.01\,\%.
+\term{Selection bias (multiple testing).} The more variants are tried, the better the best one looks by chance. Each
+variant tried is a \emph{trial}. A person who tries 1,000 random rules and reports only the best one reports luck.
+\term{Overfitting.} Parameters are tuned to the accidents of one sample and fail on new data.
+\term{In sample and out of sample.} Data used to choose a strategy are in sample; data kept away from every choice are
+out of sample. A \emph{sealed holdout} is an out-of-sample period that is frozen in advance and opened once.
+\end{description}
+
+\subsection{Performance and statistical evidence}
+
+\begin{description}
+\term{Sharpe ratio.} Mean return divided by its standard deviation, usually per year:
+$\mathrm{SR}=\sqrt{P}\,\bar r/s$, where $P$ is the number of periods in a year. Example: daily returns with mean
+0.05\,\% and standard deviation 1\,\%, on 365 days a year, give $\mathrm{SR}\approx 0.96$. A \emph{net} Sharpe ratio is
+computed after costs.
+\term{Deflated Sharpe ratio (DSR).} A probability between 0 and 1 that the true Sharpe ratio exceeds the best value
+expected from the stated number of skill-less trials, allowing for sample length and for skewed, fat-tailed returns
+\citep{bailey2014deflated}. The more trials are declared, the harder it is to pass.
+\term{Harvey--Liu--Zhu (HLZ) hurdle.} The requirement that the t-statistic of the mean return be at least 3 rather
+than the conventional 2 \citep{harvey2016cross}.
+\term{Minimum backtest length.} The history needed so that the best of $N$ random strategies would no longer be expected
+to reach the observed annual Sharpe ratio, approximately $2\ln N/\mathrm{SR}^2$ years \citep{bailey2014pseudo}. Example:
+for $N=100$ and $\mathrm{SR}=1$ this is about 9.2 years.
+\term{Probability of backtest overfitting (PBO).} The share of ways of splitting the data in which the configuration
+that is best in one half ranks below the median in the other \citep{bailey2017pbo}.
+\term{p-value.} The chance of seeing a result at least as good if there were no effect. Small values speak against luck.
+\term{Information coefficient (IC).} For strategies that rank many assets: on each date, the rank correlation between
+the scores given to the assets and their subsequent returns, averaged over dates. Example: a mean IC of 0.03 says that
+higher-scored assets tend, weakly, to do better. The verifier also reports its t-statistic.
+\term{Placebo score and placebo test.} A \emph{placebo score} is a fake signal made by shuffling the real scores among
+the assets on each date, so that any link to returns is destroyed while everything else is kept. The real strategy is
+compared with many placebos (200 by default, 100 in the calibration). The p-value is the share of placebos that do at
+least as well. If shuffled scores earn as much as real ones, the profit comes from the way the portfolio is built, not
+from the signal.
+\term{Timing test.} The corresponding test for a single asset: the series of positions is shifted in time by many random
+offsets (200 by default). A strategy that times the market should beat nearly all shifted copies of itself.
+\term{Alpha, beta, factor exposure.} \emph{Beta} is the part of the return explained by holding the market or a known
+\emph{factor} such as momentum. \emph{Residual alpha} is what remains after that part is removed.
+\term{Hidden short volatility.} A payoff that earns small steady gains and occasionally loses heavily when markets move
+sharply, like selling insurance.
+\term{Break-even cost.} The cost per side at which the strategy's total profit becomes zero. Example: if the assumed cost
+is 10~bps and the break-even cost is 45~bps, the margin is 4.5 times.
+\term{Market impact and capacity.} Large orders move prices against the trader. \emph{Capacity} is how much money the
+strategy can run before this, or the share of traded volume it needs, becomes too large.
+\term{Book and marginal Sharpe ratio.} The \emph{book} is the set of strategies already run. The marginal Sharpe ratio is
+the improvement in the book's Sharpe ratio when the new strategy is added.
+\end{description}
+
+\subsection{Terms of verification and calibration}
+
+\begin{description}
+\term{Check and status.} A check is one automated test, named in this paper in \chk{typewriter} type. It returns
+\emph{pass}, \emph{info} (informative, nothing wrong found), \emph{warn}, \emph{fail} or \emph{skip} (not run).
+\term{Certificate.} The record of one verification: checks, numbers, settings, rules version and a hash (fingerprint)
+of the data.
+\term{Trial ledger.} A file in which every variant tried is appended as it is run. Each entry is chained to the previous
+one by a hash, so later edits are visible.
+\term{Pre-registration.} A time-stamped statement of the hypothesis and method, made before the results are seen.
+\term{Trap.} A test case built with a known flaw and therefore a known maximum level.
+\term{False promotion.} A trap or a no-edge strategy that receives a level above its known maximum.
+\term{Power.} The share of strategies with a real edge that reach a given level.
+\term{Wilson 95\,\% interval.} A range that expresses the sampling uncertainty of a share estimated from a finite number
+of cases \citep{wilson1927}.
+\end{description}
+
+\section{The scale}\label{sec:scale}
+
+\subsection{How a level is computed}
+
+\begin{enumerate}
+\item The verifier runs the checks for which the user supplied the needed inputs.
+\item Each level lists the checks it requires. Some levels accept alternatives, because different evidence answers the
+same question for different kinds of strategy.
+\item A level is \emph{met} if its required checks ran and returned an accepted status.
+\item The ARL is the highest level $L$ such that level $L$ and every level below it are met.
+\item Ceilings and blockers (Section~\ref{sec:caps}) are then applied.
+\item A required check that did not run leaves its level \emph{not assessed}. Missing evidence is never counted as
+passed, and the count stops there.
+\end{enumerate}
+
+A strategy with a highly significant signal but a backtest that looks into the future is therefore at level 1: later
+evidence cannot compensate for a broken foundation.
+
+\begin{table}[ht]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}rp{0.27\linewidth}L@{}}
+\toprule
+L & Claim & Question answered \\
+\midrule
+1 & Idea on clean data & Was the idea tried on usable data? \\
+2 & The backtest is not broken & Does the backtest use only information available at the time? \\
+3 & It earns after costs & Is there still a profit after realistic costs? \\
+4 & The signal predicts & Does the signal beat chance, given the attempts made? \\
+5 & It is new alpha & Is it more than market or factor exposure in disguise? \\
+6 & It survives the search & Does it stand up to a strict correction for the search? \\
+7 & Tradable and robust & Could it be traded, and does it hold under changed conditions? \\
+8 & It adds to your book & Does it improve what is already run? \\
+9 & Confirmed live & Did real orders confirm it? \\
+\bottomrule
+\end{tabularx}
+\caption{The nine levels of \texttt{arl-rules/2}.}\label{tab:levels}
+\end{table}
+
+\subsection{The nine levels in detail}\label{sec:levels}
+
+The thresholds below are those of \texttt{arl-rules/2} in the open-source verifier Monte-Neo, release
+\texttt{v0.57.0}. The examples are illustrations; Section~\ref{sec:example} gives executed ones.
+
+\lvl{1}{Idea on clean data}
+Required, one of:
+\begin{itemize}
+\item \chk{data\_integrity} is not \emph{fail}: the series is not broken, for example dates do not run backwards;
+\item an information coefficient (\chk{ic}) could be computed.
+\end{itemize}
+\emph{Passes:} a daily price table with increasing dates and valid prices. \emph{Stops:} a table whose dates jump
+backwards. Level 1 says nothing about profit.
+
+\lvl{2}{The backtest is not broken}
+Required, one of:
+\begin{itemize}
+\item \chk{lookahead\_truncation} passes: the signal is recomputed on data cut off at several points, and past positions
+do not change when the future is removed;
+\item \chk{universe\_lookahead} is not \emph{fail}: no position was held in an asset outside its membership dates.
+\end{itemize}
+Any failed look-ahead check caps the level at 1. \emph{Passes:} a moving average of past closes. \emph{Stops:} a
+five-day average centred on today, which includes the next two days.
+
+\lvl{3}{It earns after costs}
+Required, one of:
+\begin{itemize}
+\item single-asset strategies: \chk{net\_profitability} passes (total return after costs above zero) and
+\chk{cost\_margin} passes (break-even cost at least 3 times the modelled cost per side);
+\item portfolios of many assets: \chk{market\_impact} is not \emph{fail} (positive annual return after commission and
+price impact at the stated capital) and \chk{cost\_sensitivity} is not \emph{fail} (positive at the modelled costs).
+\end{itemize}
+\emph{Passes:} costs of 10~bps and break-even at 45~bps. \emph{Stops:} costs of 10~bps and break-even at 22~bps; the
+strategy is profitable, but its margin is too thin.
+
+\lvl{4}{The signal predicts}
+Required, all of:
+\begin{itemize}
+\item evidence of prediction, either (a) a positive mean information coefficient with $|t|\ge 2$ (\chk{ic}) and a
+placebo test with $p\le 0.10$ (\chk{signal\_placebo}), or (b) a timing test with $p\le 0.05$
+(\chk{timing\_significance});
+\item a deflated Sharpe ratio of at least 0.8, computed with at least the project's number of trials;
+\item \emph{trial evidence}: an intact trial ledger, trials imported from an experiment tracker, a pre-registration made
+before the first verification of the same code, or a research-process record. Without it the level is capped at 3.
+\end{itemize}
+\emph{Passes:} a signal that beats its placebos, with its attempts on record. \emph{Stops:} a good-looking result with
+no record of how many variants preceded it.
+
+\lvl{5}{It is new alpha}
+Required, both of:
+\begin{itemize}
+\item \chk{residual\_alpha} passes: after removing exposure to the market or known factors, the remaining return has a
+t-statistic of at least 3;
+\item \chk{hidden\_short\_volatility} passes: no signs of a payoff that sells insurance.
+\end{itemize}
+No blocker of Section~\ref{sec:caps} may have warned or failed. \emph{Passes:} a return that remains after the market
+and momentum are removed. \emph{Stops:} a ``new'' signal that is ordinary 12-month momentum under another name.
+
+\lvl{6}{It survives the search}
+Required, one of:
+\begin{itemize}
+\item a deflated Sharpe ratio of at least 0.95 (\chk{deflated\_sharpe});
+\item the HLZ hurdle $t\ge 3$ (\chk{hlz\_hurdle}) together with a history not shorter than half the minimum backtest
+length when ten or more trials are declared (\chk{min\_backtest\_length} not \emph{fail}).
+\end{itemize}
+\emph{Passes:} ten years of a strong, stable edge with 20 declared trials. \emph{Stops:} one year of the same edge,
+which is too short to exclude luck.
+
+\lvl{7}{Tradable and robust}
+Required, all three groups:
+\begin{itemize}
+\item \emph{tradability:} \chk{market\_impact} or \chk{capacity} was assessed and did not fail;
+\item \emph{robustness}, either (a) the strategy beats resampled artificial markets
+(\chk{synthetic\_market\_null}, $p\le 0.10$), holds on random subsets of the assets (\chk{universe\_subsampling}, not
+\emph{fail}) and does not depend on the start date (\chk{start\_date\_sensitivity}), or (b) its profit does not come
+from a single period (\chk{period\_consistency}) and survives a delay of one bar (\chk{delay\_sensitivity});
+\item \emph{execution margin:} no strong dependence on the day of rebalancing (\chk{rebalance\_timing\_luck}) or an
+adequate cost margin (\chk{cost\_margin}).
+\end{itemize}
+\emph{Passes:} profitable in several periods, still profitable when orders arrive one bar late, with room for costs.
+\emph{Stops:} a profit that disappears with a one-bar delay.
+
+\lvl{8}{It adds to your book}
+Required: \chk{marginal\_sharpe} passes: adding the strategy raises the book's Sharpe ratio by more than 0.05, and the
+90\,\% bootstrap interval of the gain excludes zero. \emph{Passes:} a strategy that earns when the existing book does
+not. \emph{Stops:} a near copy of a strategy already held.
+
+\lvl{9}{Confirmed live}
+Required, all of:
+\begin{itemize}
+\item \chk{live\_vs\_backtest} passes: over at least 20 common periods, live and backtest returns have a correlation of
+at least 0.5 and live results do not trail the backtest significantly;
+\item \chk{alpha\_death\_monitor} passes: sequential tests do not signal that the edge has vanished;
+\item \chk{live\_source} passes: the data are real fills, with at least 60 live bars (more for weaker edges) and at
+least 30 fills whose slippage is within 1.5 times the modelled value.
+\end{itemize}
+\emph{Passes:} months of small real orders that behave like the backtest. \emph{Stops:} an excellent testnet or demo
+record, which is capped at 8.
+
+\subsection{Ceilings and blockers}\label{sec:caps}
+
+Some findings limit the level whatever else has passed.
+
+\paragraph{Ceilings} set a maximum level:
+\begin{itemize}
+\item a failed look-ahead check: at most 1;
+\item no trial evidence: at most 3;
+\item a universe that may consist only of today's survivors (check \chk{survivorship}): at most 4;
+\item paper, testnet or simulated fills instead of real ones: at most 8.
+\end{itemize}
+
+\paragraph{Blockers} stop the strategy below level 5 when the check ran and warned or failed. A blocker that did not run
+does not block.
+\begin{itemize}
+\item \chk{alpha\_after\_beta}: the return is not shown to be more than exposure to a benchmark;
+\item \chk{universe\_subsampling}: the result rests on a few assets;
+\item \chk{noise\_injection}: the result does not survive small noise in the inputs;
+\item \chk{short\_feasibility}: the short side could not realistically be borrowed or traded;
+\item \chk{residual\_vs\_book}: the return is explained by the existing book;
+\item \chk{cross\_market\_close\_alignment}: the signal uses closing prices of markets that close after the trade;
+\item \chk{post\_discovery\_decay}: the edge disappears after the date of its discovery;
+\item \chk{claim\_consistency}: the claimed numbers are better than the verified ones;
+\item \chk{universe\_lookahead}: the universe looks like today's members and no membership file was given. For a fixed
+universe, such as a set of currency pairs, the file lists every asset for the whole period.
+\end{itemize}
+
+\subsection{Depth: how strong is the evidence at that level?}\label{sec:depth}
+
+The level says which claim holds. \emph{Depth} says how firmly it holds, on a count from 0 to 4. At the level reached,
+one point is given for each criterion that is met:
+\begin{enumerate}
+\item \textbf{D1, margin:} the main result is clearly beyond the threshold;
+\item \textbf{D2, breadth:} it repeats across periods, assets, regimes or probes;
+\item \textbf{D3, sample:} there are enough years, observations or trades;
+\item \textbf{D4, out of sample:} it holds again on data that played no part in any choice.
+\end{enumerate}
+
+A result is written as ``ARL 6, depth 3/4''. Four rules govern depth:
+\begin{itemize}
+\item depth never raises the level: ARL 6 with depth 4 remains below ARL 7 with depth 0;
+\item a criterion whose evidence was not produced scores 0 and is shown as \emph{not assessed}, with the command that
+would produce it;
+\item the sealed holdout counts only if it was frozen and opened once; a second opening sets D4 to zero for every level,
+permanently;
+\item at levels 4 to 6 the statistics are adjusted for the number of trials of the whole project.
+\end{itemize}
+
+Table~\ref{tab:depth} lists the criteria of every level.
+
+\begin{table}[p]
+\centering\footnotesize
+\begin{tabularx}{\linewidth}{@{}rLLLL@{}}
+\toprule
+L & D1 margin & D2 breadth & D3 sample & D4 out of sample \\
+\midrule
+1 & no data warning at all & two independent data sources agree & at least 3 years of bars & a fresh download gives identical hashes \\
+\addlinespace
+2 & all four look-ahead probes pass & truncation and perturbation probes pass at 12 or more cut points & truncation probe passes at 20 or more cut points & probes pass again on the sealed holdout \\
+\addlinespace
+3 & break-even cost at least 5 times the modelled cost & profitable in at least 5 of 6 equal periods & at least 100 closed trades & net profit on the sealed holdout \\
+\addlinespace
+4 & placebo or timing $p$-value, multiplied by the number of trials, below 0.01 & positive in at least 70\,\% of periods or asset subsets & at least 1,000 observations & significant on the sealed holdout \\
+\addlinespace
+5 & residual alpha $t\ge 3$ after adjustment for the trials & alpha remains after all factors, including the market & at least 5 years & residual alpha positive on the sealed holdout \\
+\addlinespace
+6 & deflated Sharpe ratio at least 0.99 & probability of backtest overfitting below 0.2 & trial count checked against the ledger & deflated Sharpe at least 0.95 on the sealed holdout \\
+\addlinespace
+7 & profit at doubled costs and with a 1-bar delay & still passes across regimes, rebalance days and (if run) subsets and start dates & capacity at least 10 times the planned capital & survives the holdout under realistic fills \\
+\addlinespace
+8 & interval of the marginal Sharpe gain excludes zero & positive in sub-periods and stress periods & at least 3 years of overlap with the book & positive on forward data \\
+\addlinespace
+9 & live Sharpe within the backtest's confidence interval & seen in at least 2 market conditions & at least 6 months and 100 live fills & real fills with a custody statement \\
+\bottomrule
+\end{tabularx}
+\caption{Depth criteria of \texttt{arl-rules/2}. A criterion is scored only when the corresponding evidence exists. The
+look-ahead probes of level 2 are truncation, perturbation of future data, a static scan of the source code and a test
+that past positions are not redrawn. A \emph{custody statement} is a record from the broker or custodian that supports
+the live results.}\label{tab:depth}
+\end{table}
+
+\paragraph{Reading depth.} Three examples, the first two taken from the executed cases of
+Section~\ref{sec:example}:
+\begin{itemize}
+\item \emph{ARL 3, depth 2/4} (case B). The strategy earns after costs. D2 and D3 are met: it was profitable in 5 of 6
+periods and had more than 100 trades. D1 is not met: its break-even cost is about 3 times the modelled cost, enough for
+level 3 but short of 5 times. D4 was not assessed, because no holdout was given.
+\item \emph{ARL 7, depth 1/4} (case E). The strategy reached a high level, but only the margin criterion of level 7 is
+met. The other three need evidence that the run did not produce: a rebalancing test, a capacity estimate and a sealed
+holdout.
+\item \emph{ARL 6, depth 4/4} (hypothetical). A deflated Sharpe ratio of at least 0.99, low probability of overfitting,
+an audited trial count and a passed holdout. It is still below any strategy at level 7.
+\end{itemize}
+
+\subsection{Principles of honest use}
+
+The rules file states seven principles:
+\begin{enumerate}
+\item thresholds are versioned, a change creates a new version, and every certificate records the version used;
+\item the sealed holdout is opened once;
+\item trials are counted for the whole project, not for a single idea;
+\item paper, testnet and simulated fills are not live and cap the level at 8;
+\item missing evidence is shown and never counted;
+\item depth never raises the level;
+\item the scale is not a recommendation to trade and says nothing about future returns.
+\end{enumerate}
+
+\section{Worked example}\label{sec:example}
+
+Table~\ref{tab:example} shows five strategies on artificial daily data in which the truth is known. The short program
+\texttt{arl\_examples.py}, published with the sources of this paper, produces these results with Monte-Neo 0.57.0. All
+runs charge the default costs of 10~bps per side. These are single illustrative cases; the rates over many cases are in
+Sections~\ref{sec:results} and~\ref{sec:confirm}.
+
+\begin{table}[ht]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}Lrrrll@{}}
+\toprule
+Case & Sharpe & DSR & Trials & Result & Why it stops \\
+\midrule
+A. Uses tomorrow's price, 5 years & 22.13 & 1.000 & 1 & ARL 1, depth 2/4 & look-ahead \\
+B. Best of 100 random signals, search not recorded, 3 years & 0.92 & 0.940 & 1 & ARL 3, depth 2/4 & no trial evidence \\
+C. The same data, 100 trials declared, with a ledger & 0.92 & 0.164 & 100 & ARL 3, depth 2/4 & DSR below 0.8 \\
+D. Real edge, 1 year & 1.90 & 0.461 & 20 & ARL 3, depth 2/4 & DSR below 0.8 \\
+E. Real edge, 10 years & 1.98 & 1.000 & 20 & ARL 7, depth 1/4 & level 8 not run \\
+\bottomrule
+\end{tabularx}
+\caption{Executed examples (net annual Sharpe ratio; DSR is the deflated Sharpe ratio).}\label{tab:example}
+\end{table}
+
+\begin{itemize}
+\item \textbf{A} shows why the order of levels matters. A Sharpe ratio of 22 is worthless here: the look-ahead probes
+fail, so the strategy stays at level 1.
+\item \textbf{B} and \textbf{C} are the same random signal. Reported as one attempt, its deflated Sharpe ratio of 0.940
+would pass the level-4 threshold; only the missing trial record stops it. Declaring the 100 attempts lowers the value to
+0.164.
+\item \textbf{D} and \textbf{E} share the same kind of true edge. One year is not enough to separate it from luck after
+20 trials; ten years are. The level of D is a statement about the sample, not a proof that there is no edge.
+\item \textbf{E} stops at level 7 because no book was supplied. ``Not assessed'' is different from ``failed''.
+\end{itemize}
+
+\section{Calibration design}\label{sec:calib}
+
+Calibration asks two questions of the scale: how often does it promote what it should not, and how often does it
+recognise what is real? Both can be answered only with cases whose truth is known.
+
+\subsection{Three populations}
+
+\paragraph{Population A: traps.} Each trap has a flaw and a maximum level that I set by its design. Single-asset traps:
+\begin{itemize}
+\item look-ahead by a shifted window, by a centred window, or by a z-score over the full sample (maximum 1);
+\item costs larger than the gross edge (maximum 2);
+\item phantom profits in pairs trading created by the way returns are booked \citep{shcherbyna2026phantom} (maximum 2);
+\item hidden trials: the best of 100 or 1,000 random strategies reported as one trial (maximum 3);
+\item a survivor universe: only assets that survived and rose (maximum 4);
+\item regime decay: an edge that vanishes halfway through the sample (maximum 6).
+\end{itemize}
+Thirteen further traps rank many assets at once (the \emph{alpha zoo}); I gave each of them the same maximum, 4:
+\begin{enumerate}
+\item momentum presented as a new signal;
+\item steady gains that are lost when the market falls;
+\item an edge that lives in three assets only;
+\item a score that pays only on the first trading day of each month;
+\item a short side in thinly traded small stocks;
+\item six years of today's members with no asset added or removed;
+\item assets held before they joined the universe;
+\item Tokyo stocks scored with New York returns of the same date, which are not yet known;
+\item an edge that disappears after its publication date;
+\item a score unrelated to returns;
+\item a near copy of a strategy already in the book;
+\item an edge that disappears under slight noise in the inputs;
+\item a claimed information ratio far above what the evidence allows.
+\end{enumerate}
+
+\paragraph{Population B: no edge.} The best of $K$ random strategies or scores, with the true $K$ declared, on simulated
+random walks and on real daily bars of 100 cryptocurrency pairs, 33 currency pairs, 12 stock indices and 7 commodity
+series (maximum 3). A noise result can still be profitable by chance after costs, which is why level 3 is allowed and
+level 4 is not.
+
+\paragraph{Population C: real edges.} Single-asset strategies with a target net annual Sharpe ratio of 0.5, 1, 1.5 or 2
+over 1, 3, 5 or 10 years; cross-sectional signals with four edge sizes (E1 smallest to E4); and honest ``twins'' of the
+zoo traps, which have the same construction without the flaw. No maximum applies. Half of the single-asset cases declare
+20 trials and half declare one.
+
+\subsection{Tracks, measures and reproducibility}
+
+\begin{itemize}
+\item \textbf{Tracks.} Track V runs the verifier for single strategies, on daily bars except for the pairs-trading trap
+(hourly returns only). Track X runs the report for rankings of many assets. Each case is scored on its own track.
+Before the repair described in Section~\ref{sec:failures}, track V could not reach level 5; afterwards it reaches level
+7. Level 8 needs a book, which only track X supplies.
+\item \textbf{Measures.} For A and B I report the false promotion rate; for C, the power at each level. Intervals are
+Wilson 95\,\% intervals and treat cases as independent.
+\item \textbf{Reproducibility.} Every case is determined by its index and a base seed (real-data cases also by the file
+of bars), so a larger run extends a smaller one.
+\item \textbf{A limitation of development.} In the three development runs (base seed 20261119) the zoo cases draw their
+data from the seed modulo 1,000. Of their 57,243 cases only 22,781 are distinct, so the development intervals for track
+X in populations A and C are too narrow, and the three runs of Table~\ref{tab:calib} share every seed. The confirmatory
+run uses new seeds and draws zoo data from the full case seed (the seed of the placebo permutations remains the case
+seed modulo 1,000).
+\end{itemize}
+
+A confirmatory or development run holds 350,000 cases: 84,000 traps (24\,\%), 77,000 no-edge cases (22\,\%) and 189,000
+cases of population C (54\,\%).
+
+\subsection{Declared evidence}\label{sec:declared}
+
+Part of the evidence is declared by the user, so the calibration must decide what each kind of case declares. In the
+development run of the final rules:
+\begin{itemize}
+\item every case except the hidden-trials trap and the pairs-trading trap keeps a new trial ledger, as an honest
+researcher would; the hidden-trials trap keeps none, as a researcher who hides trials would not;
+\item every cross-sectional case except the zoo traps declares a fixed membership file, including the no-edge scores;
+\item twelve of the thirteen zoo traps declare no membership file; the membership-window trap carries its own.
+\end{itemize}
+These choices decide part of the result. The hidden-trials trap is capped by construction, and 2,322 zoo-trap cases
+(6.6\,\%) are stopped at level 5 only by the missing membership file; 1,196 of them are the survivor-universe trap, whose
+flaw this check is meant to catch. The confirmatory run therefore measures both this design and one in which traps
+receive the same declarations as honest cases.
+
+\section{Development results}\label{sec:results}
+
+\subsection{Two structural failures}\label{sec:failures}
+
+\paragraph{Failure 1: hidden trials.} A full run of an early version of the second rules left 10.9\,\% of traps falsely
+promoted. Ninety per cent of these came from one trap: the best of 100 or 1,000 random strategies reported as a single
+trial reached level 4 in 92.7\,\% of its cases (the rest came from the cost-omission trap,
+Section~\ref{sec:third}). No threshold can solve this. The selected series is, by construction, indistinguishable from
+a series that one honest attempt produced with a lucky draw; no test on that series alone can see the discarded
+variants.
+
+The remedy is to ask for evidence about the search itself: levels 4 and above are capped at 3 unless the number of
+trials is evidenced. This moves the burden from detection to documentation, and its limits must be stated plainly. In
+the calibration the hidden-trials trap was run without a ledger and every other case, except the pairs-trading trap,
+with a new one, so its result (0 of 8,912 at level 4 or above) holds by construction. The check verifies the chain of
+hashes in the ledger, not when the ledger was opened or how many entries it should hold. When 40 hidden-trials cases
+were rerun with a new, empty ledger, 18 of them (45\,\%, Wilson 95\,\% interval 31--60\,\%) reached level 4 again. The
+ceiling stops a researcher who keeps no record, not one who opens a new ledger after the search.
+
+\paragraph{Failure 2: no path for single strategies.} Under the first rules and the early second rules, no planted
+single-asset edge reached level 5 (0 of 112,000). The two checks of level 5, residual alpha and hidden short volatility,
+were computed only for rankings of many assets and for carry strategies. The verifier for single strategies now computes
+both against the asset the strategy trades. These two rows warn at most, so a strategy whose return is only market
+exposure stops at level 4 with warnings rather than being reported as a broken backtest.
+
+\subsection{A third change and its cost}\label{sec:third}
+
+The final rules contain a third change that is not structural: on the single-strategy track, level 3 also requires the
+break-even cost to be at least 3 times the modelled cost per side (the earlier floor was 2). It removed the false
+promotion of the cost-omission trap (900 of 8,912 cases, 10.1\,\%, to none), but it also lowered the share of planted
+single-asset edges reaching level 3 from 90.7\,\% to 57.9\,\%. For a planted net Sharpe ratio of 0.5 the share reaching
+level 3 now \emph{falls} as the sample grows (29.9, 19.3, 12.7 and 5.4\,\% for 1, 3, 5 and 10 years), because a longer
+sample measures the thin margin more precisely. Level 3 under these rules therefore certifies a margin over costs, not
+only a profit after costs.
+
+The second repair had a cost too. With a path above level 4 open, the regime-decay trap, whose edge vanishes in the
+second half of the sample, reached level 7, above its maximum of 6, in 7.0\,\% of cases (620 of 8,904; 17.6\,\% with ten
+years of data). Every remaining false promotion of a trap in development comes from this trap.
+
+\subsection{Three versions of the rules}
+
+\begin{table}[ht]
+\centering\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & Rules 1 & Rules 2a & Rules 2c\\
+\midrule
+Cases & 350,000 & 350,000 & 350,000 \\
+False promotion, A (traps) & 27.6\,\% & 10.9\,\% & 0.74\,\% [0.68, 0.80] \\
+False promotion, B (no edge) & 33.8\,\% & 1.0\,\% & 0.77\,\% [0.71, 0.84] \\
+\quad of which real market bars & 43.8\,\% & 1.9\,\% & 1.73\,\% [1.57, 1.90] \\
+Hidden-trials trap at level 4 or above & 96.9\,\% & 92.7\,\% & 0 of 8,912$^{a}$ \\
+Regime-decay trap above its maximum (6) & 0\,\% & 0\,\% & 7.0\,\% [6.5, 7.5] \\
+Planted single-asset edge, level 3 or above & 90.7\,\% & 90.7\,\% & 57.9\,\% [57.6, 58.2] \\
+Planted single-asset edge, level 6 or above & 0\,\% & 0\,\% & 28.9\,\% [28.7, 29.2] \\
+Planted cross-sectional edge, level 6 or above & 54.9\,\% & 52.8\,\% & 52.8\,\% [52.4, 53.2] \\
+\bottomrule
+\end{tabular}
+\caption{Three versions of the rules on the same 350,000 cases. Rules 1: \texttt{arl-rules/1}. Rules 2a: the deflated
+Sharpe floor at level 4 and the blockers at level 5 (commit \texttt{766213e}). Rules 2c: Rules 2a plus the
+trial-evidence ceiling, attribution for single strategies and the cost margin of 3 at level 3 (commit \texttt{91171e3};
+unchanged in release \texttt{v0.57.0}, commit \texttt{cd88c80}). An intermediate version 2b is not shown. Brackets:
+Wilson 95\,\% interval. $^{a}$By construction (Section~\ref{sec:failures}). Cross-sectional edges: E1--E4 only, without
+the honest twins.}\label{tab:calib}
+\end{table}
+
+The step from the first to the second rules removed most false promotion of noise. The later changes removed the false
+promotion of the hidden-trials and cost-omission traps and gave single strategies a path above level 4, without changing
+the power on cross-sectional signals, at the price of a new false promotion of the regime-decay trap and lower
+single-asset power at level 3. All three versions were evaluated on the cases on which their thresholds were chosen, so
+these rates are in-sample estimates. Section~\ref{sec:confirm} tests the last column on new cases.
+
+\paragraph{Versions and names.} Rules 2a and 2c both carried the name \texttt{arl-rules/2} while the rules were still
+under development. Rules 2a existed only as a development snapshot in the source repository; no packaged release
+contains it. The first release with \texttt{arl-rules/2} is \texttt{v0.57.0}, and it contains Rules 2c. The snapshots
+are identified here by their commits.
+
+\paragraph{Real market bars} are the harder test with no edge. Under Rules 2c the best random strategy went above level 3
+in:
+\begin{itemize}
+\item cryptocurrency pairs: 3.8\,\% (389 of 10,143);
+\item commodities: 2.0\,\% (22 of 1,115);
+\item stock indices: 0.4\,\% (8 of 1,889);
+\item currency pairs: 0.04\,\% (5 of 11,349).
+\end{itemize}
+The classes are not directly comparable: all ten-year windows are currency pairs, and every window is annualised with
+365 bars a year although markets that close at weekends have fewer.
+
+\section{Confirmatory run}\label{sec:confirm}
+
+\subsection{Design}
+
+Before the run, I deposited a plan with four predictions, the case generator, the analysis script and their hashes at
+Zenodo \citep{shcherbyna2026prereg}. The record is time-stamped 27 November 2026, 20:25 UTC; the launcher recorded the
+first start at 21:10 UTC. The verifier was frozen at release \texttt{v0.57.0} (commit \texttt{cd88c80}), and the base
+seed, 20261128, had not been run before. The 350,000 cases follow the development schedule and were run in two
+\emph{arms} on the same seeds:
+\begin{itemize}
+\item \textbf{Silent arm} (the development design): the hidden-trials trap keeps no ledger, and the cross-sectional traps
+are given no added membership file.
+\item \textbf{Parity arm} (primary): every case receives a new trial ledger, and every cross-sectional case that declares
+no membership file receives one listing a fixed universe. The pairs-trading trap, which has returns only, takes neither.
+\end{itemize}
+A new ledger holds no earlier trial; for the hidden-trials trap it declares one trial although 100 or 1,000 variants were
+searched. For a trap, the parity arm models a user who supplies the cheapest declarations that the rules accept. Only the
+43,912 cases whose inputs differ between the arms were run again for the silent arm.
+
+\paragraph{Pilot.} Before writing the plan I had run 1,500 cases with another base seed (20261127) in both arms to test
+the software, and I had seen their parity-arm results: 15 of 40 hidden-trials cases reached level 4, and some
+cross-sectional traps were promoted. Predictions P2 and P3 are therefore informed by a pilot and are not blind.
+
+\paragraph{Predictions} (bounds apply to point estimates):
+\begin{description}
+\term{P1.} In the silent arm, eight rates lie within 1.0 percentage point of their development values (1.5 points for
+the regime-decay trap), and the hidden-trials trap never reaches level 4.
+\term{P2.} In the parity arm, the hidden-trials trap reaches level 4 or above in 25--55\,\% of cases.
+\term{P3.} In the parity arm, the pooled false promotion of traps is 4--14\,\%.
+\term{P4.} A separate full run in the silent configuration of the first 3,500 cases gives the same level, depth,
+blocking level, blocking rule and ceilings as the arms it should match.
+\end{description}
+
+\subsection{Results}
+
+All four predictions were met:
+\begin{description}
+\term{P1} met: the largest difference was 0.56 points (regime-decay trap); all others were at most 0.26 points.
+\term{P2} met: 46.9\,\%.
+\term{P3} met: 8.29\,\%.
+\term{P4} met: 3,062 cases were compared with the parity arm and 438 with the silent arm, with no difference.
+\end{description}
+All 350,000 cases completed without a software error, and none had to be retried. One departure concerns logistics
+only: after a network failure the verifier was cloned from a local copy of the public repository; before starting, the
+launcher checked the commit, the unchanged checkout, and the hashes of the deposited files and of the file of bars.
+
+\begin{table}[ht]
+\centering\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & Development & Confirmatory, silent & Confirmatory, parity\\
+\midrule
+False promotion, A (traps) & 0.74\,\% & 0.80\,\% [0.74, 0.86] & 8.29\,\% [8.10, 8.48] \\
+False promotion, B (no edge) & 0.77\,\% & 0.82\,\% [0.76, 0.89] & 0.82\,\% [0.76, 0.89] \\
+\quad of which real market bars & 1.73\,\% & 1.81\,\% [1.65, 1.98] & 1.81\,\% [1.65, 1.98] \\
+Hidden-trials trap at level 4 or above & 0\,\% & 0\,\% & 46.9\,\% [45.8, 47.9] \\
+Regime-decay trap above its maximum & 7.0\,\% & 7.5\,\% [7.0, 8.1] & 7.5\,\% [7.0, 8.1] \\
+Planted single-asset edge, level 3 or above & 57.9\,\% & 58.2\,\% [57.9, 58.5] & 58.2\,\% [57.9, 58.5] \\
+Planted single-asset edge, level 6 or above & 28.9\,\% & 29.0\,\% [28.8, 29.3] & 29.0\,\% [28.8, 29.3] \\
+Planted cross-sectional edge, level 3 or above & 79.6\,\% & 79.7\,\% [79.3, 80.0] & 79.7\,\% [79.3, 80.0] \\
+Planted cross-sectional edge, level 6 or above & 52.8\,\% & 52.8\,\% [52.4, 53.2] & 52.8\,\% [52.4, 53.2] \\
+\bottomrule
+\end{tabular}
+\caption{Frozen final rules on 350,000 development cases and 350,000 new cases. Brackets: Wilson 95\,\% interval.
+No-edge and planted-edge cases have the same inputs in both arms. The zeros for the hidden-trials trap in the first two
+columns hold by construction.}\label{tab:confirm}
+\end{table}
+
+\subsection{Where traps pass when they declare evidence}\label{sec:parity}
+
+Table~\ref{tab:traps} breaks down the 6,962 falsely promoted traps of the parity arm. The explanations come from the
+check results of the individual cases; this analysis was not pre-registered.
+
+\begin{table}[ht]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}p{0.2\linewidth}rrrL@{}}
+\toprule
+Trap & Max. & Above maximum & Highest & What the check results show \\
+\midrule
+Hidden trials & 3 & 4,177 / 8,912 & 7 & the ledger check cannot see trials that the ledger does not record \\
+Survivor universe (zoo) & 4 & 1,169 / 2,692 & 7 & the false universe declaration is accepted; the survivorship ceiling exists only on the single-strategy track \\
+Regime decay & 6 & 670 / 8,904 & 7 & period consistency passes; holdout and regime warnings do not affect the level \\
+Inflated claim & 4 & 606 / 2,692 & 7 & the breadth check warns but does not affect the level \\
+Copy of the book & 4 & 318 / 2,692 & 8 & the residual-against-book check passes; the drawdown-overlap warning does not affect the level \\
+Decay after discovery & 4 & 21 / 2,692 & 7 & the decay check does not warn \\
+Cost omission & 2 & 1 / 8,912 & 6 & a single case \\
+Fourteen other traps & 1--4 & 0 / 46,504 & -- & -- \\
+\bottomrule
+\end{tabularx}
+\caption{False promotion by trap in the parity arm. ``Highest'' is the highest level among the falsely promoted
+cases.}\label{tab:traps}
+\end{table}
+
+Three kinds of weakness appear.
+\begin{enumerate}
+\item \textbf{The scale trusts declarations.} The hidden-trials and the survivor-universe traps account for 5,346 of the
+6,962 cases. The hidden-trials trap reached level 4 in 3,682 cases, level 6 in 6 and level 7 in 489. The survivor case
+also repeats the second structural failure: the ceiling at level 4 for a universe of survivors is computed only on the
+single-strategy track, where all 4,452 survivor cases carried it and none went above level 3. On the cross-sectional
+track, declaring a membership file removes the only check aimed at this flaw.
+\item \textbf{Some warnings are not connected to the levels.}
+\begin{itemize}
+\item The check of the claimed against the attainable information ratio (\chk{breadth\_consistency}) warned in all
+2,692 inflated-claim cases, while the blocker meant for claims (\chk{claim\_consistency}) is not computed by the
+cross-sectional report.
+\item The check of overlap in bad periods with the book (\chk{drawdown\_overlap}) warned in all 318 promoted copies of
+the book.
+\item Among the 670 promoted regime-decay cases, \chk{holdout\_consistency} warned in 259 and \chk{regime\_stability}
+in 71 (at least one of the two in 286).
+\end{itemize}
+I have not measured what connecting these checks would cost on honest cases.
+\item \textbf{Some detectors miss.} The residual-against-book check passed in all 318 promoted copies (the marginal
+Sharpe check passed in 316). The decay check, which warned in 2,638 of 2,692 cases, did not warn in any of the 21
+promoted ones.
+\end{enumerate}
+The silent arm hides all of these except the regime-decay promotions: its hidden-trials trap is capped for lack of a
+ledger, and 2,285 of the 35,000 zoo-trap cases are stopped at level 5 by the missing membership file alone; 2,114 of
+them exceed their maximum once the file is supplied. I did not change the rules after the run.
+
+On real market bars the best random strategy went above level 3 in the new cases in:
+\begin{itemize}
+\item cryptocurrency pairs: 4.0\,\% (413 of 10,220);
+\item commodities: 1.4\,\% (15 of 1,070);
+\item stock indices: 0.32\,\% (6 of 1,868);
+\item currency pairs: 0.08\,\% (9 of 11,338).
+\end{itemize}
+The series are those of development; only the windows and the random signals are new.
+
+\subsection{Power: how much data a real edge needs}
+
+\begin{table}[ht]
+\centering\small
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Single-asset edge (annual Sharpe) & 1 year & 3 years & 5 years & 10 years\\
+\midrule
+0.5 & 0.3\,\% & 1.4\,\% & 2.0\,\% & 4.2\,\% \\
+1.0 & 1.5\,\% & 5.8\,\% & 14.0\,\% & 38.0\,\% \\
+1.5 & 4.1\,\% & 20.6\,\% & 48.3\,\% & 87.0\,\% \\
+2.0 & 8.0\,\% & 47.6\,\% & 82.1\,\% & 99.6\,\% \\
+\midrule
+Cross-sectional edge & E1 & E2 & E3 & E4 \\
+\midrule
+Level 3 or above & 27.8\,\% & 91.6\,\% & 99.4\,\% & $>$99.9\,\% \\
+Level 6 or above & 0.8\,\% & 39.8\,\% & 79.7\,\% & 90.8\,\% \\
+\bottomrule
+\end{tabular}
+\caption{Power in the confirmatory run: share of planted edges reaching level 6 (single-asset track, 7,000 cases per
+cell; Wilson 95\,\% intervals within $\pm$1.2 points) and levels 3 and 6 (cross-sectional track, about 13,700 cases per
+edge size).}\label{tab:power}
+\end{table}
+
+Table~\ref{tab:power} shows that power at level 6 rises with the size of the edge and the length of the sample:
+\begin{itemize}
+\item a true annual Sharpe ratio of 2 reaches level 6 in 99.6\,\% of ten-year samples but in only 8.0\,\% of one-year
+samples;
+\item a true Sharpe ratio of 0.5 almost never reaches it (at most 4.2\,\%);
+\item on the cross-sectional track the smallest edge reached level 6 in 0.8\,\% of cases and the largest in about
+91\,\%;
+\item at level 3 the weakest single-asset edge behaves in the opposite way, falling from 30.4\,\% with one year to
+5.9\,\% with ten, because of the cost margin of Section~\ref{sec:third}.
+\end{itemize}
+The practical message for a researcher with a short backtest is that a level below 6 often says something about the
+sample rather than about the edge. A weak edge is not promoted early; it needs more data, and the scale says which
+evidence is missing.
+
+\section{Using and reporting ARL}\label{sec:use}
+
+I propose ARL as an open way of reporting the evidence behind a backtest. It becomes a standard only if others adopt it,
+test it and improve it. For results to be comparable, a report of an ARL level should state:
+\begin{enumerate}
+\item the level and depth, for example ``ARL 6, depth 3/4'';
+\item the rules version and the software release;
+\item the kind of strategy and the track used;
+\item the trial evidence: its type, the number of trials, and when the record was started;
+\item every declaration that was not verified, such as a membership file or the source of live results;
+\item the checks that warned, and the levels that were not assessed;
+\item the hash of the data, so that the certificate can be recomputed.
+\end{enumerate}
+An example of a complete one-line statement is: ``ARL 4, depth 2/4 (\texttt{arl-rules/2}, Monte-Neo 0.57.0); 35 trials in
+a ledger opened before the first test; level 5 not assessed (no attribution run).''
+
+\paragraph{Advice to a researcher.} Open the trial ledger before the first test, not after the best one. Record every
+variant. Fix a holdout and open it once. Treat the first level that is not met as the next task.
+
+\paragraph{Advice to a reader or investor.} Ask when the trial record was started and what it contains. Ask who declared
+the universe. Do not read a level as a promise of profit. Do not read a testnet or demo record as live evidence.
+
+\paragraph{Advice to builders of verification tools.} Report the false promotion rate both for traps that declare nothing
+and for traps that declare everything an honest case declares. The difference shows how much of the scale rests on
+trust.
+
+\section{Implementation and reproducibility}\label{sec:impl}
+
+\begin{itemize}
+\item The rules are one JSON file (\texttt{arl\_rules\_v2.json}) read by the verifier. Documentation tables are generated
+from it, and a test fails when they differ.
+\item Earlier rule versions remain loadable, so a certificate can be recomputed with the version it records.
+\item Each certificate stores the rules version, the settings and a hash of the data; a recheck with the same software
+version reproduces it.
+\item The trial ledger is an append-only, hash-chained file; an edited ledger is reported and is not accepted as
+evidence.
+\item The generator deposited with this paper differs from the one used in development only in its configuration; with
+the development settings it reproduced the level, depth, blocking rule, ceilings and verdict of the first 3,000
+development cases of the final rules.
+\end{itemize}
+Monte-Neo is written by the author of this paper, who therefore designed both the checks and the traps. No independent
+party has yet tested the scale.
+
+Monte-Neo also labels each verified strategy with one of 24 main categories (how the signal is formed, for example
+time-series trend, cross-sectional momentum, mean reversion, statistical arbitrage or carry), an asset class and a
+structure, derived by twelve ordered rules (\texttt{catalog-rules/1}), so that levels can be compared among strategies of
+the same kind.
+
+\section{Limitations}
+
+\begin{itemize}
+\item \textbf{Mostly synthetic data.} Planted edges are stationary, whereas real edges decay \citep{mclean2016}.
+\item \textbf{Author-chosen traps.} The traps are the ones I thought of; a new kind of error may pass. The confirmatory
+run uses new random cases from the same generator: it removes the selection of thresholds on the measured cases, but not
+the dependence on my choice of case types. Its real-data cases reuse the development series.
+\item \textbf{Provisional thresholds.} They remain provisional until a collection of real strategies with known outcomes
+is available.
+\item \textbf{Unverified declarations.} Any intact trial ledger meets the trial-evidence requirement, including one
+opened after the search. It becomes evidence only when it is fixed before the search, for example by a time-stamped
+pre-registration or a hash deposited with a third party, which the rules do not require. A membership file is accepted
+as written.
+\item \textbf{The parity rate is not a field rate.} The 8.29\,\% describes the cheapest accepted declarations for my mix
+of traps, not what to expect from real users. The hidden-trials trap alone supplies 4,177 of the 6,962 cases; without it
+the rate is 3.71\,\% (2,785 of 75,088).
+\item \textbf{Depth is not calibrated.} The out-of-sample criterion was not assessed in any calibration case. One
+criterion is also hard to meet by construction: with 200 permutations or shifts the smallest possible p-value is about
+0.005, so D1 of level 4 cannot be met with three or more trials.
+\item \textbf{Coverage.} Intervals treat cases as independent. Level 8 can be reached only on the cross-sectional track,
+and no case reached level 9, so the live requirements are untested here.
+\item \textbf{Returns alone are not enough.} They cannot test for look-ahead or costs, and the scale leaves those levels
+not assessed.
+\item \textbf{Evidence is not profit.} ARL measures how well a claim is supported, not what will be earned.
+\end{itemize}
+
+\section{Conclusions}
+
+\paragraph{What this paper is for.} It offers a common language for one question that every user of a backtest should
+ask: how much has actually been shown? A level between 1 and 9, with a depth, answers it in a form that can be checked.
+
+\paragraph{What was found.}
+\begin{enumerate}
+\item The first serious failures of the scale were failures of structure, not of thresholds. Hidden trials cannot be
+detected from a result and must be documented; a check that exists on one track but not on another silently blocks real
+strategies.
+\item On new cases and with rules frozen in advance, no-edge strategies exceeded their maximum in 0.82\,\% of cases, and
+the development rates were reproduced.
+\item The ability to recognise a real edge depends strongly on how much data exist.
+\item A low rate of fooled traps can be an artefact of the test design. When traps declared what honest cases declare,
+the rate rose from 0.80\,\% to 8.29\,\%.
+\item A level is therefore conditional: it is as trustworthy as the records and declarations behind it.
+\end{enumerate}
+
+\paragraph{What follows.} I recommend that any readiness scale for backtests report both rates. For ARL the next steps
+follow from Table~\ref{tab:traps}: fix the trial ledger and the universe declaration before the search; compute the
+survivorship ceiling on both tracks; connect the warning checks to the levels where their cost on honest cases allows;
+strengthen the book and decay detectors; and test the next version on new cases and on traps built by others.
+
+\section*{Availability and declarations}
+
+\begin{itemize}
+\item \textbf{Software.} Monte-Neo and the rules file are open source (MIT licence) at
+\url{https://github.com/NeoZorK/Monte-Neo}; this study uses release \texttt{v0.57.0} and rules \texttt{arl-rules/2}. The
+sources of this paper and the example program are in the folder \texttt{paper/arl-standard} of the same repository.
+\item \textbf{Pre-registration.} The plan, case generator, analysis script and launcher are deposited at Zenodo
+(\href{https://doi.org/10.5281/zenodo.24603671}{doi:10.5281/zenodo.24603671}).
+\item \textbf{Results.} The results of every case of the development and confirmatory runs (level, depth, blocking rule,
+ceilings, status of every check and principal metrics) are deposited as a later version of the same record (all
+versions: \href{https://doi.org/10.5281/zenodo.24603670}{doi:10.5281/zenodo.24603670}). Further numerical details of the
+checks are omitted for size; the deposited generator recreates them from the case seeds.
+\item \textbf{Real data.} The daily bars used for part of population B are listed there by symbol, asset class, date
+range and hash. They are not redistributed.
+\item \textbf{Authorship of the scale.} The Alpha Readiness Level was devised by the author.
+\item \textbf{Funding and interests.} The author received no funding. The author develops the software evaluated in this
+study.
+\item Nothing in this paper is investment advice.
+\end{itemize}
+
+\begin{thebibliography}{99}
+\bibitem[Arnott et al.(2019)]{arnott2019backtesting} Arnott, R., Harvey, C.~R., and Markowitz, H. (2019). A backtesting
+protocol in the era of machine learning. \emph{Journal of Financial Data Science}, 1(1), 64--74. \href{https://doi.org/10.3905/jfds.2019.1.064}{doi:10.3905/jfds.2019.1.064}.
+\bibitem[Bailey and L\'opez de Prado(2014)]{bailey2014deflated} Bailey, D.~H., and L\'opez de Prado, M. (2014). The deflated
+Sharpe ratio: correcting for selection bias, backtest overfitting, and non-normality. \emph{Journal of Portfolio
+Management}, 40(5), 94--107. \href{https://doi.org/10.3905/jpm.2014.40.5.094}{doi:10.3905/jpm.2014.40.5.094}.
+\bibitem[Bailey et al.(2017)]{bailey2017pbo} Bailey, D.~H., Borwein, J., L\'opez de Prado, M., and Zhu, Q.~J. (2017). The
+probability of backtest overfitting. \emph{Journal of Computational Finance}, 20(4), 39--69. \href{https://doi.org/10.21314/JCF.2016.322}{doi:10.21314/JCF.2016.322}.
+\bibitem[Bailey et al.(2014)]{bailey2014pseudo} Bailey, D.~H., Borwein, J.~M., L\'opez de Prado, M., and Zhu, Q.~J. (2014).
+Pseudo-mathematics and financial charlatanism: the effects of backtest overfitting on out-of-sample performance.
+\emph{Notices of the American Mathematical Society}, 61(5), 458--471. \href{https://doi.org/10.1090/noti1105}{doi:10.1090/noti1105}.
+\bibitem[Fabozzi and L\'opez de Prado(2018)]{fabozzi2018honest} Fabozzi, F.~J., and L\'opez de Prado, M. (2018). Being
+honest in backtest reporting: a template for disclosing multiple tests. \emph{Journal of Portfolio Management}, 45(1),
+141--147. \href{https://doi.org/10.3905/jpm.2018.45.1.141}{doi:10.3905/jpm.2018.45.1.141}.
+\bibitem[Getmansky et al.(2004)]{getmansky2004} Getmansky, M., Lo, A.~W., and Makarov, I. (2004). An econometric model of
+serial correlation and illiquidity in hedge fund returns. \emph{Journal of Financial Economics}, 74(3), 529--609. \href{https://doi.org/10.1016/j.jfineco.2004.04.001}{doi:10.1016/j.jfineco.2004.04.001}.
+\bibitem[Hansen(2005)]{hansen2005spa} Hansen, P.~R. (2005). A test for superior predictive ability. \emph{Journal of
+Business and Economic Statistics}, 23(4), 365--380. \href{https://doi.org/10.1198/073500105000000063}{doi:10.1198/073500105000000063}.
+\bibitem[Harvey et al.(2016)]{harvey2016cross} Harvey, C.~R., Liu, Y., and Zhu, H. (2016). \ldots and the cross-section of
+expected returns. \emph{Review of Financial Studies}, 29(1), 5--68. \href{https://doi.org/10.1093/rfs/hhv059}{doi:10.1093/rfs/hhv059}.
+\bibitem[Lavin et al.(2022)]{lavin2022mltrl} Lavin, A., Gilligan-Lee, C.~M., Visnjic, A., et al. (2022). Technology
+readiness levels for machine learning systems. \emph{Nature Communications}, 13, 6039. \href{https://doi.org/10.1038/s41467-022-33128-9}{doi:10.1038/s41467-022-33128-9}.
+\bibitem[Lo(2002)]{lo2002sharpe} Lo, A.~W. (2002). The statistics of Sharpe ratios. \emph{Financial Analysts Journal},
+58(4), 36--52. \href{https://doi.org/10.2469/faj.v58.n4.2453}{doi:10.2469/faj.v58.n4.2453}.
+\bibitem[Mankins(1995)]{mankins1995trl} Mankins, J.~C. (1995). \emph{Technology Readiness Levels: A White Paper}. NASA,
+Office of Space Access and Technology.
+\bibitem[McLean and Pontiff(2016)]{mclean2016} McLean, R.~D., and Pontiff, J. (2016). Does academic research destroy stock
+return predictability? \emph{Journal of Finance}, 71(1), 5--32. \href{https://doi.org/10.1111/jofi.12365}{doi:10.1111/jofi.12365}.
+\bibitem[Nosek et al.(2018)]{nosek2018prereg} Nosek, B.~A., Ebersole, C.~R., DeHaven, A.~C., and Mellor, D.~T. (2018). The
+preregistration revolution. \emph{Proceedings of the National Academy of Sciences}, 115(11), 2600--2606. \href{https://doi.org/10.1073/pnas.1708274114}{doi:10.1073/pnas.1708274114}.
+\bibitem[Shcherbyna(2026a)]{shcherbyna2026phantom} Shcherbyna, R. (2026a). Phantom mean reversion: how rolling hedge ratios
+manufacture profits in pairs-trading backtests. Preprint, Zenodo, \href{https://doi.org/10.5281/zenodo.24561375}{doi:10.5281/zenodo.24561375}.
+\bibitem[Shcherbyna(2026b)]{shcherbyna2026prereg} Shcherbyna, R. (2026b). Pre-registration: confirmatory calibration of
+the Alpha Readiness Level. Zenodo, \href{https://doi.org/10.5281/zenodo.24603671}{doi:10.5281/zenodo.24603671}.
+\bibitem[White(2000)]{white2000reality} White, H. (2000). A reality check for data snooping. \emph{Econometrica}, 68(5),
+1097--1126. \href{https://doi.org/10.1111/1468-0262.00152}{doi:10.1111/1468-0262.00152}.
+\bibitem[Wilson(1927)]{wilson1927} Wilson, E.~B. (1927). Probable inference, the law of succession, and statistical
+inference. \emph{Journal of the American Statistical Association}, 22(158), 209--212. \href{https://doi.org/10.1080/01621459.1927.10502953}{doi:10.1080/01621459.1927.10502953}.
+\end{thebibliography}
+
+\end{document}
