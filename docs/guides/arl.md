@@ -8,6 +8,8 @@ The Alpha Readiness Level (ARL) was devised by Rostyslav Shcherbyna, author of M
 (October 2026; first commit 2026-10-11); the depth sub-scale was added in v0.55.0 (November 2026). It is a Monte-Neo scale,
 not an industry standard.
 
+Paper sources, worked examples and calibration code: [`paper/arl-standard`](../../paper/arl-standard/README.md).
+
 ## The nine levels at a glance
 
 | ARL | Question it answers |

@@ -1,0 +1,45 @@
+
+A. uses tomorrow's price
+  net Sharpe 22.13, deflated Sharpe 1.000, trials 1
+  ARL 1, depth 2/4 (arl-rules/2, provisional)
+    depth D1 Margin        met          no data warning at all (data_integrity and data_quality both pass)
+    depth D2 Breadth       not assessed two independent sources agree (data_source_replication)
+    depth D3 Sample        met          at least 3 years of bars
+    depth D4 Out of sample not assessed a fresh fetch gives identical hashes
+  level 2 failed: implausible_accuracy, lookahead_perturbation, lookahead_truncation, repaint_history
+
+B. best of 100 noise signals, search not documented
+  net Sharpe 0.92, deflated Sharpe 0.940, trials 1
+  ARL 3, depth 2/4 (arl-rules/2, provisional)
+    depth D1 Margin        unmet        break-even cost at least 5x the modelled cost
+    depth D2 Breadth       met          profitable in at least 5 of 6 equal periods (walk-forward windows)
+    depth D3 Sample        met          at least 100 closed trades
+    depth D4 Out of sample not assessed net positive on the sealed holdout
+  level 4 capped: trial_evidence
+
+C. best of 100 noise signals, 100 trials declared
+  net Sharpe 0.92, deflated Sharpe 0.164, trials 100
+  ARL 3, depth 2/4 (arl-rules/2, provisional)
+    depth D1 Margin        unmet        break-even cost at least 5x the modelled cost
+    depth D2 Breadth       met          profitable in at least 5 of 6 equal periods (walk-forward windows)
+    depth D3 Sample        met          at least 100 closed trades
+    depth D4 Out of sample not assessed net positive on the sealed holdout
+  level 4 failed: selection_adjusted_sharpe
+
+D. real edge (target Sharpe 2), 1 year
+  net Sharpe 1.90, deflated Sharpe 0.461, trials 20
+  ARL 3, depth 2/4 (arl-rules/2, provisional)
+    depth D1 Margin        met          break-even cost at least 5x the modelled cost
+    depth D2 Breadth       met          profitable in at least 5 of 6 equal periods (walk-forward windows)
+    depth D3 Sample        unmet        at least 100 closed trades
+    depth D4 Out of sample not assessed net positive on the sealed holdout
+  level 4 failed: selection_adjusted_sharpe
+
+E. real edge (target Sharpe 2), 10 years
+  net Sharpe 1.98, deflated Sharpe 1.000, trials 20
+  ARL 7, depth 1/4 (arl-rules/2, provisional)
+    depth D1 Margin        met          net positive at 2x costs and a 1-bar delay
+    depth D2 Breadth       not assessed worst of regimes, rebalance phases (and subsamples, start dates when run) still passes
+    depth D3 Sample        not assessed capacity at least 10x the planned capital
+    depth D4 Out of sample not assessed survives the sealed holdout under realistic fills (net positive, cost_realism passes)
+  level 8 not assessed: marginal_sharpe (not run)
